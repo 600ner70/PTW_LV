@@ -16,6 +16,7 @@ wwv_flow_imp_page.create_page(
 ,p_name=>'Global Page'
 ,p_step_title=>'Global Page'
 ,p_autocomplete_on_off=>'OFF'
+,p_javascript_file_urls=>'#APP_FILES#offline-nav#MIN#.js'
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'D'
 ,p_page_component_map=>'14'
