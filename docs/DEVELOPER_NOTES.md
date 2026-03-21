@@ -12,13 +12,13 @@ capture, digital signatures, and a role-based workflow.
 ### Workflow Steps (Pages)
 | Page | Name | APEX Alias |
 |------|------|------------|
-| 1 | Home / Dashboard | HOME |
+| 1 | Dashboard | HOME |
 | 2 | Site & Work Details | SITE-WORK-DETAILS |
 | 3 | Control Measures & PPE | CONTROL-MEASURES |
 | 4 | Equipment Isolation | EQUIPMENT-ISOLATION |
 | 5 | Authorisation & Acceptance | AUTHORISATION-ACCEPTANCE |
-| 6 | Permit History | (history) |
-| 7 | Map View | (map) |
+| 6 | Change History | (history) |
+| 7 | Location | (map) |
 | 8 | User Management | (admin) |
 | 9 | Start Permit (active) | (start) |
 
@@ -291,6 +291,8 @@ success/error callbacks, guaranteeing coordinates are set first.
 
 ## 12. CODING STANDARDS
 
+- ### YOU MUST ALWAYS WORK SYSTEMATICALLY
+
 ### PL/SQL
 - Always use `ptw_pro.` prefix for all table references
 - Exception handlers must use the **same** date format masks as main code
@@ -318,3 +320,24 @@ success/error callbacks, guaranteeing coordinates are set first.
 - → User Interface 
 - → User Interface Attributes
 - → JavaScript → File URLs
+
+### How Oracle APEX Works
+- Oracle APEX provides all the tools you need to build apps in a single, extensible platform, which runs as a part of Oracle Database.
+
+- Oracle APEX uses a simple 3-tier architecture where requests are sent from the browser, through a web server, to the database. All processing, data manipulation and business logic is executed in the database. This architecture guarantees zero latency data access, top performance, and scalability, out of the box.
+
+- Oracle APEX installs with your Oracle database and consists of data in tables and PL/SQL code. Whether you run the APEX development environment or run an application built using APEX, the process is the same. Your browser sends a URL request that is translated into the appropriate APEX PL/SQL call. After the database processes the PL/SQL, the results are relayed back to your browser as HTML. This cycle happens each time you either request or submit a page.
+
+- APEX does not use a dedicated database connection. Instead, each request is made through a new database session, consuming minimal CPU resources. Application session state is managed in the database tables by the APEX engine.
+
+- Behind the scenes, the APEX engine renders and processes pages. The APEX engine also performs these tasks:
+
+- Session state management
+
+- Authentication services
+
+- Authorization services
+
+- Page flow control
+
+- Validation processing
