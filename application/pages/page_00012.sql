@@ -1,7 +1,7 @@
-prompt --application/pages/page_00004
+prompt --application/pages/page_00012
 begin
 --   Manifest
---     PAGE: 00004
+--     PAGE: 00012
 --   Manifest End
 wwv_flow_imp.component_begin (
  p_version_yyyy_mm_dd=>'2024.11.30'
@@ -12,9 +12,9 @@ wwv_flow_imp.component_begin (
 ,p_default_owner=>'PERMITPRO'
 );
 wwv_flow_imp_page.create_page(
- p_id=>4
-,p_name=>'Equipment Isolation'
-,p_alias=>'EQUIPMENT-ISOLATION'
+ p_id=>12
+,p_name=>'Equipment Isolation bkup'
+,p_alias=>'EQUIPMENT-ISOLATION1'
 ,p_step_title=>'Equipment Isolation'
 ,p_autocomplete_on_off=>'OFF'
 ,p_javascript_file_urls=>'#APP_FILES#offline-storage#MIN#.js'
@@ -50,38 +50,28 @@ unistr('        statusIcon.innerHTML = ''\26A0'';'),
 'OfflineStorage.initDB();',
 'ConnectionManager.init();',
 '',
-'// Offline handler for NEXT_STEP button.',
-'// Capture phase (true) fires before APEX''s bubble-phase DA,',
-'// preventing the Execute PLSQL action from making an AJAX call that fails offline.',
-'(function() {',
-'    var btn = document.querySelector(''[data-otel-label="NEXT_STEP"]'');',
-'    if (!btn) return;',
-'    btn.addEventListener(''click'', function(e) {',
-'        if (navigator.onLine) return;',
-'        e.stopImmediatePropagation();',
-'        e.preventDefault();',
-'        var formData = {};',
-'        apex.jQuery(''form'').serializeArray().forEach(function(i) { formData[i.name] = i.value; });',
-'        OfflineStorage.saveFormData(''4'', formData, apex.jQuery(''#P4_PERMIT_ID'').val() || null)',
-'            .then(function() {',
-'                var u = new URL(window.location.href);',
-'                var p = u.pathname.split(''/'');',
-'                while (p[p.length - 1] === '''') p.pop();',
-'                if (/^\d+$/.test(p[p.length - 1])) {',
-'                    p[p.length - 2] = ''authorisation-acceptance'';',
-'                } else {',
-'                    p[p.length - 1] = ''authorisation-acceptance'';',
-'                }',
-'                u.pathname = p.join(''/'');',
-'                u.search = '''';',
-'                apex.message.showPageSuccess(''Data saved offline. Will sync when reconnected.'');',
-'                setTimeout(function() { window.location.href = u.toString(); }, 800);',
+'// Override form submission for offline mode',
+'if (!apex.page.submit._original) {',
+'    apex.page.submit._original = apex.page.submit;',
+'}',
+'',
+'apex.page.submit = function(options) {',
+'    if (ConnectionManager.isOnline) {',
+'        apex.page.submit._original(options);',
+'    } else {',
+'        const formData = apex.page.getValues();',
+'        OfflineStorage.saveFormData(apex.page.getId(), formData)',
+'            .then((id) => {',
+'                apex.message.showPageSuccess(''Data saved offline. Will sync when connected.'');',
 '            })',
-'            .catch(function(err) {',
-'                apex.message.showErrors([{type:''error'',message:''Offline save error: ''+err.message}]);',
+'            .catch((error) => {',
+'                apex.message.showErrors([{',
+'                    type: ''error'',',
+'                    message: ''Error saving offline: '' + error.message',
+'                }]);',
 '            });',
-'    }, true);',
-'}());'))
+'    }',
+'};'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '.ptw-workflow-progress {',
 '    display: flex;',
@@ -204,12 +194,12 @@ unistr('        statusIcon.innerHTML = ''\26A0'';'),
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
 ,p_read_only_when_type=>'VAL_OF_ITEM_IN_COND_NOT_EQ_COND2'
-,p_read_only_when=>'P4_WORKFLOW_STATUS'
+,p_read_only_when=>'P12_WORKFLOW_STATUS'
 ,p_read_only_when2=>'IN_PROGRESS'
 ,p_page_component_map=>'16'
 );
 wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(27017411932886525)
+ p_id=>wwv_flow_imp.id(59988231209884396)
 ,p_plug_name=>'SyncStatus'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>4501440665235496320
@@ -221,12 +211,13 @@ wwv_flow_imp_page.create_page_plug(
 '    <span id="status-text"></span>',
 '    <!-- <button id="sync-btn" style="margin-left: 10px; display: none;">Sync Now</button> -->',
 '</div>'))
+,p_ai_enabled=>false
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
 );
 wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(27017917969886530)
+ p_id=>wwv_flow_imp.id(59988737246884401)
 ,p_plug_name=>'Workflow Status'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>4501440665235496320
@@ -257,29 +248,31 @@ wwv_flow_imp_page.create_page_plug(
 '</div>',
 '',
 ''))
+,p_ai_enabled=>false
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
 );
 wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(27018145295886532)
+ p_id=>wwv_flow_imp.id(59988964572884403)
 ,p_plug_name=>'Permit Information Badge'
 ,p_plug_display_sequence=>150
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<div style="margin-bottom: 20px;">',
 '    <span class="apex-badge" style="background-color: #3ea055; color: white; padding: 6px 16px; border-radius: 20px; font-weight: 600;">',
-'        Permit: &P4_PERMIT_NUMBER.',
+'        Permit: &P12_PERMIT_NUMBER.',
 '    </span>',
 '</div>'))
 ,p_plug_display_condition_type=>'ITEM_IS_NOT_NULL'
-,p_plug_display_when_condition=>'P4_PERMIT_NUMBER'
+,p_plug_display_when_condition=>'P12_PERMIT_NUMBER'
+,p_ai_enabled=>false
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
 );
 wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(27018342698886534)
+ p_id=>wwv_flow_imp.id(59989161975884405)
 ,p_plug_name=>'Equipment Isolation Table'
 ,p_title=>'Equipment Isolation Details'
 ,p_icon_css_classes=>'fa-lock'
@@ -287,12 +280,13 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_template=>4072358936313175081
 ,p_plug_display_sequence=>170
 ,p_location=>null
+,p_ai_enabled=>false
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
 );
 wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(27019604951886547)
+ p_id=>wwv_flow_imp.id(59990424228884418)
 ,p_plug_name=>'Comments'
 ,p_title=>'Comments and References'
 ,p_icon_css_classes=>'fa-comment'
@@ -300,41 +294,40 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_template=>4072358936313175081
 ,p_plug_display_sequence=>180
 ,p_location=>null
+,p_ai_enabled=>false
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
 );
 wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(27019835346886549)
+ p_id=>wwv_flow_imp.id(59990654623884420)
 ,p_plug_name=>'Buttons'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>2126429139436695430
 ,p_plug_display_sequence=>190
 ,p_location=>null
+,p_ai_enabled=>false
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
 );
 wwv_flow_imp_page.create_page_button(
- p_id=>wwv_flow_imp.id(27353028511033401)
+ p_id=>wwv_flow_imp.id(32977753979997836)
 ,p_button_sequence=>20
-,p_button_plug_id=>wwv_flow_imp.id(27019835346886549)
+,p_button_plug_id=>wwv_flow_imp.id(59990654623884420)
 ,p_button_name=>'SAVE_DRAFT'
-,p_button_static_id=>'BTN_SAVE_DRAFT_P4'
-,p_button_action=>'DEFINED_BY_DA'
+,p_button_action=>'SUBMIT'
 ,p_button_template_options=>'#DEFAULT#'
 ,p_button_template_id=>4072362960822175091
 ,p_button_image_alt=>'Save Draft'
 ,p_button_position=>'NEXT'
-,p_warn_on_unsaved_changes=>null
 ,p_security_scheme=>wwv_flow_imp.id(31533963716212424)
 );
 wwv_flow_imp_page.create_page_button(
- p_id=>wwv_flow_imp.id(27353109498033402)
+ p_id=>wwv_flow_imp.id(32978150486997835)
 ,p_button_sequence=>30
-,p_button_plug_id=>wwv_flow_imp.id(27019835346886549)
+,p_button_plug_id=>wwv_flow_imp.id(59990654623884420)
 ,p_button_name=>'NEXT_STEP'
-,p_button_static_id=>'BTN_NEXT_STEP_P4'
 ,p_button_action=>'SUBMIT'
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconRight'
 ,p_button_template_id=>2082829544945815391
@@ -344,23 +337,22 @@ wwv_flow_imp_page.create_page_button(
 ,p_icon_css_classes=>'fa-arrow-right'
 );
 wwv_flow_imp_page.create_page_button(
- p_id=>wwv_flow_imp.id(27019975461886550)
+ p_id=>wwv_flow_imp.id(32977320646997838)
 ,p_button_sequence=>10
-,p_button_plug_id=>wwv_flow_imp.id(27019835346886549)
+,p_button_plug_id=>wwv_flow_imp.id(59990654623884420)
 ,p_button_name=>'BACK'
-,p_button_static_id=>'BTN_BACK_P4'
 ,p_button_action=>'REDIRECT_PAGE'
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
 ,p_button_template_id=>2082829544945815391
 ,p_button_image_alt=>'Back'
 ,p_button_position=>'PREVIOUS'
-,p_button_redirect_url=>'f?p=&APP_ID.:3:&SESSION.::&DEBUG.:3:P3_PERMIT_ID:&P4_PERMIT_ID.'
+,p_button_redirect_url=>'f?p=&APP_ID.:3:&SESSION.::&DEBUG.:3:P3_PERMIT_ID:&P12_PERMIT_ID.'
 ,p_icon_css_classes=>'fa-arrow-left'
 );
 wwv_flow_imp_page.create_page_branch(
- p_id=>wwv_flow_imp.id(27353640786033407)
+ p_id=>wwv_flow_imp.id(32985238587997807)
 ,p_branch_name=>'Refresh Current Page (SAVE_DRAFT)'
-,p_branch_action=>'f?p=&APP_ID.:4:&SESSION.::&DEBUG.:4:P4_PERMIT_ID:&P4_PERMIT_ID.'
+,p_branch_action=>'f?p=&APP_ID.:12:&SESSION.::&DEBUG.:12:P12_PERMIT_ID:&P12_PERMIT_ID.'
 ,p_branch_point=>'AFTER_PROCESSING'
 ,p_branch_type=>'REDIRECT_URL'
 ,p_branch_sequence=>10
@@ -368,9 +360,9 @@ wwv_flow_imp_page.create_page_branch(
 ,p_branch_condition=>'SAVE_DRAFT'
 );
 wwv_flow_imp_page.create_page_branch(
- p_id=>wwv_flow_imp.id(27355396888033424)
+ p_id=>wwv_flow_imp.id(32985649124997806)
 ,p_branch_name=>'Go to Authorisation (NEXT_STEP)'
-,p_branch_action=>'f?p=&APP_ID.:5:&SESSION.::&DEBUG.:5:P5_PERMIT_ID:&P4_PERMIT_ID.'
+,p_branch_action=>'f?p=&APP_ID.:5:&SESSION.::&DEBUG.:5:P5_PERMIT_ID:&P12_PERMIT_ID.'
 ,p_branch_point=>'AFTER_PROCESSING'
 ,p_branch_type=>'REDIRECT_URL'
 ,p_branch_sequence=>20
@@ -378,82 +370,10 @@ wwv_flow_imp_page.create_page_branch(
 ,p_branch_condition=>'NEXT_STEP'
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(27016408036886515)
-,p_name=>'P4_PERMIT_ID'
-,p_item_sequence=>30
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(27016543785886516)
-,p_name=>'P4_PERMIT_NUMBER'
-,p_item_sequence=>40
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(27016635165886517)
-,p_name=>'P4_WORKFLOW_STATUS'
-,p_item_sequence=>50
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(27016711172886518)
-,p_name=>'P4_NEXT_STEP'
-,p_item_sequence=>60
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(27017550498886526)
-,p_name=>'P4_ISO_1_ID'
-,p_item_sequence=>90
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(27017612768886527)
-,p_name=>'P4_ISO_2_ID'
-,p_item_sequence=>100
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(27017746971886528)
-,p_name=>'P4_ISO_3_ID'
-,p_item_sequence=>110
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(27017866743886529)
-,p_name=>'P4_ISO_4_ID'
-,p_item_sequence=>120
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(27018057140886531)
-,p_name=>'P4_CURRENT_STEP'
-,p_item_sequence=>70
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(27018457939886535)
-,p_name=>'P4_ISO_1_EQUIPMENT'
+ p_id=>wwv_flow_imp.id(59991803838884392)
+,p_name=>'P12_ISO_1_EQUIPMENT'
 ,p_item_sequence=>10
-,p_item_plug_id=>wwv_flow_imp.id(27018342698886534)
+,p_item_plug_id=>wwv_flow_imp.id(59989161975884405)
 ,p_prompt=>'Equipment Isolated (Row 1)'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>30
@@ -466,12 +386,13 @@ wwv_flow_imp_page.create_page_item(
   'submit_when_enter_pressed', 'N',
   'subtype', 'TEXT',
   'trim_spaces', 'BOTH')).to_clob
+,p_ai_enabled=>false
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(27018568710886536)
-,p_name=>'P4_ISO_1_MEANS'
+ p_id=>wwv_flow_imp.id(59991914609884393)
+,p_name=>'P12_ISO_1_MEANS'
 ,p_item_sequence=>20
-,p_item_plug_id=>wwv_flow_imp.id(27018342698886534)
+,p_item_plug_id=>wwv_flow_imp.id(59989161975884405)
 ,p_prompt=>'Means of Isolation (Row 1)'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>30
@@ -485,12 +406,13 @@ wwv_flow_imp_page.create_page_item(
   'submit_when_enter_pressed', 'N',
   'subtype', 'TEXT',
   'trim_spaces', 'BOTH')).to_clob
+,p_ai_enabled=>false
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(27018618101886537)
-,p_name=>'P4_ISO_1_LOCK_NO'
+ p_id=>wwv_flow_imp.id(59991964000884394)
+,p_name=>'P12_ISO_1_LOCK_NO'
 ,p_item_sequence=>30
-,p_item_plug_id=>wwv_flow_imp.id(27018342698886534)
+,p_item_plug_id=>wwv_flow_imp.id(59989161975884405)
 ,p_prompt=>'Safety Lock No. (Row 1)'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>30
@@ -504,12 +426,13 @@ wwv_flow_imp_page.create_page_item(
   'submit_when_enter_pressed', 'N',
   'subtype', 'TEXT',
   'trim_spaces', 'BOTH')).to_clob
+,p_ai_enabled=>false
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(27018795561886538)
-,p_name=>'P4_ISO_2_EQUIPMENT'
+ p_id=>wwv_flow_imp.id(59992141460884395)
+,p_name=>'P12_ISO_2_EQUIPMENT'
 ,p_item_sequence=>40
-,p_item_plug_id=>wwv_flow_imp.id(27018342698886534)
+,p_item_plug_id=>wwv_flow_imp.id(59989161975884405)
 ,p_prompt=>'Equipment Isolated (Row 2)'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>30
@@ -522,12 +445,13 @@ wwv_flow_imp_page.create_page_item(
   'submit_when_enter_pressed', 'N',
   'subtype', 'TEXT',
   'trim_spaces', 'BOTH')).to_clob
+,p_ai_enabled=>false
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(27018813428886539)
-,p_name=>'P4_ISO_2_MEANS'
+ p_id=>wwv_flow_imp.id(59992159327884396)
+,p_name=>'P12_ISO_2_MEANS'
 ,p_item_sequence=>50
-,p_item_plug_id=>wwv_flow_imp.id(27018342698886534)
+,p_item_plug_id=>wwv_flow_imp.id(59989161975884405)
 ,p_prompt=>'Means of Isolation (Row 2)'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>30
@@ -541,12 +465,13 @@ wwv_flow_imp_page.create_page_item(
   'submit_when_enter_pressed', 'N',
   'subtype', 'TEXT',
   'trim_spaces', 'BOTH')).to_clob
+,p_ai_enabled=>false
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(27018963903886540)
-,p_name=>'P4_ISO_2_LOCK_NO'
+ p_id=>wwv_flow_imp.id(59992309802884397)
+,p_name=>'P12_ISO_2_LOCK_NO'
 ,p_item_sequence=>60
-,p_item_plug_id=>wwv_flow_imp.id(27018342698886534)
+,p_item_plug_id=>wwv_flow_imp.id(59989161975884405)
 ,p_prompt=>'Safety Lock No. (Row 2)'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>30
@@ -560,12 +485,32 @@ wwv_flow_imp_page.create_page_item(
   'submit_when_enter_pressed', 'N',
   'subtype', 'TEXT',
   'trim_spaces', 'BOTH')).to_clob
+,p_ai_enabled=>false
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(27019093609886541)
-,p_name=>'P4_ISO_3_EQUIPMENT'
+ p_id=>wwv_flow_imp.id(59992412457884408)
+,p_name=>'P12_COMMENTS'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(59990424228884418)
+,p_prompt=>'Comments and references to associated safety documentation, including risk assessments, method statements and other permits. '
+,p_display_as=>'NATIVE_TEXTAREA'
+,p_cSize=>30
+,p_cMaxlength=>4000
+,p_cHeight=>5
+,p_field_template=>1609121967514267634
+,p_item_template_options=>'#DEFAULT#'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'auto_height', 'N',
+  'character_counter', 'N',
+  'resizable', 'N',
+  'trim_spaces', 'BOTH')).to_clob
+,p_ai_enabled=>false
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(59992439508884398)
+,p_name=>'P12_ISO_3_EQUIPMENT'
 ,p_item_sequence=>70
-,p_item_plug_id=>wwv_flow_imp.id(27018342698886534)
+,p_item_plug_id=>wwv_flow_imp.id(59989161975884405)
 ,p_prompt=>'Equipment Isolated (Row 3)'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>30
@@ -578,12 +523,13 @@ wwv_flow_imp_page.create_page_item(
   'submit_when_enter_pressed', 'N',
   'subtype', 'TEXT',
   'trim_spaces', 'BOTH')).to_clob
+,p_ai_enabled=>false
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(27019124716886542)
-,p_name=>'P4_ISO_3_MEANS'
+ p_id=>wwv_flow_imp.id(59992470615884399)
+,p_name=>'P12_ISO_3_MEANS'
 ,p_item_sequence=>80
-,p_item_plug_id=>wwv_flow_imp.id(27018342698886534)
+,p_item_plug_id=>wwv_flow_imp.id(59989161975884405)
 ,p_prompt=>'Means of Isolation (Row 3)'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>30
@@ -597,12 +543,13 @@ wwv_flow_imp_page.create_page_item(
   'submit_when_enter_pressed', 'N',
   'subtype', 'TEXT',
   'trim_spaces', 'BOTH')).to_clob
+,p_ai_enabled=>false
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(27019250959886543)
-,p_name=>'P4_ISO_3_LOCK_NO'
+ p_id=>wwv_flow_imp.id(59992596858884400)
+,p_name=>'P12_ISO_3_LOCK_NO'
 ,p_item_sequence=>90
-,p_item_plug_id=>wwv_flow_imp.id(27018342698886534)
+,p_item_plug_id=>wwv_flow_imp.id(59989161975884405)
 ,p_prompt=>'Safety Lock No. (Row 3)'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>30
@@ -616,12 +563,13 @@ wwv_flow_imp_page.create_page_item(
   'submit_when_enter_pressed', 'N',
   'subtype', 'TEXT',
   'trim_spaces', 'BOTH')).to_clob
+,p_ai_enabled=>false
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(27019329194886544)
-,p_name=>'P4_ISO_4_EQUIPMENT'
+ p_id=>wwv_flow_imp.id(59992675093884401)
+,p_name=>'P12_ISO_4_EQUIPMENT'
 ,p_item_sequence=>100
-,p_item_plug_id=>wwv_flow_imp.id(27018342698886534)
+,p_item_plug_id=>wwv_flow_imp.id(59989161975884405)
 ,p_prompt=>'Equipment Isolated (Row 4)'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>30
@@ -634,12 +582,13 @@ wwv_flow_imp_page.create_page_item(
   'submit_when_enter_pressed', 'N',
   'subtype', 'TEXT',
   'trim_spaces', 'BOTH')).to_clob
+,p_ai_enabled=>false
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(27019475030886545)
-,p_name=>'P4_ISO_4_MEANS'
+ p_id=>wwv_flow_imp.id(59992820929884402)
+,p_name=>'P12_ISO_4_MEANS'
 ,p_item_sequence=>110
-,p_item_plug_id=>wwv_flow_imp.id(27018342698886534)
+,p_item_plug_id=>wwv_flow_imp.id(59989161975884405)
 ,p_prompt=>'Means of Isolation (Row 4)'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>30
@@ -653,12 +602,13 @@ wwv_flow_imp_page.create_page_item(
   'submit_when_enter_pressed', 'N',
   'subtype', 'TEXT',
   'trim_spaces', 'BOTH')).to_clob
+,p_ai_enabled=>false
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(27019534738886546)
-,p_name=>'P4_ISO_4_LOCK_NO'
+ p_id=>wwv_flow_imp.id(59992880637884403)
+,p_name=>'P12_ISO_4_LOCK_NO'
 ,p_item_sequence=>120
-,p_item_plug_id=>wwv_flow_imp.id(27018342698886534)
+,p_item_plug_id=>wwv_flow_imp.id(59989161975884405)
 ,p_prompt=>'Safety Lock No. (Row 4)'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>30
@@ -672,86 +622,158 @@ wwv_flow_imp_page.create_page_item(
   'submit_when_enter_pressed', 'N',
   'subtype', 'TEXT',
   'trim_spaces', 'BOTH')).to_clob
+,p_ai_enabled=>false
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(27019719187886548)
-,p_name=>'P4_COMMENTS'
-,p_item_sequence=>10
-,p_item_plug_id=>wwv_flow_imp.id(27019604951886547)
-,p_prompt=>'Comments and references to associated safety documentation, including risk assessments, method statements and other permits. '
-,p_display_as=>'NATIVE_TEXTAREA'
-,p_cSize=>30
-,p_cMaxlength=>4000
-,p_cHeight=>5
-,p_field_template=>1609121967514267634
-,p_item_template_options=>'#DEFAULT#'
+ p_id=>wwv_flow_imp.id(59995024736884348)
+,p_name=>'P12_PERMIT_ID'
+,p_item_sequence=>30
+,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'auto_height', 'N',
-  'character_counter', 'N',
-  'resizable', 'N',
-  'trim_spaces', 'BOTH')).to_clob
+  'value_protected', 'N')).to_clob
+,p_ai_enabled=>false
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(30143438995642703)
-,p_name=>'P4_IS_CHANGED'
+ p_id=>wwv_flow_imp.id(59995160485884349)
+,p_name=>'P12_PERMIT_NUMBER'
+,p_item_sequence=>40
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_ai_enabled=>false
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(59995251865884350)
+,p_name=>'P12_WORKFLOW_STATUS'
+,p_item_sequence=>50
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_ai_enabled=>false
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(59995327872884351)
+,p_name=>'P12_NEXT_STEP'
+,p_item_sequence=>60
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_ai_enabled=>false
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(59996167198884359)
+,p_name=>'P12_ISO_1_ID'
+,p_item_sequence=>90
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_ai_enabled=>false
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(59996229468884360)
+,p_name=>'P12_ISO_2_ID'
+,p_item_sequence=>100
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_ai_enabled=>false
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(59996363671884361)
+,p_name=>'P12_ISO_3_ID'
+,p_item_sequence=>110
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_ai_enabled=>false
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(59996483443884362)
+,p_name=>'P12_ISO_4_ID'
+,p_item_sequence=>120
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_ai_enabled=>false
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(59996673840884364)
+,p_name=>'P12_CURRENT_STEP'
+,p_item_sequence=>70
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_ai_enabled=>false
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(63122055695640536)
+,p_name=>'P12_IS_CHANGED'
 ,p_item_sequence=>80
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
+,p_ai_enabled=>false
 );
 wwv_flow_imp_page.create_page_validation(
- p_id=>wwv_flow_imp.id(27353229062033403)
+ p_id=>wwv_flow_imp.id(32981747431997818)
 ,p_validation_name=>'Permit ID Required'
 ,p_validation_sequence=>10
-,p_validation=>'P4_PERMIT_ID'
+,p_validation=>'P12_PERMIT_ID'
 ,p_validation_type=>'ITEM_NOT_NULL'
 ,p_error_message=>'Permit ID is required.'
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(30158963221375313)
-,p_name=>'Capture Location and Submit page'
+ p_id=>wwv_flow_imp.id(32983268889997813)
+,p_name=>'Check status of page'
 ,p_event_sequence=>10
 ,p_triggering_element_type=>'BUTTON'
-,p_triggering_button_id=>wwv_flow_imp.id(27353109498033402)
+,p_triggering_button_id=>wwv_flow_imp.id(32978150486997835)
 ,p_bind_type=>'bind'
 ,p_execution_type=>'IMMEDIATE'
 ,p_bind_event_type=>'click'
 );
 wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(30159344777375310)
-,p_event_id=>wwv_flow_imp.id(30158963221375313)
+ p_id=>wwv_flow_imp.id(32983752775997811)
+,p_event_id=>wwv_flow_imp.id(32983268889997813)
 ,p_event_result=>'TRUE'
 ,p_action_sequence=>10
 ,p_execute_on_page_init=>'N'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
 ,p_affected_elements_type=>'ITEM'
-,p_affected_elements=>'P4_IS_CHANGED'
+,p_affected_elements=>'P12_IS_CHANGED'
 ,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'captureLocationThenSubmit(''NEXT_STEP'');',
-''))
-);
-wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(33350285133951416)
-,p_name=>'Capture Location and Save Draft'
-,p_event_sequence=>20
-,p_triggering_element_type=>'BUTTON'
-,p_triggering_button_id=>wwv_flow_imp.id(27353028511033401)
-,p_bind_type=>'bind'
-,p_execution_type=>'IMMEDIATE'
-,p_bind_event_type=>'click'
+'if (apex.page.isChanged()) {',
+'    // do something, e.g. enable a save button',
+'    apex.item(''P12_IS_CHANGED'').setValue(''Y'');',
+'} else {',
+'    apex.item(''P12_IS_CHANGED'').setValue(''N'');',
+'}'))
 );
 wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(33350358017951417)
-,p_event_id=>wwv_flow_imp.id(33350285133951416)
+ p_id=>wwv_flow_imp.id(32984281255997810)
+,p_event_id=>wwv_flow_imp.id(32983268889997813)
 ,p_event_result=>'TRUE'
-,p_action_sequence=>10
+,p_action_sequence=>20
 ,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>'captureLocationThenSubmit(''SAVE_DRAFT'');'
+,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
+,p_attribute_01=>'NULL;'
+,p_attribute_02=>'P12_IS_CHANGED'
+,p_attribute_05=>'PLSQL'
+,p_wait_for_result=>'Y'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(32984718777997808)
+,p_event_id=>wwv_flow_imp.id(32983268889997813)
+,p_event_result=>'TRUE'
+,p_action_sequence=>30
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_SUBMIT_PAGE'
+,p_attribute_01=>'NEXT_STEP'
+,p_attribute_02=>'Y'
 );
 wwv_flow_imp_page.create_page_process(
- p_id=>wwv_flow_imp.id(27353441963033405)
+ p_id=>wwv_flow_imp.id(32982408054997816)
 ,p_process_sequence=>10
 ,p_process_point=>'AFTER_SUBMIT'
 ,p_process_type=>'NATIVE_PLSQL'
@@ -777,7 +799,7 @@ wwv_flow_imp_page.create_page_process(
 '                ) VALUES (',
 '                    p_permit_id, p_row_num, p_equipment, p_means, p_lock_no',
 '                ) RETURNING isolation_id INTO p_iso_id;',
-'            ELSIF :P4_IS_CHANGED = ''Y'' THEN',
+'            ELSIF :P12_IS_CHANGED = ''Y'' THEN',
 '                -- UPDATE',
 '                UPDATE ptw_pro.ptw_lv_equipment_isolation',
 '                SET equipment_isolated = p_equipment,',
@@ -796,20 +818,20 @@ wwv_flow_imp_page.create_page_process(
 '',
 'BEGIN',
 '    -- Save each isolation row',
-'    save_isolation_row(:P4_ISO_1_ID, :P4_PERMIT_ID, 1, :P4_ISO_1_EQUIPMENT, :P4_ISO_1_MEANS, :P4_ISO_1_LOCK_NO);',
-'    save_isolation_row(:P4_ISO_2_ID, :P4_PERMIT_ID, 2, :P4_ISO_2_EQUIPMENT, :P4_ISO_2_MEANS, :P4_ISO_2_LOCK_NO);',
-'    save_isolation_row(:P4_ISO_3_ID, :P4_PERMIT_ID, 3, :P4_ISO_3_EQUIPMENT, :P4_ISO_3_MEANS, :P4_ISO_3_LOCK_NO);',
-'    save_isolation_row(:P4_ISO_4_ID, :P4_PERMIT_ID, 4, :P4_ISO_4_EQUIPMENT, :P4_ISO_4_MEANS, :P4_ISO_4_LOCK_NO);',
+'    save_isolation_row(:P12_ISO_1_ID, :P12_PERMIT_ID, 1, :P12_ISO_1_EQUIPMENT, :P12_ISO_1_MEANS, :P12_ISO_1_LOCK_NO);',
+'    save_isolation_row(:P12_ISO_2_ID, :P12_PERMIT_ID, 2, :P12_ISO_2_EQUIPMENT, :P12_ISO_2_MEANS, :P12_ISO_2_LOCK_NO);',
+'    save_isolation_row(:P12_ISO_3_ID, :P12_PERMIT_ID, 3, :P12_ISO_3_EQUIPMENT, :P12_ISO_3_MEANS, :P12_ISO_3_LOCK_NO);',
+'    save_isolation_row(:P12_ISO_4_ID, :P12_PERMIT_ID, 4, :P12_ISO_4_EQUIPMENT, :P12_ISO_4_MEANS, :P12_ISO_4_LOCK_NO);',
 '',
 '    -- Save comments on permits table',
 '    UPDATE ptw_pro.ptw_lv_permits',
-'    SET comments = :P4_COMMENTS,',
-'        current_step = :P4_CURRENT_STEP,',
-'        equip_iso_latitude = :APP_LATITUDE,',
-'        equip_iso_longitude = :APP_LONGITUDE,',
+'    SET comments = :P12_COMMENTS,',
+'        current_step = :P12_CURRENT_STEP,',
+'        equip_iso_latitude = :P0_LATITUDE,',
+'        equip_iso_longitude = :P0_LONGITUDE,',
 '        modified_by = NVL(V(''APP_USER''), USER),',
 '        modified_date = CURRENT_TIMESTAMP',
-'    WHERE permit_id = :P4_PERMIT_ID;',
+'    WHERE permit_id = :P12_PERMIT_ID;',
 '',
 '    COMMIT;',
 '',
@@ -826,10 +848,10 @@ wwv_flow_imp_page.create_page_process(
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 ,p_process_success_message=>'Equipment isolation data saved successfully.'
 ,p_security_scheme=>wwv_flow_imp.id(31533963716212424)
-,p_internal_uid=>27353441963033405
+,p_internal_uid=>32982408054997816
 );
 wwv_flow_imp_page.create_page_process(
- p_id=>wwv_flow_imp.id(30143977664642708)
+ p_id=>wwv_flow_imp.id(32982884939997814)
 ,p_process_sequence=>20
 ,p_process_point=>'AFTER_SUBMIT'
 ,p_process_type=>'NATIVE_PLSQL'
@@ -851,7 +873,7 @@ wwv_flow_imp_page.create_page_process(
 '',
 '        SELECT COUNT(*) INTO v_is_owner',
 '        FROM ptw_pro.ptw_lv_permits',
-'        WHERE permit_id  = :P4_PERMIT_ID',
+'        WHERE permit_id  = :P12_PERMIT_ID',
 '          AND UPPER(created_by) = UPPER(V(''APP_USER''));',
 '',
 '        IF v_is_owner = 0 THEN',
@@ -869,12 +891,12 @@ wwv_flow_imp_page.create_page_process(
 'END;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
-,p_process_when=>'P4_PERMIT_ID'
+,p_process_when=>'P12_PERMIT_ID'
 ,p_process_when_type=>'ITEM_IS_NOT_NULL'
-,p_internal_uid=>30143977664642708
+,p_internal_uid=>32982884939997814
 );
 wwv_flow_imp_page.create_page_process(
- p_id=>wwv_flow_imp.id(27353350362033404)
+ p_id=>wwv_flow_imp.id(32982065430997817)
 ,p_process_sequence=>10
 ,p_process_point=>'BEFORE_HEADER'
 ,p_process_type=>'NATIVE_PLSQL'
@@ -883,40 +905,40 @@ wwv_flow_imp_page.create_page_process(
 'BEGIN',
 '    -- Load permit info',
 '    SELECT permit_number, comments, workflow_status',
-'    INTO :P4_PERMIT_NUMBER, :P4_COMMENTS, :P4_WORKFLOW_STATUS',
+'    INTO :P12_PERMIT_NUMBER, :P12_COMMENTS, :P12_WORKFLOW_STATUS',
 '    FROM ptw_pro.ptw_lv_permits',
-'    WHERE permit_id = :P4_PERMIT_ID;',
+'    WHERE permit_id = :P12_PERMIT_ID;',
 '',
-'    :P4_CURRENT_STEP := ''EQUIP_ISOLATION'';',
+'    :P12_CURRENT_STEP := ''EQUIP_ISOLATION'';',
 '',
 '    -- Load isolation rows (up to 4)',
 '    FOR r IN (',
 '        SELECT isolation_id, row_number, equipment_isolated, means_of_isolation, safety_lock_no',
 '        FROM ptw_pro.ptw_lv_equipment_isolation',
-'        WHERE permit_id = :P4_PERMIT_ID',
+'        WHERE permit_id = :P12_PERMIT_ID',
 '        ORDER BY row_number',
 '    ) LOOP',
 '        CASE r.row_number',
 '            WHEN 1 THEN',
-'                :P4_ISO_1_ID := r.isolation_id;',
-'                :P4_ISO_1_EQUIPMENT := r.equipment_isolated;',
-'                :P4_ISO_1_MEANS := r.means_of_isolation;',
-'                :P4_ISO_1_LOCK_NO := r.safety_lock_no;',
+'                :P12_ISO_1_ID := r.isolation_id;',
+'                :P12_ISO_1_EQUIPMENT := r.equipment_isolated;',
+'                :P12_ISO_1_MEANS := r.means_of_isolation;',
+'                :P12_ISO_1_LOCK_NO := r.safety_lock_no;',
 '            WHEN 2 THEN',
-'                :P4_ISO_2_ID := r.isolation_id;',
-'                :P4_ISO_2_EQUIPMENT := r.equipment_isolated;',
-'                :P4_ISO_2_MEANS := r.means_of_isolation;',
-'                :P4_ISO_2_LOCK_NO := r.safety_lock_no;',
+'                :P12_ISO_2_ID := r.isolation_id;',
+'                :P12_ISO_2_EQUIPMENT := r.equipment_isolated;',
+'                :P12_ISO_2_MEANS := r.means_of_isolation;',
+'                :P12_ISO_2_LOCK_NO := r.safety_lock_no;',
 '            WHEN 3 THEN',
-'                :P4_ISO_3_ID := r.isolation_id;',
-'                :P4_ISO_3_EQUIPMENT := r.equipment_isolated;',
-'                :P4_ISO_3_MEANS := r.means_of_isolation;',
-'                :P4_ISO_3_LOCK_NO := r.safety_lock_no;',
+'                :P12_ISO_3_ID := r.isolation_id;',
+'                :P12_ISO_3_EQUIPMENT := r.equipment_isolated;',
+'                :P12_ISO_3_MEANS := r.means_of_isolation;',
+'                :P12_ISO_3_LOCK_NO := r.safety_lock_no;',
 '            WHEN 4 THEN',
-'                :P4_ISO_4_ID := r.isolation_id;',
-'                :P4_ISO_4_EQUIPMENT := r.equipment_isolated;',
-'                :P4_ISO_4_MEANS := r.means_of_isolation;',
-'                :P4_ISO_4_LOCK_NO := r.safety_lock_no;',
+'                :P12_ISO_4_ID := r.isolation_id;',
+'                :P12_ISO_4_EQUIPMENT := r.equipment_isolated;',
+'                :P12_ISO_4_MEANS := r.means_of_isolation;',
+'                :P12_ISO_4_LOCK_NO := r.safety_lock_no;',
 '        END CASE;',
 '    END LOOP;',
 '',
@@ -929,9 +951,9 @@ wwv_flow_imp_page.create_page_process(
 'END;',
 ''))
 ,p_process_clob_language=>'PLSQL'
-,p_process_when=>'P4_PERMIT_ID'
+,p_process_when=>'P12_PERMIT_ID'
 ,p_process_when_type=>'ITEM_IS_NOT_NULL'
-,p_internal_uid=>27353350362033404
+,p_internal_uid=>32982065430997817
 );
 wwv_flow_imp.component_end;
 end;

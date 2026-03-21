@@ -269,6 +269,7 @@ wwv_flow_imp_page.create_page_plug(
 'SELECT',
 '    au.user_name as user_name,',
 '    au.email,',
+'    ur.mobile_no,',
 '    au.first_name,',
 '    au.last_name,',
 '    au.description,',
@@ -346,10 +347,11 @@ wwv_flow_imp_page.create_worksheet(
 ,p_max_row_count=>'1000000'
 ,p_pagination_type=>'ROWS_X_TO_Y'
 ,p_pagination_display_pos=>'BOTTOM_RIGHT'
-,p_show_actions_menu=>'N'
 ,p_report_list_mode=>'TABS'
 ,p_lazy_loading=>false
 ,p_show_detail_link=>'N'
+,p_show_notify=>'Y'
+,p_download_formats=>'CSV:HTML:XLSX:PDF'
 ,p_enable_mail_download=>'Y'
 ,p_owner=>'PTW_PRO'
 ,p_internal_uid=>30146472761642733
@@ -375,9 +377,19 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_use_as_row_header=>'N'
 );
 wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(33349011612951404)
+,p_db_column_name=>'MOBILE_NO'
+,p_display_order=>30
+,p_column_identifier=>'O'
+,p_column_label=>'Mobile No'
+,p_column_type=>'STRING'
+,p_heading_alignment=>'LEFT'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(30146799896642736)
 ,p_db_column_name=>'FIRST_NAME'
-,p_display_order=>30
+,p_display_order=>40
 ,p_column_identifier=>'C'
 ,p_column_label=>'First Name'
 ,p_column_type=>'STRING'
@@ -387,7 +399,7 @@ wwv_flow_imp_page.create_worksheet_column(
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(30146893986642737)
 ,p_db_column_name=>'LAST_NAME'
-,p_display_order=>40
+,p_display_order=>50
 ,p_column_identifier=>'D'
 ,p_column_label=>'Last Name'
 ,p_column_type=>'STRING'
@@ -397,7 +409,7 @@ wwv_flow_imp_page.create_worksheet_column(
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(30146903995642738)
 ,p_db_column_name=>'DESCRIPTION'
-,p_display_order=>50
+,p_display_order=>60
 ,p_column_identifier=>'E'
 ,p_column_label=>'Job Title'
 ,p_column_type=>'STRING'
@@ -407,7 +419,7 @@ wwv_flow_imp_page.create_worksheet_column(
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(30147090798642739)
 ,p_db_column_name=>'ACCOUNT_STATUS'
-,p_display_order=>60
+,p_display_order=>70
 ,p_column_identifier=>'F'
 ,p_column_label=>'Account Status'
 ,p_column_html_expression=>'<span class="active-badge active-#ACCOUNT_STATUS#">#ACCOUNT_STATUS#</span>'
@@ -418,7 +430,7 @@ wwv_flow_imp_page.create_worksheet_column(
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(30147137048642740)
 ,p_db_column_name=>'ROLE_NAME'
-,p_display_order=>70
+,p_display_order=>80
 ,p_column_identifier=>'G'
 ,p_column_label=>'PTW Role'
 ,p_column_html_expression=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -431,7 +443,7 @@ wwv_flow_imp_page.create_worksheet_column(
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(30147270245642741)
 ,p_db_column_name=>'ROLE_DESCRIPTION'
-,p_display_order=>80
+,p_display_order=>90
 ,p_column_identifier=>'H'
 ,p_column_label=>'Role Summary'
 ,p_column_type=>'STRING'
@@ -441,7 +453,7 @@ wwv_flow_imp_page.create_worksheet_column(
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(30147339474642742)
 ,p_db_column_name=>'ROLE_ACTIVE'
-,p_display_order=>90
+,p_display_order=>100
 ,p_column_identifier=>'I'
 ,p_column_label=>'Role Active'
 ,p_column_html_expression=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -454,7 +466,7 @@ wwv_flow_imp_page.create_worksheet_column(
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(30147438586642743)
 ,p_db_column_name=>'GRANTED_BY'
-,p_display_order=>100
+,p_display_order=>110
 ,p_column_identifier=>'J'
 ,p_column_label=>'Granted By'
 ,p_column_type=>'STRING'
@@ -464,7 +476,7 @@ wwv_flow_imp_page.create_worksheet_column(
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(30147595472642744)
 ,p_db_column_name=>'GRANTED_DATE'
-,p_display_order=>110
+,p_display_order=>120
 ,p_column_identifier=>'K'
 ,p_column_label=>'Granted Date'
 ,p_column_type=>'DATE'
@@ -476,7 +488,7 @@ wwv_flow_imp_page.create_worksheet_column(
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(30147684102642745)
 ,p_db_column_name=>'ROLE_ID'
-,p_display_order=>120
+,p_display_order=>130
 ,p_column_identifier=>'L'
 ,p_column_label=>'Role Id'
 ,p_column_type=>'NUMBER'
@@ -485,7 +497,7 @@ wwv_flow_imp_page.create_worksheet_column(
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(30147770270642746)
 ,p_db_column_name=>'ACTIONS'
-,p_display_order=>130
+,p_display_order=>140
 ,p_column_identifier=>'M'
 ,p_column_label=>'Actions'
 ,p_column_html_expression=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -511,7 +523,7 @@ wwv_flow_imp_page.create_worksheet_column(
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(30147829890642747)
 ,p_db_column_name=>'EDIT_URL'
-,p_display_order=>140
+,p_display_order=>150
 ,p_column_identifier=>'N'
 ,p_column_label=>'Edit Url'
 ,p_column_type=>'STRING'
@@ -524,7 +536,7 @@ wwv_flow_imp_page.create_worksheet_rpt(
 ,p_report_alias=>'315981'
 ,p_status=>'PUBLIC'
 ,p_is_default=>'Y'
-,p_report_columns=>'USER_NAME:EMAIL:FIRST_NAME:LAST_NAME:DESCRIPTION:ACCOUNT_STATUS:ROLE_NAME:ROLE_DESCRIPTION:ROLE_ACTIVE:GRANTED_BY:GRANTED_DATE:ACTIONS:'
+,p_report_columns=>'USER_NAME:EMAIL:MOBILE_NO:FIRST_NAME:LAST_NAME:DESCRIPTION:ACCOUNT_STATUS:ROLE_NAME:ROLE_DESCRIPTION:ROLE_ACTIVE:GRANTED_BY:GRANTED_DATE:ACTIONS:'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(30146281021642731)
@@ -541,7 +553,7 @@ wwv_flow_imp_page.create_page_button(
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(30145596659642724)
-,p_button_sequence=>110
+,p_button_sequence=>120
 ,p_button_plug_id=>wwv_flow_imp.id(30144419171642713)
 ,p_button_name=>'CREATE_USER'
 ,p_button_static_id=>'B_CREATE_USER'
@@ -558,7 +570,7 @@ wwv_flow_imp_page.create_page_button(
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(30145657720642725)
-,p_button_sequence=>120
+,p_button_sequence=>130
 ,p_button_plug_id=>wwv_flow_imp.id(30144419171642713)
 ,p_button_name=>'UPDATE_USER'
 ,p_button_static_id=>'B_UPDATE_USER'
@@ -576,7 +588,7 @@ wwv_flow_imp_page.create_page_button(
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(30145708278642726)
-,p_button_sequence=>130
+,p_button_sequence=>140
 ,p_button_plug_id=>wwv_flow_imp.id(30144419171642713)
 ,p_button_name=>'CANCEL_EDIT'
 ,p_button_static_id=>'B_CANCEL_EDIT'
@@ -637,7 +649,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>30
 ,p_cMaxlength=>100
-,p_colspan=>6
+,p_colspan=>4
 ,p_field_template=>1609122147107268652
 ,p_item_template_options=>'#DEFAULT#'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
@@ -656,7 +668,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_cSize=>30
 ,p_cMaxlength=>200
 ,p_begin_on_new_line=>'N'
-,p_colspan=>6
+,p_colspan=>4
 ,p_field_template=>1609122147107268652
 ,p_item_template_options=>'#DEFAULT#'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
@@ -668,7 +680,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(30144751562642716)
 ,p_name=>'P8_FIRST_NAME'
-,p_item_sequence=>30
+,p_item_sequence=>40
 ,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
 ,p_prompt=>'First Name'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
@@ -686,7 +698,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(30144890448642717)
 ,p_name=>'P8_LAST_NAME'
-,p_item_sequence=>40
+,p_item_sequence=>50
 ,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
 ,p_prompt=>'Last Name'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
@@ -705,7 +717,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(30144926327642718)
 ,p_name=>'P8_DESCRIPTION'
-,p_item_sequence=>50
+,p_item_sequence=>60
 ,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
 ,p_prompt=>'Description / Job Title'
 ,p_placeholder=>'e.g. Electrical Engineer'
@@ -725,7 +737,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(30145092277642719)
 ,p_name=>'P8_PASSWORD'
-,p_item_sequence=>60
+,p_item_sequence=>70
 ,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
 ,p_prompt=>'Password'
 ,p_display_as=>'NATIVE_PASSWORD'
@@ -743,7 +755,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(30145197855642720)
 ,p_name=>'P8_CONFIRM_PASSWORD'
-,p_item_sequence=>70
+,p_item_sequence=>80
 ,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
 ,p_prompt=>'Confirm Password'
 ,p_display_as=>'NATIVE_PASSWORD'
@@ -759,7 +771,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(30145261701642721)
 ,p_name=>'P8_ROLE'
-,p_item_sequence=>80
+,p_item_sequence=>90
 ,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
 ,p_prompt=>'Access Role'
 ,p_display_as=>'NATIVE_SELECT_LIST'
@@ -778,7 +790,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(30145303184642722)
 ,p_name=>'P8_IS_ACTIVE'
-,p_item_sequence=>90
+,p_item_sequence=>100
 ,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
 ,p_prompt=>'Account Status'
 ,p_display_as=>'NATIVE_SELECT_LIST'
@@ -794,7 +806,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(30145404528642723)
 ,p_name=>'P8_ROLE_DESCRIPTION'
-,p_item_sequence=>100
+,p_item_sequence=>110
 ,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
 ,p_prompt=>'Role Permissions Summary'
 ,p_source=>'<div class="role-desc-box">&P8_ROLE_DESCRIPTION.</div>'''
@@ -857,6 +869,24 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_template_options=>'#DEFAULT#'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'submit_when_enter_pressed', 'Y')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(33348933592951403)
+,p_name=>'P8_MOBILE_NO'
+,p_item_sequence=>30
+,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
+,p_prompt=>'Mobile No'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>30
+,p_begin_on_new_line=>'N'
+,p_colspan=>4
+,p_field_template=>1609121967514267634
+,p_item_template_options=>'#DEFAULT#'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'disabled', 'N',
+  'submit_when_enter_pressed', 'N',
+  'subtype', 'TEXT',
+  'trim_spaces', 'BOTH')).to_clob
 );
 wwv_flow_imp_page.create_page_validation(
  p_id=>wwv_flow_imp.id(30147927396642748)
@@ -1097,11 +1127,11 @@ wwv_flow_imp_page.create_page_process(
 '    USING DUAL',
 '    ON (UPPER(ur.username) = UPPER(:P8_USERNAME) AND ur.role_name = :P8_ROLE)',
 '    WHEN MATCHED THEN',
-'        UPDATE SET is_active = :P8_IS_ACTIVE, modified_date = CURRENT_TIMESTAMP',
+'        UPDATE SET is_active = :P8_IS_ACTIVE, modified_date = CURRENT_TIMESTAMP, mobile_no = :P8_MOBILE_NO, email_address = :P8_EMAIL, first_name = :P8_FIRST_NAME, last_name = :P8_LAST_NAME',
 '    WHEN NOT MATCHED THEN',
-'        INSERT (username, role_name, is_active, granted_by, granted_date)',
+'        INSERT (username, role_name, is_active, granted_by, granted_date, mobile_no, email_address, first_name, last_name)',
 '        VALUES (UPPER(:P8_USERNAME), :P8_ROLE, :P8_IS_ACTIVE,',
-'                NVL(V(''APP_USER''), USER), CURRENT_TIMESTAMP);',
+'                NVL(V(''APP_USER''), USER), CURRENT_TIMESTAMP, :P8_MOBILE_NO, :P8_EMAIL, :P8_FIRST_NAME, :P8_LAST_NAME);',
 '',
 '    COMMIT;',
 '',
@@ -1188,7 +1218,11 @@ wwv_flow_imp_page.create_page_process(
 '    -- Update PTW role table',
 '    UPDATE ptw_pro.ptw_lv_user_roles',
 '    SET    is_active     = ''N'',',
-'           modified_date = CURRENT_TIMESTAMP',
+'           mobile_no  = :P8_MOBILE_NO,',
+'           email_address = :P8_EMAIL,',
+'           modified_date = CURRENT_TIMESTAMP,',
+'           first_name = :P8_FIRST_NAME,',
+'           last_name = :P8_LAST_NAME',
 '    WHERE  UPPER(username) = l_user_name',
 '      AND  role_name != :P8_ROLE;',
 '',
@@ -1197,11 +1231,15 @@ wwv_flow_imp_page.create_page_process(
 '    ON    (UPPER(ur.username) = l_user_name AND ur.role_name = :P8_ROLE)',
 '    WHEN MATCHED THEN',
 '        UPDATE SET is_active     = :P8_IS_ACTIVE,',
-'                   modified_date = CURRENT_TIMESTAMP',
+'                   mobile_no  = :P8_MOBILE_NO,',
+'                   email_address = :P8_EMAIL,',
+'                   modified_date = CURRENT_TIMESTAMP,',
+'                   first_name = :P8_FIRST_NAME,',
+'                   last_name = :P8_LAST_NAME',
 '    WHEN NOT MATCHED THEN',
-'        INSERT (username, role_name, is_active, granted_by, granted_date)',
+'        INSERT (username, role_name, is_active, granted_by, granted_date, mobile_no, email_Address, first_name, last_name)',
 '        VALUES (l_user_name, :P8_ROLE, :P8_IS_ACTIVE,',
-'                NVL(V(''APP_USER''), USER), CURRENT_TIMESTAMP);',
+'                NVL(V(''APP_USER''), USER), CURRENT_TIMESTAMP, :P8_MOBILE_NO, :P8_EMAIL, :P8_FIRST_NAME, :P8_LAST_NAME);',
 '',
 '    COMMIT;',
 '',
@@ -1376,8 +1414,8 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Load User for Edit'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'BEGIN',
-'    SELECT user_name, email, first_name, last_name, description',
-'    INTO :P8_USERNAME, :P8_EMAIL, :P8_FIRST_NAME, :P8_LAST_NAME, :P8_DESCRIPTION',
+'    SELECT user_name, email, description',
+'    INTO :P8_USERNAME, :P8_EMAIL, :P8_DESCRIPTION',
 '    FROM apex_workspace_apex_users',
 '    WHERE UPPER(user_name) = UPPER(:P8_SELECTED_USERNAME)',
 '      AND workspace_name = (',
@@ -1385,8 +1423,8 @@ wwv_flow_imp_page.create_page_process(
 '      );',
 '',
 '    BEGIN',
-'        SELECT role_name, is_active',
-'        INTO :P8_ROLE, :P8_IS_ACTIVE',
+'        SELECT role_name, is_active, mobile_no, first_name, last_name',
+'        INTO :P8_ROLE, :P8_IS_ACTIVE, :P8_MOBILE_NO, :P8_FIRST_NAME, :P8_LAST_NAME',
 '        FROM ptw_pro.ptw_lv_user_roles',
 '        WHERE UPPER(username) = UPPER(:P8_SELECTED_USERNAME)',
 '          AND is_active = ''Y''',

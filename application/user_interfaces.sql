@@ -23,6 +23,7 @@ wwv_flow_imp_shared.create_user_interface(
 ,p_navigation_list_position=>'SIDE'
 ,p_navigation_list_template_id=>2467739217141810545
 ,p_nav_list_template_options=>'#DEFAULT#:js-defaultCollapsed:js-navCollapsed--hidden:t-TreeNav--styleA'
+,p_javascript_file_urls=>'#APP_FILES#ptw-utils#MIN#.js'
 ,p_nav_bar_type=>'LIST'
 ,p_nav_bar_list_id=>wwv_flow_imp.id(26416210318144596)
 ,p_nav_bar_list_template_id=>2847543055748234966

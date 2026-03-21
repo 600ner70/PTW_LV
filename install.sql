@@ -17,10 +17,14 @@ prompt --install
 @@application/shared_components/files/icons_app_icon_512_png.sql
 @@application/shared_components/files/bgis_logo_png.sql
 @@application/shared_components/files/bgis_logo_jpg.sql
-@@application/shared_components/files/offline_storage_js.sql
 @@application/shared_components/files/geolocation_js.sql
 @@application/shared_components/files/geolocation_min_js.sql
+@@application/shared_components/files/offline_storage_js.sql
 @@application/shared_components/files/offline_storage_min_js.sql
+@@application/shared_components/files/ptw_utils_js.sql
+@@application/shared_components/files/ptw_utils_min_js.sql
+@@application/shared_components/files/offline_nav_js.sql
+@@application/shared_components/files/offline_nav_min_js.sql
 @@application/plugin_settings.sql
 @@application/shared_components/security/authorizations/administration_rights.sql
 @@application/shared_components/security/authorizations/contribution_rights.sql
@@ -35,6 +39,9 @@ prompt --install
 @@application/shared_components/security/app_access_control/contributor.sql
 @@application/shared_components/security/app_access_control/reader.sql
 @@application/shared_components/navigation/navigation_bar.sql
+@@application/shared_components/logic/application_processes/set_location.sql
+@@application/shared_components/logic/application_items/app_latitude.sql
+@@application/shared_components/logic/application_items/app_longitude.sql
 @@application/shared_components/logic/application_settings.sql
 @@application/shared_components/navigation/tabs/standard.sql
 @@application/shared_components/navigation/tabs/parent.sql
@@ -68,6 +75,10 @@ prompt --install
 @@application/pages/page_00007.sql
 @@application/pages/page_00008.sql
 @@application/pages/page_00009.sql
+@@application/pages/page_00010.sql
+@@application/pages/page_00011.sql
+@@application/pages/page_00012.sql
+@@application/pages/page_00013.sql
 @@application/pages/page_09999.sql
 @@application/deployment/definition.sql
 @@application/deployment/checks.sql

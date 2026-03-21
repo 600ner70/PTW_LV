@@ -34,20 +34,19 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'select PERMIT_ID,',
 '       CASE PERMIT_STAGE',
-'         WHEN ''CLIENT_OPERATIVE'' THEN ''Step 1: Client & Operative''',
-'         WHEN ''APPLIANCES'' THEN ''Step 2: Appliances''',
-'         WHEN ''SAFETY_VENTILATION'' THEN ''Step 3: Safety & Ventilation''',
-'         WHEN ''COMBUSTION'' THEN ''Step 4: Combustion''',
-'         WHEN ''ADDITIONAL_WORK'' THEN ''Step 5: Additional Work''',
-'         WHEN ''SIGN_REVIEW'' THEN ''Step 6: Sign & Review''',
+'        WHEN ''SITE_WORK_DETAILS'' THEN ''Step 1: Site and Work Details''',
+'        WHEN ''CONTROL_MEASURES''  THEN ''Step 2: Control Measures''',
+'        WHEN ''EQUIP_ISOLATION''   THEN ''Step 3: Equipment Isolation''',
+'        WHEN ''AUTHORISATION''     THEN ''Step 4: Authorisation''',
+'        WHEN ''CLEARANCE''         THEN ''Step 5: Clearance''',
 '       ELSE PERMIT_STAGE',
 '       END as step_display,',
 '       LATITUDE,',
 '       LONGITUDE,',
-'       CREATED_DATE,',
+'       TO_CHAR(CREATED_DATE, ''DD-MON-YYYY HH24:MI'') AS CREATED_DATE,',
 '       CREATED_BY,',
 '       PERMIT_STAGE',
-'from   GP15_STAGE_LOCATIONS',
+'from   ptw_pro.ptw_stage_locations',
 'where  PERMIT_ID = :P6_PERMIT_ID',
 'order by created_date DESC'))
 ,p_plug_source_type=>'NATIVE_IR'
@@ -102,7 +101,7 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_display_order=>10
 ,p_column_identifier=>'A'
 ,p_column_label=>'&nbsp;'
-,p_column_link=>'f?p=&APP_ID.:10:&SESSION.::&DEBUG.:10:P10_PERMIT_ID,P10_CURRENT_STAGE:#PERMIT_ID#,#PERMIT_STAGE#'
+,p_column_link=>'f?p=&APP_ID.:7:&SESSION.::&DEBUG.:7:P7_PERMIT_ID,P7_CURRENT_STAGE,P7_CREATED_DATE:#PERMIT_ID#,#PERMIT_STAGE#,#CREATED_DATE#'
 ,p_column_linktext=>'<span class="fa fa-globe" title="Map"></span>'
 ,p_column_type=>'NUMBER'
 ,p_column_alignment=>'CENTER'
@@ -128,18 +127,6 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_column_type=>'NUMBER'
 ,p_heading_alignment=>'RIGHT'
 ,p_column_alignment=>'RIGHT'
-,p_use_as_row_header=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(58091352593005136)
-,p_db_column_name=>'CREATED_DATE'
-,p_display_order=>50
-,p_column_identifier=>'E'
-,p_column_label=>'Created Date'
-,p_column_type=>'DATE'
-,p_heading_alignment=>'LEFT'
-,p_format_mask=>'DD-MON-YYYY HH24:MI'
-,p_tz_dependent=>'N'
 ,p_use_as_row_header=>'N'
 );
 wwv_flow_imp_page.create_worksheet_column(
@@ -172,6 +159,16 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_heading_alignment=>'LEFT'
 ,p_use_as_row_header=>'N'
 );
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(33350742505951421)
+,p_db_column_name=>'CREATED_DATE'
+,p_display_order=>90
+,p_column_identifier=>'I'
+,p_column_label=>'Created Date'
+,p_column_type=>'STRING'
+,p_heading_alignment=>'LEFT'
+,p_use_as_row_header=>'N'
+);
 wwv_flow_imp_page.create_worksheet_rpt(
  p_id=>wwv_flow_imp.id(58110799769791971)
 ,p_application_user=>'APXWS_DEFAULT'
@@ -179,7 +176,7 @@ wwv_flow_imp_page.create_worksheet_rpt(
 ,p_report_alias=>'283634'
 ,p_status=>'PUBLIC'
 ,p_is_default=>'Y'
-,p_report_columns=>'STEP_DISPLAY:CREATED_DATE:CREATED_BY:PERMIT_ID:'
+,p_report_columns=>'STEP_DISPLAY:CREATED_BY:CREATED_DATE:PERMIT_ID:'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(58095076771005044)

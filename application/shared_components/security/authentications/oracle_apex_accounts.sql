@@ -18,7 +18,7 @@ wwv_flow_imp_shared.create_authentication(
 ,p_invalid_session_type=>'LOGIN'
 ,p_use_secure_cookie_yn=>'N'
 ,p_ras_mode=>0
-,p_version_scn=>46251647959115
+,p_version_scn=>46468157622295
 );
 wwv_flow_imp.component_end;
 end;

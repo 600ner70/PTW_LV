@@ -15,7 +15,7 @@ wwv_flow_imp_shared.create_list(
  p_id=>wwv_flow_imp.id(26415021693144587)
 ,p_name=>'Navigation Menu'
 ,p_list_status=>'PUBLIC'
-,p_version_scn=>46404704456920
+,p_version_scn=>46474396895841
 );
 wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(26426875280144645)
@@ -29,8 +29,9 @@ wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(26755508969320362)
 ,p_list_item_display_sequence=>20
 ,p_list_item_link_text=>'Site & Work Details'
-,p_list_item_link_target=>'f?p=&APP_ID.:2:&APP_SESSION.::&DEBUG.:::'
+,p_list_item_link_target=>'f?p=&APP_ID.:2:&SESSION.::&DEBUG.:2:::'
 ,p_list_item_icon=>'fa-file-o'
+,p_security_scheme=>wwv_flow_imp.id(31533525830252139)
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'2'
 );
@@ -38,8 +39,9 @@ wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(26974860499788106)
 ,p_list_item_display_sequence=>30
 ,p_list_item_link_text=>'Control Measures & PPE'
-,p_list_item_link_target=>'f?p=&APP_ID.:3:&APP_SESSION.::&DEBUG.:::'
+,p_list_item_link_target=>'f?p=&APP_ID.:3:&SESSION.::&DEBUG.:3:::'
 ,p_list_item_icon=>'fa-file-o'
+,p_security_scheme=>wwv_flow_imp.id(31533525830252139)
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'3'
 );
@@ -47,8 +49,9 @@ wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(27024968468033618)
 ,p_list_item_display_sequence=>40
 ,p_list_item_link_text=>'Equipment Isolation'
-,p_list_item_link_target=>'f?p=&APP_ID.:4:&APP_SESSION.::&DEBUG.:::'
+,p_list_item_link_target=>'f?p=&APP_ID.:4:&SESSION.::&DEBUG.:4:::'
 ,p_list_item_icon=>'fa-file-o'
+,p_security_scheme=>wwv_flow_imp.id(31533525830252139)
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'4'
 );
@@ -56,8 +59,9 @@ wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(27361031445194435)
 ,p_list_item_display_sequence=>50
 ,p_list_item_link_text=>'Authorisation & Acceptance'
-,p_list_item_link_target=>'f?p=&APP_ID.:5:&APP_SESSION.::&DEBUG.:::'
+,p_list_item_link_target=>'f?p=&APP_ID.:5:&SESSION.::&DEBUG.:5:::'
 ,p_list_item_icon=>'fa-file-o'
+,p_security_scheme=>wwv_flow_imp.id(31533525830252139)
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'5'
 );

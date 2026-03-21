@@ -219,15 +219,13 @@ unistr('        statusIcon.innerHTML = ''\26A0'';'),
 '$(document).ready(function() {',
 '    initSignaturePads();',
 '    setPageReadOnly();',
-'    // Initial update',
 '    updateConnectionUI();',
 '',
-'    // Listen for connection changes',
 '    window.addEventListener(''online'', updateConnectionUI);',
 '    window.addEventListener(''offline'', updateConnectionUI);',
 '});',
 '',
-'// CORRECT - apex fires this event on the apex namespace',
+'// Save signatures before page submits',
 'apex.jQuery(document).on(''apexbeforepagesubmit'', function() {',
 '    saveSignatures();',
 '});',
@@ -236,73 +234,40 @@ unistr('        statusIcon.innerHTML = ''\26A0'';'),
 'OfflineStorage.initDB();',
 'ConnectionManager.init();',
 '',
-'// Override form submission for offline mode',
-'if (!apex.page.submit._original) {',
-'    apex.page.submit._original = apex.page.submit;',
-'}',
-'',
-'apex.page.submit = function(options) {',
-'    if (ConnectionManager.isOnline) {',
-'        apex.page.submit._original(options);',
-'    } else {',
-'        const formData = apex.page.getValues();',
-'        OfflineStorage.saveFormData(apex.page.getId(), formData)',
-'            .then((id) => {',
-'                apex.message.showPageSuccess(''Data saved offline. Will sync when connected.'');',
+'// Offline handler for SAVE_DRAFT button - capture phase',
+'(function() {',
+'    var btn = document.querySelector(''[data-otel-label="SAVE_DRAFT"]'');',
+'    if (!btn) return;',
+'    btn.addEventListener(''click'', function(e) {',
+'        if (navigator.onLine) return;',
+'        e.stopImmediatePropagation();',
+'        e.preventDefault();',
+'        var formData = {};',
+'        apex.jQuery(''form'').serializeArray().forEach(function(i) { ',
+'            formData[i.name] = i.value; ',
+'        });',
+'        OfflineStorage.saveFormData(''5'', formData, apex.jQuery(''#P5_PERMIT_ID'').val() || null)',
+'            .then(function() {',
+'                apex.message.showPageSuccess(''Data saved offline. Will sync when reconnected.'');',
 '            })',
-'            .catch((error) => {',
+'            .catch(function(err) {',
 '                apex.message.showErrors([{',
-'                    type: ''error'',',
-'                    message: ''Error saving offline: '' + error.message',
+'                    type: ''error'', ',
+'                    message: ''Offline save error: '' + err.message',
 '                }]);',
 '            });',
-'    }',
-'};',
-'',
-'$(document).ready(function() {',
-'$(''button, input[type=submit]'').each(function() {',
-'    console.log(''Button ID:'', this.id, ''| Text:'', $(this).text().trim(), ''| Value:'', this.value);',
-'});',
-'});',
+'    }, true);',
+'}());',
 '',
 'window.addEventListener(''resize'', function() {',
-'    // Small delay to let layout settle after resize/orientation change',
 '    setTimeout(function() {',
 '        const authSig   = $v(''P5_AUTH_SIGNATURE_DATA'');',
 '        const acceptSig = $v(''P5_ACCEPT_SIGNATURE_DATA'');',
 '        initSignaturePads();',
-'        // Restore signatures after reinit',
 '        if (authSig)   apex.item(''P5_AUTH_SIGNATURE_DATA'').setValue(authSig);',
 '        if (acceptSig) apex.item(''P5_ACCEPT_SIGNATURE_DATA'').setValue(acceptSig);',
 '    }, 300);',
-'});',
-'',
-'',
-'// setTimeout(function() {',
-'//     const c = document.getElementById(''authSignaturePad'');',
-'//     if (c) {',
-'//         console.log(''Canvas width attr:'', c.width);',
-'//         console.log(''Canvas height attr:'', c.height);',
-'//         console.log(''Canvas style width:'', c.style.width);',
-'//         console.log(''Canvas style height:'', c.style.height);',
-'//         console.log(''Canvas computed height:'', window.getComputedStyle(c).height);',
-'//         console.log(''Container offsetWidth:'', c.parentElement.offsetWidth);',
-'//         console.log(''Screen innerWidth:'', window.innerWidth);',
-'//         console.log(''Device pixel ratio:'', window.devicePixelRatio);',
-'//     }',
-'// }, 500);',
-'',
-'// // TEMPORARY DEBUG TOOL - remove after fixing',
-'// (function() {',
-'//     var script = document.createElement(''script'');',
-'//     script.src = ''https://cdn.jsdelivr.net/npm/eruda'';',
-'//     script.onload = function() {',
-'//         eruda.init();',
-'//         eruda.show();',
-'//     };',
-'//     document.body.appendChild(script);',
-'// })();',
-''))
+'});'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '.ptw-workflow-progress {',
 '    display: flex;',
@@ -648,21 +613,20 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_sequence=>20
 ,p_button_plug_id=>wwv_flow_imp.id(27356182588033432)
 ,p_button_name=>'SAVE_DRAFT'
-,p_button_static_id=>'BTN_SAVE_DRAFT'
+,p_button_static_id=>'BTN_SAVE_DRAFT_P5'
 ,p_button_action=>'DEFINED_BY_DA'
 ,p_button_template_options=>'#DEFAULT#'
 ,p_button_template_id=>4072362960822175091
 ,p_button_image_alt=>'Save Draft'
 ,p_button_position=>'NEXT'
 ,p_warn_on_unsaved_changes=>null
-,p_security_scheme=>wwv_flow_imp.id(31534159719199270)
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(31606655096440628)
 ,p_button_sequence=>30
 ,p_button_plug_id=>wwv_flow_imp.id(27356182588033432)
 ,p_button_name=>'START_PERMIT'
-,p_button_static_id=>'BTN_START_PERMIT'
+,p_button_static_id=>'BTN_START_PERMIT_P5'
 ,p_button_action=>'REDIRECT_PAGE'
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
 ,p_button_template_id=>2082829544945815391
@@ -693,7 +657,7 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_sequence=>10
 ,p_button_plug_id=>wwv_flow_imp.id(27356182588033432)
 ,p_button_name=>'BACK'
-,p_button_static_id=>'BTN_BACK'
+,p_button_static_id=>'BTN_BACK_P5'
 ,p_button_action=>'REDIRECT_PAGE'
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
 ,p_button_template_id=>2082829544945815391
@@ -733,6 +697,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_name=>'P5_AUTH_SIGNATURE_DATA'
 ,p_item_sequence=>80
 ,p_display_as=>'NATIVE_HIDDEN'
+,p_encrypt_session_state_yn=>'N'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
 );
@@ -741,6 +706,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_name=>'P5_ACCEPT_SIGNATURE_DATA'
 ,p_item_sequence=>90
 ,p_display_as=>'NATIVE_HIDDEN'
+,p_encrypt_session_state_yn=>'N'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
 );
@@ -789,6 +755,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_colspan=>6
 ,p_field_template=>1609121967514267634
 ,p_item_template_options=>'#DEFAULT#'
+,p_encrypt_session_state_yn=>'N'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'disabled', 'N',
   'submit_when_enter_pressed', 'N',
@@ -808,6 +775,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_colspan=>6
 ,p_field_template=>1609121967514267634
 ,p_item_template_options=>'#DEFAULT#'
+,p_encrypt_session_state_yn=>'N'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'disabled', 'N',
   'submit_when_enter_pressed', 'N',
@@ -820,24 +788,16 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>10
 ,p_item_plug_id=>wwv_flow_imp.id(27355431661033425)
 ,p_prompt=>'Name'
-,p_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'SELECT au.first_name||'' ''||au.last_name',
-'FROM apex_workspace_apex_users au',
-'LEFT JOIN ptw_pro.ptw_lv_user_roles ur',
-'    ON UPPER(au.user_name) = UPPER(ur.username);'))
-,p_source_type=>'QUERY'
-,p_display_as=>'NATIVE_TEXT_FIELD'
-,p_cSize=>30
-,p_cMaxlength=>200
+,p_display_as=>'NATIVE_DISPLAY_ONLY'
 ,p_colspan=>6
-,p_read_only_when_type=>'ALWAYS'
 ,p_field_template=>1609121967514267634
 ,p_item_template_options=>'#DEFAULT#'
+,p_encrypt_session_state_yn=>'N'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'disabled', 'N',
-  'submit_when_enter_pressed', 'N',
-  'subtype', 'TEXT',
-  'trim_spaces', 'BOTH')).to_clob
+  'based_on', 'VALUE',
+  'format', 'PLAIN',
+  'send_on_page_submit', 'Y',
+  'show_line_breaks', 'Y')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(27355762469033428)
@@ -845,19 +805,17 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>20
 ,p_item_plug_id=>wwv_flow_imp.id(27355431661033425)
 ,p_prompt=>'Mobile Tel. No.'
-,p_display_as=>'NATIVE_TEXT_FIELD'
-,p_cSize=>30
-,p_cMaxlength=>50
+,p_display_as=>'NATIVE_DISPLAY_ONLY'
 ,p_begin_on_new_line=>'N'
 ,p_colspan=>6
-,p_read_only_when_type=>'ALWAYS'
 ,p_field_template=>1609121967514267634
 ,p_item_template_options=>'#DEFAULT#'
+,p_encrypt_session_state_yn=>'N'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'disabled', 'N',
-  'submit_when_enter_pressed', 'N',
-  'subtype', 'TEXT',
-  'trim_spaces', 'BOTH')).to_clob
+  'based_on', 'VALUE',
+  'format', 'PLAIN',
+  'send_on_page_submit', 'Y',
+  'show_line_breaks', 'Y')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(27355874180033429)
@@ -867,18 +825,16 @@ wwv_flow_imp_page.create_page_item(
 ,p_prompt=>'Company'
 ,p_source=>'The Company Limited'
 ,p_source_type=>'STATIC'
-,p_display_as=>'NATIVE_TEXT_FIELD'
-,p_cSize=>30
-,p_cMaxlength=>200
+,p_display_as=>'NATIVE_DISPLAY_ONLY'
 ,p_colspan=>6
-,p_read_only_when_type=>'ALWAYS'
 ,p_field_template=>1609121967514267634
 ,p_item_template_options=>'#DEFAULT#'
+,p_encrypt_session_state_yn=>'N'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'disabled', 'N',
-  'submit_when_enter_pressed', 'N',
-  'subtype', 'TEXT',
-  'trim_spaces', 'BOTH')).to_clob
+  'based_on', 'VALUE',
+  'format', 'PLAIN',
+  'send_on_page_submit', 'Y',
+  'show_line_breaks', 'Y')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(27355946358033430)
@@ -888,18 +844,17 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_default=>'SELECT TO_CHAR(SYSDATE,''DD-MON-YYYY HH24:MI'') FROM dual;'
 ,p_item_default_type=>'SQL_QUERY'
 ,p_prompt=>'Date & Time'
-,p_display_as=>'NATIVE_TEXT_FIELD'
-,p_cSize=>30
+,p_display_as=>'NATIVE_DISPLAY_ONLY'
 ,p_begin_on_new_line=>'N'
 ,p_colspan=>6
-,p_read_only_when_type=>'ALWAYS'
 ,p_field_template=>1609121967514267634
 ,p_item_template_options=>'#DEFAULT#'
+,p_encrypt_session_state_yn=>'N'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'disabled', 'N',
-  'submit_when_enter_pressed', 'N',
-  'subtype', 'TEXT',
-  'trim_spaces', 'BOTH')).to_clob
+  'based_on', 'VALUE',
+  'format', 'PLAIN',
+  'send_on_page_submit', 'Y',
+  'show_line_breaks', 'Y')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(30143518277642704)
@@ -1001,9 +956,8 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_event_result=>'TRUE'
 ,p_action_sequence=>30
 ,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_SUBMIT_PAGE'
-,p_attribute_01=>'SAVE_DRAFT'
-,p_attribute_02=>'Y'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attribute_01=>'captureLocationThenSubmit(''SAVE_DRAFT'');'
 );
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(31607259171440634)
@@ -1056,15 +1010,15 @@ wwv_flow_imp_page.create_page_process(
 '          auth_person_mobile = :P5_AUTH_PERSON_MOBILE,',
 '--          auth_from_datetime = TO_DATE(:P5_AUTH_FROM_DATETIME, ''DD-MON-YYYY HH24:MI''),',
 '--          auth_to_datetime = TO_DATE(:P5_AUTH_TO_DATETIME, ''DD-MON-YYYY HH24:MI''),',
-'          auth_latitude = :P0_LATITUDE,',
-'          auth_longitude = :P0_LONGITUDE,',
+'          auth_latitude = :APP_LATITUDE,',
+'          auth_longitude = :APP_LONGITUDE,',
 '          accept_person_name = :P5_ACCEPT_PERSON_NAME,',
 '          accept_person_signature = v_accept_sig_blob,',
 '          accept_person_mobile = :P5_ACCEPT_PERSON_MOBILE,',
 '          accept_company = :P5_ACCEPT_COMPANY,',
 '          accept_datetime = TO_DATE(:P5_ACCEPT_DATETIME,''DD-MON-YYYY HH24:MI''),',
-'          accept_latitude = :P0_LATITUDE,',
-'          accept_longitude = :P0_LONGITUDE,',
+'          accept_latitude = :APP_LATITUDE,',
+'          accept_longitude = :APP_LONGITUDE,',
 '          workflow_status = ''AUTHORISED'',',
 '          modified_by = NVL(V(''APP_USER''), USER),',
 '          modified_date = CURRENT_TIMESTAMP',
@@ -1087,7 +1041,6 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_when_type=>'EXPRESSION'
 ,p_process_when2=>'PLSQL'
 ,p_process_success_message=>'Authorisation and acceptance data saved.'
-,p_security_scheme=>wwv_flow_imp.id(31534159719199270)
 ,p_internal_uid=>27356922514033440
 );
 wwv_flow_imp_page.create_page_process(
@@ -1127,36 +1080,46 @@ wwv_flow_imp_page.create_page_process(
 '        :P5_WORKFLOW_STATUS',
 '    FROM ptw_pro.ptw_lv_permits',
 '    WHERE permit_id = :P5_PERMIT_ID;',
-'',
-'    -- Load existing signatures as base64',
-'    BEGIN',
-'        SELECT',
-'            CASE',
-'                WHEN auth_person_signature IS NOT NULL AND DBMS_LOB.GETLENGTH(auth_person_signature) > 0 THEN',
-'                    ''data:image/png;base64,'' || apex_web_service.blob2clobbase64(auth_person_signature)',
-'                ELSE NULL',
-'            END,',
-'            CASE',
-'                WHEN accept_person_signature IS NOT NULL AND DBMS_LOB.GETLENGTH(accept_person_signature) > 0 THEN',
-'                    ''data:image/png;base64,'' || apex_web_service.blob2clobbase64(accept_person_signature)',
-'                ELSE NULL',
-'            END',
-'        INTO',
-'            :P5_AUTH_SIGNATURE_DATA,',
-'            :P5_ACCEPT_SIGNATURE_DATA',
-'        FROM ptw_pro.ptw_lv_permits',
-'        WHERE permit_id = :P5_PERMIT_ID;',
-'    EXCEPTION',
-'        WHEN NO_DATA_FOUND THEN NULL;',
-'    END;',
-'',
 'EXCEPTION',
 '    WHEN NO_DATA_FOUND THEN',
-'        :P5_ACCEPT_DATETIME := TO_CHAR(SYSDATE,''DD-MON-YYYY HH25:MI'');',
-'        apex_error.add_error(',
-'            p_message => ''Permit not found.'',',
-'            p_display_location => apex_error.c_inline_in_notification',
-'        );',
+'        :P5_ACCEPT_DATETIME := TO_CHAR(SYSDATE,''DD-MON-YYYY HH24:MI'');',
+'END;',
+'',
+'BEGIN',
+'  SELECT',
+'    CASE',
+'      WHEN auth_person_signature IS NOT NULL AND DBMS_LOB.GETLENGTH(auth_person_signature) > 0 THEN',
+'        ''data:image/png;base64,'' || apex_web_service.blob2clobbase64(auth_person_signature)',
+'      ELSE NULL',
+'    END,',
+'    CASE',
+'      WHEN accept_person_signature IS NOT NULL AND DBMS_LOB.GETLENGTH(accept_person_signature) > 0 THEN',
+'        ''data:image/png;base64,'' || apex_web_service.blob2clobbase64(accept_person_signature)',
+'      ELSE NULL',
+'    END',
+'    INTO',
+'     :P5_AUTH_SIGNATURE_DATA,',
+'     :P5_ACCEPT_SIGNATURE_DATA',
+'  FROM ptw_pro.ptw_lv_permits',
+'  WHERE permit_id = :P5_PERMIT_ID;',
+'EXCEPTION',
+'  WHEN NO_DATA_FOUND THEN NULL;',
+'END;',
+'',
+'-- Load existing signatures as base64',
+'BEGIN',
+'  SELECT ur.mobile_no, ur.first_name||'' ''||ur.last_name',
+'  INTO   :P5_AUTH_PERSON_MOBILE, :P5_ACCEPT_PERSON_NAME',
+'  FROM   apex_workspace_apex_users au',
+'  LEFT JOIN ptw_pro.ptw_lv_user_roles ur ON UPPER(au.user_name) = UPPER(ur.username)',
+'    AND ur.is_active = ''Y''',
+'  WHERE UPPER(ur.username) = UPPER(NVL(V(''APP_USER''), USER))',
+'  AND   au.workspace_name = (SELECT workspace ',
+'                             FROM   apex_applications',
+'                             WHERE  application_id = :APP_ID);',
+'EXCEPTION',
+'  WHEN OTHERS THEN',
+'    NULL;',
 'END;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_internal_uid=>27356851819033439

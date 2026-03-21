@@ -1,7 +1,7 @@
-prompt --application/pages/page_00002
+prompt --application/pages/page_00013
 begin
 --   Manifest
---     PAGE: 00002
+--     PAGE: 00013
 --   Manifest End
 wwv_flow_imp.component_begin (
  p_version_yyyy_mm_dd=>'2024.11.30'
@@ -12,9 +12,9 @@ wwv_flow_imp.component_begin (
 ,p_default_owner=>'PERMITPRO'
 );
 wwv_flow_imp_page.create_page(
- p_id=>2
-,p_name=>'Site & Work Details'
-,p_alias=>'SITE-WORK-DETAILS'
+ p_id=>13
+,p_name=>'Site & Work Details bkup'
+,p_alias=>'SITE-WORK-DETAILS1'
 ,p_step_title=>'Site & Work Details'
 ,p_autocomplete_on_off=>'OFF'
 ,p_javascript_file_urls=>'#APP_FILES#offline-storage#MIN#.js'
@@ -49,39 +49,38 @@ unistr('        statusIcon.innerHTML = ''\26A0'';'),
 'OfflineStorage.initDB();',
 'ConnectionManager.init();',
 '',
-'// Offline handler for NEXT_STEP button.',
-'// Capture phase (true) fires before APEX''s bubble-phase DA,',
-'// preventing the Execute PLSQL action from making an AJAX call that fails offline.',
-'(function() {',
-'    var btn = document.querySelector(''[data-otel-label="NEXT_STEP"]'');',
-'    if (!btn) return;',
-'    btn.addEventListener(''click'', function(e) {',
-'        if (navigator.onLine) return;',
-'        e.stopImmediatePropagation();',
-'        e.preventDefault();',
-'        var formData = {};',
-'        apex.jQuery(''form'').serializeArray().forEach(function(i) { formData[i.name] = i.value; });',
-'        OfflineStorage.saveFormData(''2'', formData, apex.jQuery(''#P2_PERMIT_ID'').val() || null)',
-'            .then(function() {',
-'                var u = new URL(window.location.href);',
-'                var p = u.pathname.split(''/'');',
-'                while (p[p.length - 1] === '''') p.pop();',
-unistr('                // URL is /ords/r/app/page-alias/permit-id \2014 replace page-alias, keep permit-id'),
-'                if (/^\d+$/.test(p[p.length - 1])) {',
-'                    p[p.length - 2] = ''control-measures-ppe'';',
-'                } else {',
-'                    p[p.length - 1] = ''control-measures-ppe'';',
-'                }',
-'                u.pathname = p.join(''/'');',
-'                u.search = '''';',
-'                apex.message.showPageSuccess(''Data saved offline. Will sync when reconnected.'');',
-'                setTimeout(function() { window.location.href = u.toString(); }, 800);',
-'            })',
-'            .catch(function(err) {',
-'                apex.message.showErrors([{type:''error'',message:''Offline save error: ''+err.message}]);',
+'// Intercept form submission',
+'apex.page.validate = (function(originalValidate) {',
+'    return function() {',
+'        if (!navigator.onLine) {',
+'            // Get form data',
+'            const formData = {};',
+'            const formArray = $(''form'').serializeArray();',
+'            ',
+'            formArray.forEach(function(item) {',
+'                formData[item.name] = item.value;',
 '            });',
-'    }, true);',
-'}());'))
+'            ',
+'            const recordId = $(''#P2_PERMIT_ID'').val() || null;',
+'            const pageId = ''2''; // Change this to your actual page number',
+'            ',
+'            OfflineStorage.saveFormData(pageId, formData, recordId)',
+'                .then(() => {',
+'                    apex.message.showPageSuccess(''Data saved offline. Will sync when connected.'');',
+'                })',
+'                .catch((error) => {',
+'                    apex.message.showErrors([{',
+'                        type: ''error'',',
+'                        message: ''Error saving offline: '' + error.message',
+'                    }]);',
+'                });',
+'            ',
+'            return false;',
+'        } else {',
+'            return originalValidate.apply(this, arguments);',
+'        }',
+'    };',
+'})(apex.page.validate);'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '.ptw-workflow-progress {',
 '    display: flex;',
@@ -173,12 +172,12 @@ unistr('                // URL is /ords/r/app/page-alias/permit-id \2014 replace
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
 ,p_read_only_when_type=>'VAL_OF_ITEM_IN_COND_NOT_EQ_COND2'
-,p_read_only_when=>'P2_WORKFLOW_STATUS'
+,p_read_only_when=>'P13_WORKFLOW_STATUS'
 ,p_read_only_when2=>'IN_PROGRESS'
 ,p_page_component_map=>'16'
 );
 wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(25229500348353135)
+ p_id=>wwv_flow_imp.id(58215821955347190)
 ,p_plug_name=>'Workflow Status'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>4501440665235496320
@@ -208,30 +207,32 @@ wwv_flow_imp_page.create_page_plug(
 '    </div>',
 '</div>',
 ''))
+,p_ai_enabled=>false
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
 );
 wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(25230364426353143)
+ p_id=>wwv_flow_imp.id(58216686033347198)
 ,p_plug_name=>'Permit Information Badge'
 ,p_plug_display_sequence=>70
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<div style="margin-bottom: 20px;">',
 '    <span class="apex-badge" style="background-color: #3ea055; color: white; padding: 6px 16px; border-radius: 20px; font-weight: 600;">',
-'        Permit: &P2_PERMIT_NUMBER.',
+'        Permit: &P13_PERMIT_NUMBER.',
 '    </span>',
 '</div>',
 ''))
 ,p_plug_display_condition_type=>'ITEM_IS_NOT_NULL'
-,p_plug_display_when_condition=>'P2_PERMIT_ID'
+,p_plug_display_when_condition=>'P13_PERMIT_ID'
+,p_ai_enabled=>false
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
 );
 wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(25230494463353144)
+ p_id=>wwv_flow_imp.id(58216816070347199)
 ,p_plug_name=>'Header Information'
 ,p_title=>'Permit Header Information'
 ,p_icon_css_classes=>'fa-file-text'
@@ -239,12 +240,13 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_template=>4072358936313175081
 ,p_plug_display_sequence=>80
 ,p_location=>null
+,p_ai_enabled=>false
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
 );
 wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(25230894903353148)
+ p_id=>wwv_flow_imp.id(58217216510347203)
 ,p_plug_name=>'Site & Work Details'
 ,p_title=>'Site & Work Details'
 ,p_icon_css_classes=>'fa-building'
@@ -252,12 +254,13 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_template=>4072358936313175081
 ,p_plug_display_sequence=>90
 ,p_location=>null
+,p_ai_enabled=>false
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
 );
 wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(26943346862347704)
+ p_id=>wwv_flow_imp.id(59929668469341759)
 ,p_plug_name=>'Client Permission'
 ,p_title=>'Client Permission'
 ,p_icon_css_classes=>'fa-check-square'
@@ -265,23 +268,25 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_template=>4072358936313175081
 ,p_plug_display_sequence=>100
 ,p_location=>null
+,p_ai_enabled=>false
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
 );
 wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(26944035438347711)
+ p_id=>wwv_flow_imp.id(59930357045341766)
 ,p_plug_name=>'Buttons'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>2126429139436695430
 ,p_plug_display_sequence=>110
 ,p_location=>null
+,p_ai_enabled=>false
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
 );
 wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(27017146064886522)
+ p_id=>wwv_flow_imp.id(60003467671880577)
 ,p_plug_name=>'SyncStatus'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>4501440665235496320
@@ -293,30 +298,28 @@ wwv_flow_imp_page.create_page_plug(
 '    <span id="status-text"></span>',
 '    <!-- <button id="sync-btn" style="margin-left: 10px; display: none;">Sync Now</button> -->',
 '</div>'))
+,p_ai_enabled=>false
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
 );
 wwv_flow_imp_page.create_page_button(
- p_id=>wwv_flow_imp.id(26944216198347713)
+ p_id=>wwv_flow_imp.id(32990762730994031)
 ,p_button_sequence=>20
-,p_button_plug_id=>wwv_flow_imp.id(26944035438347711)
+,p_button_plug_id=>wwv_flow_imp.id(59930357045341766)
 ,p_button_name=>'SAVE_DRAFT'
-,p_button_static_id=>'BTN_SAVE_DRAFT_P2'
-,p_button_action=>'DEFINED_BY_DA'
+,p_button_action=>'SUBMIT'
 ,p_button_template_options=>'#DEFAULT#'
 ,p_button_template_id=>4072362960822175091
 ,p_button_image_alt=>'Save Draft'
 ,p_button_position=>'NEXT'
-,p_warn_on_unsaved_changes=>null
 ,p_security_scheme=>wwv_flow_imp.id(31533963716212424)
 );
 wwv_flow_imp_page.create_page_button(
- p_id=>wwv_flow_imp.id(26944315283347714)
+ p_id=>wwv_flow_imp.id(32991110907994030)
 ,p_button_sequence=>30
-,p_button_plug_id=>wwv_flow_imp.id(26944035438347711)
+,p_button_plug_id=>wwv_flow_imp.id(59930357045341766)
 ,p_button_name=>'NEXT_STEP'
-,p_button_static_id=>'BTN_NEXT_STEP_P2'
 ,p_button_action=>'DEFINED_BY_DA'
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
 ,p_button_template_id=>2082829544945815391
@@ -327,22 +330,21 @@ wwv_flow_imp_page.create_page_button(
 ,p_icon_css_classes=>'fa-arrow-right'
 );
 wwv_flow_imp_page.create_page_button(
- p_id=>wwv_flow_imp.id(26944114711347712)
+ p_id=>wwv_flow_imp.id(32990466241994032)
 ,p_button_sequence=>10
-,p_button_plug_id=>wwv_flow_imp.id(26944035438347711)
+,p_button_plug_id=>wwv_flow_imp.id(59930357045341766)
 ,p_button_name=>'CANCEL'
-,p_button_static_id=>'BTN_CANCEL_P2'
 ,p_button_action=>'REDIRECT_PAGE'
 ,p_button_template_options=>'#DEFAULT#'
 ,p_button_template_id=>4072362960822175091
 ,p_button_image_alt=>'Cancel'
 ,p_button_position=>'PREVIOUS'
-,p_button_redirect_url=>'f?p=&APP_ID.:1:&SESSION.::&DEBUG.:2:P1_PERMIT_ID:&P2_PERMIT_ID.'
+,p_button_redirect_url=>'f?p=&APP_ID.:1:&SESSION.::&DEBUG.:13:P1_PERMIT_ID:&P13_PERMIT_ID.'
 );
 wwv_flow_imp_page.create_page_branch(
- p_id=>wwv_flow_imp.id(26945737570347728)
+ p_id=>wwv_flow_imp.id(33001739370993988)
 ,p_branch_name=>'Go to Control Measures'
-,p_branch_action=>'f?p=&APP_ID.:3:&SESSION.::&DEBUG.:3:P3_PERMIT_ID:&P2_PERMIT_ID.'
+,p_branch_action=>'f?p=&APP_ID.:3:&SESSION.::&DEBUG.:3:P3_PERMIT_ID:&P13_PERMIT_ID.'
 ,p_branch_point=>'AFTER_PROCESSING'
 ,p_branch_type=>'REDIRECT_URL'
 ,p_branch_sequence=>10
@@ -350,9 +352,9 @@ wwv_flow_imp_page.create_page_branch(
 ,p_branch_condition=>'NEXT_STEP'
 );
 wwv_flow_imp_page.create_page_branch(
- p_id=>wwv_flow_imp.id(26945667934347727)
+ p_id=>wwv_flow_imp.id(33001376606993989)
 ,p_branch_name=>'Refresh Current Page'
-,p_branch_action=>'f?p=&APP_ID.:2:&SESSION.::&DEBUG.:2:P2_PERMIT_ID:&P2_PERMIT_ID.'
+,p_branch_action=>'f?p=&APP_ID.:13:&SESSION.::&DEBUG.:13:P13_PERMIT_ID:&P13_PERMIT_ID.'
 ,p_branch_point=>'AFTER_PROCESSING'
 ,p_branch_type=>'REDIRECT_URL'
 ,p_branch_sequence=>20
@@ -360,34 +362,10 @@ wwv_flow_imp_page.create_page_branch(
 ,p_branch_condition=>'SAVE_DRAFT'
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(25229203963353132)
-,p_name=>'P2_PERMIT_ID'
+ p_id=>wwv_flow_imp.id(58219948339347182)
+,p_name=>'P13_SAFETY_PROGRAMME_REF_NO'
 ,p_item_sequence=>10
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(25229379255353133)
-,p_name=>'P2_CURRENT_STEP'
-,p_item_sequence=>20
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(25229474334353134)
-,p_name=>'P2_WORKFLOW_STATUS'
-,p_item_sequence=>30
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(25230519318353145)
-,p_name=>'P2_SAFETY_PROGRAMME_REF_NO'
-,p_item_sequence=>10
-,p_item_plug_id=>wwv_flow_imp.id(25230494463353144)
+,p_item_plug_id=>wwv_flow_imp.id(58216816070347199)
 ,p_prompt=>'Safety Programme Reference No.'
 ,p_placeholder=>'Enter reference number'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
@@ -403,12 +381,13 @@ wwv_flow_imp_page.create_page_item(
   'submit_when_enter_pressed', 'N',
   'subtype', 'TEXT',
   'trim_spaces', 'BOTH')).to_clob
+,p_ai_enabled=>false
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(25230683508353146)
-,p_name=>'P2_ISOLATION_DIAGRAM_SERIAL_NO'
+ p_id=>wwv_flow_imp.id(58220112529347183)
+,p_name=>'P13_ISOLATION_DIAGRAM_SERIAL_NO'
 ,p_item_sequence=>20
-,p_item_plug_id=>wwv_flow_imp.id(25230494463353144)
+,p_item_plug_id=>wwv_flow_imp.id(58216816070347199)
 ,p_prompt=>'Isolation & Earthing Diagram Serial No.'
 ,p_placeholder=>'Enter serial number'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
@@ -424,21 +403,32 @@ wwv_flow_imp_page.create_page_item(
   'submit_when_enter_pressed', 'N',
   'subtype', 'TEXT',
   'trim_spaces', 'BOTH')).to_clob
+,p_ai_enabled=>false
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(25230756080353147)
-,p_name=>'P2_PERMIT_NUMBER'
-,p_item_sequence=>40
+ p_id=>wwv_flow_imp.id(58222735783347150)
+,p_name=>'P13_PERMIT_ID'
+,p_item_sequence=>10
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'Y')).to_clob
+  'value_protected', 'N')).to_clob
+,p_ai_enabled=>false
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(25230978574353149)
-,p_name=>'P2_SITE_DETAILS'
+ p_id=>wwv_flow_imp.id(58222911075347151)
+,p_name=>'P13_CURRENT_STEP'
+,p_item_sequence=>20
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_ai_enabled=>false
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(58222913393347176)
+,p_name=>'P13_SITE_DETAILS'
 ,p_is_required=>true
 ,p_item_sequence=>10
-,p_item_plug_id=>wwv_flow_imp.id(25230894903353148)
+,p_item_plug_id=>wwv_flow_imp.id(58217216510347203)
 ,p_prompt=>'Site details and area of works'
 ,p_placeholder=>'Enter full site details and area of works'
 ,p_display_as=>'NATIVE_TEXTAREA'
@@ -455,12 +445,22 @@ wwv_flow_imp_page.create_page_item(
   'character_counter', 'N',
   'resizable', 'Y',
   'trim_spaces', 'BOTH')).to_clob
+,p_ai_enabled=>false
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(25231084779353150)
-,p_name=>'P2_WORK_DESCRIPTION'
+ p_id=>wwv_flow_imp.id(58223006154347152)
+,p_name=>'P13_WORKFLOW_STATUS'
+,p_item_sequence=>30
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_ai_enabled=>false
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(58223019598347177)
+,p_name=>'P13_WORK_DESCRIPTION'
 ,p_item_sequence=>20
-,p_item_plug_id=>wwv_flow_imp.id(25230894903353148)
+,p_item_plug_id=>wwv_flow_imp.id(58217216510347203)
 ,p_prompt=>'Description of work activity'
 ,p_placeholder=>'Describe the work activity to be carried out'
 ,p_display_as=>'NATIVE_TEXTAREA'
@@ -477,13 +477,82 @@ wwv_flow_imp_page.create_page_item(
   'character_counter', 'N',
   'resizable', 'Y',
   'trim_spaces', 'BOTH')).to_clob
+,p_ai_enabled=>false
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(26943083679347701)
-,p_name=>'P2_PERSON_IN_CHARGE_NAME'
+ p_id=>wwv_flow_imp.id(58224287900347165)
+,p_name=>'P13_PERMIT_NUMBER'
+,p_item_sequence=>40
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'Y')).to_clob
+,p_ai_enabled=>false
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(59930422660341755)
+,p_name=>'P13_CLIENT_PERMISSION_GRANTED'
+,p_is_required=>true
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(59929668469341759)
+,p_prompt=>'Has the client granted permission for these works to proceed?'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_lov=>'STATIC:Yes;Y,No;N'
+,p_read_only_when=>'ptw_pro.ptw_lv_is_contract_support(V(''APP_USER'')) = ''Y'''
+,p_read_only_when2=>'PLSQL'
+,p_read_only_when_type=>'EXPRESSION'
+,p_field_template=>1609121967514267634
+,p_item_template_options=>'#DEFAULT#'
+,p_lov_display_extra=>'NO'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'number_of_columns', '2',
+  'page_action_on_selection', 'NONE')).to_clob
+,p_ai_enabled=>false
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(59930551352341756)
+,p_name=>'P13_AFFECTS_IT_SYSTEMS'
+,p_is_required=>true
+,p_item_sequence=>20
+,p_item_plug_id=>wwv_flow_imp.id(59929668469341759)
+,p_prompt=>'Will these works affect any IT or other business critical systems?'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_lov=>'STATIC:Yes;Y,No;N'
+,p_read_only_when=>'ptw_pro.ptw_lv_is_contract_support(V(''APP_USER'')) = ''Y'''
+,p_read_only_when2=>'PLSQL'
+,p_read_only_when_type=>'EXPRESSION'
+,p_field_template=>1609121967514267634
+,p_item_template_options=>'#DEFAULT#'
+,p_lov_display_extra=>'NO'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'number_of_columns', '2',
+  'page_action_on_selection', 'NONE')).to_clob
+,p_ai_enabled=>false
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(59930624072341757)
+,p_name=>'P13_IT_PERMISSION_GRANTED'
+,p_item_sequence=>30
+,p_item_plug_id=>wwv_flow_imp.id(59929668469341759)
+,p_prompt=>'If ''Yes'' has permission been granted to proceed?'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_lov=>'STATIC:Yes;Y,No;N'
+,p_read_only_when=>'ptw_pro.ptw_lv_is_contract_support(V(''APP_USER'')) = ''Y'''
+,p_read_only_when2=>'PLSQL'
+,p_read_only_when_type=>'EXPRESSION'
+,p_field_template=>1609121967514267634
+,p_item_template_options=>'#DEFAULT#'
+,p_lov_display_extra=>'NO'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'number_of_columns', '2',
+  'page_action_on_selection', 'NONE')).to_clob
+,p_ai_enabled=>false
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(59935018498341728)
+,p_name=>'P13_PERSON_IN_CHARGE_NAME'
 ,p_is_required=>true
 ,p_item_sequence=>30
-,p_item_plug_id=>wwv_flow_imp.id(25230894903353148)
+,p_item_plug_id=>wwv_flow_imp.id(58217216510347203)
 ,p_prompt=>'Name of Person in Charge'
 ,p_placeholder=>'Full name of person in charge'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
@@ -499,12 +568,13 @@ wwv_flow_imp_page.create_page_item(
   'submit_when_enter_pressed', 'N',
   'subtype', 'TEXT',
   'trim_spaces', 'BOTH')).to_clob
+,p_ai_enabled=>false
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(26943152825347702)
-,p_name=>'P2_SUPERVISING_COMPANY'
+ p_id=>wwv_flow_imp.id(59935087644341729)
+,p_name=>'P13_SUPERVISING_COMPANY'
 ,p_item_sequence=>40
-,p_item_plug_id=>wwv_flow_imp.id(25230894903353148)
+,p_item_plug_id=>wwv_flow_imp.id(58217216510347203)
 ,p_prompt=>'Company responsible for supervising the works'
 ,p_placeholder=>'Company name'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
@@ -520,12 +590,13 @@ wwv_flow_imp_page.create_page_item(
   'submit_when_enter_pressed', 'N',
   'subtype', 'TEXT',
   'trim_spaces', 'BOTH')).to_clob
+,p_ai_enabled=>false
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(26943296650347703)
-,p_name=>'P2_OTHER_PERSONS_COUNT'
+ p_id=>wwv_flow_imp.id(59935231469341730)
+,p_name=>'P13_OTHER_PERSONS_COUNT'
 ,p_item_sequence=>50
-,p_item_plug_id=>wwv_flow_imp.id(25230894903353148)
+,p_item_plug_id=>wwv_flow_imp.id(58217216510347203)
 ,p_prompt=>'Number of other persons working under this Permit'
 ,p_placeholder=>'0'
 ,p_display_as=>'NATIVE_NUMBER_FIELD'
@@ -538,108 +609,54 @@ wwv_flow_imp_page.create_page_item(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'number_alignment', 'left',
   'virtual_keyboard', 'decimal')).to_clob
+,p_ai_enabled=>false
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(26943471028347705)
-,p_name=>'P2_CLIENT_PERMISSION_GRANTED'
-,p_is_required=>true
-,p_item_sequence=>10
-,p_item_plug_id=>wwv_flow_imp.id(26943346862347704)
-,p_prompt=>'Has the client granted permission for these works to proceed?'
-,p_display_as=>'NATIVE_RADIOGROUP'
-,p_lov=>'STATIC:Yes;Y,No;N'
-,p_read_only_when=>'ptw_pro.ptw_lv_is_contract_support(V(''APP_USER'')) = ''Y'''
-,p_read_only_when2=>'PLSQL'
-,p_read_only_when_type=>'EXPRESSION'
-,p_field_template=>1609121967514267634
-,p_item_template_options=>'#DEFAULT#'
-,p_lov_display_extra=>'NO'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'number_of_columns', '2',
-  'page_action_on_selection', 'NONE')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(26943599720347706)
-,p_name=>'P2_AFFECTS_IT_SYSTEMS'
-,p_is_required=>true
-,p_item_sequence=>20
-,p_item_plug_id=>wwv_flow_imp.id(26943346862347704)
-,p_prompt=>'Will these works affect any IT or other business critical systems?'
-,p_display_as=>'NATIVE_RADIOGROUP'
-,p_lov=>'STATIC:Yes;Y,No;N'
-,p_read_only_when=>'ptw_pro.ptw_lv_is_contract_support(V(''APP_USER'')) = ''Y'''
-,p_read_only_when2=>'PLSQL'
-,p_read_only_when_type=>'EXPRESSION'
-,p_field_template=>1609121967514267634
-,p_item_template_options=>'#DEFAULT#'
-,p_lov_display_extra=>'NO'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'number_of_columns', '2',
-  'page_action_on_selection', 'NONE')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(26943672440347707)
-,p_name=>'P2_IT_PERMISSION_GRANTED'
-,p_item_sequence=>30
-,p_item_plug_id=>wwv_flow_imp.id(26943346862347704)
-,p_prompt=>'If ''Yes'' has permission been granted to proceed?'
-,p_display_as=>'NATIVE_RADIOGROUP'
-,p_lov=>'STATIC:Yes;Y,No;N'
-,p_read_only_when=>'ptw_pro.ptw_lv_is_contract_support(V(''APP_USER'')) = ''Y'''
-,p_read_only_when2=>'PLSQL'
-,p_read_only_when_type=>'EXPRESSION'
-,p_field_template=>1609121967514267634
-,p_item_template_options=>'#DEFAULT#'
-,p_lov_display_extra=>'NO'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'number_of_columns', '2',
-  'page_action_on_selection', 'NONE')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(28347563310917048)
-,p_name=>'P2_IS_CHANGED'
+ p_id=>wwv_flow_imp.id(61341095130911066)
+,p_name=>'P13_IS_CHANGED'
 ,p_item_sequence=>20
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
+,p_ai_enabled=>false
 );
 wwv_flow_imp_page.create_page_validation(
- p_id=>wwv_flow_imp.id(26944420328347715)
+ p_id=>wwv_flow_imp.id(32995256994994010)
 ,p_validation_name=>'Site Details Required'
 ,p_validation_sequence=>10
-,p_validation=>'P2_SITE_DETAILS'
+,p_validation=>'P13_SITE_DETAILS'
 ,p_validation_type=>'ITEM_NOT_NULL'
 ,p_error_message=>'Site details are required.'
-,p_associated_item=>wwv_flow_imp.id(25230978574353149)
+,p_associated_item=>wwv_flow_imp.id(58222913393347176)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_validation(
- p_id=>wwv_flow_imp.id(26944589701347716)
+ p_id=>wwv_flow_imp.id(32995679173994009)
 ,p_validation_name=>'Person in Charge Required'
 ,p_validation_sequence=>20
-,p_validation=>'P2_PERSON_IN_CHARGE_NAME'
+,p_validation=>'P13_PERSON_IN_CHARGE_NAME'
 ,p_validation_type=>'ITEM_NOT_NULL'
 ,p_error_message=>'Name of Person in Charge is required.'
-,p_associated_item=>wwv_flow_imp.id(26943083679347701)
+,p_associated_item=>wwv_flow_imp.id(59935018498341728)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_validation(
- p_id=>wwv_flow_imp.id(26944608190347717)
+ p_id=>wwv_flow_imp.id(32996032019994008)
 ,p_validation_name=>'Client Permission Required'
 ,p_validation_sequence=>30
-,p_validation=>'P2_CLIENT_PERMISSION_GRANTED'
+,p_validation=>'P13_CLIENT_PERMISSION_GRANTED'
 ,p_validation_type=>'ITEM_NOT_NULL'
 ,p_error_message=>'Please indicate if the client has granted permission.'
-,p_associated_item=>wwv_flow_imp.id(26943471028347705)
+,p_associated_item=>wwv_flow_imp.id(59930422660341755)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(26943794986347708)
+ p_id=>wwv_flow_imp.id(32999841332993994)
 ,p_name=>'Show/Hide IT Permission Question'
 ,p_event_sequence=>10
 ,p_triggering_element_type=>'ITEM'
-,p_triggering_element=>'P2_AFFECTS_IT_SYSTEMS'
-,p_condition_element=>'P2_AFFECTS_IT_SYSTEMS'
+,p_triggering_element=>'P13_AFFECTS_IT_SYSTEMS'
+,p_condition_element=>'P13_AFFECTS_IT_SYSTEMS'
 ,p_triggering_condition_type=>'EQUALS'
 ,p_triggering_expression=>'Y'
 ,p_bind_type=>'bind'
@@ -647,73 +664,82 @@ wwv_flow_imp_page.create_page_da_event(
 ,p_bind_event_type=>'change'
 );
 wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(26943866082347709)
-,p_event_id=>wwv_flow_imp.id(26943794986347708)
+ p_id=>wwv_flow_imp.id(33000312327993992)
+,p_event_id=>wwv_flow_imp.id(32999841332993994)
 ,p_event_result=>'TRUE'
 ,p_action_sequence=>10
 ,p_execute_on_page_init=>'Y'
 ,p_action=>'NATIVE_SHOW'
 ,p_affected_elements_type=>'ITEM'
-,p_affected_elements=>'P2_IT_PERMISSION_GRANTED'
+,p_affected_elements=>'P13_IT_PERMISSION_GRANTED'
 ,p_client_condition_type=>'EQUALS'
-,p_client_condition_element=>'P2_AFFECTS_IT_SYSTEMS'
+,p_client_condition_element=>'P13_AFFECTS_IT_SYSTEMS'
 ,p_client_condition_expression=>'Y'
 );
 wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(26943911056347710)
-,p_event_id=>wwv_flow_imp.id(26943794986347708)
+ p_id=>wwv_flow_imp.id(33000854820993990)
+,p_event_id=>wwv_flow_imp.id(32999841332993994)
 ,p_event_result=>'FALSE'
 ,p_action_sequence=>10
 ,p_execute_on_page_init=>'Y'
 ,p_action=>'NATIVE_HIDE'
 ,p_affected_elements_type=>'ITEM'
-,p_affected_elements=>'P2_IT_PERMISSION_GRANTED'
+,p_affected_elements=>'P13_IT_PERMISSION_GRANTED'
 ,p_client_condition_type=>'EQUALS'
-,p_client_condition_element=>'P2_AFFECTS_IT_SYSTEMS'
+,p_client_condition_element=>'P13_AFFECTS_IT_SYSTEMS'
 ,p_client_condition_expression=>'N'
 );
 wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(28347379433917046)
-,p_name=>'Click NEXT STEP'
+ p_id=>wwv_flow_imp.id(32997999753994000)
+,p_name=>'Check status of page'
 ,p_event_sequence=>20
-,p_triggering_element_type=>'JQUERY_SELECTOR'
-,p_triggering_element=>'#BTN_NEXT_STEP_P2'
+,p_triggering_element_type=>'BUTTON'
+,p_triggering_button_id=>wwv_flow_imp.id(32991110907994030)
 ,p_bind_type=>'bind'
 ,p_execution_type=>'IMMEDIATE'
 ,p_bind_event_type=>'click'
 );
 wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(33349755492951411)
-,p_event_id=>wwv_flow_imp.id(28347379433917046)
-,p_event_result=>'TRUE'
-,p_action_sequence=>30
-,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>'captureLocationThenSubmit(''NEXT_STEP'');'
-);
-wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(33349958939951413)
-,p_name=>'Click SAVE DRAFT'
-,p_event_sequence=>30
-,p_triggering_element_type=>'JQUERY_SELECTOR'
-,p_triggering_element=>'#BTN_SAVE_DRAFT_P2'
-,p_bind_type=>'bind'
-,p_execution_type=>'IMMEDIATE'
-,p_bind_event_type=>'click'
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(33350005327951414)
-,p_event_id=>wwv_flow_imp.id(33349958939951413)
+ p_id=>wwv_flow_imp.id(32998416863993998)
+,p_event_id=>wwv_flow_imp.id(32997999753994000)
 ,p_event_result=>'TRUE'
 ,p_action_sequence=>10
 ,p_execute_on_page_init=>'N'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_affected_elements_type=>'ITEM'
+,p_affected_elements=>'P13_IS_CHANGED'
 ,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'captureLocationThenSubmit(''SAVE_DRAFT'');',
-''))
+'if (apex.page.isChanged()) {',
+'    // do something, e.g. enable a save button',
+'    apex.item(''P13_IS_CHANGED'').setValue(''Y'');',
+'} else {',
+'    apex.item(''P13_IS_CHANGED'').setValue(''N'');',
+'}'))
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(32998999458993996)
+,p_event_id=>wwv_flow_imp.id(32997999753994000)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
+,p_attribute_01=>'NULL;'
+,p_attribute_02=>'P13_IS_CHANGED'
+,p_attribute_05=>'PLSQL'
+,p_wait_for_result=>'Y'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(32999471094993995)
+,p_event_id=>wwv_flow_imp.id(32997999753994000)
+,p_event_result=>'TRUE'
+,p_action_sequence=>30
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_SUBMIT_PAGE'
+,p_attribute_01=>'NEXT_STEP'
+,p_attribute_02=>'Y'
 );
 wwv_flow_imp_page.create_page_process(
- p_id=>wwv_flow_imp.id(26944820115347719)
+ p_id=>wwv_flow_imp.id(32996770394994005)
 ,p_process_sequence=>10
 ,p_process_point=>'AFTER_SUBMIT'
 ,p_process_type=>'NATIVE_PLSQL'
@@ -723,7 +749,7 @@ wwv_flow_imp_page.create_page_process(
 '    v_permit_id NUMBER;',
 '    v_permit_number VARCHAR2(50);',
 'BEGIN',
-'    IF :P2_PERMIT_ID IS NULL THEN',
+'    IF :P13_PERMIT_ID IS NULL THEN',
 '        -- INSERT NEW PERMIT',
 '        INSERT INTO ptw_pro.ptw_lv_permits (',
 '            safety_programme_ref_no,',
@@ -742,58 +768,58 @@ wwv_flow_imp_page.create_page_process(
 '            site_work_longitude,',
 '            created_by',
 '        ) VALUES (',
-'            :P2_SAFETY_PROGRAMME_REF_NO,',
-'            :P2_ISOLATION_DIAGRAM_SERIAL_NO,',
-'            :P2_SITE_DETAILS,',
-'            :P2_WORK_DESCRIPTION,',
-'            :P2_PERSON_IN_CHARGE_NAME,',
-'            :P2_SUPERVISING_COMPANY,',
-'            :P2_OTHER_PERSONS_COUNT,',
-'            :P2_CLIENT_PERMISSION_GRANTED,',
-'            :P2_AFFECTS_IT_SYSTEMS,',
-'            :P2_IT_PERMISSION_GRANTED,',
+'            :P13_SAFETY_PROGRAMME_REF_NO,',
+'            :P13_ISOLATION_DIAGRAM_SERIAL_NO,',
+'            :P13_SITE_DETAILS,',
+'            :P13_WORK_DESCRIPTION,',
+'            :P13_PERSON_IN_CHARGE_NAME,',
+'            :P13_SUPERVISING_COMPANY,',
+'            :P13_OTHER_PERSONS_COUNT,',
+'            :P13_CLIENT_PERMISSION_GRANTED,',
+'            :P13_AFFECTS_IT_SYSTEMS,',
+'            :P13_IT_PERMISSION_GRANTED,',
 '            ''SITE_WORK_DETAILS'',',
 '            ''IN_PROGRESS'',',
-'            :APP_LATITUDE,',
-'            :APP_LONGITUDE,',
+'            :P0_LATITUDE,',
+'            :P0_LONGITUDE,',
 '            NVL(V(''APP_USER''), USER)',
 '        ) RETURNING permit_id, permit_number',
 '          INTO v_permit_id, v_permit_number;',
 '',
-'        :P2_PERMIT_ID := v_permit_id;',
-'        :P2_PERMIT_NUMBER := v_permit_number;',
-'        :P2_CURRENT_STEP := ''SITE_WORK_DETAILS'';',
-'        :P2_WORKFLOW_STATUS := ''IN_PROGRESS'';',
+'        :P13_PERMIT_ID := v_permit_id;',
+'        :P13_PERMIT_NUMBER := v_permit_number;',
+'        :P13_CURRENT_STEP := ''SITE_WORK_DETAILS'';',
+'        :P13_WORKFLOW_STATUS := ''IN_PROGRESS'';',
 '',
 '        apex_application.g_print_success_message :=',
 '            ''Permit '' || v_permit_number || '' created successfully.'';',
 '',
 '    ELSE',
-'      IF :P2_IS_CHANGED = ''Y'' THEN',
+'      IF :P13_IS_CHANGED = ''Y'' THEN',
 '        -- UPDATE EXISTING PERMIT',
 '        UPDATE ptw_pro.ptw_lv_permits',
-'        SET safety_programme_ref_no = :P2_SAFETY_PROGRAMME_REF_NO,',
-'            isolation_diagram_serial_no = :P2_ISOLATION_DIAGRAM_SERIAL_NO,',
-'            site_details = :P2_SITE_DETAILS,',
-'            work_description = :P2_WORK_DESCRIPTION,',
-'            person_in_charge_name = :P2_PERSON_IN_CHARGE_NAME,',
-'            supervising_company = :P2_SUPERVISING_COMPANY,',
-'            other_persons_count = :P2_OTHER_PERSONS_COUNT,',
-'            client_permission_granted = :P2_CLIENT_PERMISSION_GRANTED,',
-'            affects_it_systems = :P2_AFFECTS_IT_SYSTEMS,',
-'            it_permission_granted = :P2_IT_PERMISSION_GRANTED,',
-'            site_work_latitude = :APP_LATITUDE,',
-'            site_work_longitude = :APP_LONGITUDE,',
+'        SET safety_programme_ref_no = :P13_SAFETY_PROGRAMME_REF_NO,',
+'            isolation_diagram_serial_no = :P13_ISOLATION_DIAGRAM_SERIAL_NO,',
+'            site_details = :P13_SITE_DETAILS,',
+'            work_description = :P13_WORK_DESCRIPTION,',
+'            person_in_charge_name = :P13_PERSON_IN_CHARGE_NAME,',
+'            supervising_company = :P13_SUPERVISING_COMPANY,',
+'            other_persons_count = :P13_OTHER_PERSONS_COUNT,',
+'            client_permission_granted = :P13_CLIENT_PERMISSION_GRANTED,',
+'            affects_it_systems = :P13_AFFECTS_IT_SYSTEMS,',
+'            it_permission_granted = :P13_IT_PERMISSION_GRANTED,',
+'            site_work_latitude = :P0_LATITUDE,',
+'            site_work_longitude = :P0_LONGITUDE,',
 '            modified_by = NVL(V(''APP_USER''), USER),',
 '            modified_date = CURRENT_TIMESTAMP',
-'        WHERE permit_id = :P2_PERMIT_ID;',
+'        WHERE permit_id = :P13_PERMIT_ID;',
 '',
 '        IF SQL%ROWCOUNT = 0 THEN',
 '            RAISE_APPLICATION_ERROR(-20001, ''Permit not found for update.'');',
 '        END IF;',
 '',
 '        apex_application.g_print_success_message :=',
-'            ''Permit '' || :P2_PERMIT_NUMBER || '' updated successfully.'';',
+'            ''Permit '' || :P13_PERMIT_NUMBER || '' updated successfully.'';',
 '      END IF;',
 '    END IF;',
 '',
@@ -815,10 +841,10 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_when2=>'PLSQL'
 ,p_process_success_message=>'Permit saved successfully.'
 ,p_security_scheme=>wwv_flow_imp.id(31533963716212424)
-,p_internal_uid=>26944820115347719
+,p_internal_uid=>32996770394994005
 );
 wwv_flow_imp_page.create_page_process(
- p_id=>wwv_flow_imp.id(26944769422347718)
+ p_id=>wwv_flow_imp.id(32996327156994007)
 ,p_process_sequence=>10
 ,p_process_point=>'BEFORE_HEADER'
 ,p_process_type=>'NATIVE_PLSQL'
@@ -826,7 +852,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'BEGIN',
 '',
-'  :P2_CURRENT_STEP := ''SITE_WORK_DETAILS'';',
+'  :P13_CURRENT_STEP := ''SITE_WORK_DETAILS'';',
 '  ',
 '    SELECT',
 '        permit_number,',
@@ -843,26 +869,26 @@ wwv_flow_imp_page.create_page_process(
 '        affects_it_systems,',
 '        it_permission_granted',
 '    INTO',
-'        :P2_PERMIT_NUMBER,',
-'        :P2_CURRENT_STEP,',
-'        :P2_WORKFLOW_STATUS,',
-'        :P2_SAFETY_PROGRAMME_REF_NO,',
-'        :P2_ISOLATION_DIAGRAM_SERIAL_NO,',
-'        :P2_SITE_DETAILS,',
-'        :P2_WORK_DESCRIPTION,',
-'        :P2_PERSON_IN_CHARGE_NAME,',
-'        :P2_SUPERVISING_COMPANY,',
-'        :P2_OTHER_PERSONS_COUNT,',
-'        :P2_CLIENT_PERMISSION_GRANTED,',
-'        :P2_AFFECTS_IT_SYSTEMS,',
-'        :P2_IT_PERMISSION_GRANTED',
+'        :P13_PERMIT_NUMBER,',
+'        :P13_CURRENT_STEP,',
+'        :P13_WORKFLOW_STATUS,',
+'        :P13_SAFETY_PROGRAMME_REF_NO,',
+'        :P13_ISOLATION_DIAGRAM_SERIAL_NO,',
+'        :P13_SITE_DETAILS,',
+'        :P13_WORK_DESCRIPTION,',
+'        :P13_PERSON_IN_CHARGE_NAME,',
+'        :P13_SUPERVISING_COMPANY,',
+'        :P13_OTHER_PERSONS_COUNT,',
+'        :P13_CLIENT_PERMISSION_GRANTED,',
+'        :P13_AFFECTS_IT_SYSTEMS,',
+'        :P13_IT_PERMISSION_GRANTED',
 '    FROM ptw_pro.ptw_lv_permits',
-'    WHERE permit_id = :P2_PERMIT_ID;',
+'    WHERE permit_id = :P13_PERMIT_ID;',
 '',
 'EXCEPTION',
 '    WHEN NO_DATA_FOUND THEN',
-'        :P2_PERMIT_ID := NULL;',
-'        :P2_WORKFLOW_STATUS := ''IN_PROGRESS'';',
+'        :P13_PERMIT_ID := NULL;',
+'        :P13_WORKFLOW_STATUS := ''IN_PROGRESS'';',
 '        apex_error.add_error(',
 '            p_message => ''Permit not found.'',',
 '            p_display_location => apex_error.c_inline_in_notification',
@@ -874,12 +900,12 @@ wwv_flow_imp_page.create_page_process(
 '        );',
 'END;'))
 ,p_process_clob_language=>'PLSQL'
-,p_process_when=>'P2_PERMIT_ID'
+,p_process_when=>'P13_PERMIT_ID'
 ,p_process_when_type=>'ITEM_IS_NOT_NULL'
-,p_internal_uid=>26944769422347718
+,p_internal_uid=>32996327156994007
 );
 wwv_flow_imp_page.create_page_process(
- p_id=>wwv_flow_imp.id(30143717338642706)
+ p_id=>wwv_flow_imp.id(32997518432994001)
 ,p_process_sequence=>20
 ,p_process_point=>'BEFORE_HEADER'
 ,p_process_type=>'NATIVE_PLSQL'
@@ -897,11 +923,11 @@ wwv_flow_imp_page.create_page_process(
 '      AND is_active = ''Y'';',
 '',
 '    -- Only enforce for Engineers accessing an existing permit',
-'    IF v_is_engineer > 0 AND :P2_PERMIT_ID IS NOT NULL THEN',
+'    IF v_is_engineer > 0 AND :P13_PERMIT_ID IS NOT NULL THEN',
 '',
 '        SELECT COUNT(*) INTO v_is_owner',
 '        FROM ptw_pro.ptw_lv_permits',
-'        WHERE permit_id  = :P2_PERMIT_ID',
+'        WHERE permit_id  = :P13_PERMIT_ID',
 '          AND UPPER(created_by) = UPPER(V(''APP_USER''));',
 '',
 '        IF v_is_owner = 0 THEN',
@@ -918,12 +944,12 @@ wwv_flow_imp_page.create_page_process(
 '    END IF;',
 'END;'))
 ,p_process_clob_language=>'PLSQL'
-,p_process_when=>'P2_PERMIT_ID'
+,p_process_when=>'P13_PERMIT_ID'
 ,p_process_when_type=>'ITEM_IS_NOT_NULL'
-,p_internal_uid=>30143717338642706
+,p_internal_uid=>32997518432994001
 );
 wwv_flow_imp_page.create_page_process(
- p_id=>wwv_flow_imp.id(27017024078886521)
+ p_id=>wwv_flow_imp.id(32997130926994003)
 ,p_process_sequence=>10
 ,p_process_point=>'ON_DEMAND'
 ,p_process_type=>'NATIVE_PLSQL'
@@ -961,20 +987,20 @@ wwv_flow_imp_page.create_page_process(
 '              created_by,',
 '              created_date',
 '            ) VALUES (',
-'                l_json.get_string(''P2_SAFETY_PROGRAMME_REF_NO''),',
-'                l_json.get_string(''P2_ISOLATION_DIAGRAM_SERIAL_NO''),',
-'                l_json.get_string(''P2_SITE_DETAILS''),',
-'                l_json.get_string(''P2_WORK_DESCRIPTION''),',
-'                l_json.get_string(''P2_PERSON_IN_CHARGE_NAME''),',
-'                l_json.get_string(''P2_SUPERVISING_COMPANY''),',
-'                l_json.get_number(''P2_OTHER_PERSONS_COUNT''),',
-'                l_json.get_string(''P2_CLIENT_PERMISSION_GRANTED''),',
-'                l_json.get_string(''P2_AFFECTS_IT_SYSTEMS''),',
-'                l_json.get_string(''P2_IT_PERMISSION_GRANTED''),',
+'                l_json.get_string(''P13_SAFETY_PROGRAMME_REF_NO''),',
+'                l_json.get_string(''P13_ISOLATION_DIAGRAM_SERIAL_NO''),',
+'                l_json.get_string(''P13_SITE_DETAILS''),',
+'                l_json.get_string(''P13_WORK_DESCRIPTION''),',
+'                l_json.get_string(''P13_PERSON_IN_CHARGE_NAME''),',
+'                l_json.get_string(''P13_SUPERVISING_COMPANY''),',
+'                l_json.get_number(''P13_OTHER_PERSONS_COUNT''),',
+'                l_json.get_string(''P13_CLIENT_PERMISSION_GRANTED''),',
+'                l_json.get_string(''P13_AFFECTS_IT_SYSTEMS''),',
+'                l_json.get_string(''P13_IT_PERMISSION_GRANTED''),',
 '                ''SITE_WORK_DETAILS'',',
 '                ''IN_PROGRESS'',',
-'                l_json.get_number(''APP_LATITUDE''),',
-'                l_json.get_number(''APP_LONGITUDE''),',
+'                l_json.get_number(''P0_LATITUDE''),',
+'                l_json.get_number(''P0_LONGITUDE''),',
 '                NVL(V(''APP_USER''), USER),',
 '                SYSDATE',
 '            );',
@@ -984,18 +1010,18 @@ wwv_flow_imp_page.create_page_process(
 '        ELSE',
 '            -- UPDATE existing record',
 '            UPDATE ptw_pro.ptw_lv_permits',
-'            SET safety_programme_ref_no      = l_json.get_string(''P2_SAFETY_PROGRAMME_REF_NO''),',
-'                isolation_diagram_serial_no  = l_json.get_string(''P2_ISOLATION_DIAGRAM_SERIAL_NO''),',
-'                site_details                 = l_json.get_string(''P2_SITE_DETAILS''),',
-'                work_description             = l_json.get_string(''P2_WORK_DESCRIPTION''),',
-'                person_in_charge_name        = l_json.get_string(''P2_PERSON_IN_CHARGE_NAME''),',
-'                supervising_company          = l_json.get_string(''P2_SUPERVISING_COMPANY''),',
-'                other_persons_count          = l_json.get_number(''P2_OTHER_PERSONS_COUNT''),',
-'                client_permission_granted    = l_json.get_string(''P2_CLIENT_PERMISSION_GRANTED''),',
-'                affects_it_systems           = l_json.get_string(''P2_AFFECTS_IT_SYSTEMS''),',
-'                it_permission_granted        = l_json.get_string(''P2_IT_PERMISSION_GRANTED''),',
-'                site_work_latitude           = l_json.get_number(''APP_LATITUDE''),',
-'                site_work_longitude          = l_json.get_number(''APP_LONGITUDE''),',
+'            SET safety_programme_ref_no      = l_json.get_string(''P13_SAFETY_PROGRAMME_REF_NO''),',
+'                isolation_diagram_serial_no  = l_json.get_string(''P13_ISOLATION_DIAGRAM_SERIAL_NO''),',
+'                site_details                 = l_json.get_string(''P13_SITE_DETAILS''),',
+'                work_description             = l_json.get_string(''P13_WORK_DESCRIPTION''),',
+'                person_in_charge_name        = l_json.get_string(''P13_PERSON_IN_CHARGE_NAME''),',
+'                supervising_company          = l_json.get_string(''P13_SUPERVISING_COMPANY''),',
+'                other_persons_count          = l_json.get_number(''P13_OTHER_PERSONS_COUNT''),',
+'                client_permission_granted    = l_json.get_string(''P13_CLIENT_PERMISSION_GRANTED''),',
+'                affects_it_systems           = l_json.get_string(''P13_AFFECTS_IT_SYSTEMS''),',
+'                it_permission_granted        = l_json.get_string(''P13_IT_PERMISSION_GRANTED''),',
+'                site_work_latitude           = l_json.get_number(''P0_LATITUDE''),',
+'                site_work_longitude          = l_json.get_number(''P0_LONGITUDE''),',
 '                modified_by                  = NVL(V(''APP_USER''), USER),',
 '                modified_date                = SYSDATE',
 '            WHERE permit_id = l_record_id;',
@@ -1022,7 +1048,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_when=>'SYNC_OFFLINE_DATA'
 ,p_process_when_type=>'REQUEST_EQUALS_CONDITION'
 ,p_security_scheme=>wwv_flow_imp.id(31533963716212424)
-,p_internal_uid=>27017024078886521
+,p_internal_uid=>32997130926994003
 );
 wwv_flow_imp.component_end;
 end;

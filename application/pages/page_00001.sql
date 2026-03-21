@@ -122,6 +122,9 @@ unistr('        statusIcon.innerHTML = ''\26A0'';'),
 'OfflineStorage.initDB();',
 'ConnectionManager.init();',
 '',
+'// Get location',
+'initGeolocation();',
+'',
 '// Override form submission for offline mode',
 'if (!apex.page.submit._original) {',
 '    apex.page.submit._original = apex.page.submit;',
@@ -144,6 +147,7 @@ unistr('        statusIcon.innerHTML = ''\26A0'';'),
 '            });',
 '    }',
 '};',
+'',
 ''))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '.dashboard-card {',
@@ -1154,6 +1158,20 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_when_type=>'EXPRESSION'
 ,p_process_when2=>'PLSQL'
 ,p_internal_uid=>31606355068440625
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(33350169044951415)
+,p_process_sequence=>10
+,p_process_point=>'ON_DEMAND'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'SET_LOCATION'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'BEGIN',
+'    :APP_LATITUDE  := apex_application.g_x01;',
+'    :APP_LONGITUDE := apex_application.g_x02;',
+'END;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>33350169044951415
 );
 wwv_flow_imp.component_end;
 end;

@@ -19,6 +19,23 @@ wwv_flow_imp_page.create_page(
 ,p_step_title=>'Location'
 ,p_warn_on_unsaved_changes=>'N'
 ,p_autocomplete_on_off=>'OFF'
+,p_javascript_code=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'setTimeout(function() {',
+'    var mapCanvas = document.querySelector(''.ol-viewport'');',
+'    console.log(''Map canvas:'', mapCanvas);',
+'    if (mapCanvas) {',
+'        var allDivs = document.querySelectorAll(''div[id]'');',
+'        allDivs.forEach(function(d) {',
+'            console.log(''Div ID:'', d.id, ''Classes:'', d.className);',
+'        });',
+'    }',
+'}, 5000);'))
+,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'.ui-dialog {',
+'    border: 2px solid #000000 !important;',
+'    border-radius: 4px !important;',
+'}'))
+,p_step_template=>2100407606326202693
 ,p_page_template_options=>'#DEFAULT#'
 ,p_dialog_resizable=>'Y'
 ,p_protection_level=>'C'
@@ -27,9 +44,10 @@ wwv_flow_imp_page.create_page(
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(58110169498870687)
 ,p_plug_name=>'Location'
+,p_region_name=>'history_map'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>4501440665235496320
-,p_plug_display_sequence=>30
+,p_plug_display_sequence=>40
 ,p_location=>null
 ,p_lazy_loading=>true
 ,p_plug_source_type=>'NATIVE_MAP_REGION'
@@ -45,12 +63,13 @@ wwv_flow_imp_page.create_map_region(
 ,p_navigation_bar_position=>'END'
 ,p_init_position_zoom_type=>'SQL'
 ,p_init_position_zoom_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'select LONGITUDE,',
-'       LATITUDE,',
-'       10 AS ZOOMLEVEL',
-'from   GP15_STAGE_LOCATIONS',
-'where  PERMIT_ID = :P10_PERMIT_ID ',
-'AND    PERMIT_STAGE = :P10_CURRENT_STAGE'))
+'SELECT psl.LONGITUDE,',
+'       psl.LATITUDE,',
+'       15 AS ZOOMLEVEL',
+'FROM   PTW_PRO.PTW_STAGE_LOCATIONS psl',
+'WHERE  psl.PERMIT_ID    = :P7_PERMIT_ID ',
+'AND    psl.PERMIT_STAGE = :P7_CURRENT_STAGE',
+'AND    TO_CHAR(psl.CREATED_DATE, ''DD-MON-YYYY HH24:MI'') = :P7_CREATED_DATE'))
 ,p_init_position_geometry_type=>'LONLAT_COLUMNS'
 ,p_init_position_lon_column=>'LONGITUDE'
 ,p_init_position_lat_column=>'LATITUDE'
@@ -70,12 +89,11 @@ wwv_flow_imp_page.create_map_region_layer(
 ,p_layer_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'select PERMIT_ID,',
 '       CASE PERMIT_STAGE',
-'         WHEN ''CLIENT_OPERATIVE'' THEN ''Step 1: Client & Operative''',
-'         WHEN ''APPLIANCES'' THEN ''Step 2: Appliances''',
-'         WHEN ''SAFETY_VENTILATION'' THEN ''Step 3: Safety & Ventilation''',
-'         WHEN ''COMBUSTION'' THEN ''Step 4: Combustion''',
-'         WHEN ''ADDITIONAL_WORK'' THEN ''Step 5: Additional Work''',
-'         WHEN ''SIGN_REVIEW'' THEN ''Step 6: Sign & Review''',
+'        WHEN ''SITE_WORK_DETAILS'' THEN ''Step 1: Site and Work Details''',
+'        WHEN ''CONTROL_MEASURES''  THEN ''Step 2: Control Measures''',
+'        WHEN ''EQUIP_ISOLATION''   THEN ''Step 3: Equipment Isolation''',
+'        WHEN ''AUTHORISATION''     THEN ''Step 4: Authorisation''',
+'        WHEN ''CLEARANCE''         THEN ''Step 5: Clearance''',
 '       ELSE PERMIT_STAGE',
 '       END as step_display,',
 '       LATITUDE,',
@@ -83,9 +101,12 @@ wwv_flow_imp_page.create_map_region_layer(
 '       CREATED_DATE,',
 '       CREATED_BY,',
 '       PERMIT_STAGE',
-'from    GP15_STAGE_LOCATIONS',
-' where PERMIT_ID = :P7_PERMIT_ID AND PERMIT_STAGE = :P7_CURRENT_STAGE'))
-,p_items_to_submit=>'P10_PERMIT_ID,P10_CURRENT_STAGE'
+'from    ptw_pro.PTW_STAGE_LOCATIONS',
+'where PERMIT_ID = :P7_PERMIT_ID ',
+'AND PERMIT_STAGE = :P7_CURRENT_STAGE',
+'AND  TO_CHAR(CREATED_DATE, ''DD-MON-YYYY HH24:MI'') = :P7_CREATED_DATE',
+''))
+,p_items_to_submit=>'P7_PERMIT_ID,P7_CURRENT_STAGE,P7_CREATED_DATE'
 ,p_has_spatial_index=>false
 ,p_geometry_column_data_type=>'LONLAT_COLUMNS'
 ,p_longitude_column=>'LONGITUDE'
@@ -98,6 +119,16 @@ wwv_flow_imp_page.create_map_region_layer(
 ,p_tooltip_adv_formatting=>false
 ,p_info_window_adv_formatting=>false
 ,p_allow_hide=>true
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(33350643652951420)
+,p_name=>'P7_CREATED_DATE'
+,p_item_sequence=>30
+,p_format_mask=>'DD-MON-YYYY HH24:MI'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_encrypt_session_state_yn=>'N'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(58097411888997905)

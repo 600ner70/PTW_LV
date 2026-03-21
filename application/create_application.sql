@@ -20,6 +20,8 @@ wwv_imp_workspace.create_flow(
 ,p_page_protection_enabled_y_n=>'Y'
 ,p_checksum_salt=>'A9926E9A37BC8591E2F899AA8424E879CD546B06F9181DA62E16FA46A2A826D9'
 ,p_bookmark_checksum_function=>'SH512'
+,p_max_session_idle_sec=>7200
+,p_session_timeout_warning_sec=>3300
 ,p_compatibility_mode=>'24.2'
 ,p_flow_language=>'en'
 ,p_flow_language_derived_from=>'FLOW_PRIMARY_LANGUAGE'
@@ -37,7 +39,6 @@ wwv_imp_workspace.create_flow(
 ,p_flow_status=>'AVAILABLE_W_EDIT_LINK'
 ,p_flow_unavailable_text=>'This application is currently unavailable at this time.'
 ,p_exact_substitutions_only=>'Y'
-,p_browser_cache=>'N'
 ,p_browser_frame=>'D'
 ,p_runtime_api_usage=>'W'
 ,p_security_scheme=>wwv_flow_imp.id(30177956100539874)
@@ -47,8 +48,8 @@ wwv_imp_workspace.create_flow(
 ,p_substitution_string_01=>'APP_NAME'
 ,p_substitution_value_01=>'PTW_PRO'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
-,p_files_version=>60
-,p_version_scn=>46452148410723
+,p_files_version=>105
+,p_version_scn=>46547611511788
 ,p_print_server_type=>'NATIVE'
 ,p_file_storage=>'DB'
 ,p_is_pwa=>'Y'
