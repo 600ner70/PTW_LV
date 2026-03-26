@@ -1054,7 +1054,7 @@ wwv_flow_imp_page.create_page_validation(
  p_id=>wwv_flow_imp.id(27356670959033437)
 ,p_validation_name=>'Auth Person Name Required'
 ,p_validation_sequence=>20
-,p_validation=>'P5_AUTH_PERSON_NAME'
+,p_validation=>'P5_AUTH_PERSON_SELECT'
 ,p_validation_type=>'ITEM_NOT_NULL'
 ,p_error_message=>'Authorised person name is required.'
 ,p_validation_condition=>'START_PERMIT'
@@ -1077,12 +1077,16 @@ wwv_flow_imp_page.create_page_validation(
 ,p_validation_name=>'FROM Before TO'
 ,p_validation_sequence=>25
 ,p_validation=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'RETURN NOT (',
-'    :P5_AUTH_FROM_DATETIME IS NOT NULL AND',
-'    :P5_AUTH_TO_DATETIME   IS NOT NULL AND',
-'    TO_DATE(:P5_AUTH_TO_DATETIME,   ''DD-MON-YYYY HH24:MI'') <=',
-'    TO_DATE(:P5_AUTH_FROM_DATETIME, ''DD-MON-YYYY HH24:MI'')',
-');'))
+'BEGIN',
+'    RETURN NOT (',
+'        :P5_AUTH_FROM_DATETIME IS NOT NULL AND',
+'        :P5_AUTH_TO_DATETIME   IS NOT NULL AND',
+'        TO_DATE(:P5_AUTH_TO_DATETIME,   ''DD-MON-YYYY HH24:MI'') <=',
+'        TO_DATE(:P5_AUTH_FROM_DATETIME, ''DD-MON-YYYY HH24:MI'')',
+'    );',
+'EXCEPTION',
+'    WHEN OTHERS THEN RETURN TRUE;',
+'END;'))
 ,p_validation2=>'PLSQL'
 ,p_validation_type=>'FUNC_BODY_RETURNING_BOOLEAN'
 ,p_error_message=>'Permit FROM time must be before the TO (Expires) time.'
@@ -1095,11 +1099,27 @@ wwv_flow_imp_page.create_page_validation(
 ,p_validation_name=>'No Self-Authorisation'
 ,p_validation_sequence=>27
 ,p_validation=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'RETURN NOT (',
-'    :P5_AUTH_PERSON_NAME   IS NOT NULL AND',
-'    :P5_ACCEPT_PERSON_NAME IS NOT NULL AND',
-'    UPPER(TRIM(:P5_AUTH_PERSON_NAME)) = UPPER(TRIM(:P5_ACCEPT_PERSON_NAME))',
-');'))
+'BEGIN',
+'  DECLARE',
+'    l_name VARCHAR2(200);',
+'  BEGIN',
+'    BEGIN',
+'      SELECT first_name || '' '' || last_name',
+'      INTO   l_name',
+'      FROM   ptw_pro.ptw_lv_user_roles',
+'      WHERE  role_id = :P5_AUTH_PERSON_SELECT;',
+'    EXCEPTION',
+'      WHEN OTHERS THEN l_name := NULL; ',
+'    END;',
+'    RETURN NOT (',
+'        l_name  IS NOT NULL AND',
+'        l_name IS NOT NULL AND',
+'        UPPER(TRIM(l_name)) = UPPER(TRIM(:P5_ACCEPT_PERSON_NAME))',
+'    );',
+'  END;',
+'EXCEPTION',
+'    WHEN OTHERS THEN RETURN TRUE;',
+'END;'))
 ,p_validation2=>'PLSQL'
 ,p_validation_type=>'FUNC_BODY_RETURNING_BOOLEAN'
 ,p_error_message=>'The Authorised Person and Person in Charge of Works cannot be the same individual. A permit must not be self-authorised.'
@@ -1509,6 +1529,7 @@ wwv_flow_imp_page.create_page_da_action(
 '              ? ''SAVE_DRAFT'' : ''AUTHORISE'';',
 'captureLocationThenSubmit(request);',
 ''))
+,p_server_condition_type=>'NEVER'
 );
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(37954826633176009)
@@ -1573,7 +1594,7 @@ wwv_flow_imp_page.create_page_process(
 '--    IF :P5_IS_CHANGED = ''Y'' THEN',
 '',
 '      UPDATE ptw_pro.ptw_lv_permits',
-'      SET auth_person_name = :P5_AUTH_PERSON_NAME,',
+'      SET auth_person_name = :P5_AUTH_PERSON_SELECT,',
 '          auth_person_signature = v_auth_sig_blob,',
 '          auth_person_mobile = :P5_AUTH_PERSON_MOBILE,',
 '          auth_from_datetime = TO_DATE(:P5_AUTH_FROM_DATETIME, ''DD-MON-YYYY HH24:MI''),',
@@ -1607,7 +1628,7 @@ wwv_flow_imp_page.create_page_process(
 '            p_message => ''Error saving authorisation data: '' || SQLERRM,',
 '            p_display_location => apex_error.c_inline_in_notification',
 '        );',
-'        RAISE;',
+'--        RAISE;',
 'END;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
