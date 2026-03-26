@@ -21,7 +21,7 @@ wwv_flow_imp_page.create_page(
 ,p_javascript_code=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'let authSignaturePad;',
 'let acceptSignaturePad;',
-' ',
+'',
 'function initSignaturePads() {',
 '    setTimeout(function() {',
 '        initPad(''authSignaturePad'',   ''P5_AUTH_SIGNATURE_DATA'',   function(pad) { authSignaturePad   = pad; });',
@@ -35,16 +35,13 @@ wwv_flow_imp_page.create_page(
 '',
 '    const regionBody   = canvas.closest(''.t-Region-body'') || canvas.closest(''.t-ContentBody'') || canvas.parentElement;',
 '    const displayWidth = regionBody ? regionBody.offsetWidth - 24 : 300;',
-' ',
-'    const screenWidth   = window.innerWidth;',
+'    const screenWidth  = window.innerWidth;',
 '    const displayHeight = screenWidth < 768 ? 100 : 150;',
-' ',
-'    const dpr = window.devicePixelRatio || 1;',
-' ',
-'    canvas.width  = displayWidth  * dpr;',
-'    canvas.height = displayHeight * dpr;',
-' ',
-'    // JS owns all canvas inline styles - CSS only sets width:100%',
+'',
+'    // No DPR scaling - keep it simple, 1:1 pixel ratio',
+'    canvas.width  = displayWidth;',
+'    canvas.height = displayHeight;',
+'',
 '    canvas.setAttribute(''style'',',
 '        ''width:''  + displayWidth  + ''px !important;'' +',
 '        ''height:'' + displayHeight + ''px !important;'' +',
@@ -54,44 +51,42 @@ wwv_flow_imp_page.create_page(
 '        ''cursor: crosshair;'' +',
 '        ''display: block;''',
 '    );',
-' ',
+'',
 '    const ctx = canvas.getContext(''2d'');',
-'    ctx.setTransform(1, 0, 0, 1, 0, 0);',
-'    ctx.scale(dpr, dpr);',
 '    ctx.strokeStyle = ''#000000'';',
 '    ctx.lineWidth   = 2;',
 '    ctx.lineCap     = ''round'';',
 '    ctx.lineJoin    = ''round'';',
-' ',
+'',
 '    const pad = new SignaturePad(canvas, ctx);',
 '    callback(pad);',
-' ',
+'',
 '    const existingSig = $v(itemName);',
 '    if (existingSig) {',
 '        loadSignature(pad, canvas, existingSig);',
 '    }',
 '}',
-' ',
+'',
 'function SignaturePad(canvas, ctx) {',
-'    this.canvas   = canvas;',
-'    this.ctx      = ctx;',
-'    this.drawing  = false;',
-'    this.isEmpty  = true;',
-' ',
+'    this.canvas  = canvas;',
+'    this.ctx     = ctx;',
+'    this.drawing = false;',
+'    this.isEmpty = true;',
+'',
 '    this.ctx.strokeStyle = ''#000000'';',
 '    this.ctx.lineWidth   = 2;',
 '    this.ctx.lineCap     = ''round'';',
 '    this.ctx.lineJoin    = ''round'';',
-' ',
+'',
 '    this.canvas.addEventListener(''mousedown'',  (e) => this.startDrawing(e));',
 '    this.canvas.addEventListener(''mousemove'',  (e) => this.draw(e));',
 '    this.canvas.addEventListener(''mouseup'',    ()  => this.stopDrawing());',
 '    this.canvas.addEventListener(''mouseout'',   ()  => this.stopDrawing());',
-' ',
+'',
 '    this.canvas.addEventListener(''touchstart'', (e) => { e.preventDefault(); this.startDrawing(e.touches[0]); });',
 '    this.canvas.addEventListener(''touchmove'',  (e) => { e.preventDefault(); this.draw(e.touches[0]); });',
 '    this.canvas.addEventListener(''touchend'',   ()  => this.stopDrawing());',
-' ',
+'',
 '    this.startDrawing = function(e) {',
 '        this.drawing = true;',
 '        this.isEmpty = false;',
@@ -99,46 +94,46 @@ wwv_flow_imp_page.create_page(
 '        this.ctx.beginPath();',
 '        this.ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);',
 '    };',
-' ',
+'',
 '    this.draw = function(e) {',
 '        if (!this.drawing) return;',
 '        const rect = this.canvas.getBoundingClientRect();',
 '        this.ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);',
 '        this.ctx.stroke();',
 '    };',
-' ',
+'',
 '    this.stopDrawing = function() { this.drawing = false; };',
-' ',
+'',
 '    this.clear = function() {',
 '        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);',
 '        this.isEmpty = true;',
 '    };',
-' ',
+'',
 '    this.getDataURL = function() {',
 '        return this.isEmpty ? '''' : this.canvas.toDataURL(''image/png'');',
 '    };',
 '}',
-' ',
+'',
 'function clearAuthSignature() {',
 '    if (authSignaturePad) {',
 '        authSignaturePad.clear();',
 '        apex.item(''P5_AUTH_SIGNATURE_DATA'').setValue('''');',
 '    }',
 '}',
-' ',
+'',
 'function clearAcceptSignature() {',
 '    if (acceptSignaturePad) {',
 '        acceptSignaturePad.clear();',
 '        apex.item(''P5_ACCEPT_SIGNATURE_DATA'').setValue('''');',
 '    }',
 '}',
-' ',
+'',
 'function loadSignature(pad, canvas, dataURL) {',
-'    if (!dataURL) return;',
+'    if (!pad || !dataURL) return;',
 '    const img = new Image();',
 '    img.onload = function() {',
-'        const dw = parseFloat(canvas.style.width)  || canvas.offsetWidth  || 300;',
-'        const dh = parseFloat(canvas.style.height) || canvas.offsetHeight || 100;',
+'        const dw = canvas.width;',
+'        const dh = canvas.height;',
 '        if (dw === 0 || dh === 0) return;',
 '        pad.ctx.clearRect(0, 0, dw, dh);',
 '        pad.ctx.drawImage(img, 0, 0, dw, dh);',
@@ -146,28 +141,128 @@ wwv_flow_imp_page.create_page(
 '    };',
 '    img.src = dataURL;',
 '}',
-' ',
+'',
 'function saveSignatures() {',
 '    if (authSignaturePad   && !authSignaturePad.isEmpty)   { apex.item(''P5_AUTH_SIGNATURE_DATA'').setValue(authSignaturePad.getDataURL()); }',
 '    if (acceptSignaturePad && !acceptSignaturePad.isEmpty) { apex.item(''P5_ACCEPT_SIGNATURE_DATA'').setValue(acceptSignaturePad.getDataURL()); }',
 '}',
 '',
-'// Update connection status UI',
 'function updateConnectionUI() {',
-'    const statusDiv = document.getElementById(''connection-status'');',
+'    const statusDiv  = document.getElementById(''connection-status'');',
 '    const statusIcon = document.getElementById(''status-icon'');',
 '    const statusText = document.getElementById(''status-text'');',
-'    ',
+'    if (!statusDiv) return;',
 '    if (navigator.onLine) {',
 '        statusDiv.style.backgroundColor = ''#d4edda'';',
-unistr('        statusIcon.innerHTML = ''\2713'';'),
+'        statusIcon.innerHTML = ''\u2713'';',
 '        statusText.innerHTML = ''Connected'';',
 '    } else {',
 '        statusDiv.style.backgroundColor = ''#fff3cd'';',
-unistr('        statusIcon.innerHTML = ''\26A0'';'),
+'        statusIcon.innerHTML = ''\u26A0'';',
 '        statusText.innerHTML = ''Offline Mode'';',
 '    }',
-'}'))
+'}',
+'',
+'function ptwShowStartDialog() {',
+'    var now    = new Date();',
+'    var toDate = new Date(now.getTime() + 12 * 60 * 60 * 1000);',
+'',
+'    function fmtDate(d) {',
+'        var months = [''JAN'',''FEB'',''MAR'',''APR'',''MAY'',''JUN'',',
+'                      ''JUL'',''AUG'',''SEP'',''OCT'',''NOV'',''DEC''];',
+'        return String(d.getDate()).padStart(2,''0'') + ''-'' +',
+'               months[d.getMonth()] + ''-'' + d.getFullYear() + '' '' +',
+'               String(d.getHours()).padStart(2,''0'') + '':'' +',
+'               String(d.getMinutes()).padStart(2,''0'');',
+'    }',
+'',
+'    function parseDate(str) {',
+'        var months = {JAN:0,FEB:1,MAR:2,APR:3,MAY:4,JUN:5,',
+'                      JUL:6,AUG:7,SEP:8,OCT:9,NOV:10,DEC:11};',
+'        var m = str.match(/(\d{2})-([A-Z]{3})-(\d{4}) (\d{2}):(\d{2})/);',
+'        if (!m) return NaN;',
+'        return new Date(m[3], months[m[2]], m[1], m[4], m[5]);',
+'    }',
+'',
+'    var fromStr = fmtDate(now);',
+'    var toStr   = fmtDate(toDate);',
+'',
+'    $(''<div id="ptwStartDialog">'' +',
+'      ''<p style="margin:0 0 12px 0;font-size:14px;">Choose the permit validity window:</p>'' +',
+'      ''<div style="margin-bottom:16px;">'' +',
+'      ''<label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;">'' +',
+'      ''<input type="radio" name="ptwStartMode" value="IMMEDIATE" checked> Start immediately (now + 12 hours)</label>'' +',
+'      ''<div id="ptwImmediateDates" style="margin:8px 0 0 24px;font-size:13px;color:#595959;">'' +',
+'      ''From: <strong>'' + fromStr + ''</strong> &mdash; To: <strong>'' + toStr + ''</strong></div></div>'' +',
+'      ''<div><label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;">'' +',
+'      ''<input type="radio" name="ptwStartMode" value="SCHEDULED"> Schedule specific dates</label>'' +',
+'      ''<div id="ptwScheduledDates" style="display:none;margin:10px 0 0 24px;">'' +',
+'      ''<div style="display:flex;gap:16px;flex-wrap:wrap;">'' +',
+'      ''<div><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">FROM</label>'' +',
+'      ''<input type="text" id="ptwFromInput" class="apex-item-text" value="'' + fromStr + ''" style="width:200px;"></div>'' +',
+'      ''<div><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">TO (max 12 hrs)</label>'' +',
+'      ''<input type="text" id="ptwToInput" class="apex-item-text" value="'' + toStr + ''" style="width:200px;"></div>'' +',
+'      ''</div></div></div></div>'')',
+'    .appendTo(''body'')',
+'    .dialog({',
+'        title: ''Start Permit - '' + apex.item(''P5_PERMIT_NUMBER'').getValue(),',
+'        modal: true, width: 520, dialogClass: ''ptw-apex-dialog'',',
+'        open: function() {',
+'            $(this).find(''input[name="ptwStartMode"]'').on(''change'', function() {',
+'                if ($(this).val() === ''IMMEDIATE'') {',
+'                    $(''#ptwImmediateDates'').show(); $(''#ptwScheduledDates'').hide();',
+'                } else {',
+'                    $(''#ptwImmediateDates'').hide(); $(''#ptwScheduledDates'').show();',
+'                }',
+'            });',
+'        },',
+'        buttons: [',
+'            {',
+'                text: ''Start Permit'', ''class'': ''t-Button t-Button--hot'',',
+'                click: function() {',
+'                    var mode    = $(''input[name="ptwStartMode"]:checked'').val();',
+'                    var fromVal = fromStr;',
+'                    var toVal   = toStr;',
+'                    if (mode === ''SCHEDULED'') {',
+'                        fromVal = $(''#ptwFromInput'').val().trim().toUpperCase();',
+'                        toVal   = $(''#ptwToInput'').val().trim().toUpperCase();',
+'                        if (!fromVal || !toVal) {',
+'                            apex.message.showErrors([{type:''error'',location:''page'',',
+'                                message:''Both FROM and TO dates are required.''}]);',
+'                            return;',
+'                        }',
+'                        var fd = parseDate(fromVal), td = parseDate(toVal);',
+'                        if (isNaN(fd) || isNaN(td)) {',
+'                            apex.message.showErrors([{type:''error'',location:''page'',',
+'                                message:''Invalid date. Use DD-MON-YYYY HH:MI e.g. 26-MAR-2026 14:00''}]);',
+'                            return;',
+'                        }',
+'                        if (td <= fd) {',
+'                            apex.message.showErrors([{type:''error'',location:''page'',',
+'                                message:''TO date must be after FROM date.''}]);',
+'                            return;',
+'                        }',
+'                        if ((td - fd) > 12 * 60 * 60 * 1000) {',
+'                            apex.message.showErrors([{type:''error'',location:''page'',',
+'                                message:''Permit duration cannot exceed 12 hours.''}]);',
+'                            return;',
+'                        }',
+'                    }',
+'                    apex.item(''P5_AUTH_FROM_DATETIME'').setValue(fromVal);',
+'                    apex.item(''P5_AUTH_TO_DATETIME'').setValue(toVal);',
+'                    $(this).dialog(''close'');',
+'                    captureLocationThenSubmit(''START_PERMIT'');',
+'                }',
+'            },',
+'            {',
+'                text: ''Cancel'', ''class'': ''t-Button'',',
+'                click: function() { $(this).dialog(''close''); }',
+'            }',
+'        ],',
+'        close: function() { $(this).dialog(''destroy'').remove(); }',
+'    });',
+'}',
+''))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '.ptw-workflow-progress {',
 '    display: flex;',
@@ -631,6 +726,7 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_position=>'NEXT'
 ,p_button_execute_validations=>'N'
 ,p_warn_on_unsaved_changes=>null
+,p_button_condition_type=>'NEVER'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(31606655096440628)
@@ -784,7 +880,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'based_on', 'VALUE',
   'format', 'PLAIN',
-  'send_on_page_submit', 'Y',
+  'send_on_page_submit', 'N',
   'show_line_breaks', 'Y')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
@@ -802,7 +898,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'based_on', 'VALUE',
   'format', 'PLAIN',
-  'send_on_page_submit', 'Y',
+  'send_on_page_submit', 'N',
   'show_line_breaks', 'Y')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
@@ -821,7 +917,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'based_on', 'VALUE',
   'format', 'PLAIN',
-  'send_on_page_submit', 'Y',
+  'send_on_page_submit', 'N',
   'show_line_breaks', 'Y')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
@@ -841,7 +937,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'based_on', 'VALUE',
   'format', 'PLAIN',
-  'send_on_page_submit', 'Y',
+  'send_on_page_submit', 'N',
   'show_line_breaks', 'Y')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
@@ -881,8 +977,6 @@ wwv_flow_imp_page.create_page_item(
 ,p_name=>'P5_AUTH_DATETIME'
 ,p_item_sequence=>40
 ,p_item_plug_id=>wwv_flow_imp.id(27354749922033418)
-,p_item_default=>'SELECT TO_CHAR(SYSDATE,''DD-MON-YYYY HH24:MI'') FROM DUAL;'
-,p_item_default_type=>'SQL_QUERY'
 ,p_prompt=>'Authorisation Date'
 ,p_format_mask=>'DD-MON-YYYY HH24:MI'
 ,p_display_as=>'NATIVE_DATE_PICKER_APEX'
@@ -944,7 +1038,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'based_on', 'VALUE',
   'format', 'PLAIN',
-  'send_on_page_submit', 'Y',
+  'send_on_page_submit', 'N',
   'show_line_breaks', 'Y')).to_clob
 );
 wwv_flow_imp_page.create_page_validation(
@@ -1063,7 +1157,24 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_execute_on_page_init=>'N'
 ,p_name=>'Signatures'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>'initSignaturePads();'
+,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'initSignaturePads();',
+'',
+'// If read-only, disable canvases after pads have initialised',
+'setTimeout(function() {',
+'    var status = apex.item(''P5_WORKFLOW_STATUS'').getValue();',
+'    if (status !== ''IN_PROGRESS'' && status !== '''') {',
+'        [''authSignaturePad'', ''acceptSignaturePad''].forEach(function(id) {',
+'            var canvas = document.getElementById(id);',
+'            if (canvas) {',
+'                canvas.style.pointerEvents = ''none'';',
+'                canvas.style.opacity       = ''0.6'';',
+'                canvas.style.cursor        = ''not-allowed'';',
+'                canvas.title               = ''This permit is read-only'';',
+'            }',
+'        });',
+'    }',
+'}, 250);'))
 );
 wwv_flow_imp_page.create_page_da_action(
  p_id=>wwv_flow_imp.id(37955420884176015)
@@ -1197,35 +1308,6 @@ wwv_flow_imp_page.create_page_da_event(
 ,p_bind_event_type=>'click'
 );
 wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(31606997498440631)
-,p_event_id=>wwv_flow_imp.id(31606875799440630)
-,p_event_result=>'TRUE'
-,p_action_sequence=>10
-,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_affected_elements_type=>'ITEM'
-,p_affected_elements=>'P5_IS_CHANGED'
-,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'if (apex.page.isChanged()) {',
-'    // do something, e.g. enable a save button',
-'    apex.item(''P5_IS_CHANGED'').setValue(''Y'');',
-'} else {',
-'    apex.item(''P5_IS_CHANGED'').setValue(''N'');',
-'}'))
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(31607081770440632)
-,p_event_id=>wwv_flow_imp.id(31606875799440630)
-,p_event_result=>'TRUE'
-,p_action_sequence=>20
-,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
-,p_attribute_01=>'NULL;'
-,p_attribute_02=>'P5_IS_CHANGED'
-,p_attribute_05=>'PLSQL'
-,p_wait_for_result=>'Y'
-);
-wwv_flow_imp_page.create_page_da_action(
  p_id=>wwv_flow_imp.id(31607101265440633)
 ,p_event_id=>wwv_flow_imp.id(31606875799440630)
 ,p_event_result=>'TRUE'
@@ -1353,20 +1435,20 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_execute_on_page_init=>'N'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
 ,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'// Disable signature canvases',
-'[''authSignaturePad'', ''acceptSignaturePad''].forEach(function(id) {',
-'    var canvas = document.getElementById(id);',
-'    if (canvas) {',
-'        canvas.style.pointerEvents = ''none'';',
-'        canvas.style.opacity       = ''0.6'';',
-'        canvas.style.cursor        = ''not-allowed'';',
-'        canvas.title               = ''This permit is read-only'';',
-'            }',
-'    });',
+'// // Disable signature canvases',
+'// [''authSignaturePad'', ''acceptSignaturePad''].forEach(function(id) {',
+'//     var canvas = document.getElementById(id);',
+'//     if (canvas) {',
+'//         canvas.style.pointerEvents = ''none'';',
+'//         canvas.style.opacity       = ''0.6'';',
+'//         canvas.style.cursor        = ''not-allowed'';',
+'//         canvas.title               = ''This permit is read-only'';',
+'//             }',
+'//     });',
 '// Hide Clear Signature buttons',
 '$(''#BTN_CLEAR_AUTH_SIG_P5, #BTN_CLEAR_ACCEPT_SIG_P5'').hide();',
-'// Hide Save Draft button',
-'$(''#BTN_SAVE_DRAFT_P5'').hide();',
+'// Hide Save Draft and Authorise buttons when read-only',
+'$(''#BTN_SAVE_DRAFT_P5, #BTN_START_PERMIT_P5'').hide();',
 '// Disable all editable items via APEX API',
 'apex.item(''P5_AUTH_PERSON_SELECT'').disable();',
 'apex.item(''P5_AUTH_DATETIME'').disable();',
@@ -1386,33 +1468,40 @@ wwv_flow_imp_page.create_page_da_event(
 ,p_bind_event_type=>'click'
 );
 wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(37960222656090267)
+ p_id=>wwv_flow_imp.id(31606997498440631)
 ,p_event_id=>wwv_flow_imp.id(37959803508090279)
 ,p_event_result=>'TRUE'
 ,p_action_sequence=>10
 ,p_execute_on_page_init=>'N'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
 ,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'var request = $(this.triggeringElement).attr(''id'').indexOf(''SAVE_DRAFT'') > -1',
-'              ? ''SAVE_DRAFT'' : ''AUTHORISE'';',
-'captureLocationThenSubmit(request);',
-''))
-);
-wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(37954541734176006)
-,p_name=>'Button Click - Authorise'
-,p_event_sequence=>80
-,p_triggering_element_type=>'BUTTON'
-,p_triggering_button_id=>wwv_flow_imp.id(31606655096440628)
-,p_bind_type=>'bind'
-,p_execution_type=>'IMMEDIATE'
-,p_bind_event_type=>'click'
+'var errors = [];',
+'if (!apex.item(''P5_AUTH_PERSON_SELECT'').getValue()) {',
+'    errors.push(''Please select an Authorising Person.'');',
+'}',
+'if (!authSignaturePad || authSignaturePad.isEmpty) {',
+'    errors.push(''Authorised person signature is required.'');',
+'}',
+'if (!apex.item(''P5_ACCEPT_PERSON_NAME'').getValue()) {',
+'    errors.push(''Name of Person in Charge of Works is required.'');',
+'}',
+'if (!acceptSignaturePad || acceptSignaturePad.isEmpty) {',
+'    errors.push(''Person in Charge signature is required.'');',
+'}',
+'if (errors.length > 0) {',
+'    apex.message.showErrors(errors.map(function(msg) {',
+'        return { type: ''error'', location: ''page'', message: msg };',
+'    }));',
+'    return;',
+'}',
+'apex.message.clearErrors();',
+'ptwShowStartDialog();'))
 );
 wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(37954638953176007)
-,p_event_id=>wwv_flow_imp.id(37954541734176006)
+ p_id=>wwv_flow_imp.id(37960222656090267)
+,p_event_id=>wwv_flow_imp.id(37959803508090279)
 ,p_event_result=>'TRUE'
-,p_action_sequence=>10
+,p_action_sequence=>30
 ,p_execute_on_page_init=>'N'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
 ,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
