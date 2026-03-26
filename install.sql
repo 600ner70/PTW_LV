@@ -39,6 +39,7 @@ prompt --install
 @@application/shared_components/security/app_access_control/contributor.sql
 @@application/shared_components/security/app_access_control/reader.sql
 @@application/shared_components/navigation/navigation_bar.sql
+@@application/shared_components/logic/application_processes/get_signatures_p5.sql
 @@application/shared_components/logic/application_processes/set_location.sql
 @@application/shared_components/logic/application_items/app_latitude.sql
 @@application/shared_components/logic/application_items/app_longitude.sql
@@ -47,6 +48,8 @@ prompt --install
 @@application/shared_components/navigation/tabs/parent.sql
 @@application/shared_components/user_interface/lovs/access_roles.sql
 @@application/shared_components/user_interface/lovs/email_username_format.sql
+@@application/shared_components/user_interface/lovs/ptw_authorised_persons.sql
+@@application/shared_components/user_interface/lovs/ptw_start_mode.sql
 @@application/shared_components/user_interface/lovs/timeframe_4_weeks.sql
 @@application/shared_components/user_interface/lovs/view_as_report_chart.sql
 @@application/pages/page_groups.sql
