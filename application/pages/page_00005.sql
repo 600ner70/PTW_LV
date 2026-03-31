@@ -162,106 +162,6 @@ wwv_flow_imp_page.create_page(
 '        statusText.innerHTML = ''Offline Mode'';',
 '    }',
 '}',
-'',
-'function ptwShowStartDialog() {',
-'    var now    = new Date();',
-'    var toDate = new Date(now.getTime() + 12 * 60 * 60 * 1000);',
-'',
-'    function fmtDate(d) {',
-'        var months = [''JAN'',''FEB'',''MAR'',''APR'',''MAY'',''JUN'',',
-'                      ''JUL'',''AUG'',''SEP'',''OCT'',''NOV'',''DEC''];',
-'        return String(d.getDate()).padStart(2,''0'') + ''-'' +',
-'               months[d.getMonth()] + ''-'' + d.getFullYear() + '' '' +',
-'               String(d.getHours()).padStart(2,''0'') + '':'' +',
-'               String(d.getMinutes()).padStart(2,''0'');',
-'    }',
-'',
-'    function parseDate(str) {',
-'        var months = {JAN:0,FEB:1,MAR:2,APR:3,MAY:4,JUN:5,',
-'                      JUL:6,AUG:7,SEP:8,OCT:9,NOV:10,DEC:11};',
-'        var m = str.match(/(\d{2})-([A-Z]{3})-(\d{4}) (\d{2}):(\d{2})/);',
-'        if (!m) return NaN;',
-'        return new Date(m[3], months[m[2]], m[1], m[4], m[5]);',
-'    }',
-'',
-'    var fromStr = fmtDate(now);',
-'    var toStr   = fmtDate(toDate);',
-'',
-'    $(''<div id="ptwStartDialog">'' +',
-'      ''<p style="margin:0 0 12px 0;font-size:14px;">Choose the permit validity window:</p>'' +',
-'      ''<div style="margin-bottom:16px;">'' +',
-'      ''<label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;">'' +',
-'      ''<input type="radio" name="ptwStartMode" value="IMMEDIATE" checked> Start immediately (now + 12 hours)</label>'' +',
-'      ''<div id="ptwImmediateDates" style="margin:8px 0 0 24px;font-size:13px;color:#595959;">'' +',
-'      ''From: <strong>'' + fromStr + ''</strong> &mdash; To: <strong>'' + toStr + ''</strong></div></div>'' +',
-'      ''<div><label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;">'' +',
-'      ''<input type="radio" name="ptwStartMode" value="SCHEDULED"> Schedule specific dates</label>'' +',
-'      ''<div id="ptwScheduledDates" style="display:none;margin:10px 0 0 24px;">'' +',
-'      ''<div style="display:flex;gap:16px;flex-wrap:wrap;">'' +',
-'      ''<div><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">FROM</label>'' +',
-'      ''<input type="text" id="ptwFromInput" class="apex-item-text" value="'' + fromStr + ''" style="width:200px;"></div>'' +',
-'      ''<div><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">TO (max 12 hrs)</label>'' +',
-'      ''<input type="text" id="ptwToInput" class="apex-item-text" value="'' + toStr + ''" style="width:200px;"></div>'' +',
-'      ''</div></div></div></div>'')',
-'    .appendTo(''body'')',
-'    .dialog({',
-'        title: ''Start Permit - '' + apex.item(''P5_PERMIT_NUMBER'').getValue(),',
-'        modal: true, width: 520, dialogClass: ''ptw-apex-dialog'',',
-'        open: function() {',
-'            $(this).find(''input[name="ptwStartMode"]'').on(''change'', function() {',
-'                if ($(this).val() === ''IMMEDIATE'') {',
-'                    $(''#ptwImmediateDates'').show(); $(''#ptwScheduledDates'').hide();',
-'                } else {',
-'                    $(''#ptwImmediateDates'').hide(); $(''#ptwScheduledDates'').show();',
-'                }',
-'            });',
-'        },',
-'        buttons: [',
-'            {',
-'                text: ''Start Permit'', ''class'': ''t-Button t-Button--hot'',',
-'                click: function() {',
-'                    var mode    = $(''input[name="ptwStartMode"]:checked'').val();',
-'                    var fromVal = fromStr;',
-'                    var toVal   = toStr;',
-'                    if (mode === ''SCHEDULED'') {',
-'                        fromVal = $(''#ptwFromInput'').val().trim().toUpperCase();',
-'                        toVal   = $(''#ptwToInput'').val().trim().toUpperCase();',
-'                        if (!fromVal || !toVal) {',
-'                            apex.message.showErrors([{type:''error'',location:''page'',',
-'                                message:''Both FROM and TO dates are required.''}]);',
-'                            return;',
-'                        }',
-'                        var fd = parseDate(fromVal), td = parseDate(toVal);',
-'                        if (isNaN(fd) || isNaN(td)) {',
-'                            apex.message.showErrors([{type:''error'',location:''page'',',
-'                                message:''Invalid date. Use DD-MON-YYYY HH:MI e.g. 26-MAR-2026 14:00''}]);',
-'                            return;',
-'                        }',
-'                        if (td <= fd) {',
-'                            apex.message.showErrors([{type:''error'',location:''page'',',
-'                                message:''TO date must be after FROM date.''}]);',
-'                            return;',
-'                        }',
-'                        if ((td - fd) > 12 * 60 * 60 * 1000) {',
-'                            apex.message.showErrors([{type:''error'',location:''page'',',
-'                                message:''Permit duration cannot exceed 12 hours.''}]);',
-'                            return;',
-'                        }',
-'                    }',
-'                    apex.item(''P5_AUTH_FROM_DATETIME'').setValue(fromVal);',
-'                    apex.item(''P5_AUTH_TO_DATETIME'').setValue(toVal);',
-'                    $(this).dialog(''close'');',
-'                    captureLocationThenSubmit(''START_PERMIT'');',
-'                }',
-'            },',
-'            {',
-'                text: ''Cancel'', ''class'': ''t-Button'',',
-'                click: function() { $(this).dialog(''close''); }',
-'            }',
-'        ],',
-'        close: function() { $(this).dialog(''destroy'').remove(); }',
-'    });',
-'}',
 ''))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '.ptw-workflow-progress {',
@@ -714,48 +614,18 @@ wwv_flow_imp_page.create_page_plug(
   'output_as', 'HTML')).to_clob
 );
 wwv_flow_imp_page.create_page_button(
- p_id=>wwv_flow_imp.id(27356376023033434)
-,p_button_sequence=>20
-,p_button_plug_id=>wwv_flow_imp.id(27356182588033432)
-,p_button_name=>'SAVE_DRAFT'
-,p_button_static_id=>'BTN_SAVE_DRAFT_P5'
-,p_button_action=>'DEFINED_BY_DA'
-,p_button_template_options=>'#DEFAULT#'
-,p_button_template_id=>4072362960822175091
-,p_button_image_alt=>'Save Draft'
-,p_button_position=>'NEXT'
-,p_button_execute_validations=>'N'
-,p_warn_on_unsaved_changes=>null
-,p_button_condition_type=>'NEVER'
-);
-wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(31606655096440628)
 ,p_button_sequence=>30
 ,p_button_plug_id=>wwv_flow_imp.id(27356182588033432)
 ,p_button_name=>'AUTHORISE'
 ,p_button_static_id=>'BTN_START_PERMIT_P5'
-,p_button_action=>'DEFINED_BY_DA'
+,p_button_action=>'SUBMIT'
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
 ,p_button_template_id=>2082829544945815391
 ,p_button_is_hot=>'Y'
 ,p_button_image_alt=>'Authorise Permit'
 ,p_button_position=>'NEXT'
-,p_warn_on_unsaved_changes=>null
 ,p_icon_css_classes=>'fa-clipboard-check'
-);
-wwv_flow_imp_page.create_page_button(
- p_id=>wwv_flow_imp.id(27356401274033435)
-,p_button_sequence=>40
-,p_button_plug_id=>wwv_flow_imp.id(27356182588033432)
-,p_button_name=>'NEXT_STEP'
-,p_button_action=>'SUBMIT'
-,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
-,p_button_template_id=>2082829544945815391
-,p_button_is_hot=>'Y'
-,p_button_image_alt=>'Next Step'
-,p_button_position=>'NEXT'
-,p_button_condition_type=>'NEVER'
-,p_icon_css_classes=>'fa-arrow-right'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(27356264505033433)
@@ -772,14 +642,13 @@ wwv_flow_imp_page.create_page_button(
 ,p_icon_css_classes=>'fa-arrow-left'
 );
 wwv_flow_imp_page.create_page_branch(
- p_id=>wwv_flow_imp.id(27357123316033442)
-,p_branch_name=>'Refresh Current Page'
-,p_branch_action=>'f?p=&APP_ID.:5:&SESSION.::&DEBUG.:5:P5_PERMIT_ID:&P5_PERMIT_ID.'
-,p_branch_point=>'AFTER_PROCESSING'
+ p_id=>wwv_flow_imp.id(37958944543176050)
+,p_branch_name=>'Go To Page 9'
+,p_branch_action=>'f?p=&APP_ID.:9:&SESSION.::&DEBUG.:9:P9_PERMIT_ID,P9_PERMIT_NUMBER:&P5_PERMIT_ID.,&P5_PERMIT_NUMBER.'
+,p_branch_point=>'BEFORE_COMPUTATION'
 ,p_branch_type=>'REDIRECT_URL'
-,p_branch_sequence=>10
-,p_branch_condition_type=>'REQUEST_EQUALS_CONDITION'
-,p_branch_condition=>'SAVE_DRAFT'
+,p_branch_when_button_id=>wwv_flow_imp.id(31606655096440628)
+,p_branch_sequence=>20
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(27353728149033408)
@@ -1074,8 +943,7 @@ wwv_flow_imp_page.create_page_validation(
 ,p_validation=>'P5_AUTH_PERSON_SELECT'
 ,p_validation_type=>'ITEM_NOT_NULL'
 ,p_error_message=>'Authorised person name is required.'
-,p_validation_condition=>'START_PERMIT'
-,p_validation_condition_type=>'REQUEST_EQUALS_CONDITION'
+,p_when_button_pressed=>wwv_flow_imp.id(31606655096440628)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_validation(
@@ -1085,30 +953,8 @@ wwv_flow_imp_page.create_page_validation(
 ,p_validation=>'P5_AUTH_TO_DATETIME'
 ,p_validation_type=>'ITEM_NOT_NULL'
 ,p_error_message=>'Permit expiry date and time (TO) is required.'
-,p_validation_condition=>'NEXT_STEP,START_PERMIT'
-,p_validation_condition_type=>'REQUEST_IN_CONDITION'
-,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
-);
-wwv_flow_imp_page.create_page_validation(
- p_id=>wwv_flow_imp.id(33352024502951434)
-,p_validation_name=>'FROM Before TO'
-,p_validation_sequence=>25
-,p_validation=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'BEGIN',
-'    RETURN NOT (',
-'        :P5_AUTH_FROM_DATETIME IS NOT NULL AND',
-'        :P5_AUTH_TO_DATETIME   IS NOT NULL AND',
-'        TO_DATE(:P5_AUTH_TO_DATETIME,   ''DD-MON-YYYY HH24:MI'') <=',
-'        TO_DATE(:P5_AUTH_FROM_DATETIME, ''DD-MON-YYYY HH24:MI'')',
-'    );',
-'EXCEPTION',
-'    WHEN OTHERS THEN RETURN TRUE;',
-'END;'))
-,p_validation2=>'PLSQL'
-,p_validation_type=>'FUNC_BODY_RETURNING_BOOLEAN'
-,p_error_message=>'Permit FROM time must be before the TO (Expires) time.'
-,p_validation_condition=>'NEXT_STEP,START_PERMIT'
-,p_validation_condition_type=>'REQUEST_IN_CONDITION'
+,p_validation_condition_type=>'NEVER'
+,p_when_button_pressed=>wwv_flow_imp.id(31606655096440628)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_validation(
@@ -1140,8 +986,7 @@ wwv_flow_imp_page.create_page_validation(
 ,p_validation2=>'PLSQL'
 ,p_validation_type=>'FUNC_BODY_RETURNING_BOOLEAN'
 ,p_error_message=>'The Authorised Person and Person in Charge of Works cannot be the same individual. A permit must not be self-authorised.'
-,p_validation_condition=>'NEXT_STEP,START_PERMIT'
-,p_validation_condition_type=>'REQUEST_IN_CONDITION'
+,p_when_button_pressed=>wwv_flow_imp.id(31606655096440628)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_validation(
@@ -1168,14 +1013,43 @@ wwv_flow_imp_page.create_page_validation(
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(37958677119176047)
+,p_validation_name=>'Accept Signature required'
+,p_validation_sequence=>38
+,p_validation=>'P5_ACCEPT_SIGNATURE_DATA'
+,p_validation_type=>'ITEM_NOT_NULL'
+,p_error_message=>'Person in charge signature is required.'
+,p_when_button_pressed=>wwv_flow_imp.id(31606655096440628)
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+);
+wwv_flow_imp_page.create_page_validation(
  p_id=>wwv_flow_imp.id(27356727784033438)
 ,p_validation_name=>'Auth Signature Required'
-,p_validation_sequence=>30
+,p_validation_sequence=>48
 ,p_validation=>'P5_AUTH_SIGNATURE_DATA'
 ,p_validation_type=>'ITEM_NOT_NULL'
 ,p_error_message=>'Authorised person signature is required.'
-,p_validation_condition=>'START_PERMIT'
-,p_validation_condition_type=>'REQUEST_EQUALS_CONDITION'
+,p_when_button_pressed=>wwv_flow_imp.id(31606655096440628)
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+);
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(37958766966176048)
+,p_validation_name=>'Accept person cannot be NULL'
+,p_validation_sequence=>58
+,p_validation=>'P5_ACCEPT_PERSON_NAME'
+,p_validation_type=>'ITEM_NOT_NULL'
+,p_error_message=>'Person in Charge cannot be blank.'
+,p_when_button_pressed=>wwv_flow_imp.id(31606655096440628)
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+);
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(37958833334176049)
+,p_validation_name=>'Auth person cannot be blank'
+,p_validation_sequence=>68
+,p_validation=>'P5_AUTH_PERSON_DISPLAY'
+,p_validation_type=>'ITEM_NOT_NULL'
+,p_error_message=>'Must have an Authorising person selected.'
+,p_when_button_pressed=>wwv_flow_imp.id(31606655096440628)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_da_event(
@@ -1334,25 +1208,6 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_wait_for_result=>'Y'
 );
 wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(31606875799440630)
-,p_name=>'Check Status of Page'
-,p_event_sequence=>20
-,p_triggering_element_type=>'BUTTON'
-,p_triggering_button_id=>wwv_flow_imp.id(27356376023033434)
-,p_bind_type=>'bind'
-,p_execution_type=>'IMMEDIATE'
-,p_bind_event_type=>'click'
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(31607101265440633)
-,p_event_id=>wwv_flow_imp.id(31606875799440630)
-,p_event_result=>'TRUE'
-,p_action_sequence=>30
-,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>'captureLocationThenSubmit(''SAVE_DRAFT'');'
-);
-wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(33351711749951431)
 ,p_name=>'Start Mode Change'
 ,p_event_sequence=>20
@@ -1391,29 +1246,6 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
 ,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'saveSignatures();',
-''))
-);
-wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(33353339007951447)
-,p_name=>'Button Click - Save Draft '
-,p_event_sequence=>40
-,p_triggering_element_type=>'BUTTON'
-,p_triggering_button_id=>wwv_flow_imp.id(27356376023033434)
-,p_bind_type=>'bind'
-,p_execution_type=>'IMMEDIATE'
-,p_bind_event_type=>'click'
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(33353408774951448)
-,p_event_id=>wwv_flow_imp.id(33353339007951447)
-,p_event_result=>'TRUE'
-,p_action_sequence=>10
-,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'var request = $(this.triggeringElement).attr(''id'').indexOf(''SAVE_DRAFT'') > -1',
-'              ? ''SAVE_DRAFT'' : ''AUTHORISE'';',
-'captureLocationThenSubmit(request);',
 ''))
 );
 wwv_flow_imp_page.create_page_da_event(
@@ -1494,60 +1326,6 @@ wwv_flow_imp_page.create_page_da_action(
 ''))
 );
 wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(37959803508090279)
-,p_name=>'Button Click -  Authorise'
-,p_event_sequence=>70
-,p_triggering_element_type=>'BUTTON'
-,p_triggering_button_id=>wwv_flow_imp.id(31606655096440628)
-,p_bind_type=>'bind'
-,p_execution_type=>'IMMEDIATE'
-,p_bind_event_type=>'click'
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(31606997498440631)
-,p_event_id=>wwv_flow_imp.id(37959803508090279)
-,p_event_result=>'TRUE'
-,p_action_sequence=>10
-,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'var errors = [];',
-'if (!apex.item(''P5_AUTH_PERSON_SELECT'').getValue()) {',
-'    errors.push(''Please select an Authorising Person.'');',
-'}',
-'if (!authSignaturePad || authSignaturePad.isEmpty) {',
-'    errors.push(''Authorised person signature is required.'');',
-'}',
-'if (!apex.item(''P5_ACCEPT_PERSON_NAME'').getValue()) {',
-'    errors.push(''Name of Person in Charge of Works is required.'');',
-'}',
-'if (!acceptSignaturePad || acceptSignaturePad.isEmpty) {',
-'    errors.push(''Person in Charge signature is required.'');',
-'}',
-'if (errors.length > 0) {',
-'    apex.message.showErrors(errors.map(function(msg) {',
-'        return { type: ''error'', location: ''page'', message: msg };',
-'    }));',
-'    return;',
-'}',
-'apex.message.clearErrors();',
-'ptwShowStartDialog();'))
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(37960222656090267)
-,p_event_id=>wwv_flow_imp.id(37959803508090279)
-,p_event_result=>'TRUE'
-,p_action_sequence=>30
-,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'var request = $(this.triggeringElement).attr(''id'').indexOf(''SAVE_DRAFT'') > -1',
-'              ? ''SAVE_DRAFT'' : ''AUTHORISE'';',
-'captureLocationThenSubmit(request);',
-''))
-,p_server_condition_type=>'NEVER'
-);
-wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(37954826633176009)
 ,p_name=>'Authorisors mobile No load'
 ,p_event_sequence=>90
@@ -1579,6 +1357,27 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_attribute_04=>'N'
 ,p_attribute_05=>'PLSQL'
 ,p_wait_for_result=>'Y'
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(37958295450176043)
+,p_name=>'Refresh After Start Permit'
+,p_event_sequence=>100
+,p_triggering_element_type=>'REGION'
+,p_triggering_region_id=>wwv_flow_imp.id(27356182588033432)
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'apexafterclosedialog'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(37958305888176044)
+,p_event_id=>wwv_flow_imp.id(37958295450176043)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'REGION'
+,p_affected_region_id=>wwv_flow_imp.id(27354510223033416)
+,p_attribute_01=>'N'
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(27356922514033440)
@@ -1647,9 +1446,7 @@ wwv_flow_imp_page.create_page_process(
 'END;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
-,p_process_when=>':REQUEST IN (''SAVE_DRAFT'',''NEXT_STEP'',''START_PERMIT'')'
-,p_process_when_type=>'EXPRESSION'
-,p_process_when2=>'PLSQL'
+,p_process_when_button_id=>wwv_flow_imp.id(31606655096440628)
 ,p_internal_uid=>27356922514033440
 );
 wwv_flow_imp_page.create_page_process(
