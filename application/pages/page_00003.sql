@@ -1055,6 +1055,8 @@ wwv_flow_imp_page.create_page_process(
 '           ppe_safety_gloves       = :P3_PPE_SAFETY_GLOVES,',
 '           ppe_latitude            = :APP_LATITUDE,',
 '           ppe_longitude           = :APP_LONGITUDE,',
+'           current_step            = :P3_CURRENT_STEP,',
+'           workflow_status         = :P3_WORKFLOW_STATUS,',
 '           modified_by             = NVL(V(''APP_USER''), USER),',
 '           modified_date           = CURRENT_TIMESTAMP',
 '    WHERE  permit_id = :P3_PERMIT_ID;',

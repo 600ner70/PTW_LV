@@ -676,8 +676,8 @@ wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(28347379433917046)
 ,p_name=>'Click NEXT STEP'
 ,p_event_sequence=>20
-,p_triggering_element_type=>'JQUERY_SELECTOR'
-,p_triggering_element=>'#BTN_NEXT_STEP_P2'
+,p_triggering_element_type=>'BUTTON'
+,p_triggering_button_id=>wwv_flow_imp.id(26944315283347714)
 ,p_bind_type=>'bind'
 ,p_execution_type=>'IMMEDIATE'
 ,p_bind_event_type=>'click'
@@ -695,8 +695,8 @@ wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(33349958939951413)
 ,p_name=>'Click SAVE DRAFT'
 ,p_event_sequence=>30
-,p_triggering_element_type=>'JQUERY_SELECTOR'
-,p_triggering_element=>'#BTN_SAVE_DRAFT_P2'
+,p_triggering_element_type=>'BUTTON'
+,p_triggering_button_id=>wwv_flow_imp.id(26944216198347713)
 ,p_bind_type=>'bind'
 ,p_execution_type=>'IMMEDIATE'
 ,p_bind_event_type=>'click'

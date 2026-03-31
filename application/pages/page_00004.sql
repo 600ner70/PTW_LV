@@ -881,13 +881,13 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Load Equipment Isolation Data'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'BEGIN',
+'',
+'    :P4_CURRENT_STEP := ''EQUIP_ISOLATION'';',
 '    -- Load permit info',
 '    SELECT permit_number, comments, workflow_status',
 '    INTO :P4_PERMIT_NUMBER, :P4_COMMENTS, :P4_WORKFLOW_STATUS',
 '    FROM ptw_pro.ptw_lv_permits',
 '    WHERE permit_id = :P4_PERMIT_ID;',
-'',
-'    :P4_CURRENT_STEP := ''EQUIP_ISOLATION'';',
 '',
 '    -- Load isolation rows (up to 4)',
 '    FOR r IN (',

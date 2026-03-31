@@ -413,7 +413,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_name=>'Workflow Progress'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>4501440665235496320
-,p_plug_display_sequence=>170
+,p_plug_display_sequence=>180
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<div class="ptw-workflow-progress">',
@@ -449,7 +449,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_icon_css_classes=>'fa-certificate'
 ,p_region_template_options=>'#DEFAULT#:t-Region--accent15:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>210
+,p_plug_display_sequence=>220
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<div class="ptw-section-card">',
@@ -482,26 +482,26 @@ wwv_flow_imp_page.create_page_plug(
 ,p_function_body_language=>'PLSQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'DECLARE',
-'    v_role          VARCHAR2(50);',
-'    v_can_authorise BOOLEAN       := FALSE;',
+'    -- v_role          VARCHAR2(50);',
+'    -- v_can_authorise BOOLEAN       := FALSE;',
 '    v_from_dt       DATE;',
 '    v_to_dt         DATE;',
 '    v_now           DATE          := SYSDATE;',
 '    v_clob          CLOB          := '''';',
 'BEGIN',
 '    -- Get the current user''s PTW role',
-'    BEGIN',
-'        SELECT role_name',
-'        INTO   v_role',
-'        FROM   ptw_pro.ptw_lv_user_roles',
-'        WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
-'        AND    is_active        = ''Y''',
-'        AND    ROWNUM           = 1;',
-'    EXCEPTION',
-'        WHEN NO_DATA_FOUND THEN v_role := NULL;',
-'    END;',
+'    -- BEGIN',
+'    --     SELECT role_name',
+'    --     INTO   v_role',
+'    --     FROM   ptw_pro.ptw_lv_user_roles',
+'    --     WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
+'    --     AND    is_active        = ''Y''',
+'    --     AND    ROWNUM           = 1;',
+'    -- EXCEPTION',
+'    --     WHEN NO_DATA_FOUND THEN v_role := NULL;',
+'    -- END;',
 '',
-'    v_can_authorise := v_role IN (''ADMIN'', ''AUTHORISER'');',
+'    -- v_can_authorise := v_role IN (''ADMIN'', ''AUTHORISER'');',
 '',
 '    -- Get permit validity window if set',
 '    BEGIN',
@@ -514,29 +514,29 @@ wwv_flow_imp_page.create_page_plug(
 '    END;',
 '',
 '    -- Role message',
-'    IF v_can_authorise THEN',
-'        v_clob := v_clob ||',
-'            ''<div class="t-Alert t-Alert--success t-Alert--horizontal margin-bottom-sm" role="region">'' ||',
-'            ''  <div class="t-Alert-wrap">'' ||',
-'            ''    <div class="t-Alert-icon"><span class="t-Icon fa fa-check-circle"></span></div>'' ||',
-'            ''    <div class="t-Alert-content">'' ||',
-'            ''      <div class="t-Alert-body">You have <strong>'' || APEX_ESCAPE.HTML(v_role) || ''</strong>'' ||',
-'            ''      permission &mdash; you may sign off this permit.</div>'' ||',
-'            ''    </div>'' ||',
-'            ''  </div>'' ||',
-'            ''</div>'';',
-'    ELSE',
-'        v_clob := v_clob ||',
-'            ''<div class="t-Alert t-Alert--warning t-Alert--horizontal margin-bottom-sm" role="region">'' ||',
-'            ''  <div class="t-Alert-wrap">'' ||',
-'            ''    <div class="t-Alert-icon"><span class="t-Icon fa fa-warning"></span></div>'' ||',
-'            ''    <div class="t-Alert-content">'' ||',
-'            ''      <div class="t-Alert-body">Your role does not permit authorisation.'' ||',
-'            ''      Select an authorised person from the list below.</div>'' ||',
-'            ''    </div>'' ||',
-'            ''  </div>'' ||',
-'            ''</div>'';',
-'    END IF;',
+'    -- IF v_can_authorise THEN',
+'        -- v_clob := v_clob ||',
+'        --     ''<div class="t-Alert t-Alert--success t-Alert--horizontal margin-bottom-sm" role="region">'' ||',
+'        --     ''  <div class="t-Alert-wrap">'' ||',
+'        --     ''    <div class="t-Alert-icon"><span class="t-Icon fa fa-check-circle"></span></div>'' ||',
+'        --     ''    <div class="t-Alert-content">'' ||',
+'        --     ''      <div class="t-Alert-body">You have <strong>'' || APEX_ESCAPE.HTML(v_role) || ''</strong>'' ||',
+'        --     ''      permission &mdash; you may sign off this permit.</div>'' ||',
+'        --     ''    </div>'' ||',
+'        --     ''  </div>'' ||',
+'        --     ''</div>'';',
+'    -- ELSE',
+'    --     v_clob := v_clob ||',
+'    --         ''<div class="t-Alert t-Alert--warning t-Alert--horizontal margin-bottom-sm" role="region">'' ||',
+'    --         ''  <div class="t-Alert-wrap">'' ||',
+'    --         ''    <div class="t-Alert-icon"><span class="t-Icon fa fa-warning"></span></div>'' ||',
+'    --         ''    <div class="t-Alert-content">'' ||',
+'    --         ''      <div class="t-Alert-body">Your role does not permit authorisation.'' ||',
+'    --         ''      Select an authorised person from the list below.</div>'' ||',
+'    --         ''    </div>'' ||',
+'    --         ''  </div>'' ||',
+'    --         ''</div>'';',
+'    -- END IF;',
 '',
 '    -- Permit validity window (only show if dates are set)',
 '    IF v_from_dt IS NOT NULL OR v_to_dt IS NOT NULL THEN',
@@ -578,7 +578,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_icon_css_classes=>'fa-signature'
 ,p_region_template_options=>'#DEFAULT#:t-Region--accent15:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>220
+,p_plug_display_sequence=>230
 ,p_location=>null
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
@@ -612,7 +612,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_icon_css_classes=>'fa-signature'
 ,p_region_template_options=>'#DEFAULT#:t-Region--accent15:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>200
+,p_plug_display_sequence=>210
 ,p_location=>null
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
@@ -645,7 +645,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_icon_css_classes=>'fa-handshake-o'
 ,p_region_template_options=>'#DEFAULT#:t-Region--accent15:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>190
+,p_plug_display_sequence=>200
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<div class="ptw-section-card">',
@@ -671,7 +671,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_name=>'Buttons'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>2126429139436695430
-,p_plug_display_sequence=>230
+,p_plug_display_sequence=>240
 ,p_location=>null
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
@@ -682,7 +682,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_name=>'SyncStatus'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>4501440665235496320
-,p_plug_display_sequence=>160
+,p_plug_display_sequence=>170
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<div id="connection-status" style="padding: 10px; margin-bottom: 10px; border-radius: 4px;">',
@@ -698,7 +698,7 @@ wwv_flow_imp_page.create_page_plug(
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(59754344828705381)
 ,p_plug_name=>'Permit Information Badge'
-,p_plug_display_sequence=>180
+,p_plug_display_sequence=>190
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<div style="margin-bottom: 20px;">',
@@ -889,17 +889,18 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>30
 ,p_item_plug_id=>wwv_flow_imp.id(27355431661033425)
 ,p_prompt=>'Mobile Tel. No.'
-,p_display_as=>'NATIVE_DISPLAY_ONLY'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>30
 ,p_begin_on_new_line=>'N'
 ,p_colspan=>6
 ,p_field_template=>1609121967514267634
 ,p_item_template_options=>'#DEFAULT#'
 ,p_encrypt_session_state_yn=>'N'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'based_on', 'VALUE',
-  'format', 'PLAIN',
-  'send_on_page_submit', 'N',
-  'show_line_breaks', 'Y')).to_clob
+  'disabled', 'N',
+  'submit_when_enter_pressed', 'N',
+  'subtype', 'TEXT',
+  'trim_spaces', 'BOTH')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(27355874180033429)
@@ -1041,6 +1042,22 @@ wwv_flow_imp_page.create_page_item(
   'send_on_page_submit', 'N',
   'show_line_breaks', 'Y')).to_clob
 );
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(37955698093176017)
+,p_name=>'P5_AUTH_TO_DATETIME'
+,p_item_sequence=>150
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(37955773514176018)
+,p_name=>'P5_AUTH_FROM_DATETIME'
+,p_item_sequence=>160
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
 wwv_flow_imp_page.create_page_validation(
  p_id=>wwv_flow_imp.id(27356512824033436)
 ,p_validation_name=>'Permit ID Required'
@@ -1147,8 +1164,7 @@ wwv_flow_imp_page.create_page_validation(
 ,p_validation2=>'PLSQL'
 ,p_validation_type=>'FUNC_BODY_RETURNING_BOOLEAN'
 ,p_error_message=>'You do not have permission to authorise this permit. Only users with the Authoriser or Admin role may sign off.'
-,p_validation_condition=>'NEXT_STEP,START_PERMIT'
-,p_validation_condition_type=>'REQUEST_IN_CONDITION'
+,p_validation_condition_type=>'NEVER'
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_validation(
@@ -1533,7 +1549,7 @@ wwv_flow_imp_page.create_page_da_action(
 );
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(37954826633176009)
-,p_name=>'New'
+,p_name=>'Authorisors mobile No load'
 ,p_event_sequence=>90
 ,p_triggering_element_type=>'ITEM'
 ,p_triggering_element=>'P5_AUTH_PERSON_SELECT'
@@ -1591,8 +1607,6 @@ wwv_flow_imp_page.create_page_process(
 '    v_auth_sig_blob := base64_to_blob(:P5_AUTH_SIGNATURE_DATA);',
 '    v_accept_sig_blob := base64_to_blob(:P5_ACCEPT_SIGNATURE_DATA);',
 '',
-'--    IF :P5_IS_CHANGED = ''Y'' THEN',
-'',
 '      UPDATE ptw_pro.ptw_lv_permits',
 '      SET auth_person_name = :P5_AUTH_PERSON_SELECT,',
 '          auth_person_signature = v_auth_sig_blob,',
@@ -1609,6 +1623,7 @@ wwv_flow_imp_page.create_page_process(
 '          accept_latitude = :APP_LATITUDE,',
 '          accept_longitude = :APP_LONGITUDE,',
 '          workflow_status = ''AUTHORISED'',',
+'          current_step = ''AUTHORISATION'',',
 '          modified_by = NVL(V(''APP_USER''), USER),',
 '          modified_date = CURRENT_TIMESTAMP',
 '      WHERE permit_id = :P5_PERMIT_ID;',
@@ -1695,7 +1710,7 @@ wwv_flow_imp_page.create_page_process(
 '    --',
 '    BEGIN',
 '      SELECT person_in_charge_name, supervising_company',
-'      INTO   :P5_ACCEPT_COMPANY, :P5_ACCEPT_PERSON_NAME',
+'      INTO   :P5_ACCEPT_PERSON_NAME, :P5_ACCEPT_COMPANY',
 '      FROM   ptw_pro.ptw_lv_permits',
 '      WHERE  permit_id = :P5_PERMIT_ID;',
 '    EXCEPTION',

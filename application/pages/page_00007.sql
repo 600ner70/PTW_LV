@@ -63,13 +63,19 @@ wwv_flow_imp_page.create_map_region(
 ,p_navigation_bar_position=>'END'
 ,p_init_position_zoom_type=>'SQL'
 ,p_init_position_zoom_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'SELECT psl.LONGITUDE,',
-'       psl.LATITUDE,',
-'       15 AS ZOOMLEVEL',
-'FROM   PTW_PRO.PTW_STAGE_LOCATIONS psl',
-'WHERE  psl.PERMIT_ID    = :P7_PERMIT_ID ',
-'AND    psl.PERMIT_STAGE = :P7_CURRENT_STAGE',
-'AND    TO_CHAR(psl.CREATED_DATE, ''DD-MON-YYYY HH24:MI'') = :P7_CREATED_DATE'))
+'SELECT map_data.LONGITUDE,',
+'       map_data.LATITUDE,',
+'       map_data.ZOOMLEVEL',
+'FROM   (SELECT MAX(psl.CREATED_DATE) created_date,',
+'               psl.LONGITUDE,',
+'               psl.LATITUDE,',
+'               15 AS ZOOMLEVEL       ',
+'        FROM   PTW_PRO.PTW_STAGE_LOCATIONS psl',
+'        WHERE  psl.PERMIT_ID    = :P7_PERMIT_ID ',
+'        AND    psl.PERMIT_STAGE = :P7_CURRENT_STAGE',
+'        GROUP BY psl.LONGITUDE,',
+'                 psl.LATITUDE,',
+'                 ZOOMLEVEL) map_data'))
 ,p_init_position_geometry_type=>'LONLAT_COLUMNS'
 ,p_init_position_lon_column=>'LONGITUDE'
 ,p_init_position_lat_column=>'LATITUDE'
@@ -101,10 +107,20 @@ wwv_flow_imp_page.create_map_region_layer(
 '       CREATED_DATE,',
 '       CREATED_BY,',
 '       PERMIT_STAGE',
-'from    ptw_pro.PTW_STAGE_LOCATIONS',
-'where PERMIT_ID = :P7_PERMIT_ID ',
-'AND PERMIT_STAGE = :P7_CURRENT_STAGE',
-'AND  TO_CHAR(CREATED_DATE, ''DD-MON-YYYY HH24:MI'') = :P7_CREATED_DATE',
+'from   (SELECT MAX(psl.CREATED_DATE) created_date,',
+'               psl.LONGITUDE,',
+'               psl.LATITUDE,',
+'               psl.permit_id,',
+'               psl.permit_stage,',
+'               psl.created_by      ',
+'        FROM   PTW_PRO.PTW_STAGE_LOCATIONS psl',
+'        WHERE  psl.PERMIT_ID    = :P7_PERMIT_ID ',
+'        AND    psl.PERMIT_STAGE = :P7_CURRENT_STAGE',
+'        GROUP BY psl.permit_id,',
+'                 psl.permit_stage,',
+'                 psl.LONGITUDE,',
+'                 psl.LATITUDE,',
+'                 psl.created_by) map_data',
 ''))
 ,p_items_to_submit=>'P7_PERMIT_ID,P7_CURRENT_STAGE,P7_CREATED_DATE'
 ,p_has_spatial_index=>false

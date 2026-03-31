@@ -23,6 +23,8 @@ prompt --install
 @@application/shared_components/files/offline_storage_min_js.sql
 @@application/shared_components/files/ptw_utils_js.sql
 @@application/shared_components/files/ptw_utils_min_js.sql
+@@application/shared_components/files/ptw_global_css.sql
+@@application/shared_components/files/ptw_global_min_css.sql
 @@application/shared_components/files/offline_nav_js.sql
 @@application/shared_components/files/offline_nav_min_js.sql
 @@application/plugin_settings.sql
