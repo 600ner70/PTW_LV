@@ -5,11 +5,11 @@ begin
 --   Manifest End
 wwv_flow_imp.component_begin (
  p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.14'
+,p_release=>'24.2.15'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
-,p_default_owner=>'PERMITPRO'
+,p_default_owner=>'PTW_PRO'
 );
 wwv_flow_imp.g_varchar2_table := wwv_flow_imp.empty_varchar2_table;
 wwv_flow_imp.g_varchar2_table(1) := '89504E470D0A1A0A0000000D4948445200000020000000200806000000737A7AF40000022A494441547801EC945F4FD35018C69F966E6B97756DB7011BA0D985418CC66B8C217E0BE5C3E8A55FC07B6F8D577A61B834C40BA36282326F8C6182A844186C';

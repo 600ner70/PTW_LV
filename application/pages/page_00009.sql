@@ -5,11 +5,11 @@ begin
 --   Manifest End
 wwv_flow_imp.component_begin (
  p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.14'
+,p_release=>'24.2.15'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
-,p_default_owner=>'PERMITPRO'
+,p_default_owner=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page(
  p_id=>9
@@ -157,6 +157,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_name=>'P9_PERMIT_NUMBER'
 ,p_item_sequence=>40
 ,p_display_as=>'NATIVE_HIDDEN'
+,p_is_persistent=>'N'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
 );
@@ -389,7 +390,7 @@ wwv_flow_imp_page.create_page_process(
 '    END IF;',
 '',
 '    UPDATE ptw_pro.ptw_lv_permits',
-'    SET    workflow_status    = ''AUTHORISED'',',
+'    SET    workflow_status    = ''STARTED'',',
 '           auth_from_datetime = v_from_dt,',
 '           auth_to_datetime   = v_to_dt,',
 '           started_latitude   = TO_NUMBER(:P0_LATITUDE),',

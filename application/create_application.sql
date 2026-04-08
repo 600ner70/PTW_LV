@@ -5,15 +5,15 @@ begin
 --   Manifest End
 wwv_flow_imp.component_begin (
  p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.14'
+,p_release=>'24.2.15'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
-,p_default_owner=>'PERMITPRO'
+,p_default_owner=>'PTW_PRO'
 );
 wwv_imp_workspace.create_flow(
  p_id=>wwv_flow.g_flow_id
-,p_owner=>nvl(wwv_flow_application_install.get_schema,'PERMITPRO')
+,p_owner=>nvl(wwv_flow_application_install.get_schema,'PTW_PRO')
 ,p_name=>nvl(wwv_flow_application_install.get_application_name,'PTW_PRO')
 ,p_alias=>nvl(wwv_flow_application_install.get_application_alias,'PTW-PRO')
 ,p_page_view_logging=>'YES'
@@ -49,7 +49,7 @@ wwv_imp_workspace.create_flow(
 ,p_substitution_value_01=>'PTW_PRO'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_files_version=>125
-,p_version_scn=>46626889449741
+,p_version_scn=>46689740498389
 ,p_print_server_type=>'NATIVE'
 ,p_file_storage=>'DB'
 ,p_is_pwa=>'Y'

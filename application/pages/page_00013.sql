@@ -5,11 +5,11 @@ begin
 --   Manifest End
 wwv_flow_imp.component_begin (
  p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.14'
+,p_release=>'24.2.15'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
-,p_default_owner=>'PERMITPRO'
+,p_default_owner=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page(
  p_id=>13
@@ -915,23 +915,20 @@ wwv_flow_imp_page.create_page_process(
 '    v_is_engineer NUMBER;',
 '    v_is_owner    NUMBER;',
 'BEGIN',
-'    -- Check if current user is an Engineer',
 '    SELECT COUNT(*) INTO v_is_engineer',
-'    FROM ptw_pro.ptw_lv_user_roles',
-'    WHERE UPPER(username) = UPPER(V(''APP_USER''))',
-'      AND role_name = ''ENGINEER''',
-'      AND is_active = ''Y'';',
+'    FROM   ptw_pro.ptw_lv_user_roles_v          -- changed',
+'    WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
+'    AND    role_name = ''ENGINEER''',
+'    AND    is_active = ''Y'';',
 '',
-'    -- Only enforce for Engineers accessing an existing permit',
-'    IF v_is_engineer > 0 AND :P13_PERMIT_ID IS NOT NULL THEN',
+'    IF v_is_engineer > 0 AND :P4_PERMIT_ID IS NOT NULL THEN  -- use correct Pn_PERMIT_ID per page',
 '',
 '        SELECT COUNT(*) INTO v_is_owner',
-'        FROM ptw_pro.ptw_lv_permits',
-'        WHERE permit_id  = :P13_PERMIT_ID',
-'          AND UPPER(created_by) = UPPER(V(''APP_USER''));',
+'        FROM   ptw_pro.ptw_lv_permits',
+'        WHERE  permit_id = :P4_PERMIT_ID         -- use correct Pn_PERMIT_ID per page',
+'        AND    UPPER(created_by) = UPPER(V(''APP_USER''));',
 '',
 '        IF v_is_owner = 0 THEN',
-'            -- Block access and redirect back to dashboard',
 '            apex_error.add_error(',
 '                p_message          => ''Access denied. You can only edit permits you have created.'',',
 '                p_display_location => apex_error.c_inline_in_notification',

@@ -5,11 +5,11 @@ begin
 --   Manifest End
 wwv_flow_imp.component_begin (
  p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.14'
+,p_release=>'24.2.15'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
-,p_default_owner=>'PERMITPRO'
+,p_default_owner=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page(
  p_id=>5
@@ -163,6 +163,14 @@ wwv_flow_imp_page.create_page(
 '    }',
 '}',
 ''))
+,p_javascript_code_onload=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'$(document).on(''dialogclose'', function(e) {',
+'    console.log(''dialogclose fired'', e);',
+'});',
+'',
+'$(document).on(''apexafterclosedialog'', function(e, data) {',
+'    console.log(''apexafterclosedialog fired'', data);',
+'});'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '.ptw-workflow-progress {',
 '    display: flex;',
@@ -313,7 +321,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_name=>'Workflow Progress'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>4501440665235496320
-,p_plug_display_sequence=>180
+,p_plug_display_sequence=>190
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<div class="ptw-workflow-progress">',
@@ -349,7 +357,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_icon_css_classes=>'fa-certificate'
 ,p_region_template_options=>'#DEFAULT#:t-Region--accent15:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>220
+,p_plug_display_sequence=>230
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<div class="ptw-section-card">',
@@ -389,20 +397,6 @@ wwv_flow_imp_page.create_page_plug(
 '    v_now           DATE          := SYSDATE;',
 '    v_clob          CLOB          := '''';',
 'BEGIN',
-'    -- Get the current user''s PTW role',
-'    -- BEGIN',
-'    --     SELECT role_name',
-'    --     INTO   v_role',
-'    --     FROM   ptw_pro.ptw_lv_user_roles',
-'    --     WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
-'    --     AND    is_active        = ''Y''',
-'    --     AND    ROWNUM           = 1;',
-'    -- EXCEPTION',
-'    --     WHEN NO_DATA_FOUND THEN v_role := NULL;',
-'    -- END;',
-'',
-'    -- v_can_authorise := v_role IN (''ADMIN'', ''AUTHORISER'');',
-'',
 '    -- Get permit validity window if set',
 '    BEGIN',
 '        SELECT auth_from_datetime, auth_to_datetime',
@@ -412,31 +406,6 @@ wwv_flow_imp_page.create_page_plug(
 '    EXCEPTION',
 '        WHEN NO_DATA_FOUND THEN NULL;',
 '    END;',
-'',
-'    -- Role message',
-'    -- IF v_can_authorise THEN',
-'        -- v_clob := v_clob ||',
-'        --     ''<div class="t-Alert t-Alert--success t-Alert--horizontal margin-bottom-sm" role="region">'' ||',
-'        --     ''  <div class="t-Alert-wrap">'' ||',
-'        --     ''    <div class="t-Alert-icon"><span class="t-Icon fa fa-check-circle"></span></div>'' ||',
-'        --     ''    <div class="t-Alert-content">'' ||',
-'        --     ''      <div class="t-Alert-body">You have <strong>'' || APEX_ESCAPE.HTML(v_role) || ''</strong>'' ||',
-'        --     ''      permission &mdash; you may sign off this permit.</div>'' ||',
-'        --     ''    </div>'' ||',
-'        --     ''  </div>'' ||',
-'        --     ''</div>'';',
-'    -- ELSE',
-'    --     v_clob := v_clob ||',
-'    --         ''<div class="t-Alert t-Alert--warning t-Alert--horizontal margin-bottom-sm" role="region">'' ||',
-'    --         ''  <div class="t-Alert-wrap">'' ||',
-'    --         ''    <div class="t-Alert-icon"><span class="t-Icon fa fa-warning"></span></div>'' ||',
-'    --         ''    <div class="t-Alert-content">'' ||',
-'    --         ''      <div class="t-Alert-body">Your role does not permit authorisation.'' ||',
-'    --         ''      Select an authorised person from the list below.</div>'' ||',
-'    --         ''    </div>'' ||',
-'    --         ''  </div>'' ||',
-'    --         ''</div>'';',
-'    -- END IF;',
 '',
 '    -- Permit validity window (only show if dates are set)',
 '    IF v_from_dt IS NOT NULL OR v_to_dt IS NOT NULL THEN',
@@ -448,11 +417,11 @@ wwv_flow_imp_page.create_page_plug(
 '            ''      <div class="t-Alert-body"><strong>Permit validity window:</strong> '';',
 '',
 '        IF v_from_dt IS NOT NULL THEN',
-'            v_clob := v_clob || ''From '' || TO_CHAR(v_from_dt, ''DD-Mon-YYYY HH24:MI'');',
+'            v_clob := v_clob || ''From '' || TO_CHAR(v_from_dt, ''DD-MON-YYYY HH24:MI'');',
 '        END IF;',
 '',
 '        IF v_to_dt IS NOT NULL THEN',
-'            v_clob := v_clob || '' &nbsp;&mdash;&nbsp; To '' || TO_CHAR(v_to_dt, ''DD-Mon-YYYY HH24:MI'');',
+'            v_clob := v_clob || '' &nbsp;&mdash;&nbsp; To '' || TO_CHAR(v_to_dt, ''DD-MON-YYYY HH24:MI'');',
 '        END IF;',
 '',
 '        IF v_to_dt IS NOT NULL AND v_now > v_to_dt THEN',
@@ -478,7 +447,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_icon_css_classes=>'fa-signature'
 ,p_region_template_options=>'#DEFAULT#:t-Region--accent15:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>230
+,p_plug_display_sequence=>240
 ,p_location=>null
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
@@ -497,7 +466,7 @@ wwv_flow_imp_page.create_page_plug(
 '<div class="signature-pad-container">',
 '    <canvas id="authSignaturePad" class="signature-pad"></canvas>',
 '    <div class="signature-controls">',
-'        <button type="button" onclick="clearAuthSignature()">Clear</button>',
+'        <button type="button" id="BTN_CLEAR_AUTH_SIG_P5" onclick="clearAuthSignature()">Clear</button>',
 '    </div>',
 '    <div class="geo-info" id="authGeoInfo"></div>',
 '</div>'))
@@ -512,7 +481,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_icon_css_classes=>'fa-signature'
 ,p_region_template_options=>'#DEFAULT#:t-Region--accent15:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>210
+,p_plug_display_sequence=>220
 ,p_location=>null
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
@@ -530,7 +499,7 @@ wwv_flow_imp_page.create_page_plug(
 '<div class="signature-pad-container">',
 '    <canvas id="acceptSignaturePad" class="signature-pad"></canvas>',
 '    <div class="signature-controls">',
-'        <button type="button" onclick="clearAcceptSignature()">Clear</button>',
+'        <button type="button" id="BTN_CLEAR_ACCEPT_SIG_P5" onclick="clearAcceptSignature()">Clear</button>',
 '    </div>',
 '    <div class="geo-info" id="acceptGeoInfo"></div>',
 '</div>'))
@@ -545,7 +514,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_icon_css_classes=>'fa-handshake-o'
 ,p_region_template_options=>'#DEFAULT#:t-Region--accent15:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>200
+,p_plug_display_sequence=>210
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<div class="ptw-section-card">',
@@ -571,7 +540,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_name=>'Buttons'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>2126429139436695430
-,p_plug_display_sequence=>240
+,p_plug_display_sequence=>250
 ,p_location=>null
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
@@ -582,7 +551,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_name=>'SyncStatus'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>4501440665235496320
-,p_plug_display_sequence=>170
+,p_plug_display_sequence=>180
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<div id="connection-status" style="padding: 10px; margin-bottom: 10px; border-radius: 4px;">',
@@ -598,7 +567,7 @@ wwv_flow_imp_page.create_page_plug(
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(59754344828705381)
 ,p_plug_name=>'Permit Information Badge'
-,p_plug_display_sequence=>190
+,p_plug_display_sequence=>200
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<div style="margin-bottom: 20px;">',
@@ -614,18 +583,39 @@ wwv_flow_imp_page.create_page_plug(
   'output_as', 'HTML')).to_clob
 );
 wwv_flow_imp_page.create_page_button(
- p_id=>wwv_flow_imp.id(31606655096440628)
-,p_button_sequence=>30
+ p_id=>wwv_flow_imp.id(39966392216997139)
+,p_button_sequence=>10
 ,p_button_plug_id=>wwv_flow_imp.id(27356182588033432)
 ,p_button_name=>'AUTHORISE'
-,p_button_static_id=>'BTN_START_PERMIT_P5'
-,p_button_action=>'SUBMIT'
+,p_button_action=>'DEFINED_BY_DA'
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
 ,p_button_template_id=>2082829544945815391
 ,p_button_is_hot=>'Y'
-,p_button_image_alt=>'Authorise Permit'
+,p_button_image_alt=>'Authorise'
 ,p_button_position=>'NEXT'
+,p_warn_on_unsaved_changes=>null
+,p_button_condition=>'P5_WORKFLOW_STATUS'
+,p_button_condition2=>'IN_PROGRESS'
+,p_button_condition_type=>'VAL_OF_ITEM_IN_COND_EQ_COND2'
 ,p_icon_css_classes=>'fa-clipboard-check'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(31606655096440628)
+,p_button_sequence=>20
+,p_button_plug_id=>wwv_flow_imp.id(27356182588033432)
+,p_button_name=>'START_PERMIT'
+,p_button_static_id=>'BTN_START_PERMIT_P5'
+,p_button_action=>'REDIRECT_PAGE'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2082829544945815391
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>'Start Permit'
+,p_button_position=>'NEXT'
+,p_button_redirect_url=>'f?p=&APP_ID.:9:&SESSION.::&DEBUG.:9:P9_PERMIT_ID,P9_PERMIT_NUMBER:&P5_PERMIT_ID.,&P5_PERMIT_NUMBER.'
+,p_button_condition=>'P5_WORKFLOW_STATUS'
+,p_button_condition2=>'AUTHORISED'
+,p_button_condition_type=>'VAL_OF_ITEM_IN_COND_EQ_COND2'
+,p_icon_css_classes=>'fa-clock-o'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(27356264505033433)
@@ -642,13 +632,13 @@ wwv_flow_imp_page.create_page_button(
 ,p_icon_css_classes=>'fa-arrow-left'
 );
 wwv_flow_imp_page.create_page_branch(
- p_id=>wwv_flow_imp.id(37958944543176050)
-,p_branch_name=>'Go To Page 9'
-,p_branch_action=>'f?p=&APP_ID.:9:&SESSION.::&DEBUG.:9:P9_PERMIT_ID,P9_PERMIT_NUMBER:&P5_PERMIT_ID.,&P5_PERMIT_NUMBER.'
+ p_id=>wwv_flow_imp.id(39966797793997143)
+,p_branch_name=>'Refresh page after submit'
+,p_branch_action=>'f?p=&APP_ID.:5:&SESSION.::&DEBUG.:5:P5_PERMIT_ID:&P5_PERMIT_ID.'
 ,p_branch_point=>'BEFORE_COMPUTATION'
 ,p_branch_type=>'REDIRECT_URL'
-,p_branch_when_button_id=>wwv_flow_imp.id(31606655096440628)
-,p_branch_sequence=>20
+,p_branch_when_button_id=>wwv_flow_imp.id(39966392216997139)
+,p_branch_sequence=>10
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(27353728149033408)
@@ -661,7 +651,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(27353854481033409)
 ,p_name=>'P5_PERMIT_NUMBER'
-,p_item_sequence=>70
+,p_item_sequence=>80
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
@@ -669,7 +659,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(27353970594033410)
 ,p_name=>'P5_AUTH_SIGNATURE_DATA'
-,p_item_sequence=>80
+,p_item_sequence=>90
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_encrypt_session_state_yn=>'N'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
@@ -678,7 +668,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(27354075256033411)
 ,p_name=>'P5_ACCEPT_SIGNATURE_DATA'
-,p_item_sequence=>90
+,p_item_sequence=>100
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_encrypt_session_state_yn=>'N'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
@@ -687,7 +677,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(27354116465033412)
 ,p_name=>'P5_AUTH_LATITUDE'
-,p_item_sequence=>100
+,p_item_sequence=>110
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
@@ -695,7 +685,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(27354271702033413)
 ,p_name=>'P5_AUTH_LONGITUDE'
-,p_item_sequence=>110
+,p_item_sequence=>120
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
@@ -703,7 +693,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(27354339224033414)
 ,p_name=>'P5_ACCEPT_LATITUDE'
-,p_item_sequence=>120
+,p_item_sequence=>130
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
@@ -711,7 +701,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(27354445860033415)
 ,p_name=>'P5_ACCEPT_LONGITUDE'
-,p_item_sequence=>130
+,p_item_sequence=>140
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
@@ -813,7 +803,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(30143518277642704)
 ,p_name=>'P5_IS_CHANGED'
-,p_item_sequence=>40
+,p_item_sequence=>50
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
@@ -821,7 +811,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(30143615815642705)
 ,p_name=>'P5_CURRENT_STEP'
-,p_item_sequence=>50
+,p_item_sequence=>60
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
@@ -829,7 +819,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(31607494167440636)
 ,p_name=>'P5_WORKFLOW_STATUS'
-,p_item_sequence=>60
+,p_item_sequence=>70
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
@@ -837,7 +827,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(33350836721951422)
 ,p_name=>'P5_USER_CAN_AUTHORISE'
-,p_item_sequence=>140
+,p_item_sequence=>150
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
@@ -914,7 +904,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(37955698093176017)
 ,p_name=>'P5_AUTH_TO_DATETIME'
-,p_item_sequence=>150
+,p_item_sequence=>160
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
@@ -922,7 +912,15 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(37955773514176018)
 ,p_name=>'P5_AUTH_FROM_DATETIME'
-,p_item_sequence=>160
+,p_item_sequence=>170
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(39963128282997107)
+,p_name=>'P5_REDIRECT_URL'
+,p_item_sequence=>40
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
@@ -943,18 +941,7 @@ wwv_flow_imp_page.create_page_validation(
 ,p_validation=>'P5_AUTH_PERSON_SELECT'
 ,p_validation_type=>'ITEM_NOT_NULL'
 ,p_error_message=>'Authorised person name is required.'
-,p_when_button_pressed=>wwv_flow_imp.id(31606655096440628)
-,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
-);
-wwv_flow_imp_page.create_page_validation(
- p_id=>wwv_flow_imp.id(33351958224951433)
-,p_validation_name=>'Auth TO Datetime Required'
-,p_validation_sequence=>22
-,p_validation=>'P5_AUTH_TO_DATETIME'
-,p_validation_type=>'ITEM_NOT_NULL'
-,p_error_message=>'Permit expiry date and time (TO) is required.'
-,p_validation_condition_type=>'NEVER'
-,p_when_button_pressed=>wwv_flow_imp.id(31606655096440628)
+,p_when_button_pressed=>wwv_flow_imp.id(39966392216997139)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_validation(
@@ -969,8 +956,8 @@ wwv_flow_imp_page.create_page_validation(
 '    BEGIN',
 '      SELECT first_name || '' '' || last_name',
 '      INTO   l_name',
-'      FROM   ptw_pro.ptw_lv_user_roles',
-'      WHERE  role_id = :P5_AUTH_PERSON_SELECT;',
+'      FROM   ptw_pro.ptw_lv_user_roles_v',
+'      WHERE  username = :P5_AUTH_PERSON_SELECT;',
 '    EXCEPTION',
 '      WHEN OTHERS THEN l_name := NULL; ',
 '    END;',
@@ -986,30 +973,7 @@ wwv_flow_imp_page.create_page_validation(
 ,p_validation2=>'PLSQL'
 ,p_validation_type=>'FUNC_BODY_RETURNING_BOOLEAN'
 ,p_error_message=>'The Authorised Person and Person in Charge of Works cannot be the same individual. A permit must not be self-authorised.'
-,p_when_button_pressed=>wwv_flow_imp.id(31606655096440628)
-,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
-);
-wwv_flow_imp_page.create_page_validation(
- p_id=>wwv_flow_imp.id(33352284097951436)
-,p_validation_name=>'Current User Must Be Authoriser'
-,p_validation_sequence=>28
-,p_validation=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'DECLARE',
-'    v_count NUMBER;',
-'BEGIN',
-'    SELECT COUNT(*) INTO v_count',
-'    FROM   ptw_pro.ptw_lv_user_roles',
-'    WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
-'    AND    role_name IN (''ADMIN'', ''AUTHORISER'')',
-'    AND    is_active = ''Y'';',
-'    RETURN v_count > 0;',
-'EXCEPTION',
-'    WHEN OTHERS THEN RETURN FALSE;',
-'END;'))
-,p_validation2=>'PLSQL'
-,p_validation_type=>'FUNC_BODY_RETURNING_BOOLEAN'
-,p_error_message=>'You do not have permission to authorise this permit. Only users with the Authoriser or Admin role may sign off.'
-,p_validation_condition_type=>'NEVER'
+,p_when_button_pressed=>wwv_flow_imp.id(39966392216997139)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_validation(
@@ -1019,7 +983,7 @@ wwv_flow_imp_page.create_page_validation(
 ,p_validation=>'P5_ACCEPT_SIGNATURE_DATA'
 ,p_validation_type=>'ITEM_NOT_NULL'
 ,p_error_message=>'Person in charge signature is required.'
-,p_when_button_pressed=>wwv_flow_imp.id(31606655096440628)
+,p_when_button_pressed=>wwv_flow_imp.id(39966392216997139)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_validation(
@@ -1029,7 +993,7 @@ wwv_flow_imp_page.create_page_validation(
 ,p_validation=>'P5_AUTH_SIGNATURE_DATA'
 ,p_validation_type=>'ITEM_NOT_NULL'
 ,p_error_message=>'Authorised person signature is required.'
-,p_when_button_pressed=>wwv_flow_imp.id(31606655096440628)
+,p_when_button_pressed=>wwv_flow_imp.id(39966392216997139)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_validation(
@@ -1039,7 +1003,7 @@ wwv_flow_imp_page.create_page_validation(
 ,p_validation=>'P5_ACCEPT_PERSON_NAME'
 ,p_validation_type=>'ITEM_NOT_NULL'
 ,p_error_message=>'Person in Charge cannot be blank.'
-,p_when_button_pressed=>wwv_flow_imp.id(31606655096440628)
+,p_when_button_pressed=>wwv_flow_imp.id(39966392216997139)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_validation(
@@ -1049,7 +1013,7 @@ wwv_flow_imp_page.create_page_validation(
 ,p_validation=>'P5_AUTH_PERSON_DISPLAY'
 ,p_validation_type=>'ITEM_NOT_NULL'
 ,p_error_message=>'Must have an Authorising person selected.'
-,p_when_button_pressed=>wwv_flow_imp.id(31606655096440628)
+,p_when_button_pressed=>wwv_flow_imp.id(39966392216997139)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_da_event(
@@ -1096,12 +1060,12 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
 ,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'BEGIN',
-'    SELECT ur.mobile_no,',
-'           ur.first_name || '' '' || ur.last_name',
+'    SELECT mobile_no,',
+'           first_name || '' '' || last_name',
 '    INTO   :P5_AUTH_PERSON_MOBILE,',
 '           :P5_AUTH_PERSON_DISPLAY',
-'    FROM   ptw_pro.ptw_lv_user_roles ur',
-'    WHERE  ur.role_id   = :P5_AUTH_PERSON_SELECT;',
+'    FROM   ptw_pro.ptw_lv_users',
+'    WHERE  UPPER(username) = UPPER(:P5_AUTH_PERSON_SELECT);',
 'EXCEPTION',
 '    WHEN NO_DATA_FOUND THEN',
 '        :P5_AUTH_PERSON_MOBILE  := NULL;',
@@ -1176,57 +1140,6 @@ wwv_flow_imp_page.create_page_da_action(
 'ConnectionManager.init();'))
 );
 wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(33351313843951427)
-,p_name=>'Check Authoriser Role on Page Load'
-,p_event_sequence=>5
-,p_bind_type=>'bind'
-,p_bind_event_type=>'ready'
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(33351491196951428)
-,p_event_id=>wwv_flow_imp.id(33351313843951427)
-,p_event_result=>'TRUE'
-,p_action_sequence=>10
-,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
-,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'DECLARE',
-'    v_count NUMBER;',
-'BEGIN',
-'    SELECT COUNT(*) INTO v_count',
-'    FROM   ptw_pro.ptw_lv_user_roles',
-'    WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
-'    AND    role_name IN (''ADMIN'', ''AUTHORISER'')',
-'    AND    is_active = ''Y'';',
-'    :P5_USER_CAN_AUTHORISE := CASE WHEN v_count > 0 THEN ''Y'' ELSE ''N'' END;',
-'EXCEPTION WHEN OTHERS THEN',
-'    :P5_USER_CAN_AUTHORISE := ''N'';',
-'END;'))
-,p_attribute_03=>'P5_USER_CAN_AUTHORISE'
-,p_attribute_04=>'N'
-,p_attribute_05=>'PLSQL'
-,p_wait_for_result=>'Y'
-);
-wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(33351711749951431)
-,p_name=>'Start Mode Change'
-,p_event_sequence=>20
-,p_triggering_element_type=>'ITEM'
-,p_triggering_element=>'P5_AUTH_START_MODE'
-,p_bind_type=>'bind'
-,p_execution_type=>'IMMEDIATE'
-,p_bind_event_type=>'change'
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(33351848879951432)
-,p_event_id=>wwv_flow_imp.id(33351711749951431)
-,p_event_result=>'TRUE'
-,p_action_sequence=>10
-,p_execute_on_page_init=>'Y'
-,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>'ptw_onStartModeChange();'
-);
-wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(31607259171440634)
 ,p_name=>'Save Signatures'
 ,p_event_sequence=>30
@@ -1249,51 +1162,14 @@ wwv_flow_imp_page.create_page_da_action(
 ''))
 );
 wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(33353556837951449)
-,p_name=>'Clear Auth Signature Button'
-,p_event_sequence=>50
-,p_triggering_element_type=>'JQUERY_SELECTOR'
-,p_triggering_element=>'#BTN_CLEAR_AUTH_SIG_P5'
-,p_bind_type=>'bind'
-,p_execution_type=>'IMMEDIATE'
-,p_bind_event_type=>'click'
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(33353632247951450)
-,p_event_id=>wwv_flow_imp.id(33353556837951449)
-,p_event_result=>'TRUE'
-,p_action_sequence=>10
-,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>'clearAuthSignature();'
-);
-wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(37954011611176001)
-,p_name=>'Clear Acceptance Signature Button'
-,p_event_sequence=>60
-,p_triggering_element_type=>'JQUERY_SELECTOR'
-,p_triggering_element=>'#BTN_CLEAR_ACCEPT_SIG_P5'
-,p_bind_type=>'bind'
-,p_execution_type=>'IMMEDIATE'
-,p_bind_event_type=>'click'
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(37954106363176002)
-,p_event_id=>wwv_flow_imp.id(37954011611176001)
-,p_event_result=>'TRUE'
-,p_action_sequence=>10
-,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>'clearAcceptSignature();'
-);
-wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(37954230775176003)
 ,p_name=>'Set Page Read-Only when not IN_PROGRESS'
 ,p_event_sequence=>70
-,p_triggering_condition_type=>'JAVASCRIPT_EXPRESSION'
-,p_triggering_expression=>'apex.item(''P5_WORKFLOW_STATUS'').getValue() !== ''IN_PROGRESS'' && apex.item(''P5_WORKFLOW_STATUS'').getValue() !== '''''
 ,p_bind_type=>'bind'
 ,p_bind_event_type=>'ready'
+,p_display_when_type=>'EXPRESSION'
+,p_display_when_cond=>':P5_WORKFLOW_STATUS IN (''AUTHORISED'', ''STARTED'')'
+,p_display_when_cond2=>'PLSQL'
 );
 wwv_flow_imp_page.create_page_da_action(
  p_id=>wwv_flow_imp.id(37954370773176004)
@@ -1303,20 +1179,20 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_execute_on_page_init=>'N'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
 ,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'// // Disable signature canvases',
-'// [''authSignaturePad'', ''acceptSignaturePad''].forEach(function(id) {',
-'//     var canvas = document.getElementById(id);',
-'//     if (canvas) {',
-'//         canvas.style.pointerEvents = ''none'';',
-'//         canvas.style.opacity       = ''0.6'';',
-'//         canvas.style.cursor        = ''not-allowed'';',
-'//         canvas.title               = ''This permit is read-only'';',
-'//             }',
-'//     });',
+' // Disable signature canvases',
+' [''authSignaturePad'', ''acceptSignaturePad''].forEach(function(id) {',
+'     var canvas = document.getElementById(id);',
+'     if (canvas) {',
+'         canvas.style.pointerEvents = ''none'';',
+'         canvas.style.opacity       = ''0.6'';',
+'         canvas.style.cursor        = ''not-allowed'';',
+'         canvas.title               = ''This permit is read-only'';',
+'             }',
+'     });',
 '// Hide Clear Signature buttons',
 '$(''#BTN_CLEAR_AUTH_SIG_P5, #BTN_CLEAR_ACCEPT_SIG_P5'').hide();',
 '// Hide Save Draft and Authorise buttons when read-only',
-'$(''#BTN_SAVE_DRAFT_P5, #BTN_START_PERMIT_P5'').hide();',
+'//$(''#BTN_SAVE_DRAFT_P5, #BTN_START_PERMIT_P5'').hide();',
 '// Disable all editable items via APEX API',
 'apex.item(''P5_AUTH_PERSON_SELECT'').disable();',
 'apex.item(''P5_AUTH_DATETIME'').disable();',
@@ -1344,13 +1220,12 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
 ,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'BEGIN',
-'  SELECT mobile_no',
-'  INTO   :P5_AUTH_PERSON_MOBILE',
-'  FROM   ptw_pro.ptw_lv_user_roles',
-'  WHERE  role_id = :P5_AUTH_PERSON_SELECT;',
+'    SELECT mobile_no',
+'    INTO   :P5_AUTH_PERSON_MOBILE',
+'    FROM   ptw_pro.ptw_lv_users',
+'    WHERE  UPPER(username) = UPPER(:P5_AUTH_PERSON_SELECT);',
 'EXCEPTION',
-'  WHEN NO_DATA_FOUND THEN',
-'    NULL;',
+'    WHEN NO_DATA_FOUND THEN NULL;',
 'END;'))
 ,p_attribute_02=>'P5_AUTH_PERSON_SELECT'
 ,p_attribute_03=>'P5_AUTH_PERSON_MOBILE'
@@ -1359,25 +1234,28 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_wait_for_result=>'Y'
 );
 wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(37958295450176043)
-,p_name=>'Refresh After Start Permit'
-,p_event_sequence=>100
-,p_triggering_element_type=>'REGION'
-,p_triggering_region_id=>wwv_flow_imp.id(27356182588033432)
+ p_id=>wwv_flow_imp.id(39962598630997101)
+,p_name=>'Click the Authorise button'
+,p_event_sequence=>110
+,p_triggering_element_type=>'BUTTON'
+,p_triggering_button_id=>wwv_flow_imp.id(39966392216997139)
 ,p_bind_type=>'bind'
 ,p_execution_type=>'IMMEDIATE'
-,p_bind_event_type=>'apexafterclosedialog'
+,p_bind_event_type=>'click'
 );
 wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(37958305888176044)
-,p_event_id=>wwv_flow_imp.id(37958295450176043)
+ p_id=>wwv_flow_imp.id(39962698061997102)
+,p_event_id=>wwv_flow_imp.id(39962598630997101)
 ,p_event_result=>'TRUE'
 ,p_action_sequence=>10
 ,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_REFRESH'
-,p_affected_elements_type=>'REGION'
-,p_affected_region_id=>wwv_flow_imp.id(27354510223033416)
-,p_attribute_01=>'N'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'saveSignatures();',
+'captureLocationThenSubmit(''AUTHORISE'');',
+'',
+'',
+''))
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(27356922514033440)
@@ -1403,13 +1281,18 @@ wwv_flow_imp_page.create_page_process(
 '    END base64_to_blob;',
 '',
 'BEGIN',
+'',
 '    v_auth_sig_blob := base64_to_blob(:P5_AUTH_SIGNATURE_DATA);',
 '    v_accept_sig_blob := base64_to_blob(:P5_ACCEPT_SIGNATURE_DATA);',
 '',
 '      UPDATE ptw_pro.ptw_lv_permits',
-'      SET auth_person_name = :P5_AUTH_PERSON_SELECT,',
+'      SET auth_person_name   = (SELECT first_name || '' '' || last_name',
+'                                FROM   ptw_pro.ptw_lv_users',
+'                                WHERE  UPPER(username) = UPPER(:P5_AUTH_PERSON_SELECT)),',
 '          auth_person_signature = v_auth_sig_blob,',
-'          auth_person_mobile = :P5_AUTH_PERSON_MOBILE,',
+'          auth_person_mobile = (SELECT mobile_no',
+'                                FROM   ptw_pro.ptw_lv_users',
+'                                WHERE  UPPER(username) = UPPER(:P5_AUTH_PERSON_SELECT)),',
 '          auth_from_datetime = TO_DATE(:P5_AUTH_FROM_DATETIME, ''DD-MON-YYYY HH24:MI''),',
 '          auth_to_datetime = TO_DATE(:P5_AUTH_TO_DATETIME, ''DD-MON-YYYY HH24:MI''),',
 '          auth_latitude = :APP_LATITUDE,',
@@ -1434,6 +1317,8 @@ wwv_flow_imp_page.create_page_process(
 '             THEN ''Permit '' || :P5_PERMIT_NUMBER || '' has been authorised.''',
 '             ELSE ''Permit '' || :P5_PERMIT_NUMBER || '' saved successfully.''',
 '        END;',
+'    ',
+'    :P5_WORKFLOW_STATUS := ''AUTHORISED'';',
 '',
 'EXCEPTION',
 '    WHEN OTHERS THEN',
@@ -1446,7 +1331,9 @@ wwv_flow_imp_page.create_page_process(
 'END;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
-,p_process_when_button_id=>wwv_flow_imp.id(31606655096440628)
+,p_process_when=>'P5_WORKFLOW_STATUS'
+,p_process_when_type=>'VAL_OF_ITEM_IN_COND_EQ_COND2'
+,p_process_when2=>'IN_PROGRESS'
 ,p_internal_uid=>27356922514033440
 );
 wwv_flow_imp_page.create_page_process(
@@ -1474,7 +1361,7 @@ wwv_flow_imp_page.create_page_process(
 '        workflow_status',
 '    INTO',
 '        :P5_PERMIT_NUMBER,',
-'        :P5_AUTH_PERSON_SELECT,',
+'        :P5_AUTH_PERSON_DISPLAY,',
 '        :P5_AUTH_PERSON_MOBILE,',
 '        :P5_AUTH_LATITUDE,',
 '        :P5_AUTH_LONGITUDE,',
