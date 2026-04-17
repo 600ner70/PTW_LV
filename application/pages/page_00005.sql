@@ -390,8 +390,6 @@ wwv_flow_imp_page.create_page_plug(
 ,p_function_body_language=>'PLSQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'DECLARE',
-'    -- v_role          VARCHAR2(50);',
-'    -- v_can_authorise BOOLEAN       := FALSE;',
 '    v_from_dt       DATE;',
 '    v_to_dt         DATE;',
 '    v_now           DATE          := SYSDATE;',
@@ -399,7 +397,7 @@ wwv_flow_imp_page.create_page_plug(
 'BEGIN',
 '    -- Get permit validity window if set',
 '    BEGIN',
-'        SELECT auth_from_datetime, auth_to_datetime',
+'        SELECT started_datetime, ended_datetime',
 '        INTO   v_from_dt, v_to_dt',
 '        FROM   ptw_pro.ptw_lv_permits',
 '        WHERE  permit_id = :P5_PERMIT_ID;',
@@ -587,6 +585,7 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_sequence=>10
 ,p_button_plug_id=>wwv_flow_imp.id(27356182588033432)
 ,p_button_name=>'AUTHORISE'
+,p_button_static_id=>'BTN_AUTHORISE_P5'
 ,p_button_action=>'DEFINED_BY_DA'
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
 ,p_button_template_id=>2082829544945815391
@@ -635,7 +634,7 @@ wwv_flow_imp_page.create_page_branch(
  p_id=>wwv_flow_imp.id(39966797793997143)
 ,p_branch_name=>'Refresh page after submit'
 ,p_branch_action=>'f?p=&APP_ID.:5:&SESSION.::&DEBUG.:5:P5_PERMIT_ID:&P5_PERMIT_ID.'
-,p_branch_point=>'BEFORE_COMPUTATION'
+,p_branch_point=>'AFTER_PROCESSING'
 ,p_branch_type=>'REDIRECT_URL'
 ,p_branch_when_button_id=>wwv_flow_imp.id(39966392216997139)
 ,p_branch_sequence=>10
@@ -902,22 +901,6 @@ wwv_flow_imp_page.create_page_item(
   'show_line_breaks', 'Y')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(37955698093176017)
-,p_name=>'P5_AUTH_TO_DATETIME'
-,p_item_sequence=>160
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(37955773514176018)
-,p_name=>'P5_AUTH_FROM_DATETIME'
-,p_item_sequence=>170
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(39963128282997107)
 ,p_name=>'P5_REDIRECT_URL'
 ,p_item_sequence=>40
@@ -1006,16 +989,6 @@ wwv_flow_imp_page.create_page_validation(
 ,p_when_button_pressed=>wwv_flow_imp.id(39966392216997139)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
-wwv_flow_imp_page.create_page_validation(
- p_id=>wwv_flow_imp.id(37958833334176049)
-,p_validation_name=>'Auth person cannot be blank'
-,p_validation_sequence=>68
-,p_validation=>'P5_AUTH_PERSON_DISPLAY'
-,p_validation_type=>'ITEM_NOT_NULL'
-,p_error_message=>'Must have an Authorising person selected.'
-,p_when_button_pressed=>wwv_flow_imp.id(39966392216997139)
-,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
-);
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(33352838421951442)
 ,p_name=>'Initialise page'
@@ -1027,7 +1000,7 @@ wwv_flow_imp_page.create_page_da_action(
  p_id=>wwv_flow_imp.id(33352979633951443)
 ,p_event_id=>wwv_flow_imp.id(33352838421951442)
 ,p_event_result=>'TRUE'
-,p_action_sequence=>10
+,p_action_sequence=>20
 ,p_execute_on_page_init=>'N'
 ,p_name=>'Signatures'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
@@ -1054,7 +1027,7 @@ wwv_flow_imp_page.create_page_da_action(
  p_id=>wwv_flow_imp.id(37955420884176015)
 ,p_event_id=>wwv_flow_imp.id(33352838421951442)
 ,p_event_result=>'TRUE'
-,p_action_sequence=>20
+,p_action_sequence=>40
 ,p_execute_on_page_init=>'N'
 ,p_name=>'Load the Auth person details'
 ,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
@@ -1081,40 +1054,31 @@ wwv_flow_imp_page.create_page_da_action(
  p_id=>wwv_flow_imp.id(37955275603176013)
 ,p_event_id=>wwv_flow_imp.id(33352838421951442)
 ,p_event_result=>'TRUE'
-,p_action_sequence=>30
+,p_action_sequence=>50
 ,p_execute_on_page_init=>'N'
 ,p_name=>'Load Signatures'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
 ,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'var permitId = apex.item(''P5_PERMIT_ID'').getValue();',
-'if (!permitId) { return; }',
+'var authData   = apex.item(''P5_AUTH_SIGNATURE_DATA'').getValue();',
+'var acceptData = apex.item(''P5_ACCEPT_SIGNATURE_DATA'').getValue();',
 '',
-'apex.server.process(''GET_SIGNATURES_P5'', ',
-'    { pageItems: ''#P5_PERMIT_ID'' },',
-'    {',
-'        success: function(data) {',
-'            if (data.authSig) {',
-'                loadSignature(authSignaturePad,',
-'                    document.getElementById(''authSignaturePad''),',
-'                    ''data:image/png;base64,'' + data.authSig);',
-'            }',
-'            if (data.acceptSig) {',
-'                loadSignature(acceptSignaturePad,',
-'                    document.getElementById(''acceptSignaturePad''),',
-'                    ''data:image/png;base64,'' + data.acceptSig);',
-'            }',
-'        },',
-'        error: function(xhr) {',
-'            console.warn(''GET_SIGNATURES_P5 failed:'', xhr);',
-'        }',
-'    }',
-');'))
+'if (authData) {',
+'    loadSignature(authSignaturePad,',
+'        document.getElementById(''authSignaturePad''),',
+'        ''data:image/png;base64,'' + authData);',
+'}',
+'if (acceptData) {',
+'    loadSignature(acceptSignaturePad,',
+'        document.getElementById(''acceptSignaturePad''),',
+'        ''data:image/png;base64,'' + acceptData);',
+'}'))
+,p_server_condition_type=>'NEVER'
 );
 wwv_flow_imp_page.create_page_da_action(
  p_id=>wwv_flow_imp.id(33353070566951444)
 ,p_event_id=>wwv_flow_imp.id(33352838421951442)
 ,p_event_result=>'TRUE'
-,p_action_sequence=>40
+,p_action_sequence=>60
 ,p_execute_on_page_init=>'N'
 ,p_name=>'Connection UI'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
@@ -1131,7 +1095,7 @@ wwv_flow_imp_page.create_page_da_action(
  p_id=>wwv_flow_imp.id(33353132786951445)
 ,p_event_id=>wwv_flow_imp.id(33352838421951442)
 ,p_event_result=>'TRUE'
-,p_action_sequence=>50
+,p_action_sequence=>70
 ,p_execute_on_page_init=>'N'
 ,p_name=>'Manage Offline'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
@@ -1220,8 +1184,8 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
 ,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'BEGIN',
-'    SELECT mobile_no',
-'    INTO   :P5_AUTH_PERSON_MOBILE',
+'    SELECT first_name||'' ''||last_name, mobile_no',
+'    INTO   :P5_AUTH_PERSON_DISPLAY, :P5_AUTH_PERSON_MOBILE',
 '    FROM   ptw_pro.ptw_lv_users',
 '    WHERE  UPPER(username) = UPPER(:P5_AUTH_PERSON_SELECT);',
 'EXCEPTION',
@@ -1257,6 +1221,27 @@ wwv_flow_imp_page.create_page_da_action(
 '',
 ''))
 );
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(39967216755997148)
+,p_name=>'When Start permit screen closed'
+,p_event_sequence=>120
+,p_triggering_element_type=>'JAVASCRIPT_EXPRESSION'
+,p_triggering_element=>'document'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'apexafterclosedialog'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(39967324340997149)
+,p_event_id=>wwv_flow_imp.id(39967216755997148)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'JAVASCRIPT_EXPRESSION'
+,p_affected_elements=>'document'
+,p_attribute_01=>'N'
+);
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(27356922514033440)
 ,p_process_sequence=>10
@@ -1286,15 +1271,15 @@ wwv_flow_imp_page.create_page_process(
 '    v_accept_sig_blob := base64_to_blob(:P5_ACCEPT_SIGNATURE_DATA);',
 '',
 '      UPDATE ptw_pro.ptw_lv_permits',
-'      SET auth_person_name   = (SELECT first_name || '' '' || last_name',
-'                                FROM   ptw_pro.ptw_lv_users',
-'                                WHERE  UPPER(username) = UPPER(:P5_AUTH_PERSON_SELECT)),',
+'      SET auth_person_name   = UPPER(:P5_AUTH_PERSON_SELECT),',
+'    --   SET auth_person_name   = (SELECT first_name || '' '' || last_name',
+'    --                             FROM   ptw_pro.ptw_lv_users',
+'    --                             WHERE  UPPER(username) = UPPER(:P5_AUTH_PERSON_SELECT)),',
 '          auth_person_signature = v_auth_sig_blob,',
 '          auth_person_mobile = (SELECT mobile_no',
 '                                FROM   ptw_pro.ptw_lv_users',
 '                                WHERE  UPPER(username) = UPPER(:P5_AUTH_PERSON_SELECT)),',
-'          auth_from_datetime = TO_DATE(:P5_AUTH_FROM_DATETIME, ''DD-MON-YYYY HH24:MI''),',
-'          auth_to_datetime = TO_DATE(:P5_AUTH_TO_DATETIME, ''DD-MON-YYYY HH24:MI''),',
+'          auth_datetime = TO_DATE(:P5_AUTH_DATETIME, ''DD-MON-YYYY HH24:MI''),',
 '          auth_latitude = :APP_LATITUDE,',
 '          auth_longitude = :APP_LONGITUDE,',
 '          accept_person_name = :P5_ACCEPT_PERSON_NAME,',
@@ -1351,7 +1336,7 @@ wwv_flow_imp_page.create_page_process(
 '        auth_person_mobile,',
 '        auth_latitude,',
 '        auth_longitude,',
-'        TO_CHAR(auth_from_datetime, ''DD-MON-YYYY HH24:MI''),',
+'        TO_CHAR(auth_datetime, ''DD-MON-YYYY HH24:MI''),',
 '        accept_person_name,',
 '        accept_person_mobile,',
 '        accept_company,',
@@ -1361,7 +1346,7 @@ wwv_flow_imp_page.create_page_process(
 '        workflow_status',
 '    INTO',
 '        :P5_PERMIT_NUMBER,',
-'        :P5_AUTH_PERSON_DISPLAY,',
+'        :P5_AUTH_PERSON_SELECT,',
 '        :P5_AUTH_PERSON_MOBILE,',
 '        :P5_AUTH_LATITUDE,',
 '        :P5_AUTH_LONGITUDE,',
@@ -1402,6 +1387,20 @@ wwv_flow_imp_page.create_page_process(
 '        NULL;',
 '    END;',
 'END IF;',
+'BEGIN',
+'  SELECT ''data:image/png;base64,'' || apex_web_service.blob2clobbase64(auth_person_signature),',
+'       ''data:image/png;base64,'' || apex_web_service.blob2clobbase64(accept_person_signature)',
+'  INTO   :P5_AUTH_SIGNATURE_DATA,',
+'       :P5_ACCEPT_SIGNATURE_DATA',
+'  FROM   ptw_pro.ptw_lv_permits',
+'  WHERE  permit_id = :P5_PERMIT_ID',
+'  AND    (auth_person_signature IS NOT NULL OR accept_person_signature IS NOT NULL);',
+'EXCEPTION',
+'  WHEN OTHERS THEN',
+'    NULL;',
+'END;',
+'',
+'',
 '',
 '',
 '',

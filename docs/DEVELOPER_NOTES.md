@@ -321,6 +321,54 @@ success/error callbacks, guaranteeing coordinates are set first.
 - → User Interface Attributes
 - → JavaScript → File URLs
 
+## 14. PERMIT PHOTOS
+
+### Table
+- `ptw_pro.ptw_lv_permit_photos` — child table, FK to `ptw_pro.ptw_lv_permits` ON DELETE CASCADE
+- Sequence: `ptw_pro.ptw_lv_photo_seq`
+- Index: `ptw_pro.idx_ptw_lv_photos_permit` on `permit_id`
+
+### Upload mechanism
+- File read client-side using FileReader.readAsDataURL()
+- Base64 stripped of data URL header in JavaScript before sending
+- Sent as f01 array (30KB chunks) in a SINGLE apex.server.process call
+- PL/SQL reassembles f01 array into CLOB, converts to BLOB via
+  apex_web_service.clobbase642blob() — same pattern as Page 5 signatures
+- DO NOT use apex_application_temp_files for AJAX uploads —
+  temp files are only populated on full page submit, not AJAX calls
+- DO NOT use g_x01-g_x10 for binary data — hard limit of 32KB each
+
+### Application Processes
+| Process              | Point         | Purpose                          |
+|----------------------|---------------|----------------------------------|
+| `UPLOAD_PERMIT_PHOTO`| Ajax Callback | Receives f01 array, inserts BLOB |
+| `GET_PERMIT_PHOTOS`  | Ajax Callback | Returns JSON array for gallery   |
+| `DELETE_PERMIT_PHOTO`| Ajax Callback | Deletes — uploader or ADMIN only |
+
+### Photo serving — Page 20 (Photo Download)
+- Blank page, alias: `photo-download`
+- Single hidden item: `P20_PHOTO_ID`, Value Protected: NO (Unrestricted)
+  ← Value Protected MUST be No, otherwise SSP blocks the URL parameter
+- Before Header process streams BLOB via wpg_docload.download_file()
+- Must re-raise apex_application.e_stop_apex_engine in WHEN OTHERS
+- URL generated via: apex_page.get_url(p_page=>20, p_items=>'P20_PHOTO_ID', p_values=>photo_id)
+- DO NOT use apex_util.prepare_url with f?p= syntax in friendly URL apps
+  — generates wrong checksum format, causes SSP_VIOLATION2
+
+### Page 4 Components
+- `P4_PHOTO_FILE` — File Browse, capture="environment" (opens camera on mobile)
+- `P4_PHOTO_CAPTION` — optional caption
+- `ADD_PHOTO` button — Defined by DA, condition: P4_PERMIT_ID NOT NULL
+- `#ptw-photo-gallery` div in Permit Photos static region
+
+### JS functions (Page 4 Function Declaration)
+- `loadPermitPhotos(permitId)` — calls GET_PERMIT_PHOTOS, renders grid
+- `deletePtwPhoto(photoId, permitId)` — confirm + DELETE_PERMIT_PHOTO
+
+### Offline behaviour
+- Upload disabled when !navigator.onLine — shown as error message
+- Gallery load fails gracefully with "Could not load photos" when offline
+
 ### How Oracle APEX Works
 - Oracle APEX provides all the tools you need to build apps in a single, extensible platform, which runs as a part of Oracle Database.
 

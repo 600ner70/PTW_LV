@@ -41,6 +41,7 @@ prompt --install
 @@application/shared_components/security/app_access_control/contributor.sql
 @@application/shared_components/security/app_access_control/reader.sql
 @@application/shared_components/navigation/navigation_bar.sql
+@@application/shared_components/logic/application_processes/get_photo.sql
 @@application/shared_components/logic/application_processes/get_signatures_p5.sql
 @@application/shared_components/logic/application_processes/set_location.sql
 @@application/shared_components/logic/application_items/app_latitude.sql
@@ -84,6 +85,8 @@ prompt --install
 @@application/pages/page_00011.sql
 @@application/pages/page_00012.sql
 @@application/pages/page_00013.sql
+@@application/pages/page_00014.sql
+@@application/pages/page_00020.sql
 @@application/pages/page_09999.sql
 @@application/deployment/definition.sql
 @@application/deployment/checks.sql

@@ -157,7 +157,6 @@ wwv_flow_imp_page.create_page_item(
 ,p_name=>'P9_PERMIT_NUMBER'
 ,p_item_sequence=>40
 ,p_display_as=>'NATIVE_HIDDEN'
-,p_is_persistent=>'N'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
 );
@@ -391,10 +390,11 @@ wwv_flow_imp_page.create_page_process(
 '',
 '    UPDATE ptw_pro.ptw_lv_permits',
 '    SET    workflow_status    = ''STARTED'',',
-'           auth_from_datetime = v_from_dt,',
-'           auth_to_datetime   = v_to_dt,',
-'           started_latitude   = TO_NUMBER(:P0_LATITUDE),',
-'           started_longitude  = TO_NUMBER(:P0_LONGITUDE),',
+'           current_step       = ''LIVE'',',
+'           started_datetime   = v_from_dt,',
+'           ended_datetime     = v_to_dt,',
+'           started_latitude   = TO_NUMBER(:APP_LATITUDE),',
+'           started_longitude  = TO_NUMBER(:APP_LONGITUDE),',
 '           modified_by        = V(''APP_USER''),',
 '           modified_date      = v_now',
 '    WHERE  permit_id = :P9_PERMIT_ID;',

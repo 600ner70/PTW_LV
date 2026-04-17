@@ -492,7 +492,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_read_only_when=>'ptw_pro.ptw_lv_is_contract_support(V(''APP_USER'')) = ''Y'''
 ,p_read_only_when2=>'PLSQL'
 ,p_read_only_when_type=>'EXPRESSION'
-,p_field_template=>1609121967514267634
+,p_field_template=>1609122147107268652
 ,p_item_template_options=>'#DEFAULT#'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'disabled', 'N',
@@ -503,6 +503,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(26943152825347702)
 ,p_name=>'P2_SUPERVISING_COMPANY'
+,p_is_required=>true
 ,p_item_sequence=>40
 ,p_item_plug_id=>wwv_flow_imp.id(25230894903353148)
 ,p_prompt=>'Company responsible for supervising the works'
@@ -513,7 +514,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_read_only_when=>'ptw_pro.ptw_lv_is_contract_support(V(''APP_USER'')) = ''Y'''
 ,p_read_only_when2=>'PLSQL'
 ,p_read_only_when_type=>'EXPRESSION'
-,p_field_template=>1609121967514267634
+,p_field_template=>1609122147107268652
 ,p_item_template_options=>'#DEFAULT#'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'disabled', 'N',
@@ -524,6 +525,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(26943296650347703)
 ,p_name=>'P2_OTHER_PERSONS_COUNT'
+,p_is_required=>true
 ,p_item_sequence=>50
 ,p_item_plug_id=>wwv_flow_imp.id(25230894903353148)
 ,p_prompt=>'Number of other persons working under this Permit'
@@ -533,7 +535,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_read_only_when=>'ptw_pro.ptw_lv_is_contract_support(V(''APP_USER'')) = ''Y'''
 ,p_read_only_when2=>'PLSQL'
 ,p_read_only_when_type=>'EXPRESSION'
-,p_field_template=>1609121967514267634
+,p_field_template=>1609122147107268652
 ,p_item_template_options=>'#DEFAULT#'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'number_alignment', 'left',
@@ -727,6 +729,7 @@ wwv_flow_imp_page.create_page_process(
 '        -- INSERT NEW PERMIT',
 '        INSERT INTO ptw_pro.ptw_lv_permits (',
 '            safety_programme_ref_no,',
+'            ptw_type,',
 '            isolation_diagram_serial_no,',
 '            site_details,',
 '            work_description,',
@@ -743,6 +746,7 @@ wwv_flow_imp_page.create_page_process(
 '            created_by',
 '        ) VALUES (',
 '            :P2_SAFETY_PROGRAMME_REF_NO,',
+'            ''LV ISOLATION'',',
 '            :P2_ISOLATION_DIAGRAM_SERIAL_NO,',
 '            :P2_SITE_DETAILS,',
 '            :P2_WORK_DESCRIPTION,',
@@ -773,6 +777,7 @@ wwv_flow_imp_page.create_page_process(
 '        -- UPDATE EXISTING PERMIT',
 '        UPDATE ptw_pro.ptw_lv_permits',
 '        SET safety_programme_ref_no = :P2_SAFETY_PROGRAMME_REF_NO,',
+'            ptw_type = ''LV ISOLATION'',',
 '            isolation_diagram_serial_no = :P2_ISOLATION_DIAGRAM_SERIAL_NO,',
 '            site_details = :P2_SITE_DETAILS,',
 '            work_description = :P2_WORK_DESCRIPTION,',

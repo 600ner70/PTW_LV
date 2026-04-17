@@ -32,23 +32,35 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_display_sequence=>20
 ,p_query_type=>'SQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'select PERMIT_ID,',
-'       CASE PERMIT_STAGE',
+'WITH max_row AS ',
+'  (',
+'    SELECT MAX(created_date) max_date,',
+'           permit_id,',
+'           permit_stage',
+'    FROM   ptw_pro.ptw_stage_locations',
+'    GROUP BY permit_id,',
+'             permit_stage',
+'  )',
+'select sl.PERMIT_ID,',
+'       CASE sl.PERMIT_STAGE',
 '        WHEN ''SITE_WORK_DETAILS'' THEN ''Step 1: Site and Work Details''',
 '        WHEN ''CONTROL_MEASURES''  THEN ''Step 2: Control Measures''',
 '        WHEN ''EQUIP_ISOLATION''   THEN ''Step 3: Equipment Isolation''',
 '        WHEN ''AUTHORISATION''     THEN ''Step 4: Authorisation''',
-'        WHEN ''CLEARANCE''         THEN ''Step 5: Clearance''',
-'       ELSE PERMIT_STAGE',
+'        WHEN ''LIVE''              THEN ''Step 5: Live''',
+'       ELSE sl.PERMIT_STAGE',
 '       END as step_display,',
-'       LATITUDE,',
-'       LONGITUDE,',
-'       TO_CHAR(CREATED_DATE, ''DD-MON-YYYY HH24:MI'') AS CREATED_DATE,',
-'       CREATED_BY,',
-'       PERMIT_STAGE',
-'from   ptw_pro.ptw_stage_locations',
-'where  PERMIT_ID = :P6_PERMIT_ID',
-'order by created_date DESC'))
+'       sl.LATITUDE,',
+'       sl.LONGITUDE,',
+'       TO_CHAR(sl.CREATED_DATE, ''DD-MON-YYYY HH24:MI'') AS CREATED_DATE,',
+'       sl.CREATED_BY,',
+'       sl.PERMIT_STAGE',
+'from   ptw_pro.ptw_stage_locations sl',
+'join   max_row mr on mr.permit_id = sl.permit_id',
+'  and mr.permit_stage = sl.permit_stage',
+'  and mr.max_date = sl.created_date ',
+'where  sl.PERMIT_ID = :P6_PERMIT_ID',
+'order by sl.created_date DESC'))
 ,p_plug_source_type=>'NATIVE_IR'
 ,p_ajax_items_to_submit=>'P6_PERMIT_ID'
 ,p_prn_content_disposition=>'ATTACHMENT'

@@ -44,7 +44,68 @@ unistr('        statusIcon.innerHTML = ''\26A0'';'),
 'window.addEventListener(''online'', updateConnectionUI);',
 'window.addEventListener(''offline'', updateConnectionUI);',
 '',
-''))
+'function loadPermitPhotos(permitId) {',
+'    if (!permitId) return;',
+'',
+'    apex.server.process(''GET_PERMIT_PHOTOS'', {',
+'        x01: permitId',
+'    }, {',
+'        success: function(data) {',
+'            var gallery = document.getElementById(''ptw-photo-gallery'');',
+'            if (!gallery) return;',
+'',
+'            if (!data.photos || data.photos.length === 0) {',
+'                gallery.innerHTML = ''<p class="ptw-no-photos">No photos attached to this permit yet.</p>'';',
+'                return;',
+'            }',
+'',
+'            var html = ''<div class="ptw-photo-grid">'';',
+'            data.photos.forEach(function(p) {',
+'                html += ''<div class="ptw-photo-card" data-photo-id="'' + p.photoId + ''">'';',
+'                html += ''<a href="'' + p.url + ''" target="_blank">'';',
+'                html += ''<img src="'' + p.url + ''" alt="'' + (p.caption || ''Permit photo'') + ''" class="ptw-photo-thumb">'';',
+'                html += ''</a>'';',
+'                html += ''<div class="ptw-photo-meta">'';',
+'                if (p.caption) {',
+'                    html += ''<span class="ptw-photo-caption">'' + apex.util.escapeHTMLAttr(p.caption) + ''</span>'';',
+'                }',
+'                html += ''<span class="ptw-photo-date">'' + p.uploadedDate + ''</span>'';',
+'                html += ''<span class="ptw-photo-user">'' + p.uploadedBy + ''</span>'';',
+'                html += ''</div>'';',
+'                html += ''<button class="t-Button t-Button--danger t-Button--slim t-Button--stretch ptw-delete-photo" '';',
+'                html += ''onclick="deletePtwPhoto('' + p.photoId + '', '' + permitId + '')">'';',
+'                html += ''<span class="t-Icon fa fa-trash-o"></span> Delete</button>'';',
+'                html += ''</div>'';',
+'            });',
+'            html += ''</div>'';',
+'            gallery.innerHTML = html;',
+'        },',
+'        error: function() {',
+'            var gallery = document.getElementById(''ptw-photo-gallery'');',
+'            if (gallery) {',
+'                gallery.innerHTML = ''<p class="ptw-no-photos">Could not load photos.</p>'';',
+'            }',
+'        }',
+'    });',
+'}',
+'',
+'function deletePtwPhoto(photoId, permitId) {',
+'    apex.message.confirm(''Delete this photo? This cannot be undone.'', function(okPressed) {',
+'        if (!okPressed) return;',
+'        apex.server.process(''DELETE_PERMIT_PHOTO'', {',
+'            x01: photoId',
+'        }, {',
+'            success: function(data) {',
+'                if (data.success) {',
+'                    apex.message.showPageSuccess(''Photo deleted.'');',
+'                    loadPermitPhotos(permitId);',
+'                } else {',
+'                    apex.message.showErrors([{type: ''error'', message: data.message}]);',
+'                }',
+'            }',
+'        });',
+'    });',
+'}'))
 ,p_javascript_code_onload=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '// Initialize offline storage',
 'OfflineStorage.initDB();',
@@ -200,6 +261,67 @@ unistr('        statusIcon.innerHTML = ''\26A0'';'),
 '    color: #003366;',
 '}',
 '',
+'/* ---- Permit Photo Gallery ---- */',
+'.ptw-photo-grid {',
+'    display: grid;',
+'    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));',
+'    gap: 1rem;',
+'    padding: 0.5rem 0;',
+'}',
+'',
+'.ptw-photo-card {',
+'    border: 1px solid var(--ut-component-border-color, #e0e0e0);',
+'    border-radius: 8px;',
+'    overflow: hidden;',
+'    background: var(--ut-component-background-color, #fff);',
+'    display: flex;',
+'    flex-direction: column;',
+'}',
+'',
+'.ptw-photo-thumb {',
+'    width: 100%;',
+'    height: 130px;',
+'    object-fit: cover;',
+'    display: block;',
+'    transition: opacity 0.2s;',
+'}',
+'',
+'.ptw-photo-thumb:hover { opacity: 0.82; }',
+'',
+'.ptw-photo-meta {',
+'    padding: 0.4rem 0.6rem;',
+'    font-size: 0.75rem;',
+'    color: var(--ut-component-font-color-muted, #666);',
+'    display: flex;',
+'    flex-direction: column;',
+'    gap: 2px;',
+'    flex: 1;',
+'}',
+'',
+'.ptw-photo-caption {',
+'    font-weight: 600;',
+'    color: var(--ut-component-font-color, #333);',
+'    font-size: 0.8rem;',
+'}',
+'',
+'.ptw-photo-date { font-size: 0.7rem; }',
+'.ptw-photo-user { font-size: 0.7rem; font-style: italic; }',
+'',
+'.ptw-delete-photo {',
+'    margin: 0.4rem;',
+'    font-size: 0.75rem !important;',
+'}',
+'',
+'.ptw-no-photos {',
+'    color: var(--ut-component-font-color-muted, #888);',
+'    font-style: italic;',
+'    padding: 0.5rem 0;',
+'    margin: 0;',
+'}',
+'',
+'@media (max-width: 420px) {',
+'    .ptw-photo-grid { grid-template-columns: 1fr 1fr; }',
+'}',
 ''))
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
@@ -305,6 +427,24 @@ wwv_flow_imp_page.create_page_plug(
   'output_as', 'HTML')).to_clob
 );
 wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(40556697430170648)
+,p_plug_name=>'Permit Photos'
+,p_title=>'Permit Photos'
+,p_parent_plug_id=>wwv_flow_imp.id(27019604951886547)
+,p_icon_css_classes=>'fa-camera'
+,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
+,p_plug_template=>4072358936313175081
+,p_plug_display_sequence=>50
+,p_location=>null
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<div id="ptw-photo-gallery">',
+'    <p class="ptw-no-photos">Loading photos...</p>',
+'</div>'))
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'expand_shortcuts', 'N',
+  'output_as', 'HTML')).to_clob
+);
+wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(27019835346886549)
 ,p_plug_name=>'Buttons'
 ,p_region_template_options=>'#DEFAULT#'
@@ -314,6 +454,21 @@ wwv_flow_imp_page.create_page_plug(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(40555972208170641)
+,p_button_sequence=>40
+,p_button_plug_id=>wwv_flow_imp.id(27019604951886547)
+,p_button_name=>'ADD_PHOTO'
+,p_button_action=>'DEFINED_BY_DA'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2082829544945815391
+,p_button_image_alt=>'Add Photo'
+,p_warn_on_unsaved_changes=>null
+,p_button_condition=>'P4_PERMIT_ID'
+,p_button_condition_type=>'ITEM_IS_NOT_NULL'
+,p_icon_css_classes=>'fa-camera'
+,p_grid_new_row=>'Y'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(27353028511033401)
@@ -699,6 +854,42 @@ wwv_flow_imp_page.create_page_item(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
 );
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(40555731176170639)
+,p_name=>'P4_PHOTO_FILE'
+,p_item_sequence=>20
+,p_item_plug_id=>wwv_flow_imp.id(27019604951886547)
+,p_prompt=>'Attach Photo'
+,p_display_as=>'NATIVE_FILE'
+,p_cSize=>30
+,p_field_template=>1609121967514267634
+,p_item_template_options=>'#DEFAULT#'
+,p_help_text=>'Take a photo or select one from your device library.'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'allow_multiple_files', 'N',
+  'capture_using', 'ENVIRONMENT',
+  'display_as', 'INLINE',
+  'file_types', 'image/*',
+  'purge_file_at', 'SESSION',
+  'storage_type', 'APEX_APPLICATION_TEMP_FILES')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(40555827392170640)
+,p_name=>'P4_PHOTO_CAPTION'
+,p_item_sequence=>30
+,p_item_plug_id=>wwv_flow_imp.id(27019604951886547)
+,p_prompt=>'Photo Caption (optional)'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>30
+,p_cMaxlength=>500
+,p_field_template=>1609121967514267634
+,p_item_template_options=>'#DEFAULT#'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'disabled', 'N',
+  'submit_when_enter_pressed', 'N',
+  'subtype', 'TEXT',
+  'trim_spaces', 'BOTH')).to_clob
+);
 wwv_flow_imp_page.create_page_validation(
  p_id=>wwv_flow_imp.id(27353229062033403)
 ,p_validation_name=>'Permit ID Required'
@@ -749,6 +940,120 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_execute_on_page_init=>'N'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
 ,p_attribute_01=>'captureLocationThenSubmit(''SAVE_DRAFT'');'
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(40556210605170644)
+,p_name=>'Load gallery on Page Load'
+,p_event_sequence=>30
+,p_bind_type=>'bind'
+,p_bind_event_type=>'ready'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(40556395946170645)
+,p_event_id=>wwv_flow_imp.id(40556210605170644)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'var permitId = apex.item(''P4_PERMIT_ID'').getValue();',
+'if (permitId) {',
+'    loadPermitPhotos(permitId);',
+'}'))
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(40556412375170646)
+,p_name=>'Click ADD_PHOTO button'
+,p_event_sequence=>40
+,p_triggering_element_type=>'BUTTON'
+,p_triggering_button_id=>wwv_flow_imp.id(40555972208170641)
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'click'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(40556513284170647)
+,p_event_id=>wwv_flow_imp.id(40556412375170646)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'if (!navigator.onLine) {',
+'    apex.message.showErrors([{type:''error'', message:''Photo upload requires an internet connection.''}]);',
+'    return;',
+'}',
+'',
+'var permitId = apex.item(''P4_PERMIT_ID'').getValue();',
+'if (!permitId) {',
+'    apex.message.showErrors([{type:''error'', message:''Permit must be saved before adding photos.''}]);',
+'    return;',
+'}',
+'',
+'var fileInput = document.querySelector(''#P4_PHOTO_FILE input[type="file"]'');',
+'if (!fileInput || !fileInput.files || fileInput.files.length === 0) {',
+'    apex.message.showErrors([{type:''error'', message:''Please select or take a photo first.''}]);',
+'    return;',
+'}',
+'',
+'var file    = fileInput.files[0];',
+'var caption = apex.item(''P4_PHOTO_CAPTION'').getValue();',
+'',
+'if (!file.type.startsWith(''image/'')) {',
+'    apex.message.showErrors([{type:''error'', message:''Only image files are allowed.''}]);',
+'    return;',
+'}',
+'if (file.size > 10 * 1024 * 1024) {',
+'    apex.message.showErrors([{type:''error'', message:''Photo must be less than 10MB.''}]);',
+'    return;',
+'}',
+'',
+'var spinner$ = apex.util.showSpinner($(''#ptw-photo-gallery''));',
+'',
+'var reader = new FileReader();',
+'reader.onload = function(e) {',
+'    // Strip data URL header, keep only the raw base64',
+'    var b64 = e.target.result.replace(/^data:[^;]+;base64,/, '''');',
+'',
+unistr('    // Split into 30KB chunks \2014 sent as f01 array in ONE request'),
+'    // PL/SQL loops apex_application.g_f01 and concatenates into a CLOB',
+'    var f01 = [];',
+'    var chunkSize = 30000;',
+'    for (var i = 0; i < b64.length; i += chunkSize) {',
+'        f01.push(b64.substring(i, i + chunkSize));',
+'    }',
+'',
+'    apex.server.process(''UPLOAD_PERMIT_PHOTO'', {',
+'        x01: permitId,',
+'        x02: caption,',
+'        x03: apex.item(''P0_LATITUDE'').getValue()  || '''',',
+'        x04: apex.item(''P0_LONGITUDE'').getValue() || '''',',
+'        x05: file.name,',
+'        x06: file.type,',
+unistr('        f01: f01          // array \2014 maps to apex_application.g_f01 in PL/SQL'),
+'    }, {',
+'        success: function(data) {',
+'            spinner$.remove();',
+'            if (data.success) {',
+'                apex.message.showPageSuccess(''Photo added successfully.'');',
+'                apex.item(''P4_PHOTO_CAPTION'').setValue('''');',
+'                fileInput.value = '''';',
+'                loadPermitPhotos(permitId);',
+'            } else {',
+'                apex.message.showErrors([{type:''error'', message: data.message}]);',
+'            }',
+'        },',
+'        error: function(xhr, status, error) {',
+'            spinner$.remove();',
+'            apex.message.showErrors([{type:''error'', message:''Upload failed: '' + error}]);',
+'        }',
+'    });',
+'};',
+'reader.onerror = function() {',
+'    spinner$.remove();',
+'    apex.message.showErrors([{type:''error'', message:''Could not read the photo file.''}]);',
+'};',
+'reader.readAsDataURL(file);'))
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(27353441963033405)
@@ -929,6 +1234,187 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_when=>'P4_PERMIT_ID'
 ,p_process_when_type=>'ITEM_IS_NOT_NULL'
 ,p_internal_uid=>27353350362033404
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(40555468663170636)
+,p_process_sequence=>10
+,p_process_point=>'ON_DEMAND'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'UPLOAD_PERMIT_PHOTO'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'    l_permit_id   NUMBER        := TO_NUMBER(apex_application.g_x01);',
+'    l_caption     VARCHAR2(500) := apex_application.g_x02;',
+'    l_latitude    NUMBER;',
+'    l_longitude   NUMBER;',
+'    l_file_name   VARCHAR2(255) := apex_application.g_x05;',
+'    l_mime_type   VARCHAR2(100) := apex_application.g_x06;',
+'    l_b64_clob    CLOB;',
+'    l_blob        BLOB;',
+'    l_token       VARCHAR2(32767);',
+'BEGIN',
+'    BEGIN l_latitude  := TO_NUMBER(apex_application.g_x03); EXCEPTION WHEN OTHERS THEN l_latitude  := NULL; END;',
+'    BEGIN l_longitude := TO_NUMBER(apex_application.g_x04); EXCEPTION WHEN OTHERS THEN l_longitude := NULL; END;',
+'',
+'    IF l_permit_id IS NULL THEN',
+'        apex_json.open_object;',
+'        apex_json.write(''success'', false);',
+'        apex_json.write(''message'', ''Invalid permit ID.'');',
+'        apex_json.close_object;',
+'        RETURN;',
+'    END IF;',
+'',
+'    IF apex_application.g_f01.COUNT = 0 THEN',
+'        apex_json.open_object;',
+'        apex_json.write(''success'', false);',
+'        apex_json.write(''message'', ''No image data received.'');',
+'        apex_json.close_object;',
+'        RETURN;',
+'    END IF;',
+'',
+'    -- Reassemble the base64 CLOB from the f01 array chunks',
+'    DBMS_LOB.CREATETEMPORARY(l_b64_clob, FALSE, DBMS_LOB.SESSION);',
+'    FOR i IN 1 .. apex_application.g_f01.COUNT LOOP',
+'        l_token := apex_application.g_f01(i);',
+'        IF LENGTH(l_token) > 0 THEN',
+'            DBMS_LOB.WRITEAPPEND(l_b64_clob, LENGTH(l_token), l_token);',
+'        END IF;',
+'    END LOOP;',
+'',
+unistr('    -- Convert base64 CLOB to BLOB \2014 same function used for signatures on Page 5'),
+'    l_blob := apex_web_service.clobbase642blob(l_b64_clob);',
+'    DBMS_LOB.FREETEMPORARY(l_b64_clob);',
+'',
+'    INSERT INTO ptw_pro.ptw_lv_permit_photos (',
+'        permit_id, photo_data, mime_type, file_name,',
+'        photo_caption, photo_latitude, photo_longitude,',
+'        uploaded_by, uploaded_date',
+'    ) VALUES (',
+'        l_permit_id, l_blob,',
+'        NVL(l_mime_type, ''image/jpeg''),',
+'        NVL(l_file_name, ''photo.jpg''),',
+'        NULLIF(TRIM(l_caption), ''''),',
+'        l_latitude, l_longitude,',
+'        NVL(V(''APP_USER''), USER),',
+'        CURRENT_TIMESTAMP',
+'    );',
+'',
+'    COMMIT;',
+'    DBMS_LOB.FREETEMPORARY(l_blob);',
+'',
+'    apex_json.open_object;',
+'    apex_json.write(''success'', true);',
+'    apex_json.write(''message'', ''Photo uploaded successfully.'');',
+'    apex_json.close_object;',
+'',
+'EXCEPTION',
+'    WHEN OTHERS THEN',
+'        ROLLBACK;',
+'        apex_json.open_object;',
+'        apex_json.write(''success'', false);',
+'        apex_json.write(''message'', ''Upload error: '' || SQLERRM);',
+'        apex_json.close_object;',
+'END;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>40555468663170636
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(40555524689170637)
+,p_process_sequence=>20
+,p_process_point=>'ON_DEMAND'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'GET_PERMIT_PHOTOS'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'    l_permit_id NUMBER := TO_NUMBER(apex_application.g_x01);',
+'BEGIN',
+'    apex_json.open_object;',
+'    apex_json.open_array(''photos'');',
+'',
+'    FOR r IN (',
+'        SELECT photo_id,',
+'               photo_caption,',
+'               file_name,',
+'               TO_CHAR(uploaded_date, ''DD-Mon-YYYY HH24:MI'') AS uploaded_date,',
+'               uploaded_by',
+'        FROM   ptw_pro.ptw_lv_permit_photos',
+'        WHERE  permit_id = l_permit_id',
+'        ORDER  BY uploaded_date DESC',
+'    ) LOOP',
+'        apex_json.open_object;',
+'        apex_json.write(''photoId'',      r.photo_id);',
+'        apex_json.write(''caption'',      NVL(r.photo_caption, ''''));',
+'        apex_json.write(''fileName'',     NVL(r.file_name, ''photo''));',
+'        apex_json.write(''uploadedDate'', r.uploaded_date);',
+'        apex_json.write(''uploadedBy'',   r.uploaded_by);',
+unistr('        -- URL points to the APEX Download page (Page 20 \2014 see Step 6)'),
+'        apex_json.write(''url'',',
+'            apex_page.get_url(',
+'            p_page   => 20,',
+'            p_items  => ''P20_PHOTO_ID'',',
+'            p_values => r.photo_id',
+'            )',
+'        );',
+'        apex_json.close_object;',
+'    END LOOP;',
+'',
+'    apex_json.close_array;',
+'    apex_json.close_object;',
+'',
+'EXCEPTION',
+'    WHEN OTHERS THEN',
+'        apex_json.open_object;',
+'        apex_json.open_array(''photos'');',
+'        apex_json.close_array;',
+'        apex_json.write(''error'', SQLERRM);',
+'        apex_json.close_object;',
+'END;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>40555524689170637
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(40555666162170638)
+,p_process_sequence=>30
+,p_process_point=>'ON_DEMAND'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'DELETE_PERMIT_PHOTO'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'    l_photo_id NUMBER := TO_NUMBER(apex_application.g_x01);',
+'BEGIN',
+'    -- Security: only delete if uploaded_by matches current user OR user is ADMIN',
+'    DELETE FROM ptw_pro.ptw_lv_permit_photos',
+'    WHERE  photo_id = l_photo_id',
+'    AND    (',
+'               uploaded_by = NVL(V(''APP_USER''), USER)',
+'               OR',
+'               ptw_pro.ptw_lv_is_contract_support(V(''APP_USER'')) = ''Y''',
+'           );',
+'',
+'    IF SQL%ROWCOUNT = 0 THEN',
+'        apex_json.open_object;',
+'        apex_json.write(''success'', false);',
+'        apex_json.write(''message'', ''Photo not found or you do not have permission to delete it.'');',
+'        apex_json.close_object;',
+'        RETURN;',
+'    END IF;',
+'',
+'    COMMIT;',
+'',
+'    apex_json.open_object;',
+'    apex_json.write(''success'', true);',
+'    apex_json.close_object;',
+'',
+'EXCEPTION',
+'    WHEN OTHERS THEN',
+'        ROLLBACK;',
+'        apex_json.open_object;',
+'        apex_json.write(''success'', false);',
+'        apex_json.write(''message'', SQLERRM);',
+'        apex_json.close_object;',
+'END;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>40555666162170638
 );
 wwv_flow_imp.component_end;
 end;

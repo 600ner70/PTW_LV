@@ -280,6 +280,15 @@ unistr('/* Title bar \2014 matches app nav colour */'),
 '    flex-direction: row-reverse;',
 '    gap: 10px;',
 '}',
+'',
+'.ptw-row-green  { background-color: #d4edda !important; }',
+'.ptw-row-amber  { background-color: #fff3cd !important; }',
+'.ptw-row-red    { background-color: #f8d7da !important; }',
+'',
+'.ptw-action-btn {',
+'    border: 2px solid rgba(255, 255, 255, 0.35) !important;',
+'    margin-bottom: 8px !important;',
+'}',
 ''))
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
@@ -524,12 +533,12 @@ wwv_flow_imp_page.create_page_plug(
 '    p.permit_id,',
 '    p.permit_number,',
 '    p.site_details,',
-'    p.person_in_charge_name,',
-'    p.supervising_company,',
+'    p.supervising_company||'' - ''||p.person_in_charge_name as person_in_charge,',
 '    p.current_step,',
 '    p.workflow_status,',
 '    p.created_date,',
-'    p.completion_date,',
+'    p.started_datetime,',
+'    p.ended_datetime,',
 '    CASE p.workflow_status',
 '        WHEN ''IN_PROGRESS'' THEN ''In Progress''',
 '        WHEN ''SUSPENDED''   THEN ''Suspended''',
@@ -592,7 +601,17 @@ wwv_flow_imp_page.create_page_plug(
 '    ELSE',
 '      ''class="t-Badge t-Badge--info t-Badge--lg"''  ',
 '    END status_badge,',
-'    '''' view_history',
+'    '''' view_history,',
+'    p.ptw_type,',
+'    CASE ',
+'      WHEN workflow_status = ''STARTED'' AND (ended_datetime - SYSDATE) * 24 > 2  ',
+'        THEN ''ptw-row-green''',
+'      WHEN workflow_status = ''STARTED'' AND (ended_datetime - SYSDATE) * 24 > 1  ',
+'        THEN ''ptw-row-amber''',
+'      WHEN workflow_status = ''STARTED'' AND (ended_datetime - SYSDATE) * 24 <= 1 ',
+'        THEN ''ptw-row-red''',
+'      ELSE NULL',
+'  END AS row_color',
 'FROM ptw_pro.ptw_lv_permits p',
 'WHERE  EXISTS (',
 '          SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
@@ -652,22 +671,14 @@ wwv_flow_imp_page.create_worksheet(
 ,p_max_rows_per_page=>'15'
 ,p_pagination_type=>'ROWS_X_TO_Y'
 ,p_pagination_display_pos=>'BOTTOM_RIGHT'
+,p_show_finder_drop_down=>'N'
 ,p_show_display_row_count=>'Y'
-,p_report_list_mode=>'TABS'
+,p_report_list_mode=>'NONE'
 ,p_lazy_loading=>false
 ,p_show_detail_link=>'N'
-,p_show_control_break=>'N'
-,p_show_highlight=>'N'
-,p_show_computation=>'N'
-,p_show_aggregate=>'N'
-,p_show_chart=>'N'
-,p_show_group_by=>'N'
-,p_show_pivot=>'N'
-,p_show_flashback=>'N'
-,p_show_reset=>'N'
-,p_download_auth_scheme=>wwv_flow_imp.id(31534664129175422)
-,p_download_formats=>'CSV:XLSX'
-,p_enable_mail_download=>'N'
+,p_show_notify=>'Y'
+,p_download_formats=>'CSV:HTML:XLSX:PDF'
+,p_enable_mail_download=>'Y'
 ,p_owner=>'PTW_PRO'
 ,p_internal_uid=>25227729512353117
 );
@@ -699,27 +710,7 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_db_column_name=>'SITE_DETAILS'
 ,p_display_order=>30
 ,p_column_identifier=>'C'
-,p_column_label=>'Site Details'
-,p_column_type=>'STRING'
-,p_heading_alignment=>'LEFT'
-,p_use_as_row_header=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(25228161650353121)
-,p_db_column_name=>'PERSON_IN_CHARGE_NAME'
-,p_display_order=>40
-,p_column_identifier=>'D'
-,p_column_label=>'Person In Charge Name'
-,p_column_type=>'STRING'
-,p_heading_alignment=>'LEFT'
-,p_use_as_row_header=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(25228255422353122)
-,p_db_column_name=>'SUPERVISING_COMPANY'
-,p_display_order=>50
-,p_column_identifier=>'E'
-,p_column_label=>'Supervising Company'
+,p_column_label=>'Site'
 ,p_column_type=>'STRING'
 ,p_heading_alignment=>'LEFT'
 ,p_use_as_row_header=>'N'
@@ -751,18 +742,6 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_display_order=>80
 ,p_column_identifier=>'H'
 ,p_column_label=>'Created Date'
-,p_column_type=>'DATE'
-,p_heading_alignment=>'LEFT'
-,p_format_mask=>'DD-MON-YYYY HH24:MI'
-,p_tz_dependent=>'N'
-,p_use_as_row_header=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(25228600919353126)
-,p_db_column_name=>'COMPLETION_DATE'
-,p_display_order=>90
-,p_column_identifier=>'I'
-,p_column_label=>'Completion Date'
 ,p_column_type=>'DATE'
 ,p_heading_alignment=>'LEFT'
 ,p_format_mask=>'DD-MON-YYYY HH24:MI'
@@ -852,6 +831,62 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_column_alignment=>'CENTER'
 ,p_use_as_row_header=>'N'
 );
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(40551917328170601)
+,p_db_column_name=>'STARTED_DATETIME'
+,p_display_order=>170
+,p_column_identifier=>'Q'
+,p_column_label=>'Start Date'
+,p_column_type=>'DATE'
+,p_heading_alignment=>'LEFT'
+,p_format_mask=>'DD-MON-YYYY HH24:MI'
+,p_tz_dependent=>'N'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(40552001660170602)
+,p_db_column_name=>'ENDED_DATETIME'
+,p_display_order=>180
+,p_column_identifier=>'R'
+,p_column_label=>'End Date'
+,p_column_type=>'DATE'
+,p_heading_alignment=>'LEFT'
+,p_format_mask=>'DD-MON-YYYY HH24:MI'
+,p_tz_dependent=>'N'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(40552106160170603)
+,p_db_column_name=>'PERSON_IN_CHARGE'
+,p_display_order=>190
+,p_column_identifier=>'S'
+,p_column_label=>'Person In Charge'
+,p_column_type=>'STRING'
+,p_heading_alignment=>'LEFT'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(40552781633170609)
+,p_db_column_name=>'ROW_COLOR'
+,p_display_order=>200
+,p_column_identifier=>'T'
+,p_column_label=>'Row Color'
+,p_column_html_expression=>'<span class="ptw-row-marker" data-color="#ROW_COLOR#"></span>'
+,p_column_type=>'STRING'
+,p_display_text_as=>'WITHOUT_MODIFICATION'
+,p_heading_alignment=>'LEFT'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(40555391702170635)
+,p_db_column_name=>'PTW_TYPE'
+,p_display_order=>210
+,p_column_identifier=>'U'
+,p_column_label=>'Permit Type'
+,p_column_type=>'STRING'
+,p_heading_alignment=>'LEFT'
+,p_use_as_row_header=>'N'
+);
 wwv_flow_imp_page.create_worksheet_rpt(
  p_id=>wwv_flow_imp.id(26753307670231692)
 ,p_application_user=>'APXWS_DEFAULT'
@@ -860,7 +895,7 @@ wwv_flow_imp_page.create_worksheet_rpt(
 ,p_status=>'PUBLIC'
 ,p_is_default=>'Y'
 ,p_display_rows=>15
-,p_report_columns=>'PERMIT_NUMBER:WORKFLOW_STATUS:COMPLETION_DATE:SUPERVISING_COMPANY:PERSON_IN_CHARGE_NAME:SITE_DETAILS:STEP_DISPLAY:DELETE_PERMIT:WORKFLOW_ACTION_HTML:VIEW_PDF:VIEW_HISTORY:'
+,p_report_columns=>'PERMIT_NUMBER:PTW_TYPE:WORKFLOW_STATUS:SITE_DETAILS:PERSON_IN_CHARGE:STARTED_DATETIME:ENDED_DATETIME:DELETE_PERMIT:WORKFLOW_ACTION_HTML:VIEW_PDF:VIEW_HISTORY:'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(27017265260886523)
@@ -982,11 +1017,27 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_template_id=>2082829544945815391
 ,p_button_is_hot=>'Y'
 ,p_button_image_alt=>'Create New Permit'
-,p_button_redirect_url=>'f?p=&APP_ID.:2:&SESSION.::&DEBUG.:2:P2_PERMIT_ID,P2_WORKFLOW_STATUS:&P1_PERMIT_ID.,IN_PROGRESS'
-,p_button_css_classes=>'t-Button--large t-Button--stretch'
+,p_button_redirect_url=>'f?p=&APP_ID.:14:&SESSION.::&DEBUG.:14:P14_PERMIT_ID,P14_WORKFLOW_STATUS:&P1_PERMIT_ID.,IN_PROGRESS'
+,p_button_css_classes=>'t-Button--large t-Button--stretch ptw-action-btn'
 ,p_icon_css_classes=>'fa-plus-circle'
 ,p_grid_new_row=>'Y'
 ,p_security_scheme=>wwv_flow_imp.id(31533963716212424)
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(40555205308170634)
+,p_button_sequence=>20
+,p_button_plug_id=>wwv_flow_imp.id(25227447597353114)
+,p_button_name=>'DOWNLOAD_JOBS'
+,p_button_action=>'DEFINED_BY_DA'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2082829544945815391
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>'Download Jobs'
+,p_warn_on_unsaved_changes=>null
+,p_button_css_classes=>'t-Button--large t-Button--stretch ptw-action-btn'
+,p_icon_css_classes=>'fa-cloud-download'
+,p_grid_new_row=>'N'
+,p_grid_new_column=>'Y'
 );
 wwv_flow_imp_page.create_page_branch(
  p_id=>wwv_flow_imp.id(25229805851353138)
@@ -1021,6 +1072,61 @@ wwv_flow_imp_page.create_page_item(
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(40552823664170610)
+,p_name=>'Set highlights'
+,p_event_sequence=>10
+,p_bind_type=>'bind'
+,p_bind_event_type=>'ready'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(40552928697170611)
+,p_event_id=>wwv_flow_imp.id(40552823664170610)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'// Walk each marker span, find its TR, apply the colour class',
+'document.querySelectorAll(''.ptw-row-marker'').forEach(function(el) {',
+'    var color = el.getAttribute(''data-color'');',
+'    if (color && color !== '''') {',
+'        var row = el.closest(''tr'');',
+'        if (row) {',
+'            row.classList.add(color);',
+'        }',
+'    }',
+'});'))
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(40553084458170612)
+,p_name=>'Set highlights after refresh'
+,p_event_sequence=>20
+,p_triggering_element_type=>'REGION'
+,p_triggering_region_id=>wwv_flow_imp.id(25227678625353116)
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'apexafterrefresh'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(40553197985170613)
+,p_event_id=>wwv_flow_imp.id(40553084458170612)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'// Walk each marker span, find its TR, apply the colour class',
+'document.querySelectorAll(''.ptw-row-marker'').forEach(function(el) {',
+'    var color = el.getAttribute(''data-color'');',
+'    if (color && color !== '''') {',
+'        var row = el.closest(''tr'');',
+'        if (row) {',
+'            row.classList.add(color);',
+'        }',
+'    }',
+'});'))
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(25229784918353137)
