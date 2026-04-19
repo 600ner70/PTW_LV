@@ -369,6 +369,41 @@ success/error callbacks, guaranteeing coordinates are set first.
 - Upload disabled when !navigator.onLine — shown as error message
 - Gallery load fails gracefully with "Could not load photos" when offline
 
+## 15. PERMIT FILE ATTACHMENTS (updated from Section 14)
+
+### Supported file types
+| Type   | MIME types accepted                                                  |
+|--------|----------------------------------------------------------------------|
+| Image  | image/jpeg, image/png, image/gif, image/webp                         |
+| PDF    | application/pdf                                                      |
+| Word   | application/msword, .docx (vnd.openxmlformats...)                   |
+| Excel  | application/vnd.ms-excel, .xlsx (vnd.openxmlformats...)             |
+
+Max file size: **20MB**
+
+### UI — two upload buttons
+- `ptw-file-input` (hidden `<input>`) — general file picker, accepts all above types
+- `ptw-camera-input` (hidden `<input>`) — camera only, `capture="environment"`, `accept="image/*"`
+- Both feed the same `ptwUploadFile()` function
+- `P4_PHOTO_FILE` APEX native item REMOVED — replaced by custom HTML
+- `ADD_PHOTO` button and its DA REMOVED — replaced by custom HTML buttons
+
+### Gallery rendering
+- Images → lightbox overlay (`ptwOpenLightbox()`) — no page navigation
+- PDFs / Word / Excel → Page 21 (FILE-VIEWER) via `p.viewerUrl`
+- File type detected by `ptwGetFileCategory(mimeType, fileName)`
+
+### Page 21 — File Viewer
+- Alias: `FILE-VIEWER`
+- Items: `P21_FILE_ID` (VP:No), `P21_PERMIT_ID` (VP:No), `P21_STREAM_URL` (VP:No)
+- Before Header process: builds `P21_STREAM_URL` via apex_page.get_url pointing to Page 20
+- iframe renders the file stream; Back button returns to Page 4
+- APEX nav hidden via CSS — viewer fills full viewport
+
+### Page 20 — File Download (unchanged stream)
+- Added: `P20_PERMIT_ID` hidden item (VP:No) — for reference, not used in stream
+- Stream process unchanged — wpg_docload.download_file still handles all types
+
 ### How Oracle APEX Works
 - Oracle APEX provides all the tools you need to build apps in a single, extensible platform, which runs as a part of Oracle Database.
 
