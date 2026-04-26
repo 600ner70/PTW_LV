@@ -321,39 +321,43 @@ success/error callbacks, guaranteeing coordinates are set first.
 - → User Interface Attributes
 - → JavaScript → File URLs
 
-## 14. PERMIT PHOTOS
+## 14. PERMIT FILE ATTACHMENTS
 
-### Table
-- `ptw_pro.ptw_lv_permit_photos` — child table, FK to `ptw_pro.ptw_lv_permits` ON DELETE CASCADE
-- Sequence: `ptw_pro.ptw_lv_photo_seq`
-- Index: `ptw_pro.idx_ptw_lv_photos_permit` on `permit_id`
+### Supported file types
+| Type   | Extensions        | Behaviour on tap         |
+|--------|-------------------|--------------------------|
+| Image  | jpg, png, gif, webp | Lightbox on Page 4      |
+| PDF    | pdf               | Opens in new browser tab |
+| Word   | doc, docx         | Downloads to device      |
+| Excel  | xls, xlsx         | Downloads to device      |
 
-### Upload mechanism
-- File read client-side using FileReader.readAsDataURL()
-- Base64 stripped of data URL header in JavaScript before sending
-- Sent as f01 array (30KB chunks) in a SINGLE apex.server.process call
-- PL/SQL reassembles f01 array into CLOB, converts to BLOB via
-  apex_web_service.clobbase642blob() — same pattern as Page 5 signatures
-- DO NOT use apex_application_temp_files for AJAX uploads —
-  temp files are only populated on full page submit, not AJAX calls
-- DO NOT use g_x01-g_x10 for binary data — hard limit of 32KB each
+Max file size: **20MB**
 
-### Application Processes
-| Process              | Point         | Purpose                          |
-|----------------------|---------------|----------------------------------|
-| `UPLOAD_PERMIT_PHOTO`| Ajax Callback | Receives f01 array, inserts BLOB |
-| `GET_PERMIT_PHOTOS`  | Ajax Callback | Returns JSON array for gallery   |
-| `DELETE_PERMIT_PHOTO`| Ajax Callback | Deletes — uploader or ADMIN only |
+### Upload UI — two buttons
+- `ptw-file-input` — hidden input, general file picker
+- `ptw-camera-input` — hidden input, camera only (capture="environment")
+- Both feed `ptwUploadFile()`
+- `P4_PHOTO_FILE` APEX native item — REMOVED
+- `ADD_PHOTO` button and DA — REMOVED
 
-### Photo serving — Page 20 (Photo Download)
-- Blank page, alias: `photo-download`
-- Single hidden item: `P20_PHOTO_ID`, Value Protected: NO (Unrestricted)
-  ← Value Protected MUST be No, otherwise SSP blocks the URL parameter
-- Before Header process streams BLOB via wpg_docload.download_file()
-- Must re-raise apex_application.e_stop_apex_engine in WHEN OTHERS
-- URL generated via: apex_page.get_url(p_page=>20, p_items=>'P20_PHOTO_ID', p_values=>photo_id)
-- DO NOT use apex_util.prepare_url with f?p= syntax in friendly URL apps
-  — generates wrong checksum format, causes SSP_VIOLATION2
+### Pages
+- **Page 20** — streams file BLOB via wpg_docload (unchanged)
+- **Page 21** — DELETED (iframe approach blocked by ADB X-Frame-Options)
+
+### Key JS functions (Page 4 Function Declaration)
+- `ptwGetFileCategory(mimeType, fileName)` — returns image/pdf/word/excel/other
+- `ptwFileIcon(category)` — returns HTML icon div for non-image files
+- `ptwUploadFile(file)` — validates, chunks to base64, calls UPLOAD_PERMIT_PHOTO
+- `ptwHandleFileSelection(file)` — shows file name + wires upload button
+- `ptwOpenLightbox(url, caption)` — opens image lightbox overlay
+- `ptwCloseLightbox()` — closes lightbox
+- `loadPermitPhotos(permitId)` — calls GET_PERMIT_PHOTOS, renders gallery
+- `deletePtwPhoto(photoId, permitId)` — confirm + DELETE_PERMIT_PHOTO
+
+### Delete security (DELETE_PERMIT_PHOTO process)
+- Own files: any role can delete
+- Any file: ADMIN and ADMIN_CONTRACT_SUPPORT only
+- Enforced via ptw_lv_user_roles_v query — no dependency on external functions
 
 ### Page 4 Components
 - `P4_PHOTO_FILE` — File Browse, capture="environment" (opens camera on mobile)
