@@ -29,7 +29,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_icon_css_classes=>'fa-clock-o'
 ,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>90
+,p_plug_display_sequence=>100
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<div id="p9ImmediateDates" class="t-Alert t-Alert--info t-Alert--horizontal">',
@@ -51,7 +51,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_name=>'Buttons'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>2126429139436695430
-,p_plug_display_sequence=>100
+,p_plug_display_sequence=>110
 ,p_location=>null
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
@@ -63,7 +63,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_icon_css_classes=>'fa-clock-o'
 ,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>50
+,p_plug_display_sequence=>60
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<div class="ptw-section-card">',
@@ -108,7 +108,7 @@ wwv_flow_imp_page.create_page_button(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(32190486101430887)
 ,p_name=>'P9_START_DATE'
-,p_item_sequence=>70
+,p_item_sequence=>80
 ,p_prompt=>'START (Date & Time)'
 ,p_format_mask=>'DD-MON-YYYY HH24:MI'
 ,p_display_as=>'NATIVE_DATE_PICKER_APEX'
@@ -127,7 +127,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(32190723937428243)
 ,p_name=>'P9_END_DATE'
-,p_item_sequence=>80
+,p_item_sequence=>90
 ,p_prompt=>'END (Date & Time)'
 ,p_format_mask=>'DD-MON-YYYY HH24:MI'
 ,p_display_as=>'NATIVE_DATE_PICKER_APEX'
@@ -163,7 +163,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(37956092869176021)
 ,p_name=>'P9_START_MODE'
-,p_item_sequence=>60
+,p_item_sequence=>70
 ,p_prompt=>'Choose the permit validity window'
 ,p_display_as=>'NATIVE_RADIOGROUP'
 ,p_named_lov=>'PTW_START_MODE'
@@ -174,6 +174,14 @@ wwv_flow_imp_page.create_page_item(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'number_of_columns', '2',
   'page_action_on_selection', 'NONE')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(41970267257328833)
+,p_name=>'P9_WORKFLOW_STATUS'
+,p_item_sequence=>50
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
 );
 wwv_flow_imp_page.create_page_validation(
  p_id=>wwv_flow_imp.id(37957549216176036)
@@ -404,6 +412,7 @@ wwv_flow_imp_page.create_page_process(
 '    END IF;',
 '',
 '    COMMIT;',
+'    :P9_WORKFLOW_STATUS := ''STARTED'';',
 '    apex_application.g_print_success_message := ''Permit started successfully.'';',
 'EXCEPTION',
 '    WHEN OTHERS THEN',
@@ -425,7 +434,8 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_point=>'ON_SUBMIT_BEFORE_COMPUTATION'
 ,p_process_type=>'NATIVE_CLOSE_WINDOW'
 ,p_process_name=>'Close Dialog'
-,p_attribute_02=>'Y'
+,p_attribute_01=>'P9_WORKFLOW_STATUS'
+,p_attribute_02=>'N'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 ,p_process_when=>'START_PERMIT'
 ,p_process_when_type=>'REQUEST_EQUALS_CONDITION'

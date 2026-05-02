@@ -30,6 +30,24 @@ wwv_flow_imp_page.create_page(
 '        });',
 '    }',
 '}, 5000);'))
+,p_javascript_code_onload=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'// Wait for map to be fully initialised before manipulating it',
+'$(document).on(''spatialmapinitialized'', function() {',
+'',
+'    var mapObj = apex.region(''history_map'').call(''getMapObject'');',
+'    if (!mapObj) return;',
+'',
+'    // Fly to the pin location at 100m zoom',
+'    // Coordinates must match what''s in your layer SQL',
+'    var lat = &P7_LATITUDE.;',
+'    var lng = &P7_LONGITUDE.;',
+'',
+'    mapObj.flyTo({',
+'        center: [ lng, lat ],',
+'        zoom:   18,',
+'        speed:  2',
+'    });',
+'});'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '.ui-dialog {',
 '    border: 2px solid #000000 !important;',
@@ -47,7 +65,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_region_name=>'history_map'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>4501440665235496320
-,p_plug_display_sequence=>40
+,p_plug_display_sequence=>70
 ,p_location=>null
 ,p_lazy_loading=>true
 ,p_plug_source_type=>'NATIVE_MAP_REGION'
@@ -63,19 +81,19 @@ wwv_flow_imp_page.create_map_region(
 ,p_navigation_bar_position=>'END'
 ,p_init_position_zoom_type=>'SQL'
 ,p_init_position_zoom_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'SELECT map_data.LONGITUDE,',
-'       map_data.LATITUDE,',
-'       map_data.ZOOMLEVEL',
-'FROM   (SELECT MAX(psl.CREATED_DATE) created_date,',
-'               psl.LONGITUDE,',
-'               psl.LATITUDE,',
-'               15 AS ZOOMLEVEL       ',
-'        FROM   PTW_PRO.PTW_STAGE_LOCATIONS psl',
-'        WHERE  psl.PERMIT_ID    = :P7_PERMIT_ID ',
-'        AND    psl.PERMIT_STAGE = :P7_CURRENT_STAGE',
-'        GROUP BY psl.LONGITUDE,',
-'                 psl.LATITUDE,',
-'                 ZOOMLEVEL) map_data'))
+'SELECT longitude,',
+'       latitude,',
+'       18 AS zoomlevel',
+'FROM   (',
+'    SELECT longitude,',
+'           latitude,',
+'           created_date,',
+'           ROW_NUMBER() OVER (ORDER BY created_date DESC) AS rn',
+'    FROM   ptw_pro.ptw_stage_locations',
+'    WHERE  permit_id    = :P7_PERMIT_ID',
+'    AND    permit_stage = :P7_CURRENT_STAGE',
+')',
+'WHERE rn = 1'))
 ,p_init_position_geometry_type=>'LONLAT_COLUMNS'
 ,p_init_position_lon_column=>'LONGITUDE'
 ,p_init_position_lat_column=>'LATITUDE'
@@ -139,10 +157,26 @@ wwv_flow_imp_page.create_map_region_layer(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(33350643652951420)
 ,p_name=>'P7_CREATED_DATE'
-,p_item_sequence=>30
+,p_item_sequence=>60
 ,p_format_mask=>'DD-MON-YYYY HH24:MI'
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_encrypt_session_state_yn=>'N'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(41969669086328827)
+,p_name=>'P7_LATITUDE'
+,p_item_sequence=>30
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(41969726013328828)
+,p_name=>'P7_LONGITUDE'
+,p_item_sequence=>40
+,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
 );
@@ -158,11 +192,27 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(58097606026997906)
 ,p_name=>'P7_CURRENT_STAGE'
-,p_item_sequence=>20
+,p_item_sequence=>50
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
-,p_ai_enabled=>false
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(41969583459328826)
+,p_process_sequence=>10
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Load defaults'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'SELECT latitude, longitude',
+'INTO   :P7_LATITUDE, :P7_LONGITUDE',
+'FROM   ptw_pro.ptw_stage_locations',
+'WHERE  permit_id    = :P7_PERMIT_ID',
+'AND    permit_stage = :P7_CURRENT_STAGE',
+'ORDER  BY created_date DESC',
+'FETCH  FIRST 1 ROW ONLY;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>41969583459328826
 );
 wwv_flow_imp.component_end;
 end;

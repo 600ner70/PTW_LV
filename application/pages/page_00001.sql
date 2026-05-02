@@ -43,49 +43,76 @@ unistr('        statusIcon.innerHTML = ''\26A0'';'),
 'window.addEventListener(''online'', updateConnectionUI);',
 'window.addEventListener(''offline'', updateConnectionUI);',
 '',
-'function ptwSuspendPermit(permitId, permitNumber) {',
+'function ptwDeletePermit(permitId, permitNumber) {',
+'    if (!navigator.onLine) {',
+'        apex.message.showErrors([{',
+'            type: ''error'',',
+'            message: ''You are currently offline. Please reconnect to delete a permit.''',
+'        }]);',
+'        return;',
+'    }',
+'    apex.message.confirm(''Delete permit '' + permitNumber + ''?'', function(ok) {',
+'        if (ok) {',
+'            apex.page.submit({ request: ''DELETE_PERMIT_'' + permitId });',
+'        }',
+'    });',
+'}',
 '',
-'$(''<div id="ptwSuspendDialog">'' +',
-'    ''<label style="display:block;font-weight:600;font-size:13px;margin-bottom:8px;color:#333;">'' +',
-'      ''Suspension Reason <span style="color:#C0392B">*</span>'' +',
-'    ''</label>'' +',
-'    ''<input type="text" id="ptwSuspendReason" class="apex-item-text" '' +',
-'      ''placeholder="e.g. General alarm, scope change, awaiting parts" />'' +',
-'  ''</div>'')',
-'      .appendTo(''body'')',
-'      .dialog({',
-'          title: ''Suspend Permit \u2013 '' + permitNumber,',
-'          modal:  true,',
-'          width:  500,',
-'          dialogClass: ''ptw-apex-dialog'',',
-'          buttons: [',
-'              {',
-'                  text:  ''Suspend Permit'',',
-'                  ''class'': ''t-Button t-Button--hot'',',
-'                  click: function() {',
-'                      var reason = $(''#ptwSuspendReason'').val();',
-'                      if (!reason || reason.trim() === '''') {',
-'                          apex.message.alert(''A suspension reason is required.'');',
-'                          return;',
+'function ptwSuspendPermit(permitId, permitNumber) {',
+'    if (!navigator.onLine) {',
+'        apex.message.showErrors([{',
+'            type: ''error'',',
+'            message: ''You are currently offline. Please reconnect to suspend a permit.''',
+'        }]);',
+'        return;',
+'    }',
+'    $(''<div id="ptwSuspendDialog">'' +',
+'        ''<label style="display:block;font-weight:600;font-size:13px;margin-bottom:8px;color:#333;">'' +',
+'          ''Suspension Reason <span style="color:#C0392B">*</span>'' +',
+'        ''</label>'' +',
+'        ''<input type="text" id="ptwSuspendReason" class="apex-item-text" '' +',
+'          ''placeholder="e.g. General alarm, scope change, awaiting parts" />'' +',
+'      ''</div>'')',
+'          .appendTo(''body'')',
+'          .dialog({',
+'              title: ''Suspend Permit \u2013 '' + permitNumber,',
+'              modal:  true,',
+'              width:  500,',
+'              dialogClass: ''ptw-apex-dialog'',',
+'              buttons: [',
+'                  {',
+'                      text:  ''Suspend Permit'',',
+'                      ''class'': ''t-Button t-Button--hot'',',
+'                      click: function() {',
+'                          var reason = $(''#ptwSuspendReason'').val();',
+'                          if (!reason || reason.trim() === '''') {',
+'                              apex.message.alert(''A suspension reason is required.'');',
+'                              return;',
+'                          }',
+'                          apex.item(''P1_SELECTED_PERMIT_ID'').setValue(permitId);',
+'                          apex.item(''P1_SUSPEND_REASON'').setValue(reason.trim());',
+'                          $(this).dialog(''close'');',
+'                          apex.submit({ request: ''SUSPEND_PERMIT_'' + permitId });',
 '                      }',
-'                      apex.item(''P1_SELECTED_PERMIT_ID'').setValue(permitId);',
-'                      apex.item(''P1_SUSPEND_REASON'').setValue(reason.trim());',
-'                      $(this).dialog(''close'');',
-'                      apex.submit({ request: ''SUSPEND_PERMIT_'' + permitId });',
+'                  },',
+'                  {',
+'                      text:  ''Cancel'',',
+'                      ''class'': ''t-Button'',',
+'                      click: function() { $(this).dialog(''close''); }',
 '                  }',
-'              },',
-'              {',
-'                  text:  ''Cancel'',',
-'                  ''class'': ''t-Button'',',
-'                  click: function() { $(this).dialog(''close''); }',
-'              }',
-'          ],',
-'          close: function() { $(this).dialog(''destroy'').remove(); }',
-'      });',
+'              ],',
+'              close: function() { $(this).dialog(''destroy'').remove(); }',
+'          });',
 '}',
 '',
 'function ptwResumePermit(permitId, permitNumber) {',
-'',
+'    if (!navigator.onLine) {',
+'        apex.message.showErrors([{',
+'            type: ''error'',',
+'            message: ''You are currently offline. Please reconnect to resume a permit.''',
+'        }]);',
+'        return;',
+'    }',
 '    $(''<div id="ptwResumeDialog">'' +',
 '        ''<p style="margin:0;font-size:14px;color:#333;">Are you sure you want to resume permit '' +',
 '        ''<strong>'' + permitNumber + ''</strong>?</p>'' +',
@@ -109,12 +136,11 @@ unistr('        statusIcon.innerHTML = ''\26A0'';'),
 '                  text:  ''Cancel'',',
 '                  ''class'': ''t-Button'',',
 '                  click: function() { $(this).dialog(''close''); }',
-'              }',
-'          ],',
+'                  }',
+'              ],',
 '          close: function() { $(this).dialog(''destroy'').remove(); }',
 '      });',
 '}',
-'',
 '',
 ''))
 ,p_javascript_code_onload=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -124,30 +150,6 @@ unistr('        statusIcon.innerHTML = ''\26A0'';'),
 '',
 '// Get location',
 'initGeolocation();',
-'',
-'// Override form submission for offline mode',
-'if (!apex.page.submit._original) {',
-'    apex.page.submit._original = apex.page.submit;',
-'}',
-'',
-'apex.page.submit = function(options) {',
-'    if (ConnectionManager.isOnline) {',
-'        apex.page.submit._original(options);',
-'    } else {',
-'        const formData = apex.page.getValues();',
-'        OfflineStorage.saveFormData(apex.page.getId(), formData)',
-'            .then((id) => {',
-'                apex.message.showPageSuccess(''Data saved offline. Will sync when connected.'');',
-'            })',
-'            .catch((error) => {',
-'                apex.message.showErrors([{',
-'                    type: ''error'',',
-'                    message: ''Error saving offline: '' + error.message',
-'                }]);',
-'            });',
-'    }',
-'};',
-'',
 ''))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '.dashboard-card {',
@@ -281,13 +283,15 @@ unistr('/* Title bar \2014 matches app nav colour */'),
 '    gap: 10px;',
 '}',
 '',
-'.ptw-row-green  { background-color: #d4edda !important; }',
-'.ptw-row-amber  { background-color: #fff3cd !important; }',
-'.ptw-row-red    { background-color: #f8d7da !important; }',
-'',
 '.ptw-action-btn {',
 '    border: 2px solid rgba(255, 255, 255, 0.35) !important;',
 '    margin-bottom: 8px !important;',
+'}',
+'',
+'.ptw-action-btn--monitor {',
+'    background-color: #1a6cb5 !important;',
+'    color: #fff !important;',
+'    border-color: #1a6cb5 !important;',
 '}',
 ''))
 ,p_page_template_options=>'#DEFAULT#'
@@ -303,7 +307,7 @@ wwv_flow_imp_page.create_page_plug(
 '<div style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">',
 '    <div>',
 '        <h1 style="font-size: 2rem; color: #13294b; margin-bottom: 5px;">',
-'            Permit to Work LV-Electrical',
+'            Permit to Work',
 '        </h1>',
 '        <p style="color: #666; font-size: 1rem;">',
 '            BGIS - Low Voltage Electrical Permit Management',
@@ -314,196 +318,6 @@ wwv_flow_imp_page.create_page_plug(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
-);
-wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(25227059814353110)
-,p_plug_name=>'My Permits'
-,p_title=>'My Permits'
-,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
-,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>50
-,p_plug_grid_column_span=>2
-,p_location=>null
-,p_function_body_language=>'PLSQL'
-,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'DECLARE',
-'  l_ret_clob CLOB;',
-'BEGIN',
-'  SELECT ''<div class="dashboard-card">'' ||',
-'         ''<div class="stat-label">My Permits</div>'' ||',
-'         ''<div class="stat-value">'' || COUNT(*) || ''</div>'' ||',
-'         ''</div>'' as content',
-'  INTO   l_ret_clob',
-'  FROM   ptw_pro.ptw_lv_permits p',
-'  WHERE  EXISTS (',
-'            SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
-'            WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
-'            AND    role_name IN (',
-'                       ''ADMIN'',''ADMIN_USER_SUPPORT'',',
-'                       ''ADMIN_CONTRACT_SUPPORT'',''AUTHORISER'',''READONLY''',
-'                   )',
-'            AND    is_active = ''Y''',
-'         )',
-'         OR',
-'         (',
-'             EXISTS (',
-'                 SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
-'                 WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
-'                 AND    role_name = ''ENGINEER''',
-'                 AND    is_active = ''Y''',
-'             )',
-'             AND UPPER(p.created_by) = UPPER(V(''APP_USER''))',
-'         );',
-'',
-'  RETURN l_ret_clob;',
-'END;',
-''))
-,p_lazy_loading=>false
-,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
-);
-wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(25227110134353111)
-,p_plug_name=>'In Progress'
-,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
-,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>70
-,p_plug_new_grid_row=>false
-,p_plug_grid_column_span=>2
-,p_location=>null
-,p_function_body_language=>'PLSQL'
-,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'DECLARE',
-'  l_ret_clob CLOB;',
-'BEGIN',
-'  SELECT ''<div class="dashboard-card">'' ||',
-'         ''<div class="stat-label">In Progress</div>'' ||',
-'         ''<div class="stat-value" style="color: #ffc107;">'' || COUNT(*) || ''</div>'' ||',
-'         ''</div>'' as content',
-'  INTO   l_ret_clob',
-'  FROM   ptw_pro.ptw_lv_permits p',
-'  WHERE  p.workflow_status = ''IN_PROGRESS''',
-'  AND   EXISTS (',
-'            SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
-'            WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
-'            AND    role_name IN (',
-'                       ''ADMIN'',''ADMIN_USER_SUPPORT'',',
-'                       ''ADMIN_CONTRACT_SUPPORT'',''AUTHORISER'',''READONLY''',
-'                   )',
-'            AND    is_active = ''Y''',
-'         )',
-'         OR',
-'         (',
-'             EXISTS (',
-'                 SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
-'                 WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
-'                 AND    role_name = ''ENGINEER''',
-'                 AND    is_active = ''Y''',
-'             )',
-'             AND UPPER(p.created_by) = UPPER(V(''APP_USER''))',
-'         );',
-'',
-'  RETURN l_ret_clob;',
-'END;',
-'',
-'',
-'',
-''))
-,p_lazy_loading=>false
-,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
-);
-wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(25227254221353112)
-,p_plug_name=>'Completed'
-,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
-,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>90
-,p_plug_new_grid_row=>false
-,p_plug_grid_column_span=>2
-,p_location=>null
-,p_function_body_language=>'PLSQL'
-,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'DECLARE',
-'  l_ret_clob CLOB;',
-'BEGIN',
-'  SELECT ''<div class="dashboard-card">'' ||',
-'         ''<div class="stat-label">Completed</div>'' ||',
-'         ''<div class="stat-value" style="color: #28a745;">'' || COUNT(*) || ''</div>'' ||',
-'         ''</div>'' as content',
-'  INTO   l_ret_clob',
-'  FROM   ptw_pro.ptw_lv_permits p',
-'  WHERE  workflow_status = ''COMPLETED''',
-'  AND   EXISTS (',
-'            SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
-'            WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
-'            AND    role_name IN (',
-'                       ''ADMIN'',''ADMIN_USER_SUPPORT'',',
-'                       ''ADMIN_CONTRACT_SUPPORT'',''AUTHORISER'',''READONLY''',
-'                   )',
-'            AND    is_active = ''Y''',
-'         )',
-'         OR',
-'         (',
-'             EXISTS (',
-'                 SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
-'                 WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
-'                 AND    role_name = ''ENGINEER''',
-'                 AND    is_active = ''Y''',
-'             )',
-'             AND UPPER(p.created_by) = UPPER(V(''APP_USER''))',
-'         );',
-'',
-'  RETURN l_ret_clob;',
-'END;',
-'    '))
-,p_lazy_loading=>false
-,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
-);
-wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(25227362750353113)
-,p_plug_name=>'This Month'
-,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
-,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>110
-,p_plug_new_grid_row=>false
-,p_plug_grid_column_span=>2
-,p_location=>null
-,p_function_body_language=>'PLSQL'
-,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'DECLARE',
-'  l_ret_clob CLOB;',
-'BEGIN',
-'  SELECT ''<div class="dashboard-card">'' ||',
-'         ''<div class="stat-label">This Month</div>'' ||',
-'         ''<div class="stat-value" style="color: #17a2b8;">'' || COUNT(*) || ''</div>'' ||',
-'         ''</div>'' as content',
-'  INTO   l_ret_clob',
-'  FROM   ptw_pro.ptw_lv_permits p',
-'  WHERE  TRUNC(created_date, ''MM'') = TRUNC(SYSDATE, ''MM'')',
-'  AND   EXISTS (',
-'            SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
-'            WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
-'            AND    role_name IN (',
-'                       ''ADMIN'',''ADMIN_USER_SUPPORT'',',
-'                       ''ADMIN_CONTRACT_SUPPORT'',''AUTHORISER'',''READONLY''',
-'                   )',
-'            AND    is_active = ''Y''',
-'         )',
-'         OR',
-'         (',
-'             EXISTS (',
-'                 SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
-'                 WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
-'                 AND    role_name = ''ENGINEER''',
-'                 AND    is_active = ''Y''',
-'             )',
-'             AND UPPER(p.created_by) = UPPER(V(''APP_USER''))',
-'         );',
-'',
-'  RETURN l_ret_clob;',
-'END;',
-'    '))
-,p_lazy_loading=>false
-,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(25227447597353114)
@@ -522,6 +336,7 @@ wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(25227678625353116)
 ,p_plug_name=>'Recent Permits'
 ,p_title=>'Recent Permits'
+,p_region_name=>'permits-ir'
 ,p_icon_css_classes=>'fa-list'
 ,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
 ,p_component_template_options=>'#DEFAULT#'
@@ -545,24 +360,10 @@ wwv_flow_imp_page.create_page_plug(
 '        WHEN ''COMPLETED''   THEN ''Completed''',
 '        WHEN ''CANCELLED''   THEN ''Cancelled''',
 '        WHEN ''AUTHORISED''  THEN ''Authorised''',
+'        WHEN ''LAPSED''      THEN ''Lapsed''',
 '        WHEN ''STARTED''     THEN ''Live''',
 '        ELSE p.workflow_status',
-'    END as status_display,',
-'    CASE workflow_status',
-'      WHEN ''STARTED'' THEN',
-'        ''<a href="javascript:ptwSuspendPermit('' || permit_id || '','''''' || permit_number || '''''');"',
-'           class="t-Button t-Button--small t-Button--noUI t-Button--warning"',
-'           title="Suspend Permit">',
-'           <span class="t-icon fa fa-pause-circle" aria-hidden="true"></span>',
-'        </a>''',
-'      WHEN ''SUSPENDED'' THEN',
-'        ''<a href="javascript:ptwResumePermit('' || permit_id || '','''''' || permit_number || '''''');"',
-'           class="t-Button t-Button--small t-Button--noUI t-Button--success"',
-'           title="Resume Permit">',
-'           <span class="t-icon fa fa-play-circle" aria-hidden="true"></span>',
-'        </a>''',
-'      ELSE NULL',
-'    END AS workflow_action_html,',
+'    END AS status_display,',
 '    CASE p.current_step',
 '        WHEN ''SITE_WORK_DETAILS'' THEN ''Step 1: Site and Work Details''',
 '        WHEN ''CONTROL_MEASURES''  THEN ''Step 2: Control Measures''',
@@ -570,70 +371,170 @@ wwv_flow_imp_page.create_page_plug(
 '        WHEN ''AUTHORISATION''     THEN ''Step 4: Authorisation''',
 '        WHEN ''CLEARANCE''         THEN ''Step 5: Clearance''',
 '        ELSE p.current_step',
-'    END as step_display,',
-'    CASE ',
-'      WHEN workflow_status NOT IN (''STARTED'',''AUTHORISED'') ',
-'      THEN ''<a href="#" ',
-'             class="t-Button t-Button--noLabel t-Button--icon t-Button--danger" ',
+'    END AS step_display,',
+'    CASE p.workflow_status',
+'        WHEN ''COMPLETED'' THEN ''class="t-Badge t-Badge--hot t-Badge--lg"''',
+'        WHEN ''SUSPENDED'' THEN ''class="t-Badge t-Badge--danger t-Badge--lg"''',
+'        WHEN ''AUTHORISED'' THEN ''class="t-Badge t-Badge--warning t-Badge--lg"''',
+'        WHEN ''STARTED''   THEN ''class="t-Badge t-Badge--success t-Badge--lg"''',
+'        WHEN ''LAPSED''    THEN ''class="t-Badge t-Badge--normal t-Badge--lg"''',
+'        ELSE                  ''class="t-Badge t-Badge--info t-Badge--lg"''',
+'    END AS status_badge,',
+'    -- All action buttons combined into one column',
+'    ''<div class="ptw-action-btns">'' ||',
+'    -- Delete button',
+'    CASE',
+'        WHEN p.workflow_status NOT IN (''STARTED'',''AUTHORISED'')',
+'        THEN ''<a href="#" ',
+'             class="t-Button t-Button--noLabel t-Button--icon t-Button--danger ptw-action-btn" ',
 '             title="Delete Permit"',
-'             onclick="var pid = '''''' || permit_id || '''''';',
-'                      apex.message.confirm(''''Delete permit '' || permit_number || ''?'''', function(ok){',
-'                          if(ok){',
-'                              apex.item(''''P1_PERMIT_ID'''').setValue(pid);',
-'                              apex.page.submit({ request: ''''DELETE_PERMIT'''' });',
-'                          }',
-'                      });',
-'                      return false;">',
+'             onclick="ptwDeletePermit('' || p.permit_id || '', '''''' || p.permit_number || ''''''); return false;">',
 '             <span class="t-Icon fa fa-trash-o" aria-hidden="true"></span>',
 '          </a>''',
-'      ELSE NULL',
-'    END AS delete_permit,',
-'    '''' view_pdf,',
+'    END ||',
+'    -- Suspend/Resume button',
 '    CASE p.workflow_status',
-'    WHEN ''COMPLETED'' THEN ',
-'      ''class="t-Badge t-Badge--hot t-Badge--lg"''',
-'    WHEN ''SUSPENDED'' THEN',
-'      ''class="t-Badge t-Badge--danger t-Badge--lg"''',
-'    WHEN ''AUTHORISED'' THEN',
-'      ''class="t-Badge t-Badge--warning t-Badge--lg"''    ',
-'    WHEN ''STARTED'' THEN',
-'      ''class="t-Badge t-Badge--success t-Badge--lg"'' ',
-'    ELSE',
-'      ''class="t-Badge t-Badge--info t-Badge--lg"''  ',
-'    END status_badge,',
-'    '''' view_history,',
+'        WHEN ''STARTED'' THEN',
+'            ''<a href="javascript:ptwSuspendPermit('' || p.permit_id || '','''''' || p.permit_number || '''''');"',
+'                class="t-Button t-Button--noLabel t-Button--icon t-Button--warning ptw-action-btn"',
+'                title="Suspend Permit">',
+'                <span class="t-icon fa fa-pause-circle" aria-hidden="true"></span>',
+'             </a>''',
+'        WHEN ''SUSPENDED'' THEN',
+'            ''<a href="javascript:ptwResumePermit('' || p.permit_id || '','''''' || p.permit_number || '''''');"',
+'                class="t-Button t-Button--noLabel t-Button--icon t-Button--success ptw-action-btn"',
+'                title="Resume Permit">',
+'                <span class="t-icon fa fa-play-circle" aria-hidden="true"></span>',
+'             </a>''',
+'--        ELSE ''<span class="ptw-action-placeholder"></span>''',
+'    END ||',
+'    -- Monitoring button (STARTED only)',
+'    CASE',
+'        WHEN p.workflow_status = ''STARTED''',
+'        THEN ''<a href="'' || apex_page.get_url(',
+'                                p_page   => 15,',
+'                                p_items  => ''P15_PERMIT_ID,P15_PTW_TYPE,P15_PERMIT_NUMBER'',',
+'                                p_values => p.permit_id || '','' || p.ptw_type || '','' || p.permit_number',
+'                            ) || ''"',
+'                 class="t-Button t-Button--noLabel t-Button--icon t-Button--info ptw-action-btn ptw-action-btn--monitor"',
+'                 title="Monitoring">',
+'                 <span class="t-Icon fa fa-dial-gauge-chart" aria-hidden="true"></span>',
+'              </a>''',
+'--        ELSE ''<span class="ptw-action-placeholder"></span>''',
+'    END ||',
+'    -- Clearance button (STARTED only)',
+'    CASE',
+'        WHEN p.workflow_status = ''STARTED'' AND SYSDATE < p.ended_datetime',
+'        THEN ''<a href="'' || apex_page.get_url(',
+'                                p_page   => 16,',
+'                                p_items  => ''P16_PERMIT_ID,P16_PERMIT_NUMBER'',',
+'                                p_values => p.permit_id || '','' || p.permit_number',
+'                            ) || ''"',
+'                 class="t-Button t-Button--noLabel t-Button--icon t-Button--success ptw-action-btn"',
+'                 title="Clear Permit">',
+'                 <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>',
+'              </a>''',
+'    END ||',
+'    -- PDF button (always shown)',
+'    ''<a href="'' || apex_page.get_url(',
+'                       p_page   => 300,',
+'                       p_items  => ''P300_PERMIT_ID'',',
+'                       p_values => p.permit_id',
+'                   ) || ''"',
+'         class="t-Button t-Button--noLabel t-Button--icon t-Button--normal ptw-action-btn"',
+'         title="PDF">',
+'         <span class="t-Icon fa fa-file-pdf-o" aria-hidden="true"></span>',
+'     </a>'' ||',
+'    -- History button (always shown)',
+'    ''<a href="'' || apex_page.get_url(',
+'                       p_page   => 6,',
+'                       p_items  => ''P6_PERMIT_ID'',',
+'                       p_values => p.permit_id',
+'                   ) || ''"',
+'         class="t-Button t-Button--noLabel t-Button--icon t-Button--normal ptw-action-btn"',
+'         title="History">',
+'         <span class="t-Icon fa fa-book" aria-hidden="true"></span>',
+'     </a>'' ||',
+'    ''</div>'' AS actions,',
 '    p.ptw_type,',
-'    CASE ',
-'      WHEN workflow_status = ''STARTED'' AND (ended_datetime - SYSDATE) * 24 > 2  ',
-'        THEN ''ptw-row-green''',
-'      WHEN workflow_status = ''STARTED'' AND (ended_datetime - SYSDATE) * 24 > 1  ',
-'        THEN ''ptw-row-amber''',
-'      WHEN workflow_status = ''STARTED'' AND (ended_datetime - SYSDATE) * 24 <= 1 ',
-'        THEN ''ptw-row-red''',
-'      ELSE NULL',
-'  END AS row_color',
+'    CASE',
+'        WHEN p.workflow_status = ''STARTED'' AND (p.ended_datetime - SYSDATE) * 24 > 2',
+'            THEN ''<span class="t-Badge t-Badge--success t-Badge--lg">''',
+'                 || FLOOR((p.ended_datetime - SYSDATE) * 24) || ''h ''',
+'                 || MOD(FLOOR((p.ended_datetime - SYSDATE) * 1440), 60) || ''m remaining</span>''',
+'        WHEN p.workflow_status = ''STARTED'' AND (p.ended_datetime - SYSDATE) * 24 > 1',
+'            THEN ''<span class="t-Badge t-Badge--warning t-Badge--lg">''',
+'                 || FLOOR((p.ended_datetime - SYSDATE) * 24) || ''h ''',
+'                 || MOD(FLOOR((p.ended_datetime - SYSDATE) * 1440), 60) || ''m remaining</span>''',
+'        WHEN p.workflow_status = ''STARTED'' AND (p.ended_datetime - SYSDATE) * 24 <= 1',
+'            THEN ''<span class="t-Badge t-Badge--danger t-Badge--lg">''',
+'                 || FLOOR((p.ended_datetime - SYSDATE) * 1440) || ''m remaining</span>''',
+'    END AS time_remaining',
 'FROM ptw_pro.ptw_lv_permits p',
-'WHERE  EXISTS (',
-'          SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
-'          WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
-'          AND    role_name IN (',
-'                     ''ADMIN'',''ADMIN_USER_SUPPORT'',',
-'                     ''ADMIN_CONTRACT_SUPPORT'',''AUTHORISER'',''READONLY''',
-'                 )',
-'          AND    is_active = ''Y''',
-'      )',
-'      OR',
-'      (',
-'          EXISTS (',
-'              SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
-'              WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
-'              AND    role_name = ''ENGINEER''',
-'              AND    is_active = ''Y''',
-'          )',
-'          AND UPPER(p.created_by) = UPPER(V(''APP_USER''))',
-'      )',
-'ORDER BY p.created_date DESC',
-''))
+'WHERE',
+'    EXISTS (',
+'        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
+'        WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
+'        AND    role_name IN (''ADMIN'', ''ADMIN_USER_SUPPORT'')',
+'        AND    is_active = ''Y''',
+'    )',
+'OR (',
+'    EXISTS (',
+'        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
+'        WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
+'        AND    role_name IN (''ADMIN_CONTRACT_SUPPORT'', ''READONLY'')',
+'        AND    is_active = ''Y''',
+'    )',
+')',
+'OR (',
+'    EXISTS (',
+'        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
+'        WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
+'        AND    role_name = ''ENGINEER''',
+'        AND    is_active = ''Y''',
+'    )',
+'    AND NOT EXISTS (',
+'        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
+'        WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
+'        AND    role_name = ''AUTHORISER''',
+'        AND    is_active = ''Y''',
+'    )',
+'    AND UPPER(p.created_by) = UPPER(V(''APP_USER''))',
+')',
+'OR (',
+'    EXISTS (',
+'        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
+'        WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
+'        AND    role_name = ''AUTHORISER''',
+'        AND    is_active = ''Y''',
+'    )',
+'    AND NOT EXISTS (',
+'        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
+'        WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
+'        AND    role_name = ''ENGINEER''',
+'        AND    is_active = ''Y''',
+'    )',
+'    AND UPPER(p.auth_person_name) = UPPER(V(''APP_USER''))',
+')',
+'OR (',
+'    EXISTS (',
+'        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
+'        WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
+'        AND    role_name = ''ENGINEER''',
+'        AND    is_active = ''Y''',
+'    )',
+'    AND EXISTS (',
+'        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
+'        WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
+'        AND    role_name = ''AUTHORISER''',
+'        AND    is_active = ''Y''',
+'    )',
+'    AND (',
+'        UPPER(p.created_by)          = UPPER(V(''APP_USER''))',
+'        OR UPPER(p.auth_person_name) = UPPER(V(''APP_USER''))',
+'    )',
+')',
+'ORDER BY p.created_date DESC'))
 ,p_plug_source_type=>'NATIVE_IR'
 ,p_prn_content_disposition=>'ATTACHMENT'
 ,p_prn_units=>'INCHES'
@@ -672,12 +573,10 @@ wwv_flow_imp_page.create_worksheet(
 ,p_pagination_type=>'ROWS_X_TO_Y'
 ,p_pagination_display_pos=>'BOTTOM_RIGHT'
 ,p_show_finder_drop_down=>'N'
-,p_show_display_row_count=>'Y'
+,p_show_actions_menu=>'N'
 ,p_report_list_mode=>'NONE'
 ,p_lazy_loading=>false
 ,p_show_detail_link=>'N'
-,p_show_notify=>'Y'
-,p_download_formats=>'CSV:HTML:XLSX:PDF'
 ,p_enable_mail_download=>'Y'
 ,p_owner=>'PTW_PRO'
 ,p_internal_uid=>25227729512353117
@@ -769,32 +668,6 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_use_as_row_header=>'N'
 );
 wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(25228961534353129)
-,p_db_column_name=>'DELETE_PERMIT'
-,p_display_order=>120
-,p_column_identifier=>'L'
-,p_column_label=>'&nbsp;'
-,p_column_type=>'STRING'
-,p_display_text_as=>'WITHOUT_MODIFICATION'
-,p_heading_alignment=>'LEFT'
-,p_column_alignment=>'CENTER'
-,p_use_as_row_header=>'N'
-,p_security_scheme=>wwv_flow_imp.id(31534463148185252)
-);
-wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(25229096177353130)
-,p_db_column_name=>'VIEW_PDF'
-,p_display_order=>130
-,p_column_identifier=>'M'
-,p_column_label=>'&nbsp;'
-,p_column_link=>'#'
-,p_column_linktext=>'<span class="fa fa-file-pdf-o" title="View PDF"></span>'
-,p_column_type=>'STRING'
-,p_heading_alignment=>'LEFT'
-,p_column_alignment=>'CENTER'
-,p_use_as_row_header=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(25229198978353131)
 ,p_db_column_name=>'STATUS_BADGE'
 ,p_display_order=>140
@@ -806,35 +679,9 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_use_as_row_header=>'N'
 );
 wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(31605881962440620)
-,p_db_column_name=>'VIEW_HISTORY'
-,p_display_order=>150
-,p_column_identifier=>'O'
-,p_column_label=>'&nbsp;'
-,p_column_link=>'f?p=&APP_ID.:6:&SESSION.::&DEBUG.:6:P6_PERMIT_ID:#PERMIT_ID#'
-,p_column_linktext=>'<span class="fa fa-book" title="History"></span>'
-,p_column_type=>'STRING'
-,p_heading_alignment=>'LEFT'
-,p_column_alignment=>'CENTER'
-,p_use_as_row_header=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(31606126180440623)
-,p_db_column_name=>'WORKFLOW_ACTION_HTML'
-,p_display_order=>160
-,p_column_identifier=>'P'
-,p_column_label=>'&nbsp;'
-,p_column_html_expression=>'#WORKFLOW_ACTION_HTML#'
-,p_column_type=>'STRING'
-,p_display_text_as=>'WITHOUT_MODIFICATION'
-,p_heading_alignment=>'LEFT'
-,p_column_alignment=>'CENTER'
-,p_use_as_row_header=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(40551917328170601)
 ,p_db_column_name=>'STARTED_DATETIME'
-,p_display_order=>170
+,p_display_order=>180
 ,p_column_identifier=>'Q'
 ,p_column_label=>'Start Date'
 ,p_column_type=>'DATE'
@@ -846,7 +693,7 @@ wwv_flow_imp_page.create_worksheet_column(
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(40552001660170602)
 ,p_db_column_name=>'ENDED_DATETIME'
-,p_display_order=>180
+,p_display_order=>190
 ,p_column_identifier=>'R'
 ,p_column_label=>'End Date'
 ,p_column_type=>'DATE'
@@ -858,7 +705,7 @@ wwv_flow_imp_page.create_worksheet_column(
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(40552106160170603)
 ,p_db_column_name=>'PERSON_IN_CHARGE'
-,p_display_order=>190
+,p_display_order=>200
 ,p_column_identifier=>'S'
 ,p_column_label=>'Person In Charge'
 ,p_column_type=>'STRING'
@@ -866,24 +713,34 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_use_as_row_header=>'N'
 );
 wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(40552781633170609)
-,p_db_column_name=>'ROW_COLOR'
-,p_display_order=>200
-,p_column_identifier=>'T'
-,p_column_label=>'Row Color'
-,p_column_html_expression=>'<span class="ptw-row-marker" data-color="#ROW_COLOR#"></span>'
+ p_id=>wwv_flow_imp.id(40555391702170635)
+,p_db_column_name=>'PTW_TYPE'
+,p_display_order=>220
+,p_column_identifier=>'U'
+,p_column_label=>'Permit Type'
+,p_column_type=>'STRING'
+,p_heading_alignment=>'LEFT'
+,p_use_as_row_header=>'N'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(41969825226328829)
+,p_db_column_name=>'ACTIONS'
+,p_display_order=>230
+,p_column_identifier=>'W'
+,p_column_label=>'Actions'
 ,p_column_type=>'STRING'
 ,p_display_text_as=>'WITHOUT_MODIFICATION'
 ,p_heading_alignment=>'LEFT'
 ,p_use_as_row_header=>'N'
 );
 wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(40555391702170635)
-,p_db_column_name=>'PTW_TYPE'
-,p_display_order=>210
-,p_column_identifier=>'U'
-,p_column_label=>'Permit Type'
+ p_id=>wwv_flow_imp.id(45756601375782518)
+,p_db_column_name=>'TIME_REMAINING'
+,p_display_order=>240
+,p_column_identifier=>'AB'
+,p_column_label=>'Time Remaining'
 ,p_column_type=>'STRING'
+,p_display_text_as=>'WITHOUT_MODIFICATION'
 ,p_heading_alignment=>'LEFT'
 ,p_use_as_row_header=>'N'
 );
@@ -895,7 +752,7 @@ wwv_flow_imp_page.create_worksheet_rpt(
 ,p_status=>'PUBLIC'
 ,p_is_default=>'Y'
 ,p_display_rows=>15
-,p_report_columns=>'PERMIT_NUMBER:PTW_TYPE:WORKFLOW_STATUS:SITE_DETAILS:PERSON_IN_CHARGE:STARTED_DATETIME:ENDED_DATETIME:DELETE_PERMIT:WORKFLOW_ACTION_HTML:VIEW_PDF:VIEW_HISTORY:'
+,p_report_columns=>'PERMIT_NUMBER:TIME_REMAINING:SITE_DETAILS:PERSON_IN_CHARGE:ACTIONS:'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(27017265260886523)
@@ -915,13 +772,177 @@ wwv_flow_imp_page.create_page_plug(
   'output_as', 'HTML')).to_clob
 );
 wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(31606444150440626)
-,p_plug_name=>'Suspended'
+ p_id=>wwv_flow_imp.id(40756058137498310)
+,p_plug_name=>'Reports'
+,p_title=>'Reports'
+,p_region_template_options=>'#DEFAULT#:is-collapsed:t-Region--scrollBody'
+,p_plug_template=>2664334895415463485
+,p_plug_display_sequence=>50
+,p_location=>null
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'expand_shortcuts', 'N',
+  'output_as', 'HTML')).to_clob
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(25227059814353110)
+,p_plug_name=>'My Permits'
+,p_title=>'My Permits'
+,p_parent_plug_id=>wwv_flow_imp.id(40756058137498310)
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>4072358936313175081
+,p_plug_display_sequence=>60
+,p_plug_grid_column_span=>2
+,p_plug_display_point=>'SUB_REGIONS'
+,p_location=>null
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'  l_ret_clob CLOB;',
+'BEGIN',
+'  SELECT ''<div class="dashboard-card">'' ||',
+'         ''<div class="stat-label">My Permits</div>'' ||',
+'         ''<div class="stat-value">'' || COUNT(*) || ''</div>'' ||',
+'         ''</div>'' as content',
+'  INTO   l_ret_clob',
+'  FROM   ptw_pro.ptw_lv_permits p',
+'  WHERE ptw_pro.ptw_lv_permit_visible(',
+'          p.permit_id, ',
+'          p.created_by, ',
+'          p.auth_person_name, ',
+'          V(''APP_USER'')',
+'      ) = ''Y''',
+'  ORDER BY p.created_date DESC;',
+'',
+'  RETURN l_ret_clob;',
+'END;',
+''))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(25227110134353111)
+,p_plug_name=>'In Progress'
+,p_parent_plug_id=>wwv_flow_imp.id(40756058137498310)
 ,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
 ,p_plug_display_sequence=>80
 ,p_plug_new_grid_row=>false
 ,p_plug_grid_column_span=>2
+,p_plug_display_point=>'SUB_REGIONS'
+,p_location=>null
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'  l_ret_clob CLOB;',
+'BEGIN',
+'  SELECT ''<div class="dashboard-card">'' ||',
+'         ''<div class="stat-label">In Progress</div>'' ||',
+'         ''<div class="stat-value" style="color: #ffc107;">'' || COUNT(*) || ''</div>'' ||',
+'         ''</div>'' as content',
+'  INTO   l_ret_clob',
+'  FROM   ptw_pro.ptw_lv_permits p',
+'  WHERE ptw_pro.ptw_lv_permit_visible(',
+'          p.permit_id, ',
+'          p.created_by, ',
+'          p.auth_person_name, ',
+'          V(''APP_USER'')',
+'      ) = ''Y''',
+'  AND   workflow_status = ''IN_PROGRESS''   ',
+'  ORDER BY p.created_date DESC;',
+'',
+'  RETURN l_ret_clob;',
+'END;',
+'',
+'',
+'',
+''))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(25227254221353112)
+,p_plug_name=>'Completed'
+,p_parent_plug_id=>wwv_flow_imp.id(40756058137498310)
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>4072358936313175081
+,p_plug_display_sequence=>100
+,p_plug_new_grid_row=>false
+,p_plug_grid_column_span=>2
+,p_plug_display_point=>'SUB_REGIONS'
+,p_location=>null
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'  l_ret_clob CLOB;',
+'BEGIN',
+'  SELECT ''<div class="dashboard-card">'' ||',
+'         ''<div class="stat-label">Completed</div>'' ||',
+'         ''<div class="stat-value" style="color: #28a745;">'' || COUNT(*) || ''</div>'' ||',
+'         ''</div>'' as content',
+'  INTO   l_ret_clob',
+'  FROM   ptw_pro.ptw_lv_permits p',
+'  WHERE ptw_pro.ptw_lv_permit_visible(',
+'          p.permit_id, ',
+'          p.created_by, ',
+'          p.auth_person_name, ',
+'          V(''APP_USER'')',
+'      ) = ''Y''',
+'  AND   workflow_status = ''COMPLETED''',
+'  ORDER BY p.created_date DESC;',
+'',
+'  RETURN l_ret_clob;',
+'END;',
+'    '))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(25227362750353113)
+,p_plug_name=>'This Month'
+,p_parent_plug_id=>wwv_flow_imp.id(40756058137498310)
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>4072358936313175081
+,p_plug_display_sequence=>110
+,p_plug_new_grid_row=>false
+,p_plug_grid_column_span=>2
+,p_plug_display_point=>'SUB_REGIONS'
+,p_location=>null
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'  l_ret_clob CLOB;',
+'BEGIN',
+'  SELECT ''<div class="dashboard-card">'' ||',
+'         ''<div class="stat-label">This Month</div>'' ||',
+'         ''<div class="stat-value" style="color: #17a2b8;">'' || COUNT(*) || ''</div>'' ||',
+'         ''</div>'' as content',
+'  INTO   l_ret_clob',
+'  FROM   ptw_pro.ptw_lv_permits p',
+'  WHERE ptw_pro.ptw_lv_permit_visible(',
+'          p.permit_id, ',
+'          p.created_by, ',
+'          p.auth_person_name, ',
+'          V(''APP_USER'')',
+'      ) = ''Y''',
+'  AND   TO_CHAR(created_date,''MON-YYYY'') = TO_CHAR(SYSDATE,''MON-YYYY'')',
+'  ORDER BY p.created_date DESC;',
+'',
+'  RETURN l_ret_clob;',
+'END;',
+'    '))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(31606444150440626)
+,p_plug_name=>'Suspended'
+,p_parent_plug_id=>wwv_flow_imp.id(40756058137498310)
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>4072358936313175081
+,p_plug_display_sequence=>90
+,p_plug_new_grid_row=>false
+,p_plug_grid_column_span=>2
+,p_plug_display_point=>'SUB_REGIONS'
 ,p_location=>null
 ,p_function_body_language=>'PLSQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -934,26 +955,14 @@ wwv_flow_imp_page.create_page_plug(
 '           ''</div>''',
 '    INTO   l_ret_clob',
 '    FROM   ptw_pro.ptw_lv_permits p',
-'    WHERE  workflow_status = ''SUSPENDED''',
-'    AND    EXISTS (',
-'            SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
-'            WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
-'            AND    role_name IN (',
-'                       ''ADMIN'',''ADMIN_USER_SUPPORT'',',
-'                       ''ADMIN_CONTRACT_SUPPORT'',''AUTHORISER'',''READONLY''',
-'                   )',
-'            AND    is_active = ''Y''',
-'         )',
-'         OR',
-'         (',
-'             EXISTS (',
-'                 SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
-'                 WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
-'                 AND    role_name = ''ENGINEER''',
-'                 AND    is_active = ''Y''',
-'             )',
-'             AND UPPER(p.created_by) = UPPER(V(''APP_USER''))',
-'         );',
+'    WHERE ptw_pro.ptw_lv_permit_visible(',
+'          p.permit_id, ',
+'          p.created_by, ',
+'          p.auth_person_name, ',
+'          V(''APP_USER'')',
+'      ) = ''Y''',
+'    AND  workflow_status = ''SUSPENDED''',
+'    ORDER BY p.created_date DESC;',
 '',
 '    RETURN l_ret_clob;',
 'END;'))
@@ -963,11 +972,13 @@ wwv_flow_imp_page.create_page_plug(
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(31607536474440637)
 ,p_plug_name=>'Live!'
+,p_parent_plug_id=>wwv_flow_imp.id(40756058137498310)
 ,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>60
+,p_plug_display_sequence=>70
 ,p_plug_new_grid_row=>false
 ,p_plug_grid_column_span=>2
+,p_plug_display_point=>'SUB_REGIONS'
 ,p_location=>null
 ,p_function_body_language=>'PLSQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -980,26 +991,14 @@ wwv_flow_imp_page.create_page_plug(
 '         ''</div>'' as content',
 '  INTO   l_ret_clob',
 '  FROM   ptw_pro.ptw_lv_permits p',
-'  WHERE  workflow_status = ''STARTED''',
-'  AND   EXISTS (',
-'            SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
-'            WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
-'            AND    role_name IN (',
-'                       ''ADMIN'',''ADMIN_USER_SUPPORT'',',
-'                       ''ADMIN_CONTRACT_SUPPORT'',''AUTHORISER'',''READONLY''',
-'                   )',
-'            AND    is_active = ''Y''',
-'         )',
-'         OR',
-'         (',
-'             EXISTS (',
-'                 SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
-'                 WHERE  UPPER(username) = UPPER(V(''APP_USER''))',
-'                 AND    role_name = ''ENGINEER''',
-'                 AND    is_active = ''Y''',
-'             )',
-'             AND UPPER(p.created_by) = UPPER(V(''APP_USER''))',
-'         );',
+'  WHERE ptw_pro.ptw_lv_permit_visible(',
+'          p.permit_id, ',
+'          p.created_by, ',
+'          p.auth_person_name, ',
+'          V(''APP_USER'')',
+'      ) = ''Y''',
+'  AND    workflow_status = ''STARTED''',
+'  ORDER BY p.created_date DESC;',
 '',
 '  RETURN l_ret_clob;',
 'END;',
@@ -1039,6 +1038,22 @@ wwv_flow_imp_page.create_page_button(
 ,p_grid_new_row=>'N'
 ,p_grid_new_column=>'Y'
 );
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(45756747804782519)
+,p_button_sequence=>10
+,p_button_plug_id=>wwv_flow_imp.id(25227678625353116)
+,p_button_name=>'REFRESH_PERMITS'
+,p_button_static_id=>'btn-refresh-permits'
+,p_button_action=>'REDIRECT_URL'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2082829544945815391
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>'Refresh Permits'
+,p_button_position=>'RIGHT_OF_IR_SEARCH_BAR'
+,p_button_redirect_url=>'javascript:apex.region(''permits-ir'').refresh();'
+,p_button_execute_validations=>'N'
+,p_icon_css_classes=>'fa-refresh'
+);
 wwv_flow_imp_page.create_page_branch(
  p_id=>wwv_flow_imp.id(25229805851353138)
 ,p_branch_name=>'Refresh Dashboard After Delete'
@@ -1073,60 +1088,13 @@ wwv_flow_imp_page.create_page_item(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
 );
-wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(40552823664170610)
-,p_name=>'Set highlights'
-,p_event_sequence=>10
-,p_bind_type=>'bind'
-,p_bind_event_type=>'ready'
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(40552928697170611)
-,p_event_id=>wwv_flow_imp.id(40552823664170610)
-,p_event_result=>'TRUE'
-,p_action_sequence=>10
-,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'// Walk each marker span, find its TR, apply the colour class',
-'document.querySelectorAll(''.ptw-row-marker'').forEach(function(el) {',
-'    var color = el.getAttribute(''data-color'');',
-'    if (color && color !== '''') {',
-'        var row = el.closest(''tr'');',
-'        if (row) {',
-'            row.classList.add(color);',
-'        }',
-'    }',
-'});'))
-);
-wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(40553084458170612)
-,p_name=>'Set highlights after refresh'
-,p_event_sequence=>20
-,p_triggering_element_type=>'REGION'
-,p_triggering_region_id=>wwv_flow_imp.id(25227678625353116)
-,p_bind_type=>'bind'
-,p_execution_type=>'IMMEDIATE'
-,p_bind_event_type=>'apexafterrefresh'
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(40553197985170613)
-,p_event_id=>wwv_flow_imp.id(40553084458170612)
-,p_event_result=>'TRUE'
-,p_action_sequence=>10
-,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'// Walk each marker span, find its TR, apply the colour class',
-'document.querySelectorAll(''.ptw-row-marker'').forEach(function(el) {',
-'    var color = el.getAttribute(''data-color'');',
-'    if (color && color !== '''') {',
-'        var row = el.closest(''tr'');',
-'        if (row) {',
-'            row.classList.add(color);',
-'        }',
-'    }',
-'});'))
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(45756121958782513)
+,p_name=>'P1_CLEAR_PERMIT_ID'
+,p_item_sequence=>170
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(25229784918353137)
@@ -1135,15 +1103,42 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_type=>'NATIVE_PLSQL'
 ,p_process_name=>'Delete Permit'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'-- DECLARE',
+'--     v_permit_id NUMBER;',
+'-- BEGIN',
+'--     -- Extract permit ID from request (format: DELETE_PERMIT_123)',
+'--     v_permit_id := TO_NUMBER(REPLACE(:REQUEST, ''DELETE_PERMIT_'', ''''));',
+'',
+'--     -- Delete permit (cascades to all related tables)',
+'--     DELETE FROM ptw_pro.ptw_lv_permits',
+'--     WHERE permit_id = v_permit_id;',
+'',
+'--     COMMIT;',
+'',
+'--     apex_application.g_print_success_message := ''Permit deleted successfully.'';',
+'',
+'-- EXCEPTION',
+'--     WHEN OTHERS THEN',
+'--         ROLLBACK;',
+'--         apex_error.add_error(',
+'--             p_message => ''Error deleting permit: '' || SQLERRM,',
+'--             p_display_location => apex_error.c_inline_in_notification',
+'--         );',
+'-- END;',
+'',
 'DECLARE',
 '    v_permit_id NUMBER;',
 'BEGIN',
-'    -- Extract permit ID from request (format: DELETE_PERMIT_123)',
+'    apex_debug.message(''REQUEST value: '' || :REQUEST);',
+'    ',
 '    v_permit_id := TO_NUMBER(REPLACE(:REQUEST, ''DELETE_PERMIT_'', ''''));',
+'    ',
+'    apex_debug.message(''Permit ID to delete: '' || v_permit_id);',
 '',
-'    -- Delete permit (cascades to all related tables)',
 '    DELETE FROM ptw_pro.ptw_lv_permits',
 '    WHERE permit_id = v_permit_id;',
+'',
+'    apex_debug.message(''Rows deleted: '' || SQL%ROWCOUNT);',
 '',
 '    COMMIT;',
 '',
@@ -1156,12 +1151,12 @@ wwv_flow_imp_page.create_page_process(
 '            p_message => ''Error deleting permit: '' || SQLERRM,',
 '            p_display_location => apex_error.c_inline_in_notification',
 '        );',
-'END;',
-''))
+'END;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
-,p_process_when=>'DELETE_PERMIT'
-,p_process_when_type=>'REQUEST_IN_CONDITION'
+,p_process_when=>':REQUEST LIKE ''DELETE_PERMIT_%'''
+,p_process_when_type=>'EXPRESSION'
+,p_process_when2=>'PLSQL'
 ,p_internal_uid=>25229784918353137
 );
 wwv_flow_imp_page.create_page_process(
@@ -1185,9 +1180,9 @@ wwv_flow_imp_page.create_page_process(
 '        RETURN;',
 '    END IF;',
 '',
-'    IF :P1_WORKFLOW_STATUS NOT IN (''LIVE'',''AUTHORISED'') THEN',
+'    IF :P1_WORKFLOW_STATUS NOT IN (''STARTED'',''AUTHORISED'') THEN',
 '        apex_error.add_error(',
-'            p_message => ''A permit must LIVE or AUTHORISED to be suspended.'',',
+'            p_message => ''A permit must STARTED or AUTHORISED to be suspended.'',',
 '            p_display_location => apex_error.c_inline_in_notification',
 '        );',
 '        RETURN;',
@@ -1201,7 +1196,7 @@ wwv_flow_imp_page.create_page_process(
 '           modified_date     = SYSTIMESTAMP,',
 '           modified_by       = NVL(V(''APP_USER''), USER)',
 '    WHERE  permit_id       = v_permit_id',
-'    AND    workflow_status IN (''LIVE'',''AUTHORISED'');',
+'    AND    workflow_status IN (''STARTED'',''AUTHORISED'');',
 '',
 '    IF SQL%ROWCOUNT = 0 THEN',
 '        apex_error.add_error(',
@@ -1212,7 +1207,7 @@ wwv_flow_imp_page.create_page_process(
 '    END IF;',
 '',
 '    COMMIT;',
-'    apex_application.g_print_success_message := ''Live Permit suspended successfully.'';',
+'    apex_application.g_print_success_message := ''Started Permit suspended successfully.'';',
 '',
 'EXCEPTION',
 '    WHEN OTHERS THEN',
@@ -1243,7 +1238,7 @@ wwv_flow_imp_page.create_page_process(
 '    v_permit_id := TO_NUMBER(REPLACE(:REQUEST, ''RESUME_PERMIT_'', ''''));',
 '',
 '    UPDATE ptw_pro.ptw_lv_permits',
-'    SET    workflow_status = DECODE(auth_to_datetime, NULL, ''AUTHORISED'', ''LIVE''),',
+'    SET    workflow_status = ''STARTED'',',
 '           resumed_date    = SYSTIMESTAMP,',
 '           resumed_by      = NVL(V(''APP_USER''), USER),',
 '           modified_date   = SYSTIMESTAMP,',

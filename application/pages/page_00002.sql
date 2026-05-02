@@ -81,7 +81,88 @@ unistr('                // URL is /ords/r/app/page-alias/permit-id \2014 replace
 '                apex.message.showErrors([{type:''error'',message:''Offline save error: ''+err.message}]);',
 '            });',
 '    }, true);',
-'}());'))
+'}());',
+'',
+'(function () {',
+'',
+'    var BINARY_ITEMS = [',
+'        ''P2_CLIENT_PERMISSION_GRANTED'',',
+'        ''P2_AFFECTS_IT_SYSTEMS'',',
+'        ''P2_IT_PERMISSION_GRANTED''',
+'    ];',
+'',
+'    var BADGES = [',
+unistr('        { val: ''Y'', cls: ''binary-badge-yes'', label: ''\2713'' },'),
+unistr('        { val: ''N'', cls: ''binary-badge-no'',  label: ''\2717'' }'),
+'    ];',
+'',
+'    // Page 2 is editable when status is IN_PROGRESS or DRAFT',
+'    var status    = apex.item(''P2_WORKFLOW_STATUS'').getValue();',
+'    var isReadOnly = (apex.item(''P2_WORKFLOW_STATUS'').getValue() !== ''IN_PROGRESS'');',
+'',
+'    BINARY_ITEMS.forEach(function (itemName) {',
+'',
+'        var $fc = $(''#'' + itemName).closest(''.t-Form-fieldContainer'');',
+'        if ($fc.length === 0) return;',
+'',
+'        $fc.find(''.binary-badge-row'').remove();',
+'',
+'        var currentVal = '''';',
+'        if (!isReadOnly) {',
+'            currentVal = $(''input[name="'' + itemName + ''"]:checked'').val() || '''';',
+'        } else {',
+'            currentVal = apex.item(itemName).getValue() || '''';',
+'        }',
+'',
+'        var $row = $(''<div class="binary-badge-row"></div>'').attr(''data-item'', itemName);',
+'',
+'        BADGES.forEach(function (b) {',
+'            $(''<span></span>'')',
+'                .addClass(''binary-badge '' + b.cls)',
+'                .toggleClass(''cm-active'', currentVal === b.val)',
+'                .toggleClass(''binary-readonly'', isReadOnly)',
+'                .attr(''data-value'', b.val)',
+'                .text(b.label)',
+'                .appendTo($row);',
+'        });',
+'',
+'        $fc.find(''.t-Form-inputContainer'').append($row);',
+'    });',
+'',
+'    $(''.cm-binary-item .apex-item-grid'').hide();',
+'',
+'    $(document).off(''click.binarybadge'').on(''click.binarybadge'', ''.binary-badge:not(.binary-readonly)'', function () {',
+'        var $badge   = $(this);',
+'        var $row     = $badge.closest(''.binary-badge-row'');',
+'        var itemName = $row.attr(''data-item'');',
+'        var val      = $badge.attr(''data-value'');',
+'',
+'        $(''input[name="'' + itemName + ''"][value="'' + val + ''"]'')',
+'            .prop(''checked'', true).trigger(''change'');',
+'',
+'        $row.find(''.binary-badge'').removeClass(''cm-active'');',
+'        $badge.addClass(''cm-active'');',
+'    });',
+'    ',
+'    $(''.cm-binary-item .apex-item-grid'').hide();',
+'',
+'}());',
+'',
+'function initCMChecklist() {',
+'    var $items = $(''.cm-binary-item'');',
+'',
+'    if ($items.length === 0) return; // not on a CM page',
+'',
+'    // Append red asterisk to each item''s label',
+'    $items.each(function() {',
+'        $(this).find(''.t-Form-labelContainer label, label'').first()',
+'               .append(''<span class="cm-required-star" aria-hidden="true"> *</span>'');',
+'    });',
+'}',
+'',
+'apex.jQuery(document).on(''apexreadyend'', function() {',
+'    initCMChecklist();',
+'});'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '.ptw-workflow-progress {',
 '    display: flex;',
@@ -168,6 +249,85 @@ unistr('                // URL is /ords/r/app/page-alias/permit-id \2014 replace
 '    .ptw-workflow-progress::before {',
 '        display: none;',
 '    }',
+'}',
+'',
+'/* ==========================================================',
+unistr('   BINARY YES/NO BADGES \2014 Y=green / N=red'),
+'   ========================================================== */',
+'',
+'.cm-binary-item .apex-item-grid {',
+'    display: none !important;',
+'    pointer-events: none !important;',
+'}',
+'',
+'.binary-badge-row {',
+'    display: flex;',
+'    gap: 6px;',
+'    margin-top: 4px;',
+'}',
+'',
+'.binary-badge {',
+'    display: inline-flex;',
+'    align-items: center;',
+'    justify-content: center;',
+'    width: 52px;',
+'    height: 34px;',
+'    border-radius: 8px;',
+'    border: 2px solid #ced4da;',
+'    background: #f0f0f0;',
+'    color: #aaa;',
+'    font-weight: 700;',
+'    font-size: 1.3rem;',
+'    cursor: pointer;',
+'    line-height: 1;',
+'    transition: background 0.15s, border-color 0.15s, color 0.15s;',
+'    user-select: none;',
+'}',
+'',
+'.binary-badge:hover {',
+'    border-color: #999;',
+'    background: #e2e6ea;',
+'}',
+'',
+'.binary-badge-yes.cm-active {',
+'    background: #28a745;',
+'    border-color: #1e7e34;',
+'    color: #fff;',
+'}',
+'',
+'.binary-badge-no.cm-active {',
+'    background: #dc3545;',
+'    border-color: #a71d2a;',
+'    color: #fff;',
+'}',
+'',
+'.binary-badge.binary-readonly {',
+'    cursor: default;',
+'}',
+'',
+'.binary-badge.binary-readonly:hover {',
+'    background: #f0f0f0;',
+'    border-color: #ced4da;',
+'    color: #aaa;',
+'}',
+'',
+'.binary-badge-yes.cm-active.binary-readonly:hover {',
+'    background: #28a745;',
+'    border-color: #1e7e34;',
+'    color: #fff;',
+'}',
+'',
+'.binary-badge-no.cm-active.binary-readonly:hover {',
+'    background: #dc3545;',
+'    border-color: #a71d2a;',
+'    color: #fff;',
+'}',
+'',
+unistr('/* \2500\2500 Required asterisk on each item \2500\2500 */'),
+'.cm-required-star {',
+'    color: #c0392b;',
+'    font-weight: 700;',
+'    margin-left: 2px;',
 '}',
 ''))
 ,p_page_template_options=>'#DEFAULT#'
@@ -544,7 +704,6 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(26943471028347705)
 ,p_name=>'P2_CLIENT_PERMISSION_GRANTED'
-,p_is_required=>true
 ,p_item_sequence=>10
 ,p_item_plug_id=>wwv_flow_imp.id(26943346862347704)
 ,p_prompt=>'Has the client granted permission for these works to proceed?'
@@ -553,7 +712,8 @@ wwv_flow_imp_page.create_page_item(
 ,p_read_only_when=>'ptw_pro.ptw_lv_is_contract_support(V(''APP_USER'')) = ''Y'''
 ,p_read_only_when2=>'PLSQL'
 ,p_read_only_when_type=>'EXPRESSION'
-,p_field_template=>1609121967514267634
+,p_field_template=>1609122147107268652
+,p_item_css_classes=>'cm-binary-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
@@ -563,7 +723,6 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(26943599720347706)
 ,p_name=>'P2_AFFECTS_IT_SYSTEMS'
-,p_is_required=>true
 ,p_item_sequence=>20
 ,p_item_plug_id=>wwv_flow_imp.id(26943346862347704)
 ,p_prompt=>'Will these works affect any IT or other business critical systems?'
@@ -572,7 +731,8 @@ wwv_flow_imp_page.create_page_item(
 ,p_read_only_when=>'ptw_pro.ptw_lv_is_contract_support(V(''APP_USER'')) = ''Y'''
 ,p_read_only_when2=>'PLSQL'
 ,p_read_only_when_type=>'EXPRESSION'
-,p_field_template=>1609121967514267634
+,p_field_template=>1609122147107268652
+,p_item_css_classes=>'cm-binary-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
@@ -590,7 +750,8 @@ wwv_flow_imp_page.create_page_item(
 ,p_read_only_when=>'ptw_pro.ptw_lv_is_contract_support(V(''APP_USER'')) = ''Y'''
 ,p_read_only_when2=>'PLSQL'
 ,p_read_only_when_type=>'EXPRESSION'
-,p_field_template=>1609121967514267634
+,p_field_template=>1609122147107268652
+,p_item_css_classes=>'cm-binary-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
@@ -633,6 +794,22 @@ wwv_flow_imp_page.create_page_validation(
 ,p_validation_type=>'ITEM_NOT_NULL'
 ,p_error_message=>'Please indicate if the client has granted permission.'
 ,p_associated_item=>wwv_flow_imp.id(26943471028347705)
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+);
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(45757125497782523)
+,p_validation_name=>'Client permission validation'
+,p_validation_sequence=>40
+,p_validation=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'RETURN (',
+'    :P2_AFFECTS_IT_SYSTEMS IS NOT NULL',
+'    AND :P2_CLIENT_PERMISSION_GRANTED IS NOT NULL',
+'    );'))
+,p_validation2=>'PLSQL'
+,p_validation_type=>'FUNC_BODY_RETURNING_BOOLEAN'
+,p_error_message=>'Both the mandatory Client Permission questions must be answered'
+,p_validation_condition=>'NEXT_STEP'
+,p_validation_condition_type=>'REQUEST_EQUALS_CONDITION'
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_da_event(
@@ -893,6 +1070,7 @@ wwv_flow_imp_page.create_page_process(
 'DECLARE',
 '    v_is_engineer NUMBER;',
 '    v_is_owner    NUMBER;',
+'    v_is_auth     NUMBER;',
 'BEGIN',
 '    SELECT COUNT(*) INTO v_is_engineer',
 '    FROM   ptw_pro.ptw_lv_user_roles_v          -- changed',
@@ -908,6 +1086,14 @@ wwv_flow_imp_page.create_page_process(
 '        AND    UPPER(created_by) = UPPER(V(''APP_USER''));',
 '',
 '        IF v_is_owner = 0 THEN',
+'',
+'          SELECT COUNT(*) INTO v_is_auth ',
+'          FROM   ptw_pro.ptw_lv_permits',
+'          WHERE  permit_id = :P2_PERMIT_ID',
+'          AND    NVL(UPPER(auth_person_name),''XXX'') = UPPER(V(''APP_USER''));  -- check if the engineer is the auth_person',
+'',
+'          IF v_is_auth = 0 THEN',
+'',
 '            apex_error.add_error(',
 '                p_message          => ''Access denied. You can only edit permits you have created.'',',
 '                p_display_location => apex_error.c_inline_in_notification',
@@ -915,6 +1101,8 @@ wwv_flow_imp_page.create_page_process(
 '            apex_util.redirect_url(',
 '                apex_page.get_url(p_page => 1)',
 '            );',
+'          END IF;',
+'',
 '        END IF;',
 '',
 '    END IF;',

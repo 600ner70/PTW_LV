@@ -80,7 +80,147 @@ unistr('        statusIcon.innerHTML = ''\26A0'';'),
 '                apex.message.showErrors([{type:''error'',message:''Offline save error: ''+err.message}]);',
 '            });',
 '    }, true);',
-'}());'))
+'}());',
+'',
+'(function () {',
+'',
+'    var CM_ITEMS = [',
+'        ''P3_CM_01'',''P3_CM_02'',''P3_CM_03'',''P3_CM_04'',',
+'        ''P3_CM_05'',''P3_CM_06'',''P3_CM_07'',''P3_CM_08'',',
+'        ''P3_CM_09'',''P3_CM_10'',''P3_CM_11'',''P3_CM_12'',',
+'        ''P3_CM_13'',''P3_CM_14'',''P3_CM_15'',''P3_CM_16''',
+'    ];',
+'',
+'    var PPE_ITEMS = [',
+'        ''P3_PPE_SAFETY_HELMET'',',
+'        ''P3_PPE_ARC_FLASH'',',
+'        ''P3_PPE_SAFETY_FOOTWEAR'',',
+'        ''P3_PPE_HI_VIS'',',
+'        ''P3_PPE_SAFETY_GOGGLES'',',
+'        ''P3_PPE_INSULATING_GLOVES'',',
+'        ''P3_PPE_FALL_RESTRAINT'',',
+'        ''P3_PPE_FALL_ARREST'',',
+'        ''P3_PPE_EAR_DEFENDERS'',',
+'        ''P3_PPE_SAFETY_GLOVES''',
+'    ];',
+'',
+'    var BADGES = [',
+unistr('        { val: ''Y'',  cls: ''cm-badge-yes'', label: ''\2713'' },'),
+unistr('        { val: ''N'',  cls: ''cm-badge-no'',  label: ''\2717'' },'),
+'        { val: ''NA'', cls: ''cm-badge-na'',  label: ''N/A'' }',
+'    ];',
+'',
+'    var isReadOnly = (apex.item(''P3_WORKFLOW_STATUS'').getValue() !== ''IN_PROGRESS'');',
+'',
+'    // -------------------------------------------------------',
+'    // CM TRISTATE BADGES',
+'    // -------------------------------------------------------',
+'    CM_ITEMS.forEach(function (itemName) {',
+'',
+'        var $fc = $(''#'' + itemName).closest(''.t-Form-fieldContainer'');',
+'        if ($fc.length === 0) {',
+'            $fc = $(''[id="'' + itemName + ''_LABEL"]'').closest(''.t-Form-fieldContainer'');',
+'        }',
+'        if ($fc.length === 0) return;',
+'',
+'        $fc.find(''.cm-badge-row'').remove();',
+'',
+'        var currentVal = '''';',
+'        if (!isReadOnly) {',
+'            currentVal = $(''input[name="'' + itemName + ''"]:checked'').val() || '''';',
+'        } else {',
+'            currentVal = apex.item(itemName).getValue() || '''';',
+'        }',
+'',
+'        var $row = $(''<div class="cm-badge-row"></div>'').attr(''data-item'', itemName);',
+'',
+'        BADGES.forEach(function (b) {',
+'            $(''<span></span>'')',
+'                .addClass(''cm-badge '' + b.cls)',
+'                .toggleClass(''cm-active'', currentVal === b.val)',
+'                .toggleClass(''cm-badge-readonly'', isReadOnly)',
+'                .attr(''data-value'', b.val)',
+'                .text(b.label)',
+'                .appendTo($row);',
+'        });',
+'',
+'        $fc.find(''.t-Form-inputContainer'').append($row);',
+'    });',
+'',
+'    // Hide native CM radio grid',
+'    $(''.cm-tristate-item .apex-item-grid'').hide();',
+'',
+unistr('    // CM delegated click \2014 edit mode only'),
+'    $(document).off(''click.cmtristate'').on(''click.cmtristate'', ''.cm-badge:not(.cm-badge-readonly)'', function () {',
+'        var $badge   = $(this);',
+'        var $row     = $badge.closest(''.cm-badge-row'');',
+'        var itemName = $row.attr(''data-item'');',
+'        var val      = $badge.attr(''data-value'');',
+'',
+'        $(''input[name="'' + itemName + ''"][value="'' + val + ''"]'')',
+'            .prop(''checked'', true).trigger(''change'');',
+'',
+'        $row.find(''.cm-badge'').removeClass(''cm-active'');',
+'        $badge.addClass(''cm-active'');',
+'    });',
+'',
+'    // -------------------------------------------------------',
+'    // PPE SINGLE TICK BADGES',
+'    // -------------------------------------------------------',
+'    PPE_ITEMS.forEach(function (itemName) {',
+'',
+'        var $fc = $(''#'' + itemName).closest(''.t-Form-fieldContainer'');',
+'        if ($fc.length === 0) return;',
+'',
+'        $fc.find(''.ppe-badge-row'').remove();',
+'',
+'        var currentVal = apex.item(itemName).getValue() || '''';',
+'        var isChecked  = (currentVal.indexOf(''Y'') > -1);',
+'',
+'        var $badge = $(''<span></span>'')',
+'            .addClass(''ppe-badge'')',
+'            .toggleClass(''ppe-active'', isChecked)',
+'            .toggleClass(''ppe-readonly'', isReadOnly)',
+'            .attr(''data-item'', itemName)',
+unistr('            .text(''\2713'');'),
+'',
+'        var $row = $(''<div class="ppe-badge-row"></div>'').append($badge);',
+'        $fc.find(''.t-Form-inputContainer'').append($row);',
+'    });',
+'',
+'    // Hide native PPE checkboxes',
+'    $(''.cm-tick-item .apex-item-checkbox'').hide();',
+'',
+unistr('    // PPE delegated click \2014 edit mode only'),
+'    $(document).off(''click.ppetick'').on(''click.ppetick'', ''.ppe-badge:not(.ppe-readonly)'', function () {',
+'        var $badge     = $(this);',
+'        var itemName   = $badge.attr(''data-item'');',
+'        var isNowActive = !$badge.hasClass(''ppe-active'');',
+'',
+'        $(''input[name="'' + itemName + ''"]'').prop(''checked'', isNowActive).trigger(''change'');',
+'        apex.item(itemName).setValue(isNowActive ? ''Y'' : '''');',
+'',
+'        $badge.toggleClass(''ppe-active'', isNowActive);',
+'    });',
+'',
+'}());',
+'',
+'function initCMChecklist() {',
+'    var $items = $(''.cm-tristate-item'');',
+'',
+'    if ($items.length === 0) return; // not on a CM page',
+'',
+'    // Append red asterisk to each item''s label',
+'    $items.each(function() {',
+'        $(this).find(''.t-Form-labelContainer label, label'').first()',
+'               .append(''<span class="cm-required-star" aria-hidden="true"> *</span>'');',
+'    });',
+'}',
+'',
+'apex.jQuery(document).on(''apexreadyend'', function() {',
+'    initCMChecklist();',
+'});',
+''))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '.ptw-workflow-progress {',
 '    display: flex;',
@@ -234,65 +374,211 @@ unistr('        statusIcon.innerHTML = ''\26A0'';'),
 '    overflow-wrap: break-word;',
 '}',
 '',
-'/* Green-tick checkbox for CM items */',
+'/* ==========================================================',
+unistr('   CM TRISTATE BADGES \2014 Y/N/NA'),
+'   JS-driven: JS hides native radio options and injects badges.',
+'   CSS only provides badge styles + layout.',
+'   ========================================================== */',
 '',
-'/* Hide native input visually but keep it interactive.',
-'   opacity:0 + absolute positioning makes it invisible without breaking',
-'   label-click toggling (display:none would break clicking).',
-'   The double-tick issue is now handled by label::after below. */',
-'.cm-tick-item .apex-item-option input {',
-'    position: absolute;',
-'    opacity: 0;',
-'    width: 1px;',
-'    height: 1px;',
-'    margin: 0;',
-'}',
-'',
-'/* label::before shows N/A (unchecked) or green tick (checked).',
-'   font-size: 0 hides the LOV "Yes" text; ::before sets its own font-size.',
-'   label::after suppressed - APEX Universal Theme uses it for its own tick',
-'   glyph which was appearing as a second small tick beneath our custom one. */',
-'.cm-tick-item .apex-item-option label {',
-'    display: inline-flex;',
-'    align-items: center;',
-'    cursor: pointer;',
-'    font-size: 0;',
-'}',
-'',
-'.cm-tick-item .apex-item-option label::after {',
+'.cm-tristate-item .apex-item-grid {',
 '    display: none !important;',
+'    pointer-events: none !important;',
 '}',
 '',
-'.cm-tick-item .apex-item-option label::before {',
-'    content: ''N/A'';',
+'/* Badge row injected by JS */',
+'.cm-badge-row {',
+'    display: flex;',
+'    flex-direction: row;',
+'    gap: 6px;',
+'    align-items: center;',
+'    margin-top: 4px;',
+'}',
+'',
+'/* Individual badge button */',
+'.cm-badge {',
 '    display: inline-flex;',
 '    align-items: center;',
 '    justify-content: center;',
 '    width: 52px;',
 '    height: 34px;',
-'    border: 2px solid #ced4da;',
 '    border-radius: 8px;',
+'    border: 2px solid #ced4da;',
 '    background: #f0f0f0;',
-'    color: #888;',
-'    font-size: 0.78rem;',
+'    color: #aaa;',
 '    font-weight: 700;',
-'    letter-spacing: 0.05em;',
-'    transition: all 0.18s;',
-'    flex-shrink: 0;',
+'    cursor: pointer;',
+'    font-size: 1.3rem;',
+'    transition: background 0.15s, border-color 0.15s, color 0.15s;',
+'    user-select: none;',
+'    line-height: 1;',
 '}',
 '',
-'.cm-tick-item .apex-item-option input:checked + label::before {',
-unistr('    content: ''\2713'';'),
+'.cm-badge:hover {',
+'    border-color: #999;',
+'    background: #e2e6ea;',
+'}',
+'',
+'/* Selected states */',
+'.cm-badge.cm-badge-yes.cm-active {',
 '    background: #28a745;',
 '    border-color: #1e7e34;',
 '    color: #fff;',
-'    font-size: 1.4rem;',
+'}',
+'.cm-badge.cm-badge-no.cm-active {',
+'    background: #dc3545;',
+'    border-color: #a71d2a;',
+'    color: #fff;',
+'}',
+'.cm-badge.cm-badge-na.cm-active {',
+'    background: #0d6efd;',
+'    border-color: #0a58ca;',
+'    color: #fff;',
+'    font-size: 0.72rem;',
+'    letter-spacing: 0.05em;',
 '}',
 '',
-'/* Question text wrapping */',
-'.cm-tick-item .t-Form-labelContainer label {',
+'/* Read-only: no pointer, no hover */',
+'.cm-badge.cm-badge-readonly {',
+'    cursor: default;',
+'}',
+'.cm-badge.cm-badge-readonly:hover {',
+'    background: #f0f0f0;',
+'    border-color: #ced4da;',
+'    color: #aaa;',
+'}',
+'.cm-badge.cm-badge-yes.cm-active.cm-badge-readonly:hover {',
+'    background: #28a745;',
+'    border-color: #1e7e34;',
+'    color: #fff;',
+'}',
+'.cm-badge.cm-badge-no.cm-active.cm-badge-readonly:hover {',
+'    background: #dc3545;',
+'    border-color: #a71d2a;',
+'    color: #fff;',
+'}',
+'.cm-badge.cm-badge-na.cm-active.cm-badge-readonly:hover {',
+'    background: #0d6efd;',
+'    border-color: #0a58ca;',
+'    color: #fff;',
+'}',
+'',
+'/* Read-only null badge */',
+'.cm-badge.cm-badge-null {',
+'    font-size: 1rem;',
+'    color: #ccc;',
+'}',
+'',
+'/* Question label text wrap (unchanged) */',
+'.cm-tristate-item .t-Form-labelContainer label {',
 '    white-space: normal !important;',
 '    word-wrap: break-word;',
+'}',
+'',
+'/* --- READ-ONLY MODE ---',
+'   APEX replaces the radio group with a <span class="display-only">',
+'   inside the field container. JS (see DA below) replaces that span',
+'   with a .cm-ro-badge. These are the badge styles. */',
+'',
+'.cm-ro-badge {',
+'    display: inline-flex;',
+'    align-items: center;',
+'    justify-content: center;',
+'    width: 52px;',
+'    height: 34px;',
+'    border-radius: 8px;',
+'    font-weight: 700;',
+'    font-size: 0.78rem;',
+'    border: 2px solid transparent;',
+'}',
+'.cm-ro-badge.cm-ro-yes {',
+'    background: #28a745;',
+'    border-color: #1e7e34;',
+'    color: #fff;',
+'    font-size: 1.4rem;     /* bigger tick */',
+'}',
+'.cm-ro-badge.cm-ro-no {',
+'    background: #dc3545;',
+'    border-color: #a71d2a;',
+'    color: #fff;',
+'    font-size: 1.3rem;     /* bigger cross */',
+'}',
+'.cm-ro-badge.cm-ro-na {',
+'    background: #0d6efd;',
+'    border-color: #0a58ca;',
+'    color: #fff;',
+'    font-size: 0.72rem;',
+'    letter-spacing: 0.05em;',
+'}',
+'.cm-ro-badge.cm-ro-null {',
+'    background: #f0f0f0;',
+'    border-color: #ced4da;',
+'    color: #aaa;',
+'    font-size: 1.1rem;',
+'}',
+'',
+'/* ==========================================================',
+unistr('   PPE TICK BADGE \2014 single green tick checkbox'),
+'   ========================================================== */',
+'',
+'.cm-tick-item .apex-item-checkbox {',
+'    display: none !important;',
+'}',
+'',
+'.ppe-badge-row {',
+'    display: flex;',
+'    margin-top: 4px;',
+'}',
+'',
+'.ppe-badge {',
+'    display: inline-flex;',
+'    align-items: center;',
+'    justify-content: center;',
+'    width: 52px;',
+'    height: 34px;',
+'    border-radius: 8px;',
+'    border: 2px solid #ced4da;',
+'    background: #f0f0f0;',
+'    color: #aaa;',
+'    font-size: 1.4rem;',
+'    font-weight: 700;',
+'    cursor: pointer;',
+'    line-height: 1;',
+'    transition: background 0.15s, border-color 0.15s, color 0.15s;',
+'    user-select: none;',
+'}',
+'',
+'.ppe-badge:hover {',
+'    border-color: #999;',
+'    background: #e2e6ea;',
+'}',
+'',
+'.ppe-badge.ppe-active {',
+'    background: #28a745;',
+'    border-color: #1e7e34;',
+'    color: #fff;',
+'}',
+'',
+'.ppe-badge.ppe-readonly {',
+'    cursor: default;',
+'}',
+'',
+'.ppe-badge.ppe-readonly:hover {',
+'    background: #f0f0f0;',
+'    border-color: #ced4da;',
+'    color: #aaa;',
+'}',
+'',
+'.ppe-badge.ppe-active.ppe-readonly:hover {',
+'    background: #28a745;',
+'    border-color: #1e7e34;',
+'    color: #fff;',
+'}',
+'',
+unistr('/* \2500\2500 Required asterisk on each item \2500\2500 */'),
+'.cm-required-star {',
+'    color: #c0392b;',
+'    font-weight: 700;',
+'    margin-left: 2px;',
 '}',
 ''))
 ,p_page_template_options=>'#DEFAULT#'
@@ -518,17 +804,17 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>10
 ,p_item_plug_id=>wwv_flow_imp.id(26945876367347729)
 ,p_prompt=>'1. All workers under this PTW have completed and signed off on a site induction?'
-,p_display_as=>'NATIVE_CHECKBOX'
-,p_lov=>'STATIC:Yes;Y'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_named_lov=>'CONTROL_MEASURES_LOV'
+,p_lov=>'.'||wwv_flow_imp.id(45556223896387254)||'.'
 ,p_field_template=>3031561666792084173
-,p_item_css_classes=>'cm-tick-item'
+,p_item_css_classes=>'cm-tristate-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_help_text=>'All persons working under this PTW have received and signed, as understood, a suitable site induction?'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'number_of_columns', '1')).to_clob
-,p_multi_value_type=>'SEPARATED'
-,p_multi_value_separator=>':'
+  'number_of_columns', '3',
+  'page_action_on_selection', 'NONE')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(26946047126347731)
@@ -536,18 +822,18 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>20
 ,p_item_plug_id=>wwv_flow_imp.id(26945876367347729)
 ,p_prompt=>'2. A reviewed risk assessment and method statement, including emergency evacuation, is in place and understood by all workers.?'
-,p_display_as=>'NATIVE_CHECKBOX'
-,p_lov=>'STATIC:Yes;Y'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_named_lov=>'CONTROL_MEASURES_LOV'
+,p_lov=>'.'||wwv_flow_imp.id(45556223896387254)||'.'
 ,p_field_template=>3031561666792084173
-,p_item_css_classes=>'cm-tick-item'
+,p_item_css_classes=>'cm-tristate-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_help_text=>'A suitable and sufficient written risk assessment and method statement for these works, which has already been understood by all persons working under this permit is in place and has been reviewed at the point of works by the person controlling the w'
 ||'orks. This must include the provision of an emergency evacuation plan.'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'number_of_columns', '1')).to_clob
-,p_multi_value_type=>'SEPARATED'
-,p_multi_value_separator=>':'
+  'number_of_columns', '3',
+  'page_action_on_selection', 'NONE')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(26946143877347732)
@@ -555,16 +841,16 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>30
 ,p_item_plug_id=>wwv_flow_imp.id(26945876367347729)
 ,p_prompt=>'3. The competence of the people working under the permit has been checked and is deemed to be adequate for these works.'
-,p_display_as=>'NATIVE_CHECKBOX'
-,p_lov=>'STATIC:Yes;Y'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_named_lov=>'CONTROL_MEASURES_LOV'
+,p_lov=>'.'||wwv_flow_imp.id(45556223896387254)||'.'
 ,p_field_template=>3031561666792084173
-,p_item_css_classes=>'cm-tick-item'
+,p_item_css_classes=>'cm-tristate-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'number_of_columns', '1')).to_clob
-,p_multi_value_type=>'SEPARATED'
-,p_multi_value_separator=>':'
+  'number_of_columns', '3',
+  'page_action_on_selection', 'NONE')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(26946223267347733)
@@ -572,16 +858,16 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>40
 ,p_item_plug_id=>wwv_flow_imp.id(26945876367347729)
 ,p_prompt=>'4. The person in charge of the works must be made aware of all hazards within the vicinity of the place of works.'
-,p_display_as=>'NATIVE_CHECKBOX'
-,p_lov=>'STATIC:Yes;Y'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_named_lov=>'CONTROL_MEASURES_LOV'
+,p_lov=>'.'||wwv_flow_imp.id(45556223896387254)||'.'
 ,p_field_template=>3031561666792084173
-,p_item_css_classes=>'cm-tick-item'
+,p_item_css_classes=>'cm-tristate-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'number_of_columns', '1')).to_clob
-,p_multi_value_type=>'SEPARATED'
-,p_multi_value_separator=>':'
+  'number_of_columns', '3',
+  'page_action_on_selection', 'NONE')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(26946306544347734)
@@ -589,16 +875,16 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>50
 ,p_item_plug_id=>wwv_flow_imp.id(26945876367347729)
 ,p_prompt=>'5. Where the use of PPE is identified as a control measure within the risk assessment, this equipment is in good order.'
-,p_display_as=>'NATIVE_CHECKBOX'
-,p_lov=>'STATIC:Yes;Y'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_named_lov=>'CONTROL_MEASURES_LOV'
+,p_lov=>'.'||wwv_flow_imp.id(45556223896387254)||'.'
 ,p_field_template=>3031561666792084173
-,p_item_css_classes=>'cm-tick-item'
+,p_item_css_classes=>'cm-tristate-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'number_of_columns', '1')).to_clob
-,p_multi_value_type=>'SEPARATED'
-,p_multi_value_separator=>':'
+  'number_of_columns', '3',
+  'page_action_on_selection', 'NONE')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(26946460935347735)
@@ -606,16 +892,16 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>60
 ,p_item_plug_id=>wwv_flow_imp.id(26945876367347729)
 ,p_prompt=>'6. Confirm that all sources of supply have been isolated, locked off and caution signs fitted, list details below.'
-,p_display_as=>'NATIVE_CHECKBOX'
-,p_lov=>'STATIC:Yes;Y'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_named_lov=>'CONTROL_MEASURES_LOV'
+,p_lov=>'.'||wwv_flow_imp.id(45556223896387254)||'.'
 ,p_field_template=>3031561666792084173
-,p_item_css_classes=>'cm-tick-item'
+,p_item_css_classes=>'cm-tristate-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'number_of_columns', '1')).to_clob
-,p_multi_value_type=>'SEPARATED'
-,p_multi_value_separator=>':'
+  'number_of_columns', '3',
+  'page_action_on_selection', 'NONE')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(26946580896347736)
@@ -623,17 +909,17 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>70
 ,p_item_plug_id=>wwv_flow_imp.id(26945876367347729)
 ,p_prompt=>'7. Confirm all isolated supplies are proven or confirmed dead before work starts?'
-,p_display_as=>'NATIVE_CHECKBOX'
-,p_lov=>'STATIC:Yes;Y'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_named_lov=>'CONTROL_MEASURES_LOV'
+,p_lov=>'.'||wwv_flow_imp.id(45556223896387254)||'.'
 ,p_field_template=>3031561666792084173
-,p_item_css_classes=>'cm-tick-item'
+,p_item_css_classes=>'cm-tristate-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_help_text=>'Confirm that all isolated sources of supply have been proved dead using an approved tester and proving unit, where this is not possible the AP must confirm dead at the point of work after the issue of this Permit.'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'number_of_columns', '1')).to_clob
-,p_multi_value_type=>'SEPARATED'
-,p_multi_value_separator=>':'
+  'number_of_columns', '3',
+  'page_action_on_selection', 'NONE')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(26946695226347737)
@@ -641,16 +927,16 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>80
 ,p_item_plug_id=>wwv_flow_imp.id(26945876367347729)
 ,p_prompt=>'8. Confirm all systems to be worked on have been checked to ensure that any stored energy has been dissipated.'
-,p_display_as=>'NATIVE_CHECKBOX'
-,p_lov=>'STATIC:Yes;Y'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_named_lov=>'CONTROL_MEASURES_LOV'
+,p_lov=>'.'||wwv_flow_imp.id(45556223896387254)||'.'
 ,p_field_template=>3031561666792084173
-,p_item_css_classes=>'cm-tick-item'
+,p_item_css_classes=>'cm-tristate-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'number_of_columns', '1')).to_clob
-,p_multi_value_type=>'SEPARATED'
-,p_multi_value_separator=>':'
+  'number_of_columns', '3',
+  'page_action_on_selection', 'NONE')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(26946751805347738)
@@ -658,17 +944,17 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>90
 ,p_item_plug_id=>wwv_flow_imp.id(26945876367347729)
 ,p_prompt=>'9. Confirm any live parts are insulated and no exposed live components remain?'
-,p_display_as=>'NATIVE_CHECKBOX'
-,p_lov=>'STATIC:Yes;Y'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_named_lov=>'CONTROL_MEASURES_LOV'
+,p_lov=>'.'||wwv_flow_imp.id(45556223896387254)||'.'
 ,p_field_template=>3031561666792084173
-,p_item_css_classes=>'cm-tick-item'
+,p_item_css_classes=>'cm-tristate-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_help_text=>'Confirm that if any section of the equipment is still live it is covered in a suitable insulating material and that there are no exposed live parts.'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'number_of_columns', '1')).to_clob
-,p_multi_value_type=>'SEPARATED'
-,p_multi_value_separator=>':'
+  'number_of_columns', '3',
+  'page_action_on_selection', 'NONE')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(26946827031347739)
@@ -676,16 +962,16 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>100
 ,p_item_plug_id=>wwv_flow_imp.id(26945876367347729)
 ,p_prompt=>'10. Confirm that sufficient measures are in place to ensure that no live equipment is worked on.'
-,p_display_as=>'NATIVE_CHECKBOX'
-,p_lov=>'STATIC:Yes;Y'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_named_lov=>'CONTROL_MEASURES_LOV'
+,p_lov=>'.'||wwv_flow_imp.id(45556223896387254)||'.'
 ,p_field_template=>3031561666792084173
-,p_item_css_classes=>'cm-tick-item'
+,p_item_css_classes=>'cm-tristate-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'number_of_columns', '1')).to_clob
-,p_multi_value_type=>'SEPARATED'
-,p_multi_value_separator=>':'
+  'number_of_columns', '3',
+  'page_action_on_selection', 'NONE')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(26946941194347740)
@@ -693,16 +979,16 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>110
 ,p_item_plug_id=>wwv_flow_imp.id(26945876367347729)
 ,p_prompt=>'11. Confirm there are first aid facilities available.'
-,p_display_as=>'NATIVE_CHECKBOX'
-,p_lov=>'STATIC:Yes;Y'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_named_lov=>'CONTROL_MEASURES_LOV'
+,p_lov=>'.'||wwv_flow_imp.id(45556223896387254)||'.'
 ,p_field_template=>3031561666792084173
-,p_item_css_classes=>'cm-tick-item'
+,p_item_css_classes=>'cm-tristate-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'number_of_columns', '1')).to_clob
-,p_multi_value_type=>'SEPARATED'
-,p_multi_value_separator=>':'
+  'number_of_columns', '3',
+  'page_action_on_selection', 'NONE')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(26947073709347741)
@@ -710,16 +996,16 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>120
 ,p_item_plug_id=>wwv_flow_imp.id(26945876367347729)
 ,p_prompt=>'12. Confirm that suitable barriers have been used to clearly identify the working area.'
-,p_display_as=>'NATIVE_CHECKBOX'
-,p_lov=>'STATIC:Yes;Y'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_named_lov=>'CONTROL_MEASURES_LOV'
+,p_lov=>'.'||wwv_flow_imp.id(45556223896387254)||'.'
 ,p_field_template=>3031561666792084173
-,p_item_css_classes=>'cm-tick-item'
+,p_item_css_classes=>'cm-tristate-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'number_of_columns', '1')).to_clob
-,p_multi_value_type=>'SEPARATED'
-,p_multi_value_separator=>':'
+  'number_of_columns', '3',
+  'page_action_on_selection', 'NONE')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(26947130506347742)
@@ -727,16 +1013,16 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>130
 ,p_item_plug_id=>wwv_flow_imp.id(26945876367347729)
 ,p_prompt=>'13. Confirm there is unrestricted access and egress to the working area.'
-,p_display_as=>'NATIVE_CHECKBOX'
-,p_lov=>'STATIC:Yes;Y'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_named_lov=>'CONTROL_MEASURES_LOV'
+,p_lov=>'.'||wwv_flow_imp.id(45556223896387254)||'.'
 ,p_field_template=>3031561666792084173
-,p_item_css_classes=>'cm-tick-item'
+,p_item_css_classes=>'cm-tristate-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'number_of_columns', '1')).to_clob
-,p_multi_value_type=>'SEPARATED'
-,p_multi_value_separator=>':'
+  'number_of_columns', '3',
+  'page_action_on_selection', 'NONE')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(26947267129347743)
@@ -744,16 +1030,16 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>140
 ,p_item_plug_id=>wwv_flow_imp.id(26945876367347729)
 ,p_prompt=>'14. Confirm there is suitable insulated matting available.'
-,p_display_as=>'NATIVE_CHECKBOX'
-,p_lov=>'STATIC:Yes;Y'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_named_lov=>'CONTROL_MEASURES_LOV'
+,p_lov=>'.'||wwv_flow_imp.id(45556223896387254)||'.'
 ,p_field_template=>3031561666792084173
-,p_item_css_classes=>'cm-tick-item'
+,p_item_css_classes=>'cm-tristate-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'number_of_columns', '1')).to_clob
-,p_multi_value_type=>'SEPARATED'
-,p_multi_value_separator=>':'
+  'number_of_columns', '3',
+  'page_action_on_selection', 'NONE')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(26947364989347744)
@@ -761,16 +1047,16 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>150
 ,p_item_plug_id=>wwv_flow_imp.id(26945876367347729)
 ,p_prompt=>'15. Confirm that the calibration of the test equipment is current.'
-,p_display_as=>'NATIVE_CHECKBOX'
-,p_lov=>'STATIC:Yes;Y'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_named_lov=>'CONTROL_MEASURES_LOV'
+,p_lov=>'.'||wwv_flow_imp.id(45556223896387254)||'.'
 ,p_field_template=>3031561666792084173
-,p_item_css_classes=>'cm-tick-item'
+,p_item_css_classes=>'cm-tristate-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'number_of_columns', '1')).to_clob
-,p_multi_value_type=>'SEPARATED'
-,p_multi_value_separator=>':'
+  'number_of_columns', '3',
+  'page_action_on_selection', 'NONE')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(26947471506347745)
@@ -778,16 +1064,16 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>160
 ,p_item_plug_id=>wwv_flow_imp.id(26945876367347729)
 ,p_prompt=>'16. Danger signs have been applied to adjacent live equipment.'
-,p_display_as=>'NATIVE_CHECKBOX'
-,p_lov=>'STATIC:Yes;Y'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_named_lov=>'CONTROL_MEASURES_LOV'
+,p_lov=>'.'||wwv_flow_imp.id(45556223896387254)||'.'
 ,p_field_template=>3031561666792084173
-,p_item_css_classes=>'cm-tick-item'
+,p_item_css_classes=>'cm-tristate-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'number_of_columns', '1')).to_clob
-,p_multi_value_type=>'SEPARATED'
-,p_multi_value_separator=>':'
+  'number_of_columns', '3',
+  'page_action_on_selection', 'NONE')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(26947670039347747)
@@ -989,6 +1275,29 @@ wwv_flow_imp_page.create_page_validation(
 ,p_validation=>'P3_PERMIT_ID'
 ,p_validation_type=>'ITEM_NOT_NULL'
 ,p_error_message=>'Permit ID is required. Please start from Step 1.'
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+);
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(45757058192782522)
+,p_validation_name=>'All Control Measures Must Be Confirmed'
+,p_validation_sequence=>20
+,p_validation=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'RETURN (',
+'    :P3_CM_01 IS NOT NULL AND :P3_CM_02 IS NOT NULL AND',
+'    :P3_CM_03 IS NOT NULL AND :P3_CM_04 IS NOT NULL AND',
+'    :P3_CM_05 IS NOT NULL AND :P3_CM_06 IS NOT NULL AND',
+'    :P3_CM_07 IS NOT NULL AND :P3_CM_08 IS NOT NULL AND',
+'    :P3_CM_09 IS NOT NULL AND :P3_CM_10 IS NOT NULL AND',
+'    :P3_CM_11 IS NOT NULL AND :P3_CM_12 IS NOT NULL AND',
+'    :P3_CM_13 IS NOT NULL AND :P3_CM_14 IS NOT NULL AND',
+'    :P3_CM_15 IS NOT NULL AND :P3_CM_16 IS NOT NULL',
+');'))
+,p_validation2=>'PLSQL'
+,p_validation_type=>'FUNC_BODY_RETURNING_BOOLEAN'
+,p_error_message=>'All 16 control measures must be confirmed before proceeding to the next step.'
+,p_always_execute=>'Y'
+,p_validation_condition=>'NEXT_STEP'
+,p_validation_condition_type=>'REQUEST_EQUALS_CONDITION'
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_da_event(
@@ -1255,6 +1564,7 @@ wwv_flow_imp_page.create_page_process(
 'DECLARE',
 '    v_is_engineer NUMBER;',
 '    v_is_owner    NUMBER;',
+'    v_is_auth     NUMBER;',
 'BEGIN',
 '    SELECT COUNT(*) INTO v_is_engineer',
 '    FROM   ptw_pro.ptw_lv_user_roles_v          -- changed',
@@ -1270,6 +1580,13 @@ wwv_flow_imp_page.create_page_process(
 '        AND    UPPER(created_by) = UPPER(V(''APP_USER''));',
 '',
 '        IF v_is_owner = 0 THEN',
+'',
+'          SELECT COUNT(*) INTO v_is_auth ',
+'          FROM   ptw_pro.ptw_lv_permits',
+'          WHERE  permit_id = :P3_PERMIT_ID',
+'          AND    NVL(UPPER(auth_person_name),''XXX'') = UPPER(V(''APP_USER''));  -- check if the engineer is the auth_person',
+'',
+'          IF v_is_auth = 0 THEN',
 '            apex_error.add_error(',
 '                p_message          => ''Access denied. You can only edit permits you have created.'',',
 '                p_display_location => apex_error.c_inline_in_notification',
@@ -1277,8 +1594,8 @@ wwv_flow_imp_page.create_page_process(
 '            apex_util.redirect_url(',
 '                apex_page.get_url(p_page => 1)',
 '            );',
+'          END IF;',
 '        END IF;',
-'',
 '    END IF;',
 'END;'))
 ,p_process_clob_language=>'PLSQL'
