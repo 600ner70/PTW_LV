@@ -608,7 +608,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_read_only_when=>'ptw_pro.ptw_lv_is_contract_support(V(''APP_USER'')) = ''Y'''
 ,p_read_only_when2=>'PLSQL'
 ,p_read_only_when_type=>'EXPRESSION'
-,p_field_template=>1609121967514267634
+,p_field_template=>1609122147107268652
 ,p_item_template_options=>'#DEFAULT#'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'auto_height', 'N',
@@ -619,6 +619,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(25231084779353150)
 ,p_name=>'P2_WORK_DESCRIPTION'
+,p_is_required=>true
 ,p_item_sequence=>20
 ,p_item_plug_id=>wwv_flow_imp.id(25230894903353148)
 ,p_prompt=>'Description of work activity'
@@ -630,7 +631,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_read_only_when=>'ptw_pro.ptw_lv_is_contract_support(V(''APP_USER'')) = ''Y'''
 ,p_read_only_when2=>'PLSQL'
 ,p_read_only_when_type=>'EXPRESSION'
-,p_field_template=>1609121967514267634
+,p_field_template=>1609122147107268652
 ,p_item_template_options=>'#DEFAULT#'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'auto_height', 'N',
@@ -712,7 +713,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_read_only_when=>'ptw_pro.ptw_lv_is_contract_support(V(''APP_USER'')) = ''Y'''
 ,p_read_only_when2=>'PLSQL'
 ,p_read_only_when_type=>'EXPRESSION'
-,p_field_template=>1609122147107268652
+,p_field_template=>1609121967514267634
 ,p_item_css_classes=>'cm-binary-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
@@ -731,7 +732,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_read_only_when=>'ptw_pro.ptw_lv_is_contract_support(V(''APP_USER'')) = ''Y'''
 ,p_read_only_when2=>'PLSQL'
 ,p_read_only_when_type=>'EXPRESSION'
-,p_field_template=>1609122147107268652
+,p_field_template=>1609121967514267634
 ,p_item_css_classes=>'cm-binary-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
@@ -750,7 +751,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_read_only_when=>'ptw_pro.ptw_lv_is_contract_support(V(''APP_USER'')) = ''Y'''
 ,p_read_only_when2=>'PLSQL'
 ,p_read_only_when_type=>'EXPRESSION'
-,p_field_template=>1609122147107268652
+,p_field_template=>1609121967514267634
 ,p_item_css_classes=>'cm-binary-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
@@ -950,33 +951,42 @@ wwv_flow_imp_page.create_page_process(
 '            ''Permit '' || v_permit_number || '' created successfully.'';',
 '',
 '    ELSE',
-'      IF :P2_IS_CHANGED = ''Y'' THEN',
-'        -- UPDATE EXISTING PERMIT',
+'        -- UPDATE EXISTING PERMIT (only if something has changed)',
 '        UPDATE ptw_pro.ptw_lv_permits',
-'        SET safety_programme_ref_no = :P2_SAFETY_PROGRAMME_REF_NO,',
-'            ptw_type = ''LV ISOLATION'',',
+'        SET safety_programme_ref_no     = :P2_SAFETY_PROGRAMME_REF_NO,',
+'            ptw_type                    = ''LV ISOLATION'',',
 '            isolation_diagram_serial_no = :P2_ISOLATION_DIAGRAM_SERIAL_NO,',
-'            site_details = :P2_SITE_DETAILS,',
-'            work_description = :P2_WORK_DESCRIPTION,',
-'            person_in_charge_name = :P2_PERSON_IN_CHARGE_NAME,',
-'            supervising_company = :P2_SUPERVISING_COMPANY,',
-'            other_persons_count = :P2_OTHER_PERSONS_COUNT,',
-'            client_permission_granted = :P2_CLIENT_PERMISSION_GRANTED,',
-'            affects_it_systems = :P2_AFFECTS_IT_SYSTEMS,',
-'            it_permission_granted = :P2_IT_PERMISSION_GRANTED,',
-'            site_work_latitude = :APP_LATITUDE,',
-'            site_work_longitude = :APP_LONGITUDE,',
-'            modified_by = NVL(V(''APP_USER''), USER),',
-'            modified_date = CURRENT_TIMESTAMP',
-'        WHERE permit_id = :P2_PERMIT_ID;',
+'            site_details                = :P2_SITE_DETAILS,',
+'            work_description            = :P2_WORK_DESCRIPTION,',
+'            person_in_charge_name       = :P2_PERSON_IN_CHARGE_NAME,',
+'            supervising_company         = :P2_SUPERVISING_COMPANY,',
+'            other_persons_count         = :P2_OTHER_PERSONS_COUNT,',
+'            client_permission_granted   = :P2_CLIENT_PERMISSION_GRANTED,',
+'            affects_it_systems          = :P2_AFFECTS_IT_SYSTEMS,',
+'            it_permission_granted       = :P2_IT_PERMISSION_GRANTED,',
+'            site_work_latitude          = :APP_LATITUDE,',
+'            site_work_longitude         = :APP_LONGITUDE,',
+'            modified_by                 = NVL(V(''APP_USER''), USER),',
+'            modified_date               = CURRENT_TIMESTAMP',
+'        WHERE permit_id = :P2_PERMIT_ID',
+'        AND (',
+'            NVL(safety_programme_ref_no,     ''x'') != NVL(:P2_SAFETY_PROGRAMME_REF_NO,     ''x'') OR',
+'            NVL(isolation_diagram_serial_no, ''x'') != NVL(:P2_ISOLATION_DIAGRAM_SERIAL_NO, ''x'') OR',
+'            NVL(site_details,                ''x'') != NVL(:P2_SITE_DETAILS,                ''x'') OR',
+'            NVL(work_description,            ''x'') != NVL(:P2_WORK_DESCRIPTION,            ''x'') OR',
+'            NVL(person_in_charge_name,       ''x'') != NVL(:P2_PERSON_IN_CHARGE_NAME,       ''x'') OR',
+'            NVL(supervising_company,         ''x'') != NVL(:P2_SUPERVISING_COMPANY,         ''x'') OR',
+'            NVL(TO_CHAR(other_persons_count),''x'') != NVL(TO_CHAR(:P2_OTHER_PERSONS_COUNT),''x'') OR',
+'            NVL(client_permission_granted,   ''x'') != NVL(:P2_CLIENT_PERMISSION_GRANTED,   ''x'') OR',
+'            NVL(affects_it_systems,          ''x'') != NVL(:P2_AFFECTS_IT_SYSTEMS,          ''x'') OR',
+'            NVL(it_permission_granted,       ''x'') != NVL(:P2_IT_PERMISSION_GRANTED,       ''x'')',
+'        );',
 '',
-'        IF SQL%ROWCOUNT = 0 THEN',
-'            RAISE_APPLICATION_ERROR(-20001, ''Permit not found for update.'');',
+unistr('        -- SQL%ROWCOUNT = 0 is fine here \2014 means nothing changed, not an error'),
+'        IF SQL%ROWCOUNT > 0 THEN',
+'            apex_application.g_print_success_message :=',
+'                ''Permit '' || :P2_PERMIT_NUMBER || '' updated successfully.'';',
 '        END IF;',
-'',
-'        apex_application.g_print_success_message :=',
-'            ''Permit '' || :P2_PERMIT_NUMBER || '' updated successfully.'';',
-'      END IF;',
 '    END IF;',
 '',
 '    COMMIT;',

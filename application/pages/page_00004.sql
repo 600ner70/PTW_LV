@@ -984,6 +984,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(27018457939886535)
 ,p_name=>'P4_ISO_1_EQUIPMENT'
+,p_is_required=>true
 ,p_item_sequence=>10
 ,p_item_plug_id=>wwv_flow_imp.id(27018342698886534)
 ,p_prompt=>'Equipment Isolated (Row 1)'
@@ -991,7 +992,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_cSize=>30
 ,p_cMaxlength=>200
 ,p_colspan=>5
-,p_field_template=>1609121967514267634
+,p_field_template=>1609122147107268652
 ,p_item_template_options=>'#DEFAULT#'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'disabled', 'N',
@@ -1002,6 +1003,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(27018568710886536)
 ,p_name=>'P4_ISO_1_MEANS'
+,p_is_required=>true
 ,p_item_sequence=>20
 ,p_item_plug_id=>wwv_flow_imp.id(27018342698886534)
 ,p_prompt=>'Means of Isolation (Row 1)'
@@ -1010,7 +1012,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_cMaxlength=>200
 ,p_begin_on_new_line=>'N'
 ,p_colspan=>5
-,p_field_template=>1609121967514267634
+,p_field_template=>1609122147107268652
 ,p_item_template_options=>'#DEFAULT#'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'disabled', 'N',
@@ -1021,6 +1023,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(27018618101886537)
 ,p_name=>'P4_ISO_1_LOCK_NO'
+,p_is_required=>true
 ,p_item_sequence=>30
 ,p_item_plug_id=>wwv_flow_imp.id(27018342698886534)
 ,p_prompt=>'Safety Lock No. (Row 1)'
@@ -1029,7 +1032,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_cMaxlength=>50
 ,p_begin_on_new_line=>'N'
 ,p_colspan=>2
-,p_field_template=>1609121967514267634
+,p_field_template=>1609122147107268652
 ,p_item_template_options=>'#DEFAULT#'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'disabled', 'N',
@@ -1338,7 +1341,6 @@ wwv_flow_imp_page.create_page_process(
 '        p_lock_no    IN VARCHAR2',
 '    ) IS',
 '    BEGIN',
-'        -- Only save if any data entered',
 '        IF p_equipment IS NOT NULL OR p_means IS NOT NULL OR p_lock_no IS NOT NULL THEN',
 '            IF p_iso_id IS NULL THEN',
 '                -- INSERT',
@@ -1347,14 +1349,19 @@ wwv_flow_imp_page.create_page_process(
 '                ) VALUES (',
 '                    p_permit_id, p_row_num, p_equipment, p_means, p_lock_no',
 '                ) RETURNING isolation_id INTO p_iso_id;',
-'            ELSIF :P4_IS_CHANGED = ''Y'' THEN',
-'                -- UPDATE',
+'            ELSE',
+'                -- UPDATE only if something changed',
 '                UPDATE ptw_pro.ptw_lv_equipment_isolation',
-'                SET equipment_isolated = p_equipment,',
-'                    means_of_isolation = p_means,',
-'                    safety_lock_no = p_lock_no,',
-'                    modified_date = CURRENT_TIMESTAMP',
-'                WHERE isolation_id = p_iso_id;',
+'                SET    equipment_isolated = p_equipment,',
+'                       means_of_isolation = p_means,',
+'                       safety_lock_no     = p_lock_no,',
+'                       modified_date      = CURRENT_TIMESTAMP',
+'                WHERE  isolation_id = p_iso_id',
+'                AND (',
+'                    NVL(equipment_isolated, ''x'') != NVL(p_equipment, ''x'') OR',
+'                    NVL(means_of_isolation, ''x'') != NVL(p_means,     ''x'') OR',
+'                    NVL(safety_lock_no,     ''x'') != NVL(p_lock_no,   ''x'')',
+'                );',
 '            END IF;',
 '        ELSIF p_iso_id IS NOT NULL THEN',
 '            -- All fields cleared - delete the row',
