@@ -1,4 +1,4 @@
-create or replace FUNCTION         generate_ptw_lv_pdf (
+create or replace FUNCTION ptw_pro.generate_ptw_lv_pdf (
     p_permit_id IN NUMBER
 ) RETURN CLOB AS
 
@@ -74,6 +74,11 @@ create or replace FUNCTION         generate_ptw_lv_pdf (
     FUNCTION get_cm_na(p_value VARCHAR2) RETURN VARCHAR2 IS
     BEGIN
         RETURN CASE p_value WHEN 'NA' THEN '<span class="na-mark">N/A</span>' ELSE '' END;
+    END;
+
+    FUNCTION get_cm_no(p_value VARCHAR2) RETURN VARCHAR2 IS
+    BEGIN
+        RETURN CASE p_value WHEN 'N' THEN '<span class="no-mark">&#10007;</span>' ELSE '' END;
     END;
 
     FUNCTION fmt_datetime(p_date DATE) RETURN VARCHAR2 IS
@@ -227,6 +232,7 @@ BEGIN
 
     .tick-mark { color: #155724; font-weight: bold; font-size: 11pt; }
     .na-mark   { color: #666; font-style: italic; font-size: 8pt; }
+    .no-mark   { color: #dc3545; font-weight: 700; font-size: 11pt; }
 
     .declaration-box {
         padding: 7px 12px; background: #f8f9fa;
@@ -310,7 +316,8 @@ BEGIN
                 <tr>
                     <th class="cm-number">No.</th>
                     <th>Control Measure</th>
-                    <th class="cm-tick">Tick, confirming compliance</th>
+                    <th class="cm-tick">&#10003; Yes</th>
+                    <th class="cm-tick">&#10007; No</th>
                     <th class="cm-tick">N/A</th>
                 </tr>
             </thead>
@@ -318,66 +325,82 @@ BEGIN
                 <tr><td class="cm-number">1</td>
                     <td>All persons working under this PTW have received and signed, as understood, a suitable site induction?</td>
                     <td class="cm-tick">' || get_cm_tick(v_cm.cm_01_site_induction) || '</td>
+                    <td class="cm-tick">' || get_cm_no(v_cm.cm_01_site_induction)   || '</td>
                     <td class="cm-tick">' || get_cm_na(v_cm.cm_01_site_induction)   || '</td></tr>
                 <tr><td class="cm-number">2</td>
                     <td>A suitable and sufficient written risk assessment and method statement for these works, which has already been understood by all persons working under this permit is in place and has been reviewed at the point of works by the person controlling the works. This must include the provision of an emergency evacuation plan.</td>
                     <td class="cm-tick">' || get_cm_tick(v_cm.cm_02_risk_assessment) || '</td>
+                    <td class="cm-tick">' || get_cm_no(v_cm.cm_02_risk_assessment)   || '</td>
                     <td class="cm-tick">' || get_cm_na(v_cm.cm_02_risk_assessment)   || '</td></tr>
                 <tr><td class="cm-number">3</td>
                     <td>The competence of the people working under the permit has been checked.</td>
                     <td class="cm-tick">' || get_cm_tick(v_cm.cm_03_competence_checked) || '</td>
+                    <td class="cm-tick">' || get_cm_no(v_cm.cm_03_competence_checked)   || '</td>
                     <td class="cm-tick">' || get_cm_na(v_cm.cm_03_competence_checked)   || '</td></tr>
                 <tr><td class="cm-number">4</td>
                     <td>The person in charge of the works must be made aware of all hazards.</td>
                     <td class="cm-tick">' || get_cm_tick(v_cm.cm_04_hazards_aware) || '</td>
+                    <td class="cm-tick">' || get_cm_no(v_cm.cm_04_hazards_aware)   || '</td>
                     <td class="cm-tick">' || get_cm_na(v_cm.cm_04_hazards_aware)   || '</td></tr>
                 <tr><td class="cm-number">5</td>
                     <td>Where the use of PPE is identified as a control measure, equipment is in good order.</td>
                     <td class="cm-tick">' || get_cm_tick(v_cm.cm_05_ppe_identified) || '</td>
+                    <td class="cm-tick">' || get_cm_no(v_cm.cm_05_ppe_identified)   || '</td>
                     <td class="cm-tick">' || get_cm_na(v_cm.cm_05_ppe_identified)   || '</td></tr>
                 <tr><td class="cm-number">6</td>
                     <td>All sources of supply have been isolated, locked off and caution signs fitted.</td>
                     <td class="cm-tick">' || get_cm_tick(v_cm.cm_06_sources_isolated) || '</td>
+                    <td class="cm-tick">' || get_cm_no(v_cm.cm_06_sources_isolated)   || '</td>
                     <td class="cm-tick">' || get_cm_na(v_cm.cm_06_sources_isolated)   || '</td></tr>
                 <tr><td class="cm-number">7</td>
                     <td>Confirm that all isolated sources of supply have been proved dead using an approved tester and proving unit, where this is not possible the AP must confirm dead at the point of work after the issue of this Permit.</td>
                     <td class="cm-tick">' || get_cm_tick(v_cm.cm_07_proved_dead) || '</td>
+                    <td class="cm-tick">' || get_cm_no(v_cm.cm_07_proved_dead)   || '</td>
                     <td class="cm-tick">' || get_cm_na(v_cm.cm_07_proved_dead)   || '</td></tr>
                 <tr><td class="cm-number">8</td>
                     <td>All systems checked to ensure any stored energy has been dissipated.</td>
                     <td class="cm-tick">' || get_cm_tick(v_cm.cm_08_stored_energy) || '</td>
+                    <td class="cm-tick">' || get_cm_no(v_cm.cm_08_stored_energy)   || '</td>
                     <td class="cm-tick">' || get_cm_na(v_cm.cm_08_stored_energy)   || '</td></tr>
                 <tr><td class="cm-number">9</td>
                     <td>Live equipment covered in suitable insulating material, no exposed live parts.</td>
                     <td class="cm-tick">' || get_cm_tick(v_cm.cm_09_live_covered) || '</td>
+                    <td class="cm-tick">' || get_cm_no(v_cm.cm_09_live_covered)   || '</td>
                     <td class="cm-tick">' || get_cm_na(v_cm.cm_09_live_covered)   || '</td></tr>
                 <tr><td class="cm-number">10</td>
                     <td>Sufficient measures in place to ensure no live equipment is worked on.</td>
                     <td class="cm-tick">' || get_cm_tick(v_cm.cm_10_no_live_work) || '</td>
+                    <td class="cm-tick">' || get_cm_no(v_cm.cm_10_no_live_work)   || '</td>
                     <td class="cm-tick">' || get_cm_na(v_cm.cm_10_no_live_work)   || '</td></tr>
                 <tr><td class="cm-number">11</td>
                     <td>First aid facilities available.</td>
                     <td class="cm-tick">' || get_cm_tick(v_cm.cm_11_first_aid) || '</td>
+                    <td class="cm-tick">' || get_cm_no(v_cm.cm_11_first_aid)   || '</td>
                     <td class="cm-tick">' || get_cm_na(v_cm.cm_11_first_aid)   || '</td></tr>
                 <tr><td class="cm-number">12</td>
                     <td>Suitable barriers used to clearly identify the working area.</td>
                     <td class="cm-tick">' || get_cm_tick(v_cm.cm_12_barriers) || '</td>
+                    <td class="cm-tick">' || get_cm_no(v_cm.cm_12_barriers)   || '</td>
                     <td class="cm-tick">' || get_cm_na(v_cm.cm_12_barriers)   || '</td></tr>
                 <tr><td class="cm-number">13</td>
                     <td>Unrestricted access and egress to the working area.</td>
                     <td class="cm-tick">' || get_cm_tick(v_cm.cm_13_access_egress) || '</td>
+                    <td class="cm-tick">' || get_cm_no(v_cm.cm_13_access_egress)   || '</td>
                     <td class="cm-tick">' || get_cm_na(v_cm.cm_13_access_egress)   || '</td></tr>
                 <tr><td class="cm-number">14</td>
                     <td>Suitable insulated matting available.</td>
                     <td class="cm-tick">' || get_cm_tick(v_cm.cm_14_insulated_matting) || '</td>
+                    <td class="cm-tick">' || get_cm_no(v_cm.cm_14_insulated_matting)   || '</td>
                     <td class="cm-tick">' || get_cm_na(v_cm.cm_14_insulated_matting)   || '</td></tr>
                 <tr><td class="cm-number">15</td>
                     <td>Confirm that the calibration of the test equipment is current.</td>
                     <td class="cm-tick">' || get_cm_tick(v_cm.cm_15_calibration_current) || '</td>
+                    <td class="cm-tick">' || get_cm_no(v_cm.cm_15_calibration_current)   || '</td>
                     <td class="cm-tick">' || get_cm_na(v_cm.cm_15_calibration_current)   || '</td></tr>
                 <tr><td class="cm-number">16</td>
                     <td>Danger signs have been applied to adjacent live equipment.</td>
                     <td class="cm-tick">' || get_cm_tick(v_cm.cm_16_danger_signs) || '</td>
+                    <td class="cm-tick">' || get_cm_no(v_cm.cm_16_danger_signs)   || '</td>
                     <td class="cm-tick">' || get_cm_na(v_cm.cm_16_danger_signs)   || '</td></tr>
             </tbody>
         </table>
