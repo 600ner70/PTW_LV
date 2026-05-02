@@ -478,7 +478,7 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_name=>'NEXT_STEP'
 ,p_button_static_id=>'BTN_NEXT_STEP_P2'
 ,p_button_action=>'DEFINED_BY_DA'
-,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconRight'
 ,p_button_template_id=>2082829544945815391
 ,p_button_is_hot=>'Y'
 ,p_button_image_alt=>'Next Step'

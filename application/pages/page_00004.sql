@@ -883,12 +883,11 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_name=>'BACK'
 ,p_button_static_id=>'BTN_BACK_P4'
 ,p_button_action=>'REDIRECT_PAGE'
-,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
-,p_button_template_id=>2082829544945815391
+,p_button_template_options=>'#DEFAULT#'
+,p_button_template_id=>4072362960822175091
 ,p_button_image_alt=>'Back'
 ,p_button_position=>'PREVIOUS'
 ,p_button_redirect_url=>'f?p=&APP_ID.:3:&SESSION.::&DEBUG.:3:P3_PERMIT_ID:&P4_PERMIT_ID.'
-,p_icon_css_classes=>'fa-arrow-left'
 );
 wwv_flow_imp_page.create_page_branch(
  p_id=>wwv_flow_imp.id(27353640786033407)
