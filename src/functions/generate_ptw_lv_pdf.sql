@@ -91,42 +91,45 @@ create or replace FUNCTION ptw_pro.generate_ptw_lv_pdf (
         RETURN NVL(TO_CHAR(p_date, 'DD-MON-YYYY'), '-');
     END;
 
-    FUNCTION get_signature_img(p_blob BLOB) RETURN VARCHAR2 IS
+    FUNCTION get_signature_img(p_blob BLOB) RETURN CLOB IS
         v_base64 CLOB;
+        v_result CLOB;
     BEGIN
         IF p_blob IS NULL OR DBMS_LOB.GETLENGTH(p_blob) = 0 THEN
-            RETURN '<p style="color:#999;font-style:italic;text-align:center;margin:0;padding:15px 0;">No signature captured</p>';
+            RETURN TO_CLOB('<p style="color:#999;font-style:italic;text-align:center;margin:0;padding:15px 0;">No signature captured</p>');
         END IF;
         BEGIN
             v_base64 := APEX_WEB_SERVICE.BLOB2CLOBBASE64(p_blob);
-            RETURN '<img src="data:image/png;base64,' || v_base64 ||
-                   '" class="signature-image" alt="Signature" />';
+            v_result := TO_CLOB('<img src="data:image/png;base64,');
+            DBMS_LOB.APPEND(v_result, v_base64);
+            DBMS_LOB.APPEND(v_result, TO_CLOB('" class="signature-image" alt="Signature" />'));
+            RETURN v_result;
         EXCEPTION
             WHEN OTHERS THEN
                 DECLARE
-                    v_result   CLOB   := '';
                     v_chunk    VARCHAR2(32767);
                     v_pos      NUMBER := 1;
                     v_length   NUMBER := DBMS_LOB.GETLENGTH(p_blob);
                     v_chunk_sz NUMBER := 12000;
                 BEGIN
+                    v_result := TO_CLOB('<img src="data:image/png;base64,');
                     WHILE v_pos <= v_length LOOP
                         v_chunk := UTL_RAW.CAST_TO_VARCHAR2(
                             UTL_ENCODE.BASE64_ENCODE(
                                 DBMS_LOB.SUBSTR(p_blob, LEAST(v_chunk_sz, v_length - v_pos + 1), v_pos)
                             )
                         );
-                        v_chunk  := REPLACE(REPLACE(v_chunk, CHR(10), ''), CHR(13), '');
-                        v_result := v_result || v_chunk;
-                        v_pos    := v_pos + v_chunk_sz;
+                        v_chunk := REPLACE(REPLACE(v_chunk, CHR(10), ''), CHR(13), '');
+                        DBMS_LOB.APPEND(v_result, TO_CLOB(v_chunk));
+                        v_pos := v_pos + v_chunk_sz;
                     END LOOP;
-                    RETURN '<img src="data:image/png;base64,' || v_result ||
-                           '" class="signature-image" alt="Signature" />';
+                    DBMS_LOB.APPEND(v_result, TO_CLOB('" class="signature-image" alt="Signature" />'));
+                    RETURN v_result;
                 END;
         END;
     EXCEPTION
         WHEN OTHERS THEN
-            RETURN '<p style="color:#c0392b;font-style:italic;text-align:center;margin:0;font-size:8pt;">Error loading signature</p>';
+            RETURN TO_CLOB('<p style="color:#c0392b;font-style:italic;text-align:center;margin:0;font-size:8pt;">Error loading signature</p>');
     END;
 
 -- ========================================
@@ -416,18 +419,28 @@ BEGIN
             This list is not exhaustive &mdash; please refer to risk assessment.
             This Permit MUST be issued for the SHORTEST reasonable period of TIME (never usually longer than 12 Hours).
         </div>
-        <div class="ppe-grid">
-            <div class="ppe-item">' || get_checked(v_permit.ppe_safety_helmet)     || ' Safety Helmet (Hard Hat)</div>
-            <div class="ppe-item">' || get_checked(v_permit.ppe_arc_flash)         || ' Arc Flash PPE</div>
-            <div class="ppe-item">' || get_checked(v_permit.ppe_safety_footwear)   || ' Safety Footwear</div>
-            <div class="ppe-item">' || get_checked(v_permit.ppe_hi_vis)            || ' Hi-Vis Vest/Jkt</div>
-            <div class="ppe-item">' || get_checked(v_permit.ppe_safety_goggles)    || ' Safety Goggles</div>
-            <div class="ppe-item">' || get_checked(v_permit.ppe_insulating_gloves) || ' Electrical Insulating Gloves</div>
-            <div class="ppe-item">' || get_checked(v_permit.ppe_fall_restraint)    || ' Fall Restraint Harness</div>
-            <div class="ppe-item">' || get_checked(v_permit.ppe_fall_arrest)       || ' Fall Arrest Harness</div>
-            <div class="ppe-item">' || get_checked(v_permit.ppe_ear_defenders)     || ' Ear Defenders/Plugs</div>
-            <div class="ppe-item">' || get_checked(v_permit.ppe_safety_gloves)     || ' Safety Gloves</div>
-        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:8.5pt;">
+            <tr>
+                <td style="width:50%;padding:3px 12px;">' || get_checked(v_permit.ppe_safety_helmet)     || ' Safety Helmet (Hard Hat)</td>
+                <td style="width:50%;padding:3px 12px;">' || get_checked(v_permit.ppe_arc_flash)         || ' Arc Flash PPE</td>
+            </tr>
+            <tr>
+                <td style="padding:3px 12px;">' || get_checked(v_permit.ppe_safety_footwear)   || ' Safety Footwear</td>
+                <td style="padding:3px 12px;">' || get_checked(v_permit.ppe_hi_vis)            || ' Hi-Vis Vest/Jkt</td>
+            </tr>
+            <tr>
+                <td style="padding:3px 12px;">' || get_checked(v_permit.ppe_safety_goggles)    || ' Safety Goggles</td>
+                <td style="padding:3px 12px;">' || get_checked(v_permit.ppe_insulating_gloves) || ' Electrical Insulating Gloves</td>
+            </tr>
+            <tr>
+                <td style="padding:3px 12px;">' || get_checked(v_permit.ppe_fall_restraint)    || ' Fall Restraint Harness</td>
+                <td style="padding:3px 12px;">' || get_checked(v_permit.ppe_fall_arrest)       || ' Fall Arrest Harness</td>
+            </tr>
+            <tr>
+                <td style="padding:3px 12px;">' || get_checked(v_permit.ppe_ear_defenders)     || ' Ear Defenders/Plugs</td>
+                <td style="padding:3px 12px;">' || get_checked(v_permit.ppe_safety_gloves)     || ' Safety Gloves</td>
+            </tr>
+        </table>
     </div>';
 
     -- ========================================
@@ -647,78 +660,55 @@ BEGIN
     -- ========================================
     FOR v_mon IN c_monitoring LOOP
         v_mon_num := v_mon_num + 1;
-        v_html := v_html || '
-    <div class="page-break"></div>
-    <div class="ptw-lv-report-container">
 
-    <div class="ptw-lv-header">
-        <h1>Low Voltage Monitoring</h1>
-        <div class="header-refs">
-            <div>Permit No.: <strong>' || safe_val(v_permit.permit_number) || '</strong></div>
-            <div>Check: <strong>' || v_mon_num || ' of ' || v_mon_count || '</strong></div>
-            <div>Date: <strong>' || NVL(TO_CHAR(v_mon.monitor_date, 'DD-MON-YYYY'), '-') || '</strong></div>
-        </div>
-    </div>
+        v_html := v_html || '<div class="page-break"></div><div class="ptw-lv-report-container">';
+        v_html := v_html || '<div class="ptw-lv-header"><h1>Low Voltage Monitoring</h1><div class="header-refs">';
+        v_html := v_html || '<div>Permit No.: <strong>' || safe_val(v_permit.permit_number) || '</strong></div>';
+        v_html := v_html || '<div>Check: <strong>' || TO_CHAR(v_mon_num) || ' of ' || TO_CHAR(v_mon_count) || '</strong></div>';
+        v_html := v_html || '<div>Date: <strong>' || NVL(TO_CHAR(v_mon.monitor_date, 'DD-MON-YYYY'), '-') || '</strong></div>';
+        v_html := v_html || '</div></div>';
+        v_html := v_html || '<div class="ptw-lv-section"><div class="declaration-box" style="padding:6px 12px;">The following checks are to be undertaken by the issuer of this permit.</div></div>';
+        v_html := v_html || '<div class="ptw-lv-section"><div class="ptw-lv-section-title">Site Monitoring Checks</div>';
+        v_html := v_html || '<table class="ptw-lv-table"><thead><tr>';
+        v_html := v_html || '<th>Check</th>';
+        v_html := v_html || '<th style="width:55px;text-align:center;">Yes</th>';
+        v_html := v_html || '<th style="width:55px;text-align:center;">No</th>';
+        v_html := v_html || '<th style="width:55px;text-align:center;">N/A</th>';
+        v_html := v_html || '<th style="width:90px;">Time of check</th>';
+        v_html := v_html || '</tr></thead><tbody>';
 
-    <div class="ptw-lv-section">
-        <div class="declaration-box" style="padding:6px 12px;">
-            The following checks are to be undertaken by the issuer of this permit.
-        </div>
-    </div>
+        -- FIX: each row is a separate assignment to avoid ORA-06502 VARCHAR2 overflow
+        -- Row 1: Is Permit on display?
+        v_html := v_html || '<tr><td>Is Permit on display?</td>'
+            || '<td style="text-align:center;">' || CASE v_mon.chk_permit_on_display WHEN 'Y'  THEN '<span class="tick-mark">&#10003;</span>' ELSE '' END || '</td>'
+            || '<td style="text-align:center;">' || CASE v_mon.chk_permit_on_display WHEN 'N'  THEN '<span class="tick-mark" style="color:#c0392b;">&#10003;</span>' ELSE '' END || '</td>'
+            || '<td style="text-align:center;">' || CASE v_mon.chk_permit_on_display WHEN 'NA' THEN '<span class="na-mark">N/A</span>' ELSE '' END || '</td>'
+            || '<td>' || NVL(v_mon.chk_permit_time, '') || '</td></tr>';
 
-    <div class="ptw-lv-section">
-        <div class="ptw-lv-section-title">Site Monitoring Checks</div>
-        <table class="ptw-lv-table">
-            <thead>
-                <tr>
-                    <th>Check</th>
-                    <th style="width:55px;text-align:center;">Yes</th>
-                    <th style="width:55px;text-align:center;">No</th>
-                    <th style="width:55px;text-align:center;">N/A</th>
-                    <th style="width:90px;">Time of check</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Is Permit on display?</td>
-                    <td style="text-align:center;">' || CASE v_mon.chk_permit_on_display WHEN 'Y'  THEN '<span class="tick-mark">&#10003;</span>' ELSE '' END || '</td>
-                    <td style="text-align:center;">' || CASE v_mon.chk_permit_on_display WHEN 'N'  THEN '<span class="tick-mark" style="color:#c0392b;">&#10003;</span>' ELSE '' END || '</td>
-                    <td style="text-align:center;">' || CASE v_mon.chk_permit_on_display WHEN 'NA' THEN '<span class="na-mark">N/A</span>' ELSE '' END || '</td>
-                    <td>' || NVL(v_mon.chk_permit_time, '') || '</td>
-                </tr>
-                <tr>
-                    <td>Is Access / Egress clear?</td>
-                    <td style="text-align:center;">' || CASE v_mon.chk_access_egress WHEN 'Y'  THEN '<span class="tick-mark">&#10003;</span>' ELSE '' END || '</td>
-                    <td style="text-align:center;">' || CASE v_mon.chk_access_egress WHEN 'N'  THEN '<span class="tick-mark" style="color:#c0392b;">&#10003;</span>' ELSE '' END || '</td>
-                    <td style="text-align:center;">' || CASE v_mon.chk_access_egress WHEN 'NA' THEN '<span class="na-mark">N/A</span>' ELSE '' END || '</td>
-                    <td>' || NVL(v_mon.chk_access_time, '') || '</td>
-                </tr>
-                <tr>
-                    <td>Are warning signs in place?</td>
-                    <td style="text-align:center;">' || CASE v_mon.chk_warning_signs WHEN 'Y'  THEN '<span class="tick-mark">&#10003;</span>' ELSE '' END || '</td>
-                    <td style="text-align:center;">' || CASE v_mon.chk_warning_signs WHEN 'N'  THEN '<span class="tick-mark" style="color:#c0392b;">&#10003;</span>' ELSE '' END || '</td>
-                    <td style="text-align:center;">' || CASE v_mon.chk_warning_signs WHEN 'NA' THEN '<span class="na-mark">N/A</span>' ELSE '' END || '</td>
-                    <td>' || NVL(v_mon.chk_warning_time, '') || '</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+        -- Row 2: Is Access / Egress clear?
+        v_html := v_html || '<tr><td>Is Access / Egress clear?</td>'
+            || '<td style="text-align:center;">' || CASE v_mon.chk_access_egress WHEN 'Y'  THEN '<span class="tick-mark">&#10003;</span>' ELSE '' END || '</td>'
+            || '<td style="text-align:center;">' || CASE v_mon.chk_access_egress WHEN 'N'  THEN '<span class="tick-mark" style="color:#c0392b;">&#10003;</span>' ELSE '' END || '</td>'
+            || '<td style="text-align:center;">' || CASE v_mon.chk_access_egress WHEN 'NA' THEN '<span class="na-mark">N/A</span>' ELSE '' END || '</td>'
+            || '<td>' || NVL(v_mon.chk_access_time, '') || '</td></tr>';
 
-    <div class="ptw-lv-section">
-        <div class="ptw-lv-section-title">Checks Against Work Processes &amp; Method Statement</div>
-        <div style="font-size:7.5pt;color:#555;padding:5px 12px;font-style:italic;border-bottom:1px solid #eee;">
-            Considering the work involved under this Permit, on reading the method statement detail below
-            an element you wish to check for compliance. Note: the minimum is one check per task carried
-            out under each Permit, but more are recommended dependent on activity complexity.
-        </div>
-        <table class="ptw-lv-table">
-            <thead>
-                <tr>
-                    <th style="width:50%;">Column A &mdash; Detail the item or part of the method statement you decide to check</th>
-                    <th style="width:50%;">Column B &mdash; Detail if all works are being carried out correctly, or what was found to be non-conforming</th>
-                </tr>
-            </thead>
-            <tbody>';
+        -- Row 3: Are warning signs in place?
+        v_html := v_html || '<tr><td>Are warning signs in place?</td>'
+            || '<td style="text-align:center;">' || CASE v_mon.chk_warning_signs WHEN 'Y'  THEN '<span class="tick-mark">&#10003;</span>' ELSE '' END || '</td>'
+            || '<td style="text-align:center;">' || CASE v_mon.chk_warning_signs WHEN 'N'  THEN '<span class="tick-mark" style="color:#c0392b;">&#10003;</span>' ELSE '' END || '</td>'
+            || '<td style="text-align:center;">' || CASE v_mon.chk_warning_signs WHEN 'NA' THEN '<span class="na-mark">N/A</span>' ELSE '' END || '</td>'
+            || '<td>' || NVL(v_mon.chk_warning_time, '') || '</td></tr>';
+
+        v_html := v_html || '</tbody></table></div>';
+        v_html := v_html || '<div class="ptw-lv-section"><div class="ptw-lv-section-title">Checks Against Work Processes &amp; Method Statement</div>';
+        v_html := v_html || '<div style="font-size:7.5pt;color:#555;padding:5px 12px;font-style:italic;border-bottom:1px solid #eee;">';
+        v_html := v_html || 'Considering the work involved under this Permit, on reading the method statement detail below ';
+        v_html := v_html || 'an element you wish to check for compliance. Note: the minimum is one check per task carried ';
+        v_html := v_html || 'out under each Permit, but more are recommended dependent on activity complexity.</div>';
+        v_html := v_html || '<table class="ptw-lv-table"><thead><tr>';
+        v_html := v_html || '<th style="width:50%;">Column A &mdash; Detail the item or part of the method statement you decide to check</th>';
+        v_html := v_html || '<th style="width:50%;">Column B &mdash; Detail if all works are being carried out correctly, or what was found to be non-conforming</th>';
+        v_html := v_html || '</tr></thead><tbody>';
 
         -- Check 1 (always shown)
         v_html := v_html || '
@@ -832,6 +822,6 @@ BEGIN
 
 EXCEPTION
     WHEN OTHERS THEN
-        RETURN '<html><body><h2 style="color:red;">Error Generating Report</h2><p>' || SQLERRM || '</p></body></html>';
+        RETURN '<html><body><h2 style="color:red;">Error Generating Report</h2><p>' || SQLERRM || '</p><pre>' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE || '</pre></body></html>';
 END generate_ptw_lv_pdf;
 /
