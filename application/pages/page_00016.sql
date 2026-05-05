@@ -16,7 +16,7 @@ wwv_flow_imp_page.create_page(
 ,p_name=>'Clear Permit'
 ,p_alias=>'CLEAR-PERMIT'
 ,p_page_mode=>'MODAL'
-,p_step_title=>unistr('Clear Permit \2013 &P16_PERMIT_NUMBER.')
+,p_step_title=>'Clear Permit'
 ,p_warn_on_unsaved_changes=>'N'
 ,p_autocomplete_on_off=>'OFF'
 ,p_javascript_code=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -52,12 +52,176 @@ wwv_flow_imp_page.create_page(
 '}',
 ''))
 ,p_javascript_code_onload=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'setTimeout(function() { p16InitSig(); }, 300);',
+unistr('// \2500\2500 Shared state \2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500'),
+'var p16Status  = apex.item(''P16_WORKFLOW_STATUS'').getValue();',
+'var isReadOnly = (p16Status !== ''STARTED'');',
 '',
-'apex.jQuery(document).on(''apexbeforepagesubmit'', function() {',
+unistr('// \2500\2500 Signature pad init \2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500'),
+unistr('// \2500\2500 Signature pad init \2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500'),
+'setTimeout(function () {',
+'    p16InitSig();',
+'',
+'    // Always clear first to prevent stale canvas from previous open',
+'    if (p16SigPad) { p16SigPad.clear(); }',
+'',
+unistr('    // \2500\2500 Load existing signature (COMPLETED view) \2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500'),
+'    var existingSig = apex.item(''P16_CLEAR_SIGNATURE_DATA_URL'').getValue();',
+'',
+'    if (existingSig) {',
+'        loadSignature(p16SigPad, document.getElementById(''p16SigCanvas''), existingSig);',
+'',
+'        if (isReadOnly) {',
+'            var canvas = document.getElementById(''p16SigCanvas'');',
+'            if (canvas) {',
+'                canvas.style.pointerEvents  = ''none'';',
+'                canvas.style.opacity        = ''0.85'';',
+'                canvas.style.cursor         = ''not-allowed'';',
+'                canvas.title                = ''Signature locked'';',
+'            }',
+'            var clearBtn = document.getElementById(''p16ClearSigBtn'');',
+'            if (clearBtn) clearBtn.style.display = ''none'';',
+'        }',
+'    } else if (isReadOnly) {',
+unistr('        // STARTED but no sig yet \2014 just lock canvas'),
+'        var canvas = document.getElementById(''p16SigCanvas'');',
+'        if (canvas) {',
+'            canvas.style.pointerEvents  = ''none'';',
+'            canvas.style.opacity        = ''0.85'';',
+'            canvas.style.cursor         = ''not-allowed'';',
+'        }',
+'    }',
+'',
+'}, 350);',
+'',
+unistr('// \2500\2500 Save signature before submit \2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500'),
+'apex.jQuery(document).on(''apexbeforepagesubmit'', function () {',
 '    p16SaveSig();',
 '});',
-''))
+'',
+unistr('// \2500\2500 Binary Y/N badges \2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500'),
+'(function () {',
+'',
+'    var BINARY_ITEMS = [',
+'        ''P16_CLEAR_WORK_COMPLETE'',',
+'        ''P16_CLEAR_AREA_SAFE''',
+'    ];',
+'',
+'    var BADGES = [',
+unistr('        { val: ''Y'', cls: ''binary-badge-yes'', label: ''\2713'' },'),
+unistr('        { val: ''N'', cls: ''binary-badge-no'',  label: ''\2717'' }'),
+'    ];',
+'',
+'    BINARY_ITEMS.forEach(function (itemName) {',
+'',
+'        var $fc = $(''#'' + itemName).closest(''.t-Form-fieldContainer'');',
+'        if ($fc.length === 0) return;',
+'',
+'        $fc.find(''.binary-badge-row'').remove();',
+'',
+'        var currentVal = '''';',
+'        if (!isReadOnly) {',
+'            currentVal = $(''input[name="'' + itemName + ''"]:checked'').val() || '''';',
+'        } else {',
+'            currentVal = apex.item(itemName).getValue() || '''';',
+'        }',
+'',
+'        var $row = $(''<div class="binary-badge-row"></div>'').attr(''data-item'', itemName);',
+'',
+'        BADGES.forEach(function (b) {',
+'            $(''<span></span>'')',
+'                .addClass(''binary-badge '' + b.cls)',
+'                .toggleClass(''cm-active'', currentVal === b.val)',
+'                .toggleClass(''binary-readonly'', isReadOnly)',
+'                .attr(''data-value'', b.val)',
+'                .text(b.label)',
+'                .appendTo($row);',
+'        });',
+'',
+'        $fc.find(''.t-Form-inputContainer'').append($row);',
+'    });',
+'',
+'    $(''.cm-binary-item .apex-item-grid'').hide();',
+'',
+'    $(document).off(''click.binarybadge'').on(''click.binarybadge'', ''.binary-badge:not(.binary-readonly)'', function () {',
+'        var $badge   = $(this);',
+'        var $row     = $badge.closest(''.binary-badge-row'');',
+'        var itemName = $row.attr(''data-item'');',
+'        var val      = $badge.attr(''data-value'');',
+'',
+'        $(''input[name="'' + itemName + ''"][value="'' + val + ''"]'')',
+'            .prop(''checked'', true).trigger(''change'');',
+'',
+'        $row.find(''.binary-badge'').removeClass(''cm-active'');',
+'        $badge.addClass(''cm-active'');',
+'    });',
+'',
+'}());',
+'',
+unistr('// \2500\2500 Lock text fields in read-only mode \2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500'),
+'if (isReadOnly) {',
+'    var readOnlyItems = [',
+'        ''P16_CLEAR_PERSON_NAME'',',
+'        ''P16_CLEAR_PERSON_MOBILE'',',
+'        ''P16_CLEAR_COMPANY'',',
+'        ''P16_CLEAR_DATETIME''',
+'    ];',
+'    readOnlyItems.forEach(function (itemName) {',
+'        var $el = $(''#'' + itemName);',
+'        $el.prop(''readonly'', true)',
+'           .css({',
+'               ''background-color'': ''rgb(213, 209, 209)'',',
+'               ''pointer-events'':   ''none'',',
+'               ''cursor'':           ''default''',
+'           });',
+'    });',
+'}',
+'',
+unistr('// \2500\2500 Required star (mandatory indicator) \2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500'),
+'function initP16RequiredStars() {',
+'    var $fc = $(''#P16_CLEAR_WORK_COMPLETE'').closest(''.t-Form-fieldContainer'');',
+'    if ($fc.length === 0) return;',
+'    $fc.find(''.t-Form-labelContainer label, label'').first()',
+'       .append(''<span class="cm-required-star" aria-hidden="true"> *</span>'');',
+'}',
+'',
+'apex.jQuery(document).on(''apexreadyend'', function () {',
+'    initP16RequiredStars();',
+'});',
+'',
+unistr('// \2500\2500 Declaration text update \2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500'),
+'function p16UpdateDeclaration() {',
+'    var workVal = apex.item(''P16_CLEAR_WORK_COMPLETE'').getValue();',
+'    var safeVal = apex.item(''P16_CLEAR_AREA_SAFE'').getValue();',
+'',
+'    var $work = $(''#p16-decl-work-complete'');',
+'    if (workVal === ''Y'') {',
+'        $work.text(''completed'').css(''color'', ''#1e7e34'');',
+'    } else if (workVal === ''N'') {',
+'        $work.text(''not completed'').css(''color'', ''#a71d2a'');',
+'    } else {',
+'        $work.text(''completed / not completed'').css(''color'', ''#344B5C'');',
+'    }',
+'',
+'    var $safe = $(''#p16-decl-area-safe'');',
+'    var $tidy = $(''#p16-decl-area-tidy'');',
+'    if (safeVal === ''Y'') {',
+'        $safe.text(''is'').css(''color'', ''#1e7e34'');',
+'        $tidy.text(''has'').css(''color'', ''#1e7e34'');',
+'    } else if (safeVal === ''N'') {',
+'        $safe.text(''is NOT'').css(''color'', ''#a71d2a'');',
+'        $tidy.text(''has NOT'').css(''color'', ''#a71d2a'');',
+'    } else {',
+'        $safe.text(''is / is not'').css(''color'', ''#344B5C'');',
+'        $tidy.text(''has / has not'').css(''color'', ''#344B5C'');',
+'    }',
+'}',
+'',
+'// Run on load then on every badge click',
+'p16UpdateDeclaration();',
+'',
+'$(document).on(''click.p16decl'', ''.binary-badge'', function () {',
+'    setTimeout(p16UpdateDeclaration, 50);',
+'});'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '.p16-declaration-box {',
 '    background: #fff8e1;',
@@ -89,7 +253,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_name=>'Permit Info Banner'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>4501440665235496320
-,p_plug_display_sequence=>30
+,p_plug_display_sequence=>50
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<div class="t-Alert t-Alert--info t-Alert--horizontal" role="region" style="margin-bottom:8px;">',
@@ -117,23 +281,25 @@ wwv_flow_imp_page.create_page_plug(
 ,p_icon_css_classes=>'fa-file-text-o'
 ,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>40
+,p_plug_display_sequence=>60
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<div class="p16-declaration-box">',
-'  <p style="margin:0 0 8px 0;">',
-'    I certify that the works detailed within this Permit to Work are',
-'    <strong>[completed] / [not complete]</strong>.',
-'    I certify that it is <strong>[safe] / [not safe]</strong> to reinstate',
-'    the plant and equipment which has been worked on under this Permit to Work',
-'    and that all personnel have vacated the place of works.',
+'  <p style="margin:0 0 10px 0;">',
+'    By signing below, I confirm that the works carried out under this Permit to Work',
+'    have been <strong id="p16-decl-work-complete">completed / not completed</strong> and that all personnel under',
+'    my supervision have vacated the work area.',
+'  </p>',
+'  <p style="margin:0 0 10px 0;">',
+'    I confirm that it <strong id="p16-decl-area-safe">is / is not</strong> safe to reinstate the plant and',
+'    equipment which has been worked on under this Permit to Work.',
 '  </p>',
 '  <p style="margin:0;">',
-'    The area <strong>[has] / [has not]</strong> been left in a safe and tidy',
-'    condition and all waste has been removed from site.',
+'    The work area <strong id="p16-decl-area-tidy">has / has not</strong> been left in a safe and tidy condition,',
+'    all temporary measures have been removed, and all waste has been cleared from site.',
+'    This Permit to Work is hereby surrendered and closed.',
 '  </p>',
-'</div>',
-''))
+'</div>'))
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
@@ -145,7 +311,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_icon_css_classes=>'fa-user'
 ,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>50
+,p_plug_display_sequence=>70
 ,p_location=>null
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
@@ -158,7 +324,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_icon_css_classes=>'fa-pencil'
 ,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>60
+,p_plug_display_sequence=>80
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<div class="p16-sig-wrapper">',
@@ -168,6 +334,7 @@ wwv_flow_imp_page.create_page_plug(
 '  <canvas id="p16SigCanvas"></canvas>',
 '  <button type="button"',
 '          class="t-Button t-Button--small t-Button--simple"',
+'          id="p16ClearSigBtn"',
 '          style="margin-top:6px;"',
 '          onclick="p16ClearSig()">',
 '    <span class="fa fa-eraser" aria-hidden="true"></span> Clear Signature',
@@ -183,7 +350,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_name=>'Buttons'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>2126429139436695430
-,p_plug_display_sequence=>70
+,p_plug_display_sequence=>90
 ,p_location=>null
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
@@ -239,10 +406,11 @@ wwv_flow_imp_page.create_page_item(
 ,p_name=>'P16_CLEAR_WORK_COMPLETE'
 ,p_item_sequence=>10
 ,p_item_plug_id=>wwv_flow_imp.id(41970462082328835)
-,p_prompt=>'Works are'
+,p_prompt=>'Works are completed?'
 ,p_display_as=>'NATIVE_RADIOGROUP'
 ,p_lov=>'STATIC:Completed;Y,Not Complete;N'
-,p_field_template=>1609122147107268652
+,p_field_template=>1609121967514267634
+,p_item_css_classes=>'cm-binary-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
@@ -254,10 +422,11 @@ wwv_flow_imp_page.create_page_item(
 ,p_name=>'P16_CLEAR_AREA_SAFE'
 ,p_item_sequence=>20
 ,p_item_plug_id=>wwv_flow_imp.id(41970462082328835)
-,p_prompt=>'It is'
+,p_prompt=>'It is safe to reinstate plant and equipment?'
 ,p_display_as=>'NATIVE_RADIOGROUP'
 ,p_lov=>'STATIC:Safe to reinstate plant and equipment;Y,NOT Safe to reinstate;N'
 ,p_field_template=>1609121967514267634
+,p_item_css_classes=>'cm-binary-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
@@ -353,6 +522,22 @@ wwv_flow_imp_page.create_page_item(
 ,p_name=>'P16_CLEARED'
 ,p_item_sequence=>70
 ,p_item_plug_id=>wwv_flow_imp.id(41970550498328836)
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(45757410227782526)
+,p_name=>'P16_WORKFLOW_STATUS'
+,p_item_sequence=>30
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(45757583978782527)
+,p_name=>'P16_CLEAR_SIGNATURE_DATA_URL'
+,p_item_sequence=>40
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
@@ -476,7 +661,7 @@ wwv_flow_imp_page.create_page_process(
 '    END IF;',
 '',
 '    UPDATE ptw_pro.ptw_lv_permits',
-'    SET    clear_work_complete     = :P16_CLEAR_WORK_COMPLETE,',
+'    SET    clear_work_complete    = :P16_CLEAR_WORK_COMPLETE,',
 '           clear_area_safe        = :P16_CLEAR_AREA_SAFE,',
 '           clear_person_name      = UPPER(TRIM(:P16_CLEAR_PERSON_NAME)),',
 '           clear_company          = UPPER(TRIM(:P16_CLEAR_COMPANY)),',
@@ -528,6 +713,8 @@ wwv_flow_imp_page.create_page_process(
 ,p_attribute_01=>'P16_CLEARED'
 ,p_attribute_02=>'N'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
+,p_process_when=>'CLEAR_PERMIT'
+,p_process_when_type=>'REQUEST_EQUALS_CONDITION'
 ,p_internal_uid=>45755524966782507
 );
 wwv_flow_imp_page.create_page_process(
@@ -546,38 +733,92 @@ wwv_flow_imp_page.create_page_process(
 '           permit_number,',
 '           person_in_charge_name,',
 '           supervising_company,',
-'           accept_person_mobile',
+'           accept_person_mobile,',
+'           clear_work_complete,',
+'           clear_area_safe,',
+'           clear_person_name,',
+'           clear_person_mobile,',
+'           clear_company,',
+'           TO_CHAR(clear_datetime, ''DD-MON-YYYY HH24:MI'')',
 '    INTO   v_status,',
 '           v_ended,',
 '           :P16_PERMIT_NUMBER,',
 '           :P16_CLEAR_PERSON_NAME,',
 '           :P16_CLEAR_COMPANY,',
-'           :P16_CLEAR_PERSON_MOBILE',
+'           :P16_CLEAR_PERSON_MOBILE,',
+'           :P16_CLEAR_WORK_COMPLETE,',
+'           :P16_CLEAR_AREA_SAFE,',
+'           :P16_CLEAR_PERSON_NAME,',
+'           :P16_CLEAR_PERSON_MOBILE,',
+'           :P16_CLEAR_COMPANY,',
+'           :P16_CLEAR_DATETIME',
 '    FROM   ptw_pro.ptw_lv_permits',
 '    WHERE  permit_id = :P16_PERMIT_ID;',
 '',
-'    -- Guard: must be STARTED and within validity window',
-'    IF v_status != ''STARTED'' THEN',
+'    -- Guard: must be STARTED or COMPLETED',
+'    IF v_status NOT IN (''STARTED'', ''COMPLETED'') THEN',
 '        apex_error.add_error(',
-'            p_message          => ''This permit cannot be cleared. Current status: ''',
+'            p_message          => ''This permit cannot be viewed here. Current status: ''',
 '                                  || v_status,',
 '            p_display_location => apex_error.c_on_error_page',
 '        );',
 '        RETURN;',
 '    END IF;',
 '',
-'    IF SYSDATE >= v_ended THEN',
-'        apex_error.add_error(',
-'            p_message          => ''This permit has expired (''',
-'                                  || TO_CHAR(v_ended, ''DD-MON-YYYY HH24:MI'')',
-'                                  || '') and cannot be cleared.'',',
-'            p_display_location => apex_error.c_on_error_page',
-'        );',
-'        RETURN;',
+'    -- For STARTED: check validity window and default datetime to now',
+'    IF v_status = ''STARTED'' THEN',
+'        IF SYSDATE >= v_ended THEN',
+'            apex_error.add_error(',
+'                p_message          => ''This permit has expired (''',
+'                                      || TO_CHAR(v_ended, ''DD-MON-YYYY HH24:MI'')',
+'                                      || '') and cannot be cleared.'',',
+'                p_display_location => apex_error.c_on_error_page',
+'            );',
+'            RETURN;',
+'        END IF;',
+'        -- Default datetime to now only when clearing (not yet set)',
+'        IF :P16_CLEAR_DATETIME IS NULL THEN',
+'            :P16_CLEAR_DATETIME := TO_CHAR(SYSDATE, ''DD-MON-YYYY HH24:MI'');',
+'        END IF;',
 '    END IF;',
 '',
-'    -- Pre-fill clearance datetime to NOW (read-only display)',
-'    :P16_CLEAR_DATETIME := TO_CHAR(SYSDATE, ''DD-MON-YYYY HH24:MI'');',
+'    -- For COMPLETED: existing clearance data already loaded from SELECT above',
+'    -- P16_CLEAR_DATETIME will contain the stored clear_datetime value',
+'    IF v_status = ''COMPLETED'' AND :P16_CLEAR_DATETIME IS NOT NULL THEN',
+'        :P16_CLEAR_DATETIME := TO_CHAR(',
+'                                   TO_DATE(:P16_CLEAR_DATETIME, ''DD-MON-YYYY HH24:MI''),',
+'                                   ''DD-MON-YYYY HH24:MI''',
+'                               );',
+'    END IF;',
+'',
+'    DECLARE',
+'        v_sig  BLOB;',
+'        v_clob CLOB;',
+'    BEGIN',
+'        IF v_status = ''COMPLETED'' THEN',
+'            SELECT clear_person_signature',
+'            INTO   v_sig',
+'            FROM   ptw_pro.ptw_lv_permits',
+'            WHERE  permit_id = :P16_PERMIT_ID',
+'            AND    clear_person_signature IS NOT NULL',
+'            AND    DBMS_LOB.GETLENGTH(clear_person_signature) > 0;',
+'',
+'            IF v_sig IS NOT NULL AND DBMS_LOB.GETLENGTH(v_sig) > 0 THEN',
+'                v_clob := apex_web_service.blob2clobbase64(v_sig);',
+'                v_clob := REPLACE(REPLACE(v_clob, CHR(13), ''''), CHR(10), '''');',
+'                :P16_CLEAR_SIGNATURE_DATA_URL :=',
+'                    ''data:image/png;base64,'' || DBMS_LOB.SUBSTR(v_clob, 32000, 1);',
+'            ELSE',
+'                :P16_CLEAR_SIGNATURE_DATA_URL := NULL;',
+'            END IF;',
+'        END IF;',
+'',
+'    EXCEPTION',
+'        WHEN NO_DATA_FOUND THEN',
+'            :P16_CLEAR_SIGNATURE_DATA_URL := NULL;',
+'        WHEN OTHERS THEN',
+'            :P16_CLEAR_SIGNATURE_DATA_URL := NULL;',
+'    END;',
 '',
 'EXCEPTION',
 '    WHEN NO_DATA_FOUND THEN',
@@ -585,8 +826,12 @@ wwv_flow_imp_page.create_page_process(
 '            p_message          => ''Permit not found.'',',
 '            p_display_location => apex_error.c_on_error_page',
 '        );',
-'END;',
-''))
+'    WHEN OTHERS THEN',
+'        apex_error.add_error(',
+'            p_message          => ''Error loading permit data: '' || SQLERRM,',
+'            p_display_location => apex_error.c_on_error_page',
+'        );',
+'END;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_internal_uid=>45755388825782505
 );

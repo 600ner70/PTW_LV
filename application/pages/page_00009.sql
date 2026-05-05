@@ -105,6 +105,16 @@ wwv_flow_imp_page.create_page_button(
 ,p_warn_on_unsaved_changes=>null
 ,p_icon_css_classes=>'fa-play-circle'
 );
+wwv_flow_imp_page.create_page_branch(
+ p_id=>wwv_flow_imp.id(45757381141782525)
+,p_branch_name=>'Back to dashboard'
+,p_branch_action=>'f?p=&APP_ID.:1:&SESSION.::&DEBUG.:1::'
+,p_branch_point=>'BEFORE_COMPUTATION'
+,p_branch_type=>'REDIRECT_URL'
+,p_branch_sequence=>10
+,p_branch_condition_type=>'REQUEST_EQUALS_CONDITION'
+,p_branch_condition=>'START_PERMIT'
+);
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(32190486101430887)
 ,p_name=>'P9_START_DATE'
@@ -437,8 +447,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_attribute_01=>'P9_WORKFLOW_STATUS'
 ,p_attribute_02=>'N'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
-,p_process_when=>'START_PERMIT'
-,p_process_when_type=>'REQUEST_EQUALS_CONDITION'
+,p_process_when_type=>'NEVER'
 ,p_internal_uid=>37958131306176042
 );
 wwv_flow_imp.component_end;
