@@ -1115,8 +1115,7 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_execute_on_page_init=>'N'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
 ,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'saveSignatures();',
-'captureLocationThenSubmit(''AUTHORISE'');',
+'ptwShowAuthoriseDeclaration();',
 '',
 '',
 ''))

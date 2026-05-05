@@ -56,7 +56,7 @@ wwv_flow_imp_page.create_page(
 '                lockCanvas(canvas);',
 '                var clearBtn = document.querySelector(''.signature-controls button'');',
 '                if (clearBtn) clearBtn.style.display = ''none'';',
-'            } else if (workflowStatus !== ''IN_PROGRESS'') {',
+'            } else if (workflowStatus !== ''STARTED'') {',
 '                lockCanvas(canvas);',
 '                var clearBtn = document.querySelector(''.signature-controls button'');',
 '                if (clearBtn) clearBtn.style.display = ''none'';',
@@ -97,7 +97,94 @@ wwv_flow_imp_page.create_page(
 '// P10_MONITOR_SIGNATURE_DATA_URL is populated by the Before Header',
 unistr('// process (BLOB \2192 base64 data URL). Mirrors Page 5 loadSignature() call.'),
 'loadSignature(''monitorSignaturePad'', ''P10_MONITOR_SIGNATURE_DATA_URL'');',
-''))
+'',
+'(function () {',
+'',
+'    var TRISTATE_ITEMS = [',
+'        ''P10_CHK_PERMIT_ON_DISPLAY'',',
+'        ''P10_CHK_ACCESS_EGRESS'',',
+'        ''P10_CHK_WARNING_SIGNS''',
+'    ];',
+'',
+'    var BINARY_ITEMS = [',
+'        ''P10_MS_CHECK1_IN_ORDER'',',
+'        ''P10_MS_CHECK2_IN_ORDER'',',
+'        ''P10_MS_CHECK3_IN_ORDER''',
+'    ];',
+'',
+'    var TRISTATE_BADGES = [',
+unistr('        { val: ''Y'',  cls: ''cm-badge-yes'', label: ''\2713'' },'),
+unistr('        { val: ''N'',  cls: ''cm-badge-no'',  label: ''\2717'' },'),
+'        { val: ''NA'', cls: ''cm-badge-na'',  label: ''N/A'' }',
+'    ];',
+'',
+'    var BINARY_BADGES = [',
+unistr('        { val: ''Y'', cls: ''cm-badge-yes'', label: ''\2713'' },'),
+unistr('        { val: ''N'', cls: ''cm-badge-no'',  label: ''\2717'' }'),
+'    ];',
+'',
+'    // Read-only when not STARTED, OR when viewing an existing monitoring record',
+'    var isReadOnly = (apex.item(''P10_WORKFLOW_STATUS'').getValue() !== ''STARTED'') ||',
+'                     (apex.item(''P10_MONITORING_ID'').getValue() !== '''');',
+'',
+'    function buildBadgeRow(itemName, badges) {',
+'        // apex.item().getValue() works in both edit and read-only mode',
+'        var currentVal = apex.item(itemName).getValue() || '''';',
+'',
+'        var $row = $(''<div class="cm-badge-row"></div>'').attr(''data-item'', itemName);',
+'',
+'        badges.forEach(function (b) {',
+'            $(''<span></span>'')',
+'                .addClass(''cm-badge '' + b.cls)',
+'                .toggleClass(''cm-active'', currentVal === b.val)',
+'                .toggleClass(''cm-badge-readonly'', isReadOnly)',
+'                .attr(''data-value'', b.val)',
+'                .text(b.label)',
+'                .appendTo($row);',
+'        });',
+'',
+'        return $row;',
+'    }',
+'',
+'    // Build tristate badges',
+'    TRISTATE_ITEMS.forEach(function (itemName) {',
+'        var $fc = $(''#'' + itemName).closest(''.t-Form-fieldContainer'');',
+'        if ($fc.length === 0) return;',
+'        $fc.find(''.cm-badge-row'').remove();',
+'        $fc.find(''.t-Form-inputContainer'').append(',
+'            buildBadgeRow(itemName, TRISTATE_BADGES)',
+'        );',
+'    });',
+'',
+'    // Build binary badges',
+'    BINARY_ITEMS.forEach(function (itemName) {',
+'        var $fc = $(''#'' + itemName).closest(''.t-Form-fieldContainer'');',
+'        if ($fc.length === 0) return;',
+'        $fc.find(''.cm-badge-row'').remove();',
+'        $fc.find(''.t-Form-inputContainer'').append(',
+'            buildBadgeRow(itemName, BINARY_BADGES)',
+'        );',
+'    });',
+'',
+'    // Hide native radio grids',
+'    $(''.cm-tristate-item .apex-item-grid'').hide();',
+'    $(''.cm-binary-item .apex-item-radio'').hide();',
+'',
+unistr('    // Delegated click \2014 edit mode only'),
+'    $(document).off(''click.p10badges'').on(''click.p10badges'', ''.cm-badge:not(.cm-badge-readonly)'', function () {',
+'        var $badge   = $(this);',
+'        var $row     = $badge.closest(''.cm-badge-row'');',
+'        var itemName = $row.attr(''data-item'');',
+'        var val      = $badge.attr(''data-value'');',
+'',
+'        $(''input[name="'' + itemName + ''"][value="'' + val + ''"]'')',
+'            .prop(''checked'', true).trigger(''change'');',
+'',
+'        $row.find(''.cm-badge'').removeClass(''cm-active'');',
+'        $badge.addClass(''cm-active'');',
+'    });',
+'',
+'}());'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '.monitoring-section-title {',
 '    font-size: 1.1rem;',
@@ -199,7 +286,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_name=>'Permit Badge'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>4501440665235496320
-,p_plug_display_sequence=>80
+,p_plug_display_sequence=>90
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<div style="margin-bottom: 20px;">',
@@ -385,6 +472,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_lov=>'STATIC:Yes;Y,No;N,N/A;NA'
 ,p_colspan=>4
 ,p_field_template=>1609121967514267634
+,p_item_css_classes=>'cm-tristate-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
@@ -422,6 +510,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_lov=>'STATIC:Yes;Y,No;N,N/A;NA'
 ,p_colspan=>4
 ,p_field_template=>1609121967514267634
+,p_item_css_classes=>'cm-tristate-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
@@ -459,6 +548,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_lov=>'STATIC:Yes;Y,No;N,N/A;NA'
 ,p_colspan=>4
 ,p_field_template=>1609121967514267634
+,p_item_css_classes=>'cm-tristate-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
@@ -514,6 +604,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_begin_on_new_line=>'N'
 ,p_colspan=>6
 ,p_field_template=>1609121967514267634
+,p_item_css_classes=>'cm-binary-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
@@ -586,6 +677,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_begin_on_new_line=>'N'
 ,p_colspan=>6
 ,p_field_template=>1609121967514267634
+,p_item_css_classes=>'cm-binary-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
@@ -657,6 +749,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_begin_on_new_line=>'N'
 ,p_colspan=>6
 ,p_field_template=>1609121967514267634
+,p_item_css_classes=>'cm-binary-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
@@ -755,6 +848,14 @@ wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(40759713686498347)
 ,p_name=>'P10_MONITOR_SIGNATURE_DATA_URL'
 ,p_item_sequence=>60
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(45757281850782524)
+,p_name=>'P10_WORKFLOW_STATUS'
+,p_item_sequence=>80
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
@@ -865,37 +966,29 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Load Monitoring Data'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'DECLARE',
-'    v_mon       ptw_pro.ptw_lv_monitoring%ROWTYPE;',
-'    v_clob      CLOB;',
-'    v_chunk     VARCHAR2(32767);',
-'    v_offset    INTEGER := 1;',
-'    v_amount    INTEGER := 12000;  -- safe chunk size for UTL_RAW / base64',
-'    v_data_url  VARCHAR2(32767);',
+'    v_mon    ptw_pro.ptw_lv_monitoring%ROWTYPE;',
+'    v_clob   CLOB;',
 'BEGIN',
-'    -- Load workflow status and permit number from permit',
-'    SELECT permit_number',
-'    INTO   :P10_PERMIT_NUMBER',
+'    -- Always load permit number and workflow status',
+'    SELECT permit_number, workflow_status',
+'    INTO   :P10_PERMIT_NUMBER, :P10_WORKFLOW_STATUS',
 '    FROM   ptw_pro.ptw_lv_permits',
 '    WHERE  permit_id = :P10_PERMIT_ID;',
 '',
-'    -- Try to load existing monitoring record',
-'    BEGIN',
+'    -- Only load monitoring data if editing an existing record',
+'    IF :P10_MONITORING_ID IS NOT NULL THEN',
 '        SELECT *',
 '        INTO   v_mon',
 '        FROM   ptw_pro.ptw_lv_monitoring',
-'        WHERE  permit_id = :P10_PERMIT_ID;',
+'        WHERE  monitoring_id = :P10_MONITORING_ID',
+'        AND    permit_id     = :P10_PERMIT_ID;',
 '',
-'        :P10_MONITORING_ID         := v_mon.monitoring_id;',
-'',
-'        -- Section 1',
 '        :P10_CHK_PERMIT_ON_DISPLAY := v_mon.chk_permit_on_display;',
 '        :P10_CHK_PERMIT_TIME       := v_mon.chk_permit_time;',
 '        :P10_CHK_ACCESS_EGRESS     := v_mon.chk_access_egress;',
 '        :P10_CHK_ACCESS_TIME       := v_mon.chk_access_time;',
 '        :P10_CHK_WARNING_SIGNS     := v_mon.chk_warning_signs;',
 '        :P10_CHK_WARNING_TIME      := v_mon.chk_warning_time;',
-'',
-'        -- Section 2',
 '        :P10_MS_CHECK1_DETAIL      := v_mon.ms_check1_detail;',
 '        :P10_MS_CHECK1_TIME        := v_mon.ms_check1_time;',
 '        :P10_MS_CHECK1_IN_ORDER    := v_mon.ms_check1_in_order;',
@@ -908,37 +1001,23 @@ wwv_flow_imp_page.create_page_process(
 '        :P10_MS_CHECK3_TIME        := v_mon.ms_check3_time;',
 '        :P10_MS_CHECK3_IN_ORDER    := v_mon.ms_check3_in_order;',
 '        :P10_MS_CHECK3_COMMENTS    := v_mon.ms_check3_comments;',
-'',
-unistr('        -- Section 3 \2014 name and date'),
-'        -- NOTE: monitor_latitude / monitor_longitude NOT loaded back into',
-'        -- page items. APP_LATITUDE / APP_LONGITUDE are Application Items',
-'        -- populated at submit time only.',
 '        :P10_MONITOR_NAME          := v_mon.monitor_name;',
 '        :P10_MONITOR_DATE          := TO_CHAR(v_mon.monitor_date, ''DD-MON-YYYY'');',
 '',
-unistr('        -- Section 3 \2014 signature (v3)'),
-'        -- Convert BLOB to base64 data URL so loadSignature() can re-display',
-'        -- it in the canvas on page load. Same pattern as Page 5.',
 '        IF v_mon.monitor_signature IS NOT NULL',
 '           AND DBMS_LOB.GETLENGTH(v_mon.monitor_signature) > 0',
 '        THEN',
 '            v_clob := apex_web_service.blob2clobbase64(v_mon.monitor_signature);',
-'            -- Strip any newlines introduced by base64 encoding',
 '            v_clob := REPLACE(REPLACE(v_clob, CHR(13), ''''), CHR(10), '''');',
-'            -- Prefix with data URL header expected by loadSignature()',
 '            :P10_MONITOR_SIGNATURE_DATA_URL :=',
 '                ''data:image/png;base64,'' || DBMS_LOB.SUBSTR(v_clob, 32000, 1);',
-'        ELSE',
-'            :P10_MONITOR_SIGNATURE_DATA_URL := NULL;',
 '        END IF;',
 '',
-'    EXCEPTION',
-'        WHEN NO_DATA_FOUND THEN',
-unistr('            -- New monitoring record \2014 defaults only'),
-'            :P10_MONITORING_ID              := NULL;',
-'            :P10_MONITOR_DATE               := TO_CHAR(SYSDATE, ''DD-MON-YYYY'');',
-'            :P10_MONITOR_SIGNATURE_DATA_URL := NULL;',
-'    END;',
+'    ELSE',
+unistr('        -- New record \2014 set defaults only'),
+'        :P10_MONITOR_DATE               := TO_CHAR(SYSDATE, ''DD-MON-YYYY'');',
+'        :P10_MONITOR_SIGNATURE_DATA_URL := NULL;',
+'    END IF;',
 '',
 'EXCEPTION',
 '    WHEN OTHERS THEN',
