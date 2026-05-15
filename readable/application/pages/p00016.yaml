@@ -1,0 +1,1528 @@
+---
+# ====== Page: Clear Permit ==================================
+id: 16
+identification: 
+  name: Clear Permit
+  alias: CLEAR-PERMIT
+  title: Clear Permit
+
+appearance: 
+  page-mode: Modal Dialog
+  dialog-template: Theme Default
+  template-options: 
+  - '#DEFAULT#'
+
+dialog: 
+  chained: true
+  resizable: true
+
+navigation-menu: 
+  override-user-interface-level: false
+
+navigation: 
+  cursor-focus: Do not focus cursor
+  warn-on-unsaved-changes: false
+
+javascript: 
+  function-and-global-variable-declaration: |
+    var p16SigPad = null;
+    
+    function p16InitSig() {
+        var canvas = document.getElementById('p16SigCanvas');
+        if (!canvas) return;
+        var wrapper = canvas.parentElement;
+        var w = Math.max((wrapper ? wrapper.offsetWidth - 24 : 400), 280);
+        canvas.width  = w;
+        canvas.height = 150;
+        canvas.style.width  = w + 'px';
+        canvas.style.height = '150px';
+        var ctx = canvas.getContext('2d');
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth   = 2;
+        ctx.lineCap     = 'round';
+        ctx.lineJoin    = 'round';
+        p16SigPad = new SignaturePad(canvas, ctx);
+    }
+    
+    function p16ClearSig() {
+        if (p16SigPad) { p16SigPad.clear(); }
+    }
+    
+    function p16SaveSig() {
+        if (!p16SigPad || p16SigPad.isEmpty) {
+            apex.item('P16_CLEAR_SIGNATURE_DATA').setValue('');
+        } else {
+            apex.item('P16_CLEAR_SIGNATURE_DATA').setValue(p16SigPad.getDataURL());
+        }
+    }
+    
+  execute-when-page-loads: |
+    // ── Shared state ──────────────────────────────────────────
+    var p16Status  = apex.item('P16_WORKFLOW_STATUS').getValue();
+    var isReadOnly = (p16Status !== 'STARTED');
+    
+    // ── Signature pad init ────────────────────────────────────
+    // ── Signature pad init ────────────────────────────────────
+    setTimeout(function () {
+        p16InitSig();
+    
+        // Always clear first to prevent stale canvas from previous open
+        if (p16SigPad) { p16SigPad.clear(); }
+    
+        // ── Load existing signature (COMPLETED view) ──────────────
+        var existingSig = apex.item('P16_CLEAR_SIGNATURE_DATA_URL').getValue();
+    
+        if (existingSig) {
+            loadSignature(p16SigPad, document.getElementById('p16SigCanvas'), existingSig);
+    
+            if (isReadOnly) {
+                var canvas = document.getElementById('p16SigCanvas');
+                if (canvas) {
+                    canvas.style.pointerEvents  = 'none';
+                    canvas.style.opacity        = '0.85';
+                    canvas.style.cursor         = 'not-allowed';
+                    canvas.title                = 'Signature locked';
+                }
+                var clearBtn = document.getElementById('p16ClearSigBtn');
+                if (clearBtn) clearBtn.style.display = 'none';
+            }
+        } else if (isReadOnly) {
+            // STARTED but no sig yet — just lock canvas
+            var canvas = document.getElementById('p16SigCanvas');
+            if (canvas) {
+                canvas.style.pointerEvents  = 'none';
+                canvas.style.opacity        = '0.85';
+                canvas.style.cursor         = 'not-allowed';
+            }
+        }
+    
+    }, 350);
+    
+    // ── Save signature before submit ──────────────────────────
+    apex.jQuery(document).on('apexbeforepagesubmit', function () {
+        p16SaveSig();
+    });
+    
+    // ── Binary Y/N badges ─────────────────────────────────────
+    (function () {
+    
+        var BINARY_ITEMS = [
+            'P16_CLEAR_WORK_COMPLETE',
+            'P16_CLEAR_AREA_SAFE'
+        ];
+    
+        var BADGES = [
+            { val: 'Y', cls: 'binary-badge-yes', label: '✓' },
+            { val: 'N', cls: 'binary-badge-no',  label: '✗' }
+        ];
+    
+        BINARY_ITEMS.forEach(function (itemName) {
+    
+            var $fc = $('#' + itemName).closest('.t-Form-fieldContainer');
+            if ($fc.length === 0) return;
+    
+            $fc.find('.binary-badge-row').remove();
+    
+            var currentVal = '';
+            if (!isReadOnly) {
+                currentVal = $('input[name="' + itemName + '"]:checked').val() || '';
+            } else {
+                currentVal = apex.item(itemName).getValue() || '';
+            }
+    
+            var $row = $('<div class="binary-badge-row"></div>').attr('data-item', itemName);
+    
+            BADGES.forEach(function (b) {
+                $('<span></span>')
+                    .addClass('binary-badge ' + b.cls)
+                    .toggleClass('cm-active', currentVal === b.val)
+                    .toggleClass('binary-readonly', isReadOnly)
+                    .attr('data-value', b.val)
+                    .text(b.label)
+                    .appendTo($row);
+            });
+    
+            $fc.find('.t-Form-inputContainer').append($row);
+        });
+    
+        $('.cm-binary-item .apex-item-grid').hide();
+    
+        $(document).off('click.binarybadge').on('click.binarybadge', '.binary-badge:not(.binary-readonly)', function () {
+            var $badge   = $(this);
+            var $row     = $badge.closest('.binary-badge-row');
+            var itemName = $row.attr('data-item');
+            var val      = $badge.attr('data-value');
+    
+            $('input[name="' + itemName + '"][value="' + val + '"]')
+                .prop('checked', true).trigger('change');
+    
+            $row.find('.binary-badge').removeClass('cm-active');
+            $badge.addClass('cm-active');
+        });
+    
+    }());
+    
+    // ── Lock text fields in read-only mode ────────────────────
+    if (isReadOnly) {
+        var readOnlyItems = [
+            'P16_CLEAR_PERSON_NAME',
+            'P16_CLEAR_PERSON_MOBILE',
+            'P16_CLEAR_COMPANY',
+            'P16_CLEAR_DATETIME'
+        ];
+        readOnlyItems.forEach(function (itemName) {
+            var $el = $('#' + itemName);
+            $el.prop('readonly', true)
+               .css({
+                   'background-color': 'rgb(213, 209, 209)',
+                   'pointer-events':   'none',
+                   'cursor':           'default'
+               });
+        });
+    
+        // Hide submit button
+        $('#BTN_CLEAR_PERMIT_P16').hide();
+    }
+    
+    // ── Required star (mandatory indicator) ───────────────────
+    function initP16RequiredStars() {
+        var $fc = $('#P16_CLEAR_WORK_COMPLETE').closest('.t-Form-fieldContainer');
+        if ($fc.length === 0) return;
+        $fc.find('.t-Form-labelContainer label, label').first()
+           .append('<span class="cm-required-star" aria-hidden="true"> *</span>');
+    }
+    
+    apex.jQuery(document).on('apexreadyend', function () {
+        initP16RequiredStars();
+    });
+    
+    // ── Declaration text update ───────────────────────────────
+    function p16UpdateDeclaration() {
+        var workVal = apex.item('P16_CLEAR_WORK_COMPLETE').getValue();
+        var safeVal = apex.item('P16_CLEAR_AREA_SAFE').getValue();
+    
+        var $work = $('#p16-decl-work-complete');
+        if (workVal === 'Y') {
+            $work.text('completed').css('color', '#1e7e34');
+        } else if (workVal === 'N') {
+            $work.text('not completed').css('color', '#a71d2a');
+        } else {
+            $work.text('completed / not completed').css('color', '#344B5C');
+        }
+    
+        var $safe = $('#p16-decl-area-safe');
+        var $tidy = $('#p16-decl-area-tidy');
+        if (safeVal === 'Y') {
+            $safe.text('is').css('color', '#1e7e34');
+            $tidy.text('has').css('color', '#1e7e34');
+        } else if (safeVal === 'N') {
+            $safe.text('is NOT').css('color', '#a71d2a');
+            $tidy.text('has NOT').css('color', '#a71d2a');
+        } else {
+            $safe.text('is / is not').css('color', '#344B5C');
+            $tidy.text('has / has not').css('color', '#344B5C');
+        }
+    }
+    
+    // Run on load then on every badge click
+    p16UpdateDeclaration();
+    
+    $(document).on('click.p16decl', '.binary-badge', function () {
+        setTimeout(p16UpdateDeclaration, 50);
+    });
+
+css: 
+  inline: |
+    .p16-declaration-box {
+        background: #fff8e1;
+        border-left: 4px solid #f59c00;
+        padding: 16px 20px;
+        border-radius: 4px;
+        font-size: 14px;
+        line-height: 1.7;
+        margin-bottom: 4px;
+    }
+    .p16-declaration-box strong { color: #344B5C; }
+    
+    .p16-sig-wrapper canvas {
+        display: block;
+        border: 1px dashed var(--ut-component-border-color, #ccc);
+        border-radius: 4px;
+        touch-action: none;
+        cursor: crosshair;
+        background: #fff;
+    }
+
+security: 
+  authorization-scheme: Can Edit Permits # 31533963716212424
+  authentication: Page Requires Authentication
+  deep-linking: Application Default
+  page-access-protection: Arguments Must Have Checksum
+  form-auto-complete: Off
+  browser-cache: Application Default
+
+session-management: 
+  rejoin-sessions: Application Default
+
+advanced: 
+  enable-duplicate-page-submissions: Yes - Enable page to be re-posted
+  reload-on-submit: Only for Success
+
+server-cache: 
+  caching: Disabled
+
+regions: 
+- # ====== Region: Permit Info Banner ==========================
+  id: 41970349812328834
+  identification: 
+    name: Permit Info Banner
+    type: Static Content
+
+  source: 
+    html-code: |
+      <div class="t-Alert t-Alert--info t-Alert--horizontal" role="region" style="margin-bottom:8px;">
+        <div class="t-Alert-wrap">
+          <div class="t-Alert-icon"><span class="t-Icon fa fa-check-circle-o"></span></div>
+          <div class="t-Alert-content">
+            <div class="t-Alert-header">
+              <h2 class="t-Alert-title">Clearance of Permit to Work</h2>
+            </div>
+            <div class="t-Alert-body">
+              Permit: <strong>&P16_PERMIT_NUMBER.</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+
+  layout: 
+    sequence: 50
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Blank with Attributes
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Declaration =================================
+  id: 41970462082328835
+  identification: 
+    name: Declaration
+    title: Declaration
+    type: Static Content
+
+  source: 
+    html-code: |
+      <div class="p16-declaration-box">
+        <p style="margin:0 0 10px 0;">
+          By signing below, I confirm that the works carried out under this Permit to Work
+          have been <strong id="p16-decl-work-complete">completed / not completed</strong> and that all personnel under
+          my supervision have vacated the work area.
+        </p>
+        <p style="margin:0 0 10px 0;">
+          I confirm that it <strong id="p16-decl-area-safe">is / is not</strong> safe to reinstate the plant and
+          equipment which has been worked on under this Permit to Work.
+        </p>
+        <p style="margin:0;">
+          The work area <strong id="p16-decl-area-tidy">has / has not</strong> been left in a safe and tidy condition,
+          all temporary measures have been removed, and all waste has been cleared from site.
+          This Permit to Work is hereby surrendered and closed.
+        </p>
+      </div>
+
+  layout: 
+    sequence: 60
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--showIcon
+    - t-Region--accent15
+    - t-Region--scrollBody
+    icon: fa-file-text-o
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Person in Charge of Works ===================
+  id: 41970550498328836
+  identification: 
+    name: Person in Charge of Works
+    title: Person in Charge of Works
+    type: Static Content
+
+  layout: 
+    sequence: 70
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--showIcon
+    - t-Region--accent15
+    - t-Region--scrollBody
+    icon: fa-user
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Signature ===================================
+  id: 41970654008328837
+  identification: 
+    name: Signature
+    title: Signature – Person in Charge of Works
+    type: Static Content
+
+  source: 
+    html-code: |
+      <div class="p16-sig-wrapper">
+        <label class="t-Form-label" style="display:block;margin-bottom:6px;">
+          Signature <span style="color:#C0392B;" aria-hidden="true">*</span>
+        </label>
+        <canvas id="p16SigCanvas"></canvas>
+        <button type="button"
+                class="t-Button t-Button--small t-Button--simple"
+                id="p16ClearSigBtn"
+                style="margin-top:6px;"
+                onclick="p16ClearSig()">
+          <span class="fa fa-eraser" aria-hidden="true"></span> Clear Signature
+        </button>
+      </div>
+      
+
+  layout: 
+    sequence: 80
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--showIcon
+    - t-Region--accent15
+    - t-Region--scrollBody
+    icon: fa-pencil
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Buttons =====================================
+  id: 41970736729328838
+  identification: 
+    name: Buttons
+    type: Static Content
+
+  layout: 
+    sequence: 90
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Buttons Container
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+page-items: 
+- # ====== Page Item: P16_PERMIT_ID ============================
+  id: 41970853732328839
+  identification: 
+    name: P16_PERMIT_ID
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 10
+    region: Person in Charge of Works # 41970550498328836
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P16_PERMIT_NUMBER ========================
+  id: 41970924705328840
+  identification: 
+    name: P16_PERMIT_NUMBER
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 20
+    region: Person in Charge of Works # 41970550498328836
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P16_CLEAR_WORK_COMPLETE ==================
+  id: 41971091989328841
+  identification: 
+    name: P16_CLEAR_WORK_COMPLETE
+    type: Radio Group
+
+  label: 
+    label: Works are completed?
+    alignment: Left
+
+  settings: 
+    number-of-columns: 2
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 10
+    region: Declaration # 41970462082328835
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-binary-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC:Completed;Y,Not Complete;N'
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P16_CLEAR_AREA_SAFE ======================
+  id: 41971120202328842
+  identification: 
+    name: P16_CLEAR_AREA_SAFE
+    type: Radio Group
+
+  label: 
+    label: It is safe to reinstate plant and equipment?
+    alignment: Left
+
+  settings: 
+    number-of-columns: 2
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 20
+    region: Declaration # 41970462082328835
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-binary-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC:Safe to reinstate plant and equipment;Y,NOT Safe to reinstate;N'
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P16_CLEAR_PERSON_NAME ====================
+  id: 41971205189328843
+  identification: 
+    name: P16_CLEAR_PERSON_NAME
+    type: Text Field
+
+  label: 
+    label: Name
+    alignment: Left
+
+  settings: 
+    subtype: Text
+    trim-spaces: Leading and Trailing
+    text-case: NO CHANGE
+    submit-when-enter-pressed: false
+    disabled: false
+
+  layout: 
+    sequence: 30
+    region: Person in Charge of Works # 41970550498328836
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Required - Floating
+    template-options: 
+    - '#DEFAULT#'
+    width: 30
+    value-placeholder: Full name of person in charge
+
+  validation: 
+    value-required: false
+    maximum-length: 200
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P16_CLEAR_COMPANY ========================
+  id: 41971361135328844
+  identification: 
+    name: P16_CLEAR_COMPANY
+    type: Text Field
+
+  label: 
+    label: Company
+    alignment: Left
+
+  settings: 
+    subtype: Text
+    trim-spaces: Leading and Trailing
+    text-case: NO CHANGE
+    submit-when-enter-pressed: false
+    disabled: false
+
+  layout: 
+    sequence: 50
+    region: Person in Charge of Works # 41970550498328836
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Required - Floating
+    template-options: 
+    - '#DEFAULT#'
+    width: 30
+    value-placeholder: Company Name
+
+  validation: 
+    value-required: false
+    maximum-length: 200
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P16_CLEAR_PERSON_MOBILE ==================
+  id: 41971460280328845
+  identification: 
+    name: P16_CLEAR_PERSON_MOBILE
+    type: Text Field
+
+  label: 
+    label: Mobile Tel. No.
+    alignment: Left
+
+  settings: 
+    subtype: Text
+    trim-spaces: Leading and Trailing
+    text-case: NO CHANGE
+    submit-when-enter-pressed: false
+    disabled: false
+
+  layout: 
+    sequence: 40
+    region: Person in Charge of Works # 41970550498328836
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    width: 30
+    value-placeholder: 07700 900000
+
+  validation: 
+    value-required: false
+    maximum-length: 50
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P16_CLEAR_DATETIME =======================
+  id: 41971556521328846
+  identification: 
+    name: P16_CLEAR_DATETIME
+    type: Display Only
+
+  label: 
+    label: Time / Date
+    alignment: Left
+
+  settings: 
+    format: Plain Text
+    based-on: Item Value
+    show-line-breaks: false
+    send-on-page-submit: true
+
+  layout: 
+    sequence: 60
+    region: Person in Charge of Works # 41970550498328836
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Required - Floating
+    template-options: 
+    - '#DEFAULT#'
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P16_CLEAR_SIGNATURE_DATA =================
+  id: 41971678908328847
+  identification: 
+    name: P16_CLEAR_SIGNATURE_DATA
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 10
+    region: Signature # 41970654008328837
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P16_CLEARED ==============================
+  id: 41971786256328848
+  identification: 
+    name: P16_CLEARED
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 70
+    region: Person in Charge of Works # 41970550498328836
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P16_WORKFLOW_STATUS ======================
+  id: 45757410227782526
+  identification: 
+    name: P16_WORKFLOW_STATUS
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 30
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P16_CLEAR_SIGNATURE_DATA_URL =============
+  id: 45757583978782527
+  identification: 
+    name: P16_CLEAR_SIGNATURE_DATA_URL
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 40
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+buttons: 
+- # ====== Button: CANCEL ======================================
+  id: 41971873495328849
+  identification: 
+    button-name: CANCEL
+    label: Cancel
+
+  layout: 
+    sequence: 10
+    region: Buttons # 41970736729328838
+    slot: CLOSE
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text
+    hot: false
+    template-options: 
+    - '#DEFAULT#'
+
+  behavior: 
+    action: Defined by Dynamic Action
+    execute-validations: true
+
+- # ====== Button: CLEAR_PERMIT ================================
+  id: 41971964243328850
+  identification: 
+    button-name: CLEAR_PERMIT
+    label: Clear Permit
+
+  layout: 
+    sequence: 20
+    region: Buttons # 41970736729328838
+    slot: NEXT
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text with Icon
+    hot: true
+    template-options: 
+    - '#DEFAULT#'
+    - t-Button--iconLeft
+    icon: fa-check-circle
+
+  behavior: 
+    action: Defined by Dynamic Action
+    execute-validations: true
+
+  advanced: 
+    static-id: BTN_CLEAR_PERMIT_P16
+
+dynamic-actions: 
+- # ====== Dynamic Action: Cancel - Close Dialog ===============
+  id: 45754945488782501
+  identification: 
+    name: Cancel - Close Dialog
+
+  execution: 
+    sequence: 10
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Click
+    selection-type: Button
+    button: CANCEL # 41971873495328849
+
+  actions: 
+  - # ====== Action: Cancel Dialog ===============================
+    id: 45755093312782502
+    identification: 
+      action: Cancel Dialog
+
+    execution: 
+      sequence: 10
+      event: Cancel - Close Dialog # 45754945488782501
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+- # ====== Dynamic Action: Clear Permit - Capture Location and S
+  id: 45755186137782503
+  identification: 
+    name: Clear Permit - Capture Location and Submit
+
+  execution: 
+    sequence: 20
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Click
+    selection-type: Button
+    button: CLEAR_PERMIT # 41971964243328850
+
+  actions: 
+  - # ====== Action: Execute JavaScript Code =====================
+    id: 45755261851782504
+    identification: 
+      action: Execute JavaScript Code
+
+    settings: 
+      code: captureLocationThenSubmit('CLEAR_PERMIT');
+
+    execution: 
+      sequence: 10
+      event: Clear Permit - Capture Location and Submit # 45755186137782503
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+validations: 
+- # ====== Validation: Work Complete Required ==================
+  id: 45755602418782508
+  identification: 
+    name: Work Complete Required
+
+  execution: 
+    sequence: 10
+
+  validation: 
+    type: Item is NOT NULL
+    item: P16_CLEAR_WORK_COMPLETE
+    always-execute: false
+
+  error: 
+    error-message: Please indicate whether the works are completed or not complete.
+    display-location: Inline with Field and in Notification
+
+  server-side-condition: 
+    when-button-pressed: CLEAR_PERMIT # 41971964243328850
+
+- # ====== Validation: Area Safe Required ======================
+  id: 45755711527782509
+  identification: 
+    name: Area Safe Required
+
+  execution: 
+    sequence: 20
+
+  validation: 
+    type: Item is NOT NULL
+    item: P16_CLEAR_AREA_SAFE
+    always-execute: false
+
+  error: 
+    error-message: Please indicate whether it is safe to reinstate plant and equipment.
+    display-location: Inline with Field and in Notification
+
+  server-side-condition: 
+    when-button-pressed: CLEAR_PERMIT # 41971964243328850
+
+- # ====== Validation: Person Name Required ====================
+  id: 45755897998782510
+  identification: 
+    name: Person Name Required
+
+  execution: 
+    sequence: 30
+
+  validation: 
+    type: Item is NOT NULL
+    item: P16_CLEAR_PERSON_NAME
+    always-execute: false
+
+  error: 
+    error-message: Name of Person in Charge is required.
+    display-location: Inline with Field and in Notification
+
+  server-side-condition: 
+    when-button-pressed: CLEAR_PERMIT # 41971964243328850
+
+- # ====== Validation: Signature Required ======================
+  id: 45755944608782511
+  identification: 
+    name: Signature Required
+
+  execution: 
+    sequence: 40
+
+  validation: 
+    type: Item is NOT NULL
+    item: P16_CLEAR_SIGNATURE_DATA
+    always-execute: false
+
+  error: 
+    error-message: A signature is required to clear the permit.
+    display-location: Inline in Notification
+
+  server-side-condition: 
+    when-button-pressed: CLEAR_PERMIT # 41971964243328850
+
+- # ====== Validation: Permit Still Valid ======================
+  id: 45756000957782512
+  identification: 
+    name: Permit Still Valid
+
+  execution: 
+    sequence: 50
+
+  validation: 
+    type: Function Body (returning Boolean)
+    language: PL/SQL
+    pl/sql-function-body: |
+      DECLARE
+          v_count NUMBER;
+      BEGIN
+          SELECT COUNT(*)
+          INTO   v_count
+          FROM   ptw_pro.ptw_lv_permits
+          WHERE  permit_id       = :P16_PERMIT_ID
+          AND    workflow_status = 'STARTED'
+          AND    SYSDATE         < ended_datetime;
+          RETURN v_count > 0;
+      END;
+    always-execute: false
+
+  error: 
+    error-message: Permit can no longer be cleared — it may have expired or already been closed.
+    display-location: Inline in Notification
+
+  server-side-condition: 
+    when-button-pressed: CLEAR_PERMIT # 41971964243328850
+
+processes: 
+- # ====== Process: Load Permit Data ===========================
+  id: 45755388825782505
+  identification: 
+    name: Load Permit Data
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      DECLARE
+          v_status   VARCHAR2(20);
+          v_ended    DATE;
+      BEGIN
+          SELECT workflow_status,
+                 ended_datetime,
+                 permit_number,
+                 person_in_charge_name,
+                 supervising_company,
+                 accept_person_mobile,
+                 clear_work_complete,
+                 clear_area_safe,
+                 clear_person_name,
+                 clear_person_mobile,
+                 clear_company,
+                 TO_CHAR(clear_datetime, 'DD-MON-YYYY HH24:MI')
+          INTO   v_status,
+                 v_ended,
+                 :P16_PERMIT_NUMBER,
+                 :P16_CLEAR_PERSON_NAME,
+                 :P16_CLEAR_COMPANY,
+                 :P16_CLEAR_PERSON_MOBILE,
+                 :P16_CLEAR_WORK_COMPLETE,
+                 :P16_CLEAR_AREA_SAFE,
+                 :P16_CLEAR_PERSON_NAME,
+                 :P16_CLEAR_PERSON_MOBILE,
+                 :P16_CLEAR_COMPANY,
+                 :P16_CLEAR_DATETIME
+          FROM   ptw_pro.ptw_lv_permits
+          WHERE  permit_id = :P16_PERMIT_ID;
+      
+          -- Guard: must be STARTED or COMPLETED
+          IF v_status NOT IN ('STARTED', 'COMPLETED') THEN
+              apex_error.add_error(
+                  p_message          => 'This permit cannot be viewed here. Current status: '
+                                        || v_status,
+                  p_display_location => apex_error.c_on_error_page
+              );
+              RETURN;
+          END IF;
+      
+          -- For STARTED: check validity window and default datetime to now
+          IF v_status = 'STARTED' THEN
+              IF SYSDATE >= v_ended THEN
+                  apex_error.add_error(
+                      p_message          => 'This permit has expired ('
+                                            || TO_CHAR(v_ended, 'DD-MON-YYYY HH24:MI')
+                                            || ') and cannot be cleared.',
+                      p_display_location => apex_error.c_on_error_page
+                  );
+                  RETURN;
+              END IF;
+              -- Default datetime to now only when clearing (not yet set)
+              IF :P16_CLEAR_DATETIME IS NULL THEN
+                  :P16_CLEAR_DATETIME := TO_CHAR(SYSDATE, 'DD-MON-YYYY HH24:MI');
+              END IF;
+          END IF;
+      
+          -- For COMPLETED: existing clearance data already loaded from SELECT above
+          -- P16_CLEAR_DATETIME will contain the stored clear_datetime value
+          IF v_status = 'COMPLETED' AND :P16_CLEAR_DATETIME IS NOT NULL THEN
+              :P16_CLEAR_DATETIME := TO_CHAR(
+                                         TO_DATE(:P16_CLEAR_DATETIME, 'DD-MON-YYYY HH24:MI'),
+                                         'DD-MON-YYYY HH24:MI'
+                                     );
+          END IF;
+      
+          DECLARE
+              v_sig  BLOB;
+              v_clob CLOB;
+          BEGIN
+              IF v_status = 'COMPLETED' THEN
+                  SELECT clear_person_signature
+                  INTO   v_sig
+                  FROM   ptw_pro.ptw_lv_permits
+                  WHERE  permit_id = :P16_PERMIT_ID
+                  AND    clear_person_signature IS NOT NULL
+                  AND    DBMS_LOB.GETLENGTH(clear_person_signature) > 0;
+      
+                  IF v_sig IS NOT NULL AND DBMS_LOB.GETLENGTH(v_sig) > 0 THEN
+                      v_clob := apex_web_service.blob2clobbase64(v_sig);
+                      v_clob := REPLACE(REPLACE(v_clob, CHR(13), ''), CHR(10), '');
+                      :P16_CLEAR_SIGNATURE_DATA_URL :=
+                          'data:image/png;base64,' || DBMS_LOB.SUBSTR(v_clob, 32000, 1);
+                  ELSE
+                      :P16_CLEAR_SIGNATURE_DATA_URL := NULL;
+                  END IF;
+              END IF;
+      
+          EXCEPTION
+              WHEN NO_DATA_FOUND THEN
+                  :P16_CLEAR_SIGNATURE_DATA_URL := NULL;
+              WHEN OTHERS THEN
+                  :P16_CLEAR_SIGNATURE_DATA_URL := NULL;
+          END;
+      
+      EXCEPTION
+          WHEN NO_DATA_FOUND THEN
+              apex_error.add_error(
+                  p_message          => 'Permit not found.',
+                  p_display_location => apex_error.c_on_error_page
+              );
+          WHEN OTHERS THEN
+              apex_error.add_error(
+                  p_message          => 'Error loading permit data: ' || SQLERRM,
+                  p_display_location => apex_error.c_on_error_page
+              );
+      END;
+
+  execution: 
+    sequence: 10
+    point: Before Header
+    run-process: Once Per Page Visit (default)
+
+- # ====== Process: Clear Permit ===============================
+  id: 45755480536782506
+  identification: 
+    name: Clear Permit
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      DECLARE
+          v_sig_blob  BLOB;
+          v_clob      CLOB;
+          v_now       DATE := SYSDATE;
+      BEGIN
+          -- Convert base64 signature PNG to BLOB
+          IF :P16_CLEAR_SIGNATURE_DATA IS NOT NULL THEN
+              v_clob     := REPLACE(:P16_CLEAR_SIGNATURE_DATA,
+                                    'data:image/png;base64,', '');
+              v_sig_blob := apex_web_service.clobbase642blob(v_clob);
+          END IF;
+      
+          UPDATE ptw_pro.ptw_lv_permits
+          SET    clear_work_complete    = :P16_CLEAR_WORK_COMPLETE,
+                 clear_area_safe        = :P16_CLEAR_AREA_SAFE,
+                 clear_person_name      = UPPER(TRIM(:P16_CLEAR_PERSON_NAME)),
+                 clear_company          = UPPER(TRIM(:P16_CLEAR_COMPANY)),
+                 clear_person_mobile    = TRIM(:P16_CLEAR_PERSON_MOBILE),
+                 clear_person_signature = v_sig_blob,
+                 clear_datetime         = v_now,
+                 clear_latitude         = TO_NUMBER(:P0_LATITUDE),
+                 clear_longitude        = TO_NUMBER(:P0_LONGITUDE),
+                 workflow_status        = 'COMPLETED',
+                 current_step           = 'CLEARANCE',
+                 completion_date        = v_now,
+                 modified_by            = V('APP_USER'),
+                 modified_date          = v_now
+          WHERE  permit_id              = :P16_PERMIT_ID
+          AND    workflow_status        = 'STARTED'
+          AND    SYSDATE                < ended_datetime;
+      
+          IF SQL%ROWCOUNT = 0 THEN
+              RAISE_APPLICATION_ERROR(-20001,
+                  'Permit could not be cleared. It may have expired or '
+                  || 'already been closed. Please refresh the permits list.');
+          END IF;
+      
+          COMMIT;
+          :P16_CLEARED := 'Y';
+          apex_application.g_print_success_message :=
+              'Permit ' || :P16_PERMIT_NUMBER || ' cleared successfully.';
+      
+      EXCEPTION
+          WHEN OTHERS THEN
+              ROLLBACK;
+              apex_error.add_error(
+                  p_message          => 'Error clearing permit: ' || SQLERRM,
+                  p_display_location => apex_error.c_inline_in_notification
+              );
+      END;
+      
+
+  execution: 
+    sequence: 10
+    point: Processing
+    run-process: Once Per Page Visit (default)
+
+  error: 
+    display-location: Inline in Notification
+
+  server-side-condition: 
+    when-button-pressed: CLEAR_PERMIT # 41971964243328850
+
+- # ====== Process: Close Dialog ===============================
+  id: 45755524966782507
+  identification: 
+    name: Close Dialog
+    type: Close Dialog
+    execution-chain: None
+
+  settings: 
+    items-to-return-: 
+    - P16_CLEARED
+    show-success-messages: false
+
+  execution: 
+    sequence: 20
+    point: Processing
+    run-process: Once Per Page Visit (default)
+
+  error: 
+    display-location: Inline in Notification
+
+  server-side-condition: 
+    type: Item = Value
+    item: P16_CLEARED
+    value: N
+
+branches: 
+- # ====== Branch: Back to Dashboard after saving ==============
+  id: 47748469701890006
+  identification: 
+    name: Back to Dashboard after saving
+
+  execution: 
+    sequence: 10
+    point: After Processing
+
+  behavior: 
+    type: Page or URL (Redirect)
+    target: 
+      url: 'f?p=&APP_ID.:1:&SESSION.::&DEBUG.:1::'
+      page: 1 # Dashboard
+      clear-cache: 1
+
+  server-side-condition: 
+    type: Item = Value
+    item: P16_CLEARED
+    value: Y
+

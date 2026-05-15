@@ -1,0 +1,17 @@
+---
+- # ====== Substitution: APP_NAME ==============================
+  id: 1
+  identification: 
+    name: APP_NAME
+
+  installation: 
+    prompt-substitution: false
+
+- # ====== Substitution: APP_ENV ===============================
+  id: 2
+  identification: 
+    name: APP_ENV
+
+  installation: 
+    prompt-substitution: false
+

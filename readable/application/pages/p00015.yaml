@@ -1,0 +1,737 @@
+---
+# ====== Page: Monitoring ====================================
+id: 15
+identification: 
+  name: Monitoring
+  alias: MONITORING
+  title: Monitoring
+
+appearance: 
+  page-mode: Modal Dialog
+  dialog-template: Theme Default
+  template-options: 
+  - '#DEFAULT#'
+
+dialog: 
+  chained: true
+  resizable: true
+
+navigation-menu: 
+  override-user-interface-level: false
+
+navigation: 
+  cursor-focus: Do not focus cursor
+  warn-on-unsaved-changes: true
+
+security: 
+  authentication: Page Requires Authentication
+  deep-linking: Application Default
+  page-access-protection: Arguments Must Have Checksum
+  form-auto-complete: Off
+  browser-cache: Application Default
+
+session-management: 
+  rejoin-sessions: Application Default
+
+advanced: 
+  enable-duplicate-page-submissions: Yes - Enable page to be re-posted
+  reload-on-submit: Only for Success
+
+server-cache: 
+  caching: Disabled
+
+regions: 
+- # ====== Region: Monitoring report ===========================
+  id: 41968196091328812
+  identification: 
+    name: Monitoring report
+    title: List
+    type: Interactive Report
+
+  source: 
+    location: Local Database
+    type: SQL Query
+    sql-query: |
+      SELECT monitoring_id,
+             permit_id,
+             'LV MONITORING' AS ptw_type,
+             monitor_name,
+             monitor_date,
+             monitoring_status,
+             CASE monitoring_status
+                 WHEN 'IN_PROGRESS' THEN
+                     '<a href="' 
+                     || apex_page.get_url(
+                          p_page        => 10,
+                          p_clear_cache => '10',
+                          p_items       => 'P10_PERMIT_ID,P10_MONITORING_ID',
+                          p_values      => permit_id || ',' || monitoring_id
+                        )
+                     || '"><span class="fa fa-pencil" title="Edit"></span></a>'
+                 ELSE
+                     '<a href="'
+                     || apex_page.get_url(
+                          p_page        => 10,
+                          p_clear_cache => '10',
+                          p_items       => 'P10_PERMIT_ID,P10_MONITORING_ID',
+                          p_values      => permit_id || ',' || monitoring_id
+                        )
+                     || '"><span class="fa fa-eye" title="View"></span></a>'
+             END AS action_link
+      FROM   ptw_pro.ptw_lv_monitoring
+      WHERE  permit_id = :P15_PERMIT_ID
+      ORDER BY monitor_date DESC
+    page-items-to-submit: 
+    - P15_PERMIT_ID
+    - P15_PTW_TYPE
+
+  layout: 
+    sequence: 10
+    parent-region: Monitoring # 41968861118328819
+    slot: SUB_REGIONS
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--removeHeader js-removeLandmark
+    - t-Region--accent15
+    - t-Region--scrollBody
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  server-cache: 
+    caching: Disabled
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    id: 41968258127328813
+    link: 
+      link-column: Exclude Link Column
+
+    pagination: 
+      type: Row Ranges X to Y
+      display-position: Bottom - Right
+
+    performance: 
+      lazy-loading: false
+      maximum-rows-to-process: 1000000
+
+    search-bar: 
+      include-search-bar: true
+      search-field: true
+      finder-drop-down: false
+      reports-select-list: false
+      rows-per-page-selector: false
+
+    actions-menu: 
+      include-actions-menu: false
+
+    heading: 
+      fixed-to: Page
+
+    icon-view: 
+      show: false
+
+    detail-view: 
+      show: false
+
+    saved-reports: 
+    - # ====== Saved Report: Primary Report ========================
+      id: 41985326222878177
+      identification: 
+        name: Primary Report
+        alias: 419854
+
+    columns: 
+    - # ====== Column: MONITORING_ID ===============================
+      id: 41968331831328814
+      identification: 
+        column-name: MONITORING_ID
+        type: Plain Text
+
+      heading: 
+        heading: Monitoring Id
+        alignment: end
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 10
+        column-alignment: end
+
+      accessibility: 
+        value-identifies-row: false
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
+    - # ====== Column: PERMIT_ID ===================================
+      id: 41968402522328815
+      identification: 
+        column-name: PERMIT_ID
+        type: Plain Text
+
+      heading: 
+        heading: Permit Id
+        alignment: end
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 20
+        column-alignment: end
+
+      accessibility: 
+        value-identifies-row: false
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
+    - # ====== Column: PTW_TYPE ====================================
+      id: 41968536271328816
+      identification: 
+        column-name: PTW_TYPE
+        type: Plain Text
+
+      heading: 
+        heading: Ptw Type
+        alignment: start
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 30
+        column-alignment: start
+
+      accessibility: 
+        value-identifies-row: false
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
+    - # ====== Column: MONITOR_NAME ================================
+      id: 41968609653328817
+      identification: 
+        column-name: MONITOR_NAME
+        type: Plain Text
+
+      heading: 
+        heading: Monitor Name
+        alignment: start
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 40
+        column-alignment: start
+
+      accessibility: 
+        value-identifies-row: false
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
+    - # ====== Column: MONITOR_DATE ================================
+      id: 41968797960328818
+      identification: 
+        column-name: MONITOR_DATE
+        type: Plain Text
+
+      heading: 
+        heading: Monitor Date
+        alignment: start
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 50
+        column-alignment: start
+
+      accessibility: 
+        value-identifies-row: false
+
+      appearance: 
+        format-mask: DD-MON-YYYY
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+        date-ranges: All
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
+    - # ====== Column: MONITORING_STATUS ===========================
+      id: 47752824835890050
+      identification: 
+        column-name: MONITORING_STATUS
+        type: Plain Text
+
+      heading: 
+        heading: Monitoring Status
+        alignment: start
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 60
+        column-alignment: start
+
+      accessibility: 
+        value-identifies-row: false
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
+    - # ====== Column: ACTION_LINK =================================
+      id: 49364303034381904
+      identification: 
+        column-name: ACTION_LINK
+        type: Plain Text
+
+      heading: 
+        heading: Action
+        alignment: start
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 90
+        column-alignment: start
+
+      accessibility: 
+        value-identifies-row: false
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: false
+
+- # ====== Region: Monitoring ==================================
+  id: 41968861118328819
+  identification: 
+    name: Monitoring
+    title: Monitoring for &P15_PERMIT_NUMBER.
+    type: Static Content
+
+  layout: 
+    sequence: 70
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--accent15
+    - t-Region--scrollBody
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+page-items: 
+- # ====== Page Item: P15_PERMIT_ID ============================
+  id: 41967839302328809
+  identification: 
+    name: P15_PERMIT_ID
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 30
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P15_PERMIT_NUMBER ========================
+  id: 41967944550328810
+  identification: 
+    name: P15_PERMIT_NUMBER
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 40
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P15_PTW_TYPE =============================
+  id: 41968087770328811
+  identification: 
+    name: P15_PTW_TYPE
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 50
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P15_WORKFLOW_STATUS ======================
+  id: 47748083904890002
+  identification: 
+    name: P15_WORKFLOW_STATUS
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 60
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+buttons: 
+- # ====== Button: CREATE ======================================
+  id: 41968968041328820
+  identification: 
+    button-name: CREATE
+    label: Create New
+
+  layout: 
+    sequence: 10
+    region: Monitoring # 41968861118328819
+    slot: CREATE
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text with Icon
+    hot: true
+    template-options: 
+    - '#DEFAULT#'
+    - t-Button--iconLeft
+    icon: fa-plus
+
+  behavior: 
+    action: Redirect to Page in this Application
+    target: 
+      url: 'f?p=&APP_ID.:10:&SESSION.::&DEBUG.:10:P10_PERMIT_ID:&P15_PERMIT_ID.'
+      page: 10 # LV Monitoring
+      clear-cache: 10
+      values: 
+        p10_permit_id: '&P15_PERMIT_ID.'
+
+    warn-on-unsaved-changes: Do Not Check
+
+  server-side-condition: 
+    type: Item = Value
+    item: P15_WORKFLOW_STATUS
+    value: STARTED
+
+- # ====== Button: EXIT ========================================
+  id: 41969035350328821
+  identification: 
+    button-name: EXIT
+    label: Exit
+
+  layout: 
+    sequence: 10
+    region: Monitoring # 41968861118328819
+    slot: CLOSE
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text
+    hot: false
+    template-options: 
+    - '#DEFAULT#'
+
+  behavior: 
+    action: Defined by Dynamic Action
+    execute-validations: true
+
+dynamic-actions: 
+- # ====== Dynamic Action: Back to Dashboard ===================
+  id: 47748582226890007
+  identification: 
+    name: Back to Dashboard
+
+  execution: 
+    sequence: 10
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Click
+    selection-type: Button
+    button: EXIT # 41969035350328821
+
+  actions: 
+  - # ====== Action: Cancel Dialog ===============================
+    id: 47748652073890008
+    identification: 
+      action: Cancel Dialog
+
+    execution: 
+      sequence: 10
+      event: Back to Dashboard # 47748582226890007
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+processes: 
+- # ====== Process: Populate items =============================
+  id: 47748162967890003
+  identification: 
+    name: Populate items
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      BEGIN
+        SELECT workflow_status
+        INTO   :P15_WORKFLOW_STATUS
+        FROM   ptw_pro.ptw_lv_permits
+        WHERE  permit_id = :P15_PERMIT_ID;
+      EXCEPTION
+        WHEN OTHERS THEN
+          NULL;
+      END;
+      
+      
+
+  execution: 
+    sequence: 10
+    point: After Header
+    run-process: Once Per Page Visit (default)
+

@@ -15,7 +15,7 @@ wwv_flow_imp_shared.create_list(
  p_id=>wwv_flow_imp.id(26415021693144587)
 ,p_name=>'Navigation Menu'
 ,p_list_status=>'PUBLIC'
-,p_version_scn=>46753000610681
+,p_version_scn=>46977818153741
 );
 wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(26426875280144645)
@@ -82,6 +82,24 @@ wwv_flow_imp_shared.create_list_item(
 ,p_parent_list_item_id=>wwv_flow_imp.id(31589599630638717)
 ,p_security_scheme=>wwv_flow_imp.id(26419849891144614)
 ,p_list_item_current_type=>'TARGET_PAGE'
+);
+wwv_flow_imp_shared.create_list_item(
+ p_id=>wwv_flow_imp.id(49781486325693551)
+,p_list_item_display_sequence=>90
+,p_list_item_link_text=>'Reports'
+,p_list_item_icon=>'fa-table-search'
+,p_security_scheme=>wwv_flow_imp.id(26419849891144614)
+,p_list_item_current_type=>'TARGET_PAGE'
+);
+wwv_flow_imp_shared.create_list_item(
+ p_id=>wwv_flow_imp.id(49754023365978431)
+,p_list_item_display_sequence=>91
+,p_list_item_link_text=>'Permit Search'
+,p_list_item_link_target=>'f?p=&APP_ID.:50:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-area-chart'
+,p_parent_list_item_id=>wwv_flow_imp.id(49781486325693551)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'50'
 );
 wwv_flow_imp.component_end;
 end;

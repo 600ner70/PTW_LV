@@ -1,0 +1,402 @@
+---
+# ====== Page: Create PTW ====================================
+id: 14
+identification: 
+  name: Create PTW
+  alias: PTW-TYPES
+  title: Create PTW
+
+appearance: 
+  page-mode: Modal Dialog
+  dialog-template: Theme Default
+  template-options: 
+  - '#DEFAULT#'
+
+dialog: 
+  chained: true
+  resizable: true
+
+navigation-menu: 
+  override-user-interface-level: false
+
+navigation: 
+  cursor-focus: Do not focus cursor
+  warn-on-unsaved-changes: true
+
+security: 
+  authentication: Page Requires Authentication
+  deep-linking: Application Default
+  page-access-protection: Arguments Must Have Checksum
+  form-auto-complete: Off
+  browser-cache: Application Default
+
+session-management: 
+  rejoin-sessions: Application Default
+
+advanced: 
+  enable-duplicate-page-submissions: Yes - Enable page to be re-posted
+  reload-on-submit: Only for Success
+
+server-cache: 
+  caching: Disabled
+
+regions: 
+- # ====== Region: PTW available types =========================
+  id: 40553413561170616
+  identification: 
+    name: PTW available types
+    title: PTW available types
+    type: Static Content
+
+  layout: 
+    sequence: 50
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--showIcon
+    - t-Region--accent15
+    - t-Region--scrollBody
+    icon: fa-file-cabinet
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Buttons =====================================
+  id: 40553741884170619
+  identification: 
+    name: Buttons
+    type: Static Content
+
+  layout: 
+    sequence: 60
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Buttons Container
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+page-items: 
+- # ====== Page Item: P14_PERMIT_ID ============================
+  id: 40553272069170614
+  identification: 
+    name: P14_PERMIT_ID
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 30
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P14_WORKFLOW_STATUS ======================
+  id: 40553335302170615
+  identification: 
+    name: P14_WORKFLOW_STATUS
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 40
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P14_PTW_TYPES ============================
+  id: 40553683189170618
+  identification: 
+    name: P14_PTW_TYPES
+    type: Select List
+
+  label: 
+    label: Available types
+    alignment: Left
+
+  settings: 
+    page-action-on-selection: None
+
+  multiple-values: 
+    type: No
+
+  layout: 
+    sequence: 10
+    region: PTW available types # 40553413561170616
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    height: 1
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: SQL Query
+    sql-query: |
+      SELECT type_desc d,
+             ptw_type  r
+      FROM   ptw_pro.ptw_types
+      WHERE  available = 'Y';
+    display-extra-values: false
+    display-null-value: true
+    null-display-value: '- Select -'
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+buttons: 
+- # ====== Button: CANCEL ======================================
+  id: 40553863773170620
+  identification: 
+    button-name: CANCEL
+    label: Cancel
+
+  layout: 
+    sequence: 10
+    region: Buttons # 40553741884170619
+    slot: PREVIOUS
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text
+    hot: false
+    template-options: 
+    - '#DEFAULT#'
+
+  behavior: 
+    action: Submit Page
+    execute-validations: true
+    show-processing: false
+    warn-on-unsaved-changes: Do Not Check
+
+  advanced: 
+    static-id: P14_CANCEL_BTN
+
+- # ====== Button: CREATE ======================================
+  id: 40553968345170621
+  identification: 
+    button-name: CREATE
+    label: Go
+
+  layout: 
+    sequence: 20
+    region: Buttons # 40553741884170619
+    slot: NEXT
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text with Icon
+    hot: true
+    template-options: 
+    - '#DEFAULT#'
+    - t-Button--iconLeft
+    icon: fa-play-circle-o
+
+  behavior: 
+    action: Submit Page
+    execute-validations: true
+    show-processing: false
+    warn-on-unsaved-changes: Do Not Check
+
+  advanced: 
+    static-id: P14_CREATE_BTN
+
+validations: 
+- # ====== Validation: Is an available PTW? ====================
+  id: 40554251233170624
+  identification: 
+    name: Is an available PTW?
+
+  execution: 
+    sequence: 20
+
+  validation: 
+    type: Expression
+    language: PL/SQL
+    pl/sql-expression: ":P14_PTW_TYPES = 'LV ISOLATION'"
+    always-execute: true
+
+  error: 
+    error-message: PTW type is not currently available for this customer.
+    display-location: Inline with Field and in Notification
+
+  server-side-condition: 
+    type: Request = Value
+    value: CREATE
+
+- # ====== Validation: PTW type required =======================
+  id: 40554911737170631
+  identification: 
+    name: PTW type required
+
+  execution: 
+    sequence: 10
+
+  validation: 
+    type: Item is NOT NULL
+    item: P14_PTW_TYPES
+    always-execute: false
+
+  error: 
+    error-message: Please select a PTW type before continuing.
+    display-location: Inline with Field and in Notification
+    associated-item: P14_PTW_TYPES # 40553683189170618
+
+  server-side-condition: 
+    when-button-pressed: CREATE # 40553968345170621
+
+processes: 
+- # ====== Process: Back to Dashboard ==========================
+  id: 40554413173170626
+  identification: 
+    name: Back to Dashboard
+    type: Close Dialog
+    execution-chain: None
+
+  settings: 
+    show-success-messages: false
+
+  execution: 
+    sequence: 20
+    point: Processing
+    run-process: Once Per Page Visit (default)
+
+  error: 
+    display-location: Inline in Notification
+
+  server-side-condition: 
+    when-button-pressed: CANCEL # 40553863773170620
+
+branches: 
+- # ====== Branch: Go to create a PTW ==========================
+  id: 40555114567170633
+  identification: 
+    name: Go to create a PTW
+
+  execution: 
+    sequence: 10
+    point: After Processing
+
+  behavior: 
+    type: Page or URL (Redirect)
+    target: 
+      url: 'f?p=&APP_ID.:2:&SESSION.::&DEBUG.:2:P2_PERMIT_ID,P2_WORKFLOW_STATUS:&P14_PERMIT_ID.,IN_PROGRESS'
+      page: 2 # Site & Work Details
+      clear-cache: 2
+      values: 
+        p2_permit_id: '&P14_PERMIT_ID.'
+        p2_workflow_status: IN_PROGRESS
+

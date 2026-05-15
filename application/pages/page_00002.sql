@@ -127,6 +127,7 @@ unistr('        { val: ''N'', cls: ''binary-badge-no'',  label: ''\2717'' }'),
 '        });',
 '',
 '        $fc.find(''.t-Form-inputContainer'').append($row);',
+'',
 '    });',
 '',
 '    $(''.cm-binary-item .apex-item-grid'').hide();',
@@ -329,7 +330,17 @@ unistr('/* \2500\2500 Required asterisk on each item \2500\2500 */'),
 '    font-weight: 700;',
 '    margin-left: 2px;',
 '}',
-''))
+'',
+'.cm-binary-item .apex-item-grid {',
+'    display: none !important;',
+'    pointer-events: none !important;',
+'}',
+'',
+'.binary-badge-row {',
+'    display: flex;',
+'    gap: 6px;',
+'    margin-top: 4px;',
+'}'))
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
 ,p_read_only_when_type=>'VAL_OF_ITEM_IN_COND_NOT_EQ_COND2'
@@ -713,7 +724,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_read_only_when=>'ptw_pro.ptw_lv_is_contract_support(V(''APP_USER'')) = ''Y'''
 ,p_read_only_when2=>'PLSQL'
 ,p_read_only_when_type=>'EXPRESSION'
-,p_field_template=>1609121967514267634
+,p_field_template=>3031561666792084173
 ,p_item_css_classes=>'cm-binary-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
@@ -732,7 +743,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_read_only_when=>'ptw_pro.ptw_lv_is_contract_support(V(''APP_USER'')) = ''Y'''
 ,p_read_only_when2=>'PLSQL'
 ,p_read_only_when_type=>'EXPRESSION'
-,p_field_template=>1609121967514267634
+,p_field_template=>3031561666792084173
 ,p_item_css_classes=>'cm-binary-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
@@ -751,7 +762,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_read_only_when=>'ptw_pro.ptw_lv_is_contract_support(V(''APP_USER'')) = ''Y'''
 ,p_read_only_when2=>'PLSQL'
 ,p_read_only_when_type=>'EXPRESSION'
-,p_field_template=>1609121967514267634
+,p_field_template=>3031561666792084173
 ,p_item_css_classes=>'cm-binary-item'
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'

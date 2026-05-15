@@ -174,6 +174,9 @@ unistr('// \2500\2500 Lock text fields in read-only mode \2500\2500\2500\2500\25
 '               ''cursor'':           ''default''',
 '           });',
 '    });',
+'',
+'    // Hide submit button',
+'    $(''#BTN_CLEAR_PERMIT_P16'').hide();',
 '}',
 '',
 unistr('// \2500\2500 Required star (mandatory indicator) \2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500'),
@@ -382,6 +385,17 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_position=>'NEXT'
 ,p_warn_on_unsaved_changes=>null
 ,p_icon_css_classes=>'fa-check-circle'
+);
+wwv_flow_imp_page.create_page_branch(
+ p_id=>wwv_flow_imp.id(47748469701890006)
+,p_branch_name=>'Back to Dashboard after saving'
+,p_branch_action=>'f?p=&APP_ID.:1:&SESSION.::&DEBUG.:1::'
+,p_branch_point=>'AFTER_PROCESSING'
+,p_branch_type=>'REDIRECT_URL'
+,p_branch_sequence=>10
+,p_branch_condition_type=>'VAL_OF_ITEM_IN_COND_EQ_COND2'
+,p_branch_condition=>'P16_CLEARED'
+,p_branch_condition_text=>'Y'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(41970853732328839)
@@ -713,8 +727,9 @@ wwv_flow_imp_page.create_page_process(
 ,p_attribute_01=>'P16_CLEARED'
 ,p_attribute_02=>'N'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
-,p_process_when=>'CLEAR_PERMIT'
-,p_process_when_type=>'REQUEST_EQUALS_CONDITION'
+,p_process_when=>'P16_CLEARED'
+,p_process_when_type=>'VAL_OF_ITEM_IN_COND_EQ_COND2'
+,p_process_when2=>'N'
 ,p_internal_uid=>45755524966782507
 );
 wwv_flow_imp_page.create_page_process(

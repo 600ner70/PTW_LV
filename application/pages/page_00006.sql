@@ -13,10 +13,10 @@ wwv_flow_imp.component_begin (
 );
 wwv_flow_imp_page.create_page(
  p_id=>6
-,p_name=>'Change History'
+,p_name=>'Permit History'
 ,p_alias=>'CHANGE-HISTORY'
 ,p_page_mode=>'MODAL'
-,p_step_title=>'Change History'
+,p_step_title=>'Permit History'
 ,p_autocomplete_on_off=>'OFF'
 ,p_page_template_options=>'#DEFAULT#'
 ,p_dialog_resizable=>'Y'
@@ -25,7 +25,7 @@ wwv_flow_imp_page.create_page(
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(58090811857005130)
-,p_plug_name=>'Change History'
+,p_plug_name=>'Permit History'
 ,p_icon_css_classes=>'fa-history'
 ,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
 ,p_component_template_options=>'#DEFAULT#'

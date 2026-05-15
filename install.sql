@@ -64,6 +64,7 @@ prompt --install
 @@application/pages/page_groups.sql
 @@application/comments.sql
 @@application/shared_components/navigation/breadcrumbentry.sql
+@@application/shared_components/user_interface/templates/report/ptw_cards_no_wrapper.sql
 @@application/shared_components/user_interface/templates/popuplov.sql
 @@application/shared_components/user_interface/themes.sql
 @@application/shared_components/user_interface/theme_style.sql
@@ -92,7 +93,9 @@ prompt --install
 @@application/pages/page_00014.sql
 @@application/pages/page_00015.sql
 @@application/pages/page_00016.sql
+@@application/pages/page_00017.sql
 @@application/pages/page_00020.sql
+@@application/pages/page_00050.sql
 @@application/pages/page_00300.sql
 @@application/pages/page_09999.sql
 @@application/deployment/definition.sql

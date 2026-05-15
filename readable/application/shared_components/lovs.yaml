@@ -1,0 +1,181 @@
+---
+- # ====== List of Values: ACCESS_ROLES ========================
+  id: 30193984908539779
+  identification: 
+    name: ACCESS_ROLES
+
+  subscription: 
+    version-number: 46397943188904
+
+  source: 
+    location: Local Database
+    type: SQL Query
+    sql-query: |
+      select role_name d, role_id r
+      from APEX_APPL_ACL_ROLES where application_id = :APP_ID 
+      order by 1
+
+  column-mapping: 
+    return: R
+    display: D
+    default-sort: Use Order By from Query
+
+- # ====== List of Values: EMAIL_USERNAME_FORMAT ===============
+  id: 30201402850539745
+  identification: 
+    name: EMAIL_USERNAME_FORMAT
+
+  subscription: 
+    version-number: 46397943189041
+
+  source: 
+    location: Static Values
+
+  entries: 
+  - # ====== Entry: Email Addresses ==============================
+    id: 30201740375539743
+    entry: 
+      sequence: 1
+      display: Email Addresses
+      return: EMAIL
+
+- # ====== List of Values: TIMEFRAME (4 WEEKS) =================
+  id: 30237876754531643
+  identification: 
+    name: TIMEFRAME (4 WEEKS)
+
+  subscription: 
+    version-number: 46397943242057
+
+  source: 
+    location: Local Database
+    type: SQL Query
+    sql-query: |
+      select disp,
+             val as seconds
+        from table( apex_util.get_timeframe_lov_data )
+       order by insert_order
+
+  column-mapping: 
+    return: SECONDS
+    display: DISP
+    default-sort: Use Order By from Query
+
+- # ====== List of Values: VIEW_AS_REPORT_CHART ================
+  id: 30285285769531422
+  identification: 
+    name: VIEW_AS_REPORT_CHART
+
+  subscription: 
+    version-number: 46397943243196
+
+  source: 
+    location: Static Values
+
+  entries: 
+  - # ====== Entry: Add Report Page ==============================
+    id: 30285532959531421
+    entry: 
+      sequence: 1
+      display: Add Report Page
+      return: REPORT
+
+    globalization: 
+      template: <span class="fa fa-table" aria-hidden="true"></span><span class="u-VisuallyHidden">#DISPLAY_VALUE#</span>
+
+  - # ====== Entry: Add Chart Page ===============================
+    id: 30285961031531420
+    entry: 
+      sequence: 2
+      display: Add Chart Page
+      return: CHART
+
+    globalization: 
+      template: <span class="fa fa-pie-chart" aria-hidden="true"></span><span class="u-VisuallyHidden">#DISPLAY_VALUE#</span>
+
+- # ====== List of Values: PTW_AUTHORISED_PERSONS ==============
+  id: 35799522908090663
+  identification: 
+    name: PTW_AUTHORISED_PERSONS
+
+  subscription: 
+    version-number: 46647446830926
+
+  source: 
+    location: Local Database
+    type: SQL Query
+    sql-query: |
+      SELECT DISTINCT
+          u.first_name || ' ' || u.last_name     AS display_value,
+          u.username                             AS return_value,
+          u.mobile_no
+      FROM   ptw_pro.ptw_lv_user_roles_v  u
+      WHERE  u.role_name IN ('ADMIN', 'AUTHORISER')
+      AND    u.username <> 'PTW_PRO'
+      AND    u.is_active = 'Y'
+      ORDER BY display_value
+
+  column-mapping: 
+    return: RETURN_VALUE
+    display: DISPLAY_VALUE
+    default-sort: Use Order By from Query
+
+- # ====== List of Values: PTW_START_MODE ======================
+  id: 35799750662081781
+  identification: 
+    name: PTW_START_MODE
+
+  subscription: 
+    version-number: 46547617773438
+
+  source: 
+    location: Static Values
+
+  entries: 
+  - # ====== Entry: Start immediately ============================
+    id: 35800037549081777
+    entry: 
+      sequence: 1
+      display: Start immediately
+      return: IMMEDIATE
+
+  - # ====== Entry: Scheduled start ==============================
+    id: 35800402277081773
+    entry: 
+      sequence: 2
+      display: Scheduled start
+      return: SCHEDULED
+
+- # ====== List of Values: CONTROL_MEASURES_LOV ================
+  id: 45556223896387254
+  identification: 
+    name: CONTROL_MEASURES_LOV
+
+  subscription: 
+    version-number: 46848007418527
+
+  source: 
+    location: Static Values
+
+  entries: 
+  - # ====== Entry: Yes ==========================================
+    id: 45556537033387268
+    entry: 
+      sequence: 1
+      display: Yes
+      return: Y
+
+  - # ====== Entry: No ===========================================
+    id: 45556870216387272
+    entry: 
+      sequence: 2
+      display: No
+      return: N
+
+  - # ====== Entry: N/A ==========================================
+    id: 45557244107387273
+    entry: 
+      sequence: 3
+      display: N/A
+      return: NA
+

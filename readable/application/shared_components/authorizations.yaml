@@ -1,0 +1,298 @@
+---
+- # ====== Authorization: Administration Rights ================
+  id: 26419849891144614
+  identification: 
+    name: Administration Rights
+
+  subscription: 
+    version-number: 46647445791035
+
+  authorization-scheme: 
+    type: PL/SQL Function Returning Boolean
+
+  settings: 
+    pl/sql-function-body: |
+      DECLARE
+          v_count NUMBER;
+      BEGIN
+          SELECT COUNT(*)
+          INTO   v_count
+          FROM   ptw_pro.ptw_lv_user_roles_v
+          WHERE  UPPER(username) = UPPER(:APP_USER)
+          AND    role_name IN ('ADMIN', 'ADMIN_USER_SUPPORT')
+          AND    is_active = 'Y';
+          RETURN v_count > 0;
+      EXCEPTION
+          WHEN OTHERS THEN RETURN FALSE;
+      END;
+
+  server-cache: 
+    evaluation-point: Once per Page View
+
+  error: 
+    error-message: Insufficient privileges - you must be an Administrator or User Support Admin to access this page.
+
+- # ====== Authorization: Contribution Rights ==================
+  id: 30177662677539876
+  identification: 
+    name: Contribution Rights
+
+  subscription: 
+    version-number: 46397943188499
+
+  authorization-scheme: 
+    type: Is In Role or Group
+
+  settings: 
+    type: Application Role
+    name(s): Administrator,Contributor
+
+  server-cache: 
+    evaluation-point: Once per Page View
+
+  error: 
+    error-message: Insufficient privileges, user is not a Contributor
+
+- # ====== Authorization: Reader Rights ========================
+  id: 30177956100539874
+  identification: 
+    name: Reader Rights
+
+  subscription: 
+    version-number: 46647445877853
+
+  authorization-scheme: 
+    type: PL/SQL Function Returning Boolean
+
+  settings: 
+    pl/sql-function-body: |
+      DECLARE
+          v_count NUMBER;
+      BEGIN
+          SELECT COUNT(*)
+          INTO   v_count
+          FROM   ptw_pro.ptw_lv_user_roles_v
+          WHERE  UPPER(username) = UPPER(:APP_USER)
+          AND    is_active = 'Y';
+          RETURN v_count > 0;
+      EXCEPTION
+          WHEN OTHERS THEN RETURN FALSE;
+      END;
+
+  server-cache: 
+    evaluation-point: Once per Session
+
+  error: 
+    error-message: You are not authorized to view this application, either because you have not been granted access, or your account has been locked. Please contact the application administrator.
+
+- # ====== Authorization: Is Administrator =====================
+  id: 31533525830252139
+  identification: 
+    name: Is Administrator
+
+  subscription: 
+    version-number: 46647445922313
+
+  authorization-scheme: 
+    type: PL/SQL Function Returning Boolean
+
+  settings: 
+    pl/sql-function-body: |
+      DECLARE
+          v_count NUMBER;
+      BEGIN
+          SELECT COUNT(*)
+          INTO   v_count
+          FROM   ptw_pro.ptw_lv_user_roles_v
+          WHERE  UPPER(username) = UPPER(:APP_USER)
+          AND    role_name = 'ADMIN'
+          AND    is_active = 'Y';
+          RETURN v_count > 0;
+      EXCEPTION
+          WHEN OTHERS THEN RETURN FALSE;
+      END;
+
+  server-cache: 
+    evaluation-point: Once per Page View
+
+  error: 
+    error-message: |
+      You do not have permission to perform this action.
+      Please contact your system administrator.
+
+- # ====== Authorization: Can Edit Permits =====================
+  id: 31533963716212424
+  identification: 
+    name: Can Edit Permits
+
+  subscription: 
+    version-number: 46647445992625
+
+  authorization-scheme: 
+    type: PL/SQL Function Returning Boolean
+
+  settings: 
+    pl/sql-function-body: |
+      DECLARE
+          v_count NUMBER;
+      BEGIN
+          SELECT COUNT(*)
+          INTO   v_count
+          FROM   ptw_pro.ptw_lv_user_roles_v
+          WHERE  UPPER(username) = UPPER(:APP_USER)
+          AND    role_name IN ('ADMIN', 'AUTHORISER', 'ENGINEER')
+          AND    is_active = 'Y';
+          RETURN v_count > 0;
+      EXCEPTION
+          WHEN OTHERS THEN RETURN FALSE;
+      END;
+
+  server-cache: 
+    evaluation-point: Once per Page View
+
+  error: 
+    error-message: |
+      You do not have permission to perform this action.
+      Please contact your system administrator.
+
+- # ====== Authorization: Can Authorise Permits ================
+  id: 31534159719199270
+  identification: 
+    name: Can Authorise Permits
+
+  subscription: 
+    version-number: 46647446017058
+
+  authorization-scheme: 
+    type: PL/SQL Function Returning Boolean
+
+  settings: 
+    pl/sql-function-body: |
+      DECLARE
+          v_count NUMBER;
+      BEGIN
+          SELECT COUNT(*)
+          INTO   v_count
+          FROM   ptw_pro.ptw_lv_user_roles_v
+          WHERE  UPPER(username) = UPPER(:APP_USER)
+          AND    role_name IN ('ADMIN', 'AUTHORISER')
+          AND    is_active = 'Y';
+          RETURN v_count > 0;
+      EXCEPTION
+          WHEN OTHERS THEN RETURN FALSE;
+      END;
+
+  server-cache: 
+    evaluation-point: Once per Page View
+
+  error: 
+    error-message: |
+      You do not have permission to perform this action.
+      Please contact your system administrator.
+      
+
+- # ====== Authorization: Can Delete Permits ===================
+  id: 31534463148185252
+  identification: 
+    name: Can Delete Permits
+
+  subscription: 
+    version-number: 46647446061121
+
+  authorization-scheme: 
+    type: PL/SQL Function Returning Boolean
+
+  settings: 
+    pl/sql-function-body: |
+      DECLARE
+          v_count NUMBER;
+      BEGIN
+          SELECT COUNT(*)
+          INTO   v_count
+          FROM   ptw_pro.ptw_lv_user_roles_v
+          WHERE  UPPER(username) = UPPER(:APP_USER)
+          AND    role_name IN ('ADMIN', 'ADMIN_CONTRACT_SUPPORT')
+          AND    is_active = 'Y';
+          RETURN v_count > 0;
+      EXCEPTION
+          WHEN OTHERS THEN RETURN FALSE;
+      END;
+
+  server-cache: 
+    evaluation-point: Once per Page View
+
+  error: 
+    error-message: |
+      You do not have permission to perform this action.
+      Please contact your system administrator.
+
+- # ====== Authorization: Can Export Reports ===================
+  id: 31534664129175422
+  identification: 
+    name: Can Export Reports
+
+  subscription: 
+    version-number: 46647446087599
+
+  authorization-scheme: 
+    type: PL/SQL Function Returning Boolean
+
+  settings: 
+    pl/sql-function-body: |
+      DECLARE
+          v_count NUMBER;
+      BEGIN
+          SELECT COUNT(*)
+          INTO   v_count
+          FROM   ptw_pro.ptw_lv_user_roles_v
+          WHERE  UPPER(username) = UPPER(:APP_USER)
+          AND    role_name IN ('ADMIN', 'ADMIN_CONTRACT_SUPPORT', 'AUTHORISER')
+          AND    is_active = 'Y';
+          RETURN v_count > 0;
+      EXCEPTION
+          WHEN OTHERS THEN RETURN FALSE;
+      END;
+
+  server-cache: 
+    evaluation-point: Once per Page View
+
+  error: 
+    error-message: |
+      You do not have permission to perform this action.
+      Please contact your system administrator.
+
+- # ====== Authorization: Can Generate PDF =====================
+  id: 31534892855165554
+  identification: 
+    name: Can Generate PDF
+
+  subscription: 
+    version-number: 46647446125085
+
+  authorization-scheme: 
+    type: PL/SQL Function Returning Boolean
+
+  settings: 
+    pl/sql-function-body: |
+      DECLARE
+          v_count NUMBER;
+      BEGIN
+          SELECT COUNT(*)
+          INTO   v_count
+          FROM   ptw_pro.ptw_lv_user_roles_v
+          WHERE  UPPER(username) = UPPER(:APP_USER)
+          AND    role_name IN ('ADMIN', 'ADMIN_CONTRACT_SUPPORT', 'AUTHORISER', 'ENGINEER')
+          AND    is_active = 'Y';
+          RETURN v_count > 0;
+      EXCEPTION
+          WHEN OTHERS THEN RETURN FALSE;
+      END;
+
+  server-cache: 
+    evaluation-point: Once per Page View
+
+  error: 
+    error-message: |
+      You do not have permission to perform this action.
+      Please contact your system administrator.
+

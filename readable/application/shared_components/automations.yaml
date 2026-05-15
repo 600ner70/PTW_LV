@@ -1,0 +1,52 @@
+---
+- # ====== Automation: Change workflow status ==================
+  id: 41992816828541910
+  identification: 
+    name: Change workflow status
+    static-id: change-workflow-status
+
+  execution: 
+    type: Scheduled
+    schedule-expression: FREQ=MINUTELY;INTERVAL=15;BYHOUR=8,9,10,11,12,13,14,15,16,17,18,19
+    schedule-status: Active
+    actions-initiated-on: Always
+
+  action-execution: 
+    action-error-handling: Terminate Automation
+
+  actions: 
+  - # ====== Action: Workflow clean up ===========================
+    id: 41993103023541885
+    identification: 
+      name: Workflow clean up
+      type: Execute Code
+
+    source: 
+      location: Local Database
+      language: PL/SQL
+      pl/sql-code: |
+        declare
+          l_permit_id ptw_pro.ptw_lv_permits.permit_id%TYPE;
+        begin
+          FOR rec_permits IN (SELECT permit_id
+                              FROM   ptw_pro.ptw_lv_permits
+                              WHERE  workflow_status = 'STARTED'
+                              AND    ended_datetime < SYSDATE) LOOP
+            --
+            UPDATE ptw_pro.ptw_lv_permits
+            SET    workflow_status = 'LAPSED'
+            WHERE  permit_id = rec_permits.permit_id;
+            --
+          END LOOP;
+          --
+          COMMIT;
+          --
+        end;
+
+    execution: 
+      sequence: 10
+
+    error: 
+      error-message: Error with permit clear-up job. Please contact support.
+      stop-execution-on-error: true
+

@@ -1,0 +1,65 @@
+---
+- # ====== Build Option: Feature: Push Notifications ===========
+  id: 30168896687549211
+  identification: 
+    name: 'Feature: Push Notifications'
+
+  status: 
+    status: Include
+    default-on-export: Same as Current Status
+    on-upgrade-keep-status: false
+
+  comments: 
+    comments: Allow users to subscribe to push notifications on their devices.
+
+  subscription: 
+    version-number: 46397943140361
+
+- # ====== Build Option: Feature: User Settings ================
+  id: 30169159405549206
+  identification: 
+    name: 'Feature: User Settings'
+
+  status: 
+    status: Include
+    default-on-export: Same as Current Status
+    on-upgrade-keep-status: false
+
+  comments: 
+    comments: The user settings page is a drawer that links to all user settings pages.
+
+  subscription: 
+    version-number: 46397943140361
+
+- # ====== Build Option: Feature: Access Control ===============
+  id: 30176569585539888
+  identification: 
+    name: 'Feature: Access Control'
+
+  status: 
+    status: Include
+    default-on-export: Same as Current Status
+    on-upgrade-keep-status: false
+
+  comments: 
+    comments: Incorporate role based user authentication within your application and manage username mappings to application roles.
+
+  subscription: 
+    version-number: 46397943188396
+
+- # ====== Build Option: Feature: Activity Reporting ===========
+  id: 30220641662532125
+  identification: 
+    name: 'Feature: Activity Reporting'
+
+  status: 
+    status: Include
+    default-on-export: Same as Current Status
+    on-upgrade-keep-status: false
+
+  comments: 
+    comments: Include numerous reports and charts on end user activity.
+
+  subscription: 
+    version-number: 46397943239234
+

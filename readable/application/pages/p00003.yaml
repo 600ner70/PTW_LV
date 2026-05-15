@@ -1,0 +1,2901 @@
+---
+# ====== Page: Control Measures & PPE ========================
+id: 3
+identification: 
+  name: Control Measures & PPE
+  alias: CONTROL-MEASURES-PPE
+  title: Control Measures & PPE
+
+appearance: 
+  page-mode: Normal
+  page-template: Theme Default
+  template-options: 
+  - '#DEFAULT#'
+
+navigation-menu: 
+  override-user-interface-level: false
+
+navigation: 
+  cursor-focus: Do not focus cursor
+  warn-on-unsaved-changes: true
+
+javascript: 
+  file-urls: 
+  - '#APP_FILES#offline-storage#MIN#.js'
+  function-and-global-variable-declaration: |
+    // Update connection status UI
+    function updateConnectionUI() {
+        const statusDiv = document.getElementById('connection-status');
+        const statusIcon = document.getElementById('status-icon');
+        const statusText = document.getElementById('status-text');
+        
+        if (navigator.onLine) {
+            statusDiv.style.backgroundColor = '#d4edda';
+            statusIcon.innerHTML = '✓';
+            statusText.innerHTML = 'Connected';
+        } else {
+            statusDiv.style.backgroundColor = '#fff3cd';
+            statusIcon.innerHTML = '⚠';
+            statusText.innerHTML = 'Offline Mode';
+        }
+    }
+    
+    // Initial update
+    updateConnectionUI();
+    
+    // Listen for connection changes
+    window.addEventListener('online', updateConnectionUI);
+    window.addEventListener('offline', updateConnectionUI);
+    
+    
+  execute-when-page-loads: |
+    // Initialize offline storage
+    OfflineStorage.initDB();
+    ConnectionManager.init();
+    
+    // Offline handler for NEXT_STEP button.
+    // Capture phase (true) fires before APEX's bubble-phase DA,
+    // preventing the Execute PLSQL action from making an AJAX call that fails offline.
+    (function() {
+        var btn = document.querySelector('[data-otel-label="NEXT_STEP"]');
+        if (!btn) return;
+        btn.addEventListener('click', function(e) {
+            if (navigator.onLine) return;
+            e.stopImmediatePropagation();
+            e.preventDefault();
+            var formData = {};
+            apex.jQuery('form').serializeArray().forEach(function(i) { formData[i.name] = i.value; });
+            OfflineStorage.saveFormData('3', formData, apex.jQuery('#P3_PERMIT_ID').val() || null)
+                .then(function() {
+                    var u = new URL(window.location.href);
+                    var p = u.pathname.split('/');
+                    while (p[p.length - 1] === '') p.pop();
+                    if (/^\d+$/.test(p[p.length - 1])) {
+                        p[p.length - 2] = 'equipment-isolation';
+                    } else {
+                        p[p.length - 1] = 'equipment-isolation';
+                    }
+                    u.pathname = p.join('/');
+                    u.search = '';
+                    apex.message.showPageSuccess('Data saved offline. Will sync when reconnected.');
+                    setTimeout(function() { window.location.href = u.toString(); }, 800);
+                })
+                .catch(function(err) {
+                    apex.message.showErrors([{type:'error',message:'Offline save error: '+err.message}]);
+                });
+        }, true);
+    }());
+    
+    (function () {
+    
+        var CM_ITEMS = [
+            'P3_CM_01','P3_CM_02','P3_CM_03','P3_CM_04',
+            'P3_CM_05','P3_CM_06','P3_CM_07','P3_CM_08',
+            'P3_CM_09','P3_CM_10','P3_CM_11','P3_CM_12',
+            'P3_CM_13','P3_CM_14','P3_CM_15','P3_CM_16'
+        ];
+    
+        var PPE_ITEMS = [
+            'P3_PPE_SAFETY_HELMET',
+            'P3_PPE_ARC_FLASH',
+            'P3_PPE_SAFETY_FOOTWEAR',
+            'P3_PPE_HI_VIS',
+            'P3_PPE_SAFETY_GOGGLES',
+            'P3_PPE_INSULATING_GLOVES',
+            'P3_PPE_FALL_RESTRAINT',
+            'P3_PPE_FALL_ARREST',
+            'P3_PPE_EAR_DEFENDERS',
+            'P3_PPE_SAFETY_GLOVES'
+        ];
+    
+        var BADGES = [
+            { val: 'Y',  cls: 'cm-badge-yes', label: '✓' },
+            { val: 'N',  cls: 'cm-badge-no',  label: '✗' },
+            { val: 'NA', cls: 'cm-badge-na',  label: 'N/A' }
+        ];
+    
+        var isReadOnly = (apex.item('P3_WORKFLOW_STATUS').getValue() !== 'IN_PROGRESS');
+    
+        // -------------------------------------------------------
+        // CM TRISTATE BADGES
+        // -------------------------------------------------------
+        CM_ITEMS.forEach(function (itemName) {
+    
+            var $fc = $('#' + itemName).closest('.t-Form-fieldContainer');
+            if ($fc.length === 0) {
+                $fc = $('[id="' + itemName + '_LABEL"]').closest('.t-Form-fieldContainer');
+            }
+            if ($fc.length === 0) return;
+    
+            $fc.find('.cm-badge-row').remove();
+    
+            var currentVal = '';
+            if (!isReadOnly) {
+                currentVal = $('input[name="' + itemName + '"]:checked').val() || '';
+            } else {
+                currentVal = apex.item(itemName).getValue() || '';
+            }
+    
+            var $row = $('<div class="cm-badge-row"></div>').attr('data-item', itemName);
+    
+            BADGES.forEach(function (b) {
+                $('<span></span>')
+                    .addClass('cm-badge ' + b.cls)
+                    .toggleClass('cm-active', currentVal === b.val)
+                    .toggleClass('cm-badge-readonly', isReadOnly)
+                    .attr('data-value', b.val)
+                    .text(b.label)
+                    .appendTo($row);
+            });
+    
+            $fc.find('.t-Form-inputContainer').append($row);
+        });
+    
+        // Hide native CM radio grid
+        $('.cm-tristate-item .apex-item-grid').hide();
+    
+        // CM delegated click — edit mode only
+        $(document).off('click.cmtristate').on('click.cmtristate', '.cm-badge:not(.cm-badge-readonly)', function () {
+            var $badge   = $(this);
+            var $row     = $badge.closest('.cm-badge-row');
+            var itemName = $row.attr('data-item');
+            var val      = $badge.attr('data-value');
+    
+            $('input[name="' + itemName + '"][value="' + val + '"]')
+                .prop('checked', true).trigger('change');
+    
+            $row.find('.cm-badge').removeClass('cm-active');
+            $badge.addClass('cm-active');
+        });
+    
+        // -------------------------------------------------------
+        // PPE SINGLE TICK BADGES
+        // -------------------------------------------------------
+        PPE_ITEMS.forEach(function (itemName) {
+    
+            var $fc = $('#' + itemName).closest('.t-Form-fieldContainer');
+            if ($fc.length === 0) return;
+    
+            $fc.find('.ppe-badge-row').remove();
+    
+            var currentVal = apex.item(itemName).getValue() || '';
+            var isChecked  = (currentVal.indexOf('Y') > -1);
+    
+            var $badge = $('<span></span>')
+                .addClass('ppe-badge')
+                .toggleClass('ppe-active', isChecked)
+                .toggleClass('ppe-readonly', isReadOnly)
+                .attr('data-item', itemName)
+                .text('✓');
+    
+            var $row = $('<div class="ppe-badge-row"></div>').append($badge);
+            $fc.find('.t-Form-inputContainer').append($row);
+        });
+    
+        // Hide native PPE checkboxes
+        $('.cm-tick-item .apex-item-checkbox').hide();
+    
+        // PPE delegated click — edit mode only
+        $(document).off('click.ppetick').on('click.ppetick', '.ppe-badge:not(.ppe-readonly)', function () {
+            var $badge     = $(this);
+            var itemName   = $badge.attr('data-item');
+            var isNowActive = !$badge.hasClass('ppe-active');
+    
+            $('input[name="' + itemName + '"]').prop('checked', isNowActive).trigger('change');
+            apex.item(itemName).setValue(isNowActive ? 'Y' : '');
+    
+            $badge.toggleClass('ppe-active', isNowActive);
+        });
+    
+    }());
+    
+    function initCMChecklist() {
+        var $items = $('.cm-tristate-item');
+    
+        if ($items.length === 0) return; // not on a CM page
+    
+        // Append red asterisk to each item's label
+        $items.each(function() {
+            $(this).find('.t-Form-labelContainer label, label').first()
+                   .append('<span class="cm-required-star" aria-hidden="true"> *</span>');
+        });
+    }
+    
+    apex.jQuery(document).on('apexreadyend', function() {
+        initCMChecklist();
+    });
+    
+
+css: 
+  inline: |
+    .ptw-workflow-progress {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin: 2rem 0;
+        padding: 1.5rem;
+        background: var(--ut-component-background-color, #ffffff);
+        border-radius: 8px;
+        border: 1px solid var(--ut-component-border-color, #e0e0e0);
+        position: relative;
+    }
+    
+    .ptw-workflow-progress::before {
+        content: '';
+        position: absolute;
+        top: 3rem;
+        left: 3rem;
+        right: 3rem;
+        height: 2px;
+        background: var(--ut-palette-neutral-300, #d0d0d0);
+        z-index: 0;
+    }
+    
+    .workflow-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        z-index: 1;
+        flex: 1;
+        gap: 0.5rem;
+    }
+    
+    .step-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: var(--ut-component-background-color, #ffffff);
+        border: 3px solid var(--ut-palette-neutral-300, #d0d0d0);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 1.125rem;
+        color: var(--ut-palette-neutral-500, #666666);
+        transition: all 0.3s ease;
+    }
+    
+    .workflow-step.active .step-icon {
+        background: #003366;
+        border-color: #003366;
+        color: #ffffff;
+        box-shadow: 0 4px 8px rgba(0, 51, 102, 0.2);
+    }
+    
+    .workflow-step.completed .step-icon {
+        background: var(--ut-palette-success, #3ea055);
+        border-color: var(--ut-palette-success, #3ea055);
+        color: #ffffff;
+    }
+    
+    .step-text {
+        font-size: 0.875rem;
+        text-align: center;
+        color: var(--ut-palette-neutral-600, #595959);
+        max-width: 100px;
+        line-height: 1.3;
+    }
+    
+    .workflow-step.active .step-text {
+        color: #003366;
+        font-weight: 600;
+    }
+    
+    @media (max-width: 768px) {
+        .ptw-workflow-progress {
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .workflow-step {
+            flex-basis: 30%;
+        }
+        .ptw-workflow-progress::before {
+            display: none;
+        }
+    }
+    
+    
+
+read-only: 
+  type: Item != Value
+  item: P3_WORKFLOW_STATUS
+  value: IN_PROGRESS
+
+security: 
+  authentication: Page Requires Authentication
+  deep-linking: Application Default
+  page-access-protection: Arguments Must Have Checksum
+  form-auto-complete: Off
+  browser-cache: Application Default
+
+session-management: 
+  rejoin-sessions: Application Default
+
+advanced: 
+  enable-duplicate-page-submissions: Yes - Enable page to be re-posted
+  reload-on-submit: Only for Success
+
+server-cache: 
+  caching: Disabled
+
+regions: 
+- # ====== Region: Workflow Progress ===========================
+  id: 26945421637347725
+  identification: 
+    name: Workflow Progress
+    type: Static Content
+
+  source: 
+    html-code: |
+      <div class="ptw-workflow-progress">
+          <div class="workflow-step completed" data-step="1">
+              <span class="step-icon">&#10003;</span>
+              <span class="step-text">Site & Work Details</span>
+          </div>
+          <div class="workflow-step active" data-step="2">
+              <span class="step-icon">2</span>
+              <span class="step-text">Control Measures</span>
+          </div>
+          <div class="workflow-step" data-step="3">
+              <span class="step-icon">3</span>
+              <span class="step-text">Equipment Isolation</span>
+          </div>
+          <div class="workflow-step" data-step="4">
+              <span class="step-icon">4</span>
+              <span class="step-text">Authorisation</span>
+          </div>
+          <div class="workflow-step" data-step="5">
+              <span class="step-icon">5</span>
+              <span class="step-text">Clearance</span>
+          </div>
+      </div>
+      
+
+  layout: 
+    sequence: 100
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Blank with Attributes
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Control Measures Checklist ==================
+  id: 26945876367347729
+  identification: 
+    name: Control Measures Checklist
+    title: Control Measures - must be in place before issuing a Permit to Work LV Electrical
+    type: Static Content
+
+  layout: 
+    sequence: 120
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--showIcon
+    - t-Region--accent15
+    - t-Region--scrollBody
+    icon: fa-clipboard-check
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: PPE Requirements ============================
+  id: 26947595929347746
+  identification: 
+    name: PPE Requirements
+    title: Identify Essential Personal Protective Equipment (PPE) Required To Be Worn
+    type: Static Content
+
+  layout: 
+    sequence: 130
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--showIcon
+    - t-Region--accent15
+    - t-Region--scrollBody
+    icon: fa-shield
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Buttons =====================================
+  id: 27015615881886507
+  identification: 
+    name: Buttons
+    type: Static Content
+
+  layout: 
+    sequence: 140
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Buttons Container
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: SyncStatus ==================================
+  id: 27017387018886524
+  identification: 
+    name: SyncStatus
+    type: Static Content
+
+  source: 
+    html-code: |
+      <div id="connection-status" style="padding: 10px; margin-bottom: 10px; border-radius: 4px;">
+          <span id="status-icon"></span>
+          <span id="status-text"></span>
+          <!-- <button id="sync-btn" style="margin-left: 10px; display: none;">Sync Now</button> -->
+      </div>
+
+  layout: 
+    sequence: 90
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Blank with Attributes
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Permit Information Badge ====================
+  id: 52235549972814910
+  identification: 
+    name: Permit Information Badge
+    type: Static Content
+
+  source: 
+    html-code: |
+      <div style="margin-bottom: 20px;">
+          <span class="apex-badge" style="background-color: #3ea055; color: white; padding: 6px 16px; border-radius: 20px; font-weight: 600;">
+              Permit: &P3_PERMIT_NUMBER.
+          </span>
+      </div>
+      
+
+  layout: 
+    sequence: 110
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: None
+    render-components: Above Content
+
+  advanced: 
+    exclude-title-from-translation: false
+
+  server-side-condition: 
+    type: Item is NOT NULL
+    item: P3_PERMIT_NUMBER
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+page-items: 
+- # ====== Page Item: P3_PERMIT_ID =============================
+  id: 26945059061347721
+  identification: 
+    name: P3_PERMIT_ID
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 30
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_PERMIT_NUMBER =========================
+  id: 26945136605347722
+  identification: 
+    name: P3_PERMIT_NUMBER
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 50
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_CONTROL_MEASURES_ID ===================
+  id: 26945279075347723
+  identification: 
+    name: P3_CONTROL_MEASURES_ID
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 60
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_WORKFLOW_STATUS =======================
+  id: 26945368522347724
+  identification: 
+    name: P3_WORKFLOW_STATUS
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 80
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_CURRENT_STEP ==========================
+  id: 26945586048347726
+  identification: 
+    name: P3_CURRENT_STEP
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 70
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_CM_01 =================================
+  id: 26945920615347730
+  identification: 
+    name: P3_CM_01
+    type: Radio Group
+
+  label: 
+    label: 1. All workers under this PTW have completed and signed off on a site induction?
+    alignment: Left
+
+  settings: 
+    number-of-columns: 3
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 10
+    region: Control Measures Checklist # 26945876367347729
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Above
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tristate-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Shared Component
+    list-of-values: CONTROL_MEASURES_LOV # 45556223896387254
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+  help: 
+    help-text: All persons working under this PTW have received and signed, as understood, a suitable site induction?
+
+- # ====== Page Item: P3_CM_02 =================================
+  id: 26946047126347731
+  identification: 
+    name: P3_CM_02
+    type: Radio Group
+
+  label: 
+    label: 2. A reviewed risk assessment and method statement, including emergency evacuation, is in place and understood by all workers.?
+    alignment: Left
+
+  settings: 
+    number-of-columns: 3
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 20
+    region: Control Measures Checklist # 26945876367347729
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Above
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tristate-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Shared Component
+    list-of-values: CONTROL_MEASURES_LOV # 45556223896387254
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+  help: 
+    help-text: A suitable and sufficient written risk assessment and method statement for these works, which has already been understood by all persons working under this permit is in place and has been reviewed at the point of works by the person controlling the works. This must include the provision of an emergency evacuation plan.
+
+- # ====== Page Item: P3_CM_03 =================================
+  id: 26946143877347732
+  identification: 
+    name: P3_CM_03
+    type: Radio Group
+
+  label: 
+    label: 3. The competence of the people working under the permit has been checked and is deemed to be adequate for these works.
+    alignment: Left
+
+  settings: 
+    number-of-columns: 3
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 30
+    region: Control Measures Checklist # 26945876367347729
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Above
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tristate-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Shared Component
+    list-of-values: CONTROL_MEASURES_LOV # 45556223896387254
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_CM_04 =================================
+  id: 26946223267347733
+  identification: 
+    name: P3_CM_04
+    type: Radio Group
+
+  label: 
+    label: 4. The person in charge of the works must be made aware of all hazards within the vicinity of the place of works.
+    alignment: Left
+
+  settings: 
+    number-of-columns: 3
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 40
+    region: Control Measures Checklist # 26945876367347729
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Above
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tristate-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Shared Component
+    list-of-values: CONTROL_MEASURES_LOV # 45556223896387254
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_CM_05 =================================
+  id: 26946306544347734
+  identification: 
+    name: P3_CM_05
+    type: Radio Group
+
+  label: 
+    label: 5. Where the use of PPE is identified as a control measure within the risk assessment, this equipment is in good order.
+    alignment: Left
+
+  settings: 
+    number-of-columns: 3
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 50
+    region: Control Measures Checklist # 26945876367347729
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Above
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tristate-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Shared Component
+    list-of-values: CONTROL_MEASURES_LOV # 45556223896387254
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_CM_06 =================================
+  id: 26946460935347735
+  identification: 
+    name: P3_CM_06
+    type: Radio Group
+
+  label: 
+    label: 6. Confirm that all sources of supply have been isolated, locked off and caution signs fitted, list details below.
+    alignment: Left
+
+  settings: 
+    number-of-columns: 3
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 60
+    region: Control Measures Checklist # 26945876367347729
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Above
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tristate-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Shared Component
+    list-of-values: CONTROL_MEASURES_LOV # 45556223896387254
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_CM_07 =================================
+  id: 26946580896347736
+  identification: 
+    name: P3_CM_07
+    type: Radio Group
+
+  label: 
+    label: 7. Confirm all isolated supplies are proven or confirmed dead before work starts?
+    alignment: Left
+
+  settings: 
+    number-of-columns: 3
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 70
+    region: Control Measures Checklist # 26945876367347729
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Above
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tristate-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Shared Component
+    list-of-values: CONTROL_MEASURES_LOV # 45556223896387254
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+  help: 
+    help-text: Confirm that all isolated sources of supply have been proved dead using an approved tester and proving unit, where this is not possible the AP must confirm dead at the point of work after the issue of this Permit.
+
+- # ====== Page Item: P3_CM_08 =================================
+  id: 26946695226347737
+  identification: 
+    name: P3_CM_08
+    type: Radio Group
+
+  label: 
+    label: 8. Confirm all systems to be worked on have been checked to ensure that any stored energy has been dissipated.
+    alignment: Left
+
+  settings: 
+    number-of-columns: 3
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 80
+    region: Control Measures Checklist # 26945876367347729
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Above
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tristate-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Shared Component
+    list-of-values: CONTROL_MEASURES_LOV # 45556223896387254
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_CM_09 =================================
+  id: 26946751805347738
+  identification: 
+    name: P3_CM_09
+    type: Radio Group
+
+  label: 
+    label: 9. Confirm any live parts are insulated and no exposed live components remain?
+    alignment: Left
+
+  settings: 
+    number-of-columns: 3
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 90
+    region: Control Measures Checklist # 26945876367347729
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Above
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tristate-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Shared Component
+    list-of-values: CONTROL_MEASURES_LOV # 45556223896387254
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+  help: 
+    help-text: Confirm that if any section of the equipment is still live it is covered in a suitable insulating material and that there are no exposed live parts.
+
+- # ====== Page Item: P3_CM_10 =================================
+  id: 26946827031347739
+  identification: 
+    name: P3_CM_10
+    type: Radio Group
+
+  label: 
+    label: 10. Confirm that sufficient measures are in place to ensure that no live equipment is worked on.
+    alignment: Left
+
+  settings: 
+    number-of-columns: 3
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 100
+    region: Control Measures Checklist # 26945876367347729
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Above
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tristate-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Shared Component
+    list-of-values: CONTROL_MEASURES_LOV # 45556223896387254
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_CM_11 =================================
+  id: 26946941194347740
+  identification: 
+    name: P3_CM_11
+    type: Radio Group
+
+  label: 
+    label: 11. Confirm there are first aid facilities available.
+    alignment: Left
+
+  settings: 
+    number-of-columns: 3
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 110
+    region: Control Measures Checklist # 26945876367347729
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Above
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tristate-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Shared Component
+    list-of-values: CONTROL_MEASURES_LOV # 45556223896387254
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_CM_12 =================================
+  id: 26947073709347741
+  identification: 
+    name: P3_CM_12
+    type: Radio Group
+
+  label: 
+    label: 12. Confirm that suitable barriers have been used to clearly identify the working area.
+    alignment: Left
+
+  settings: 
+    number-of-columns: 3
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 120
+    region: Control Measures Checklist # 26945876367347729
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Above
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tristate-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Shared Component
+    list-of-values: CONTROL_MEASURES_LOV # 45556223896387254
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_CM_13 =================================
+  id: 26947130506347742
+  identification: 
+    name: P3_CM_13
+    type: Radio Group
+
+  label: 
+    label: 13. Confirm there is unrestricted access and egress to the working area.
+    alignment: Left
+
+  settings: 
+    number-of-columns: 3
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 130
+    region: Control Measures Checklist # 26945876367347729
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Above
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tristate-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Shared Component
+    list-of-values: CONTROL_MEASURES_LOV # 45556223896387254
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_CM_14 =================================
+  id: 26947267129347743
+  identification: 
+    name: P3_CM_14
+    type: Radio Group
+
+  label: 
+    label: 14. Confirm there is suitable insulated matting available.
+    alignment: Left
+
+  settings: 
+    number-of-columns: 3
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 140
+    region: Control Measures Checklist # 26945876367347729
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Above
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tristate-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Shared Component
+    list-of-values: CONTROL_MEASURES_LOV # 45556223896387254
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_CM_15 =================================
+  id: 26947364989347744
+  identification: 
+    name: P3_CM_15
+    type: Radio Group
+
+  label: 
+    label: 15. Confirm that the calibration of the test equipment is current.
+    alignment: Left
+
+  settings: 
+    number-of-columns: 3
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 150
+    region: Control Measures Checklist # 26945876367347729
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Above
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tristate-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Shared Component
+    list-of-values: CONTROL_MEASURES_LOV # 45556223896387254
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_CM_16 =================================
+  id: 26947471506347745
+  identification: 
+    name: P3_CM_16
+    type: Radio Group
+
+  label: 
+    label: 16. Danger signs have been applied to adjacent live equipment.
+    alignment: Left
+
+  settings: 
+    number-of-columns: 3
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 160
+    region: Control Measures Checklist # 26945876367347729
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Above
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tristate-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Shared Component
+    list-of-values: CONTROL_MEASURES_LOV # 45556223896387254
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_PPE_SAFETY_HELMET =====================
+  id: 26947670039347747
+  identification: 
+    name: P3_PPE_SAFETY_HELMET
+    type: Checkbox Group
+
+  label: 
+    label: Safety Helmet (Hard Hat)
+    alignment: Left
+
+  settings: 
+    number-of-columns: 1
+
+  multiple-values: 
+    type: Delimited List
+    separator: ':'
+
+  layout: 
+    sequence: 10
+    region: PPE Requirements # 26947595929347746
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tick-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC:Yes;Y'
+    display-extra-values: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_PPE_ARC_FLASH =========================
+  id: 26947785672347748
+  identification: 
+    name: P3_PPE_ARC_FLASH
+    type: Checkbox Group
+
+  label: 
+    label: Arc Flash PPE
+    alignment: Left
+
+  settings: 
+    number-of-columns: 1
+
+  multiple-values: 
+    type: Delimited List
+    separator: ':'
+
+  layout: 
+    sequence: 20
+    region: PPE Requirements # 26947595929347746
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tick-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC:Yes;Y'
+    display-extra-values: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_PPE_SAFETY_FOOTWEAR ===================
+  id: 26947896126347749
+  identification: 
+    name: P3_PPE_SAFETY_FOOTWEAR
+    type: Checkbox Group
+
+  label: 
+    label: Safety Footwear
+    alignment: Left
+
+  settings: 
+    number-of-columns: 1
+
+  multiple-values: 
+    type: Delimited List
+    separator: ':'
+
+  layout: 
+    sequence: 30
+    region: PPE Requirements # 26947595929347746
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tick-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC:Yes;Y'
+    display-extra-values: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_PPE_HI_VIS ============================
+  id: 26947959322347750
+  identification: 
+    name: P3_PPE_HI_VIS
+    type: Checkbox Group
+
+  label: 
+    label: Hi-Vis Vest/Jkt
+    alignment: Left
+
+  settings: 
+    number-of-columns: 1
+
+  multiple-values: 
+    type: Delimited List
+    separator: ':'
+
+  layout: 
+    sequence: 40
+    region: PPE Requirements # 26947595929347746
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tick-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC:Yes;Y'
+    display-extra-values: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_PPE_SAFETY_GOGGLES ====================
+  id: 27015029071886501
+  identification: 
+    name: P3_PPE_SAFETY_GOGGLES
+    type: Checkbox Group
+
+  label: 
+    label: Safety Goggles
+    alignment: Left
+
+  settings: 
+    number-of-columns: 1
+
+  multiple-values: 
+    type: Delimited List
+    separator: ':'
+
+  layout: 
+    sequence: 50
+    region: PPE Requirements # 26947595929347746
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tick-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC:Yes;Y'
+    display-extra-values: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_PPE_INSULATING_GLOVES =================
+  id: 27015166302886502
+  identification: 
+    name: P3_PPE_INSULATING_GLOVES
+    type: Checkbox Group
+
+  label: 
+    label: Electrical Insulating Gloves
+    alignment: Left
+
+  settings: 
+    number-of-columns: 1
+
+  multiple-values: 
+    type: Delimited List
+    separator: ':'
+
+  layout: 
+    sequence: 60
+    region: PPE Requirements # 26947595929347746
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tick-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC:Yes;Y'
+    display-extra-values: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_PPE_FALL_RESTRAINT ====================
+  id: 27015285038886503
+  identification: 
+    name: P3_PPE_FALL_RESTRAINT
+    type: Checkbox Group
+
+  label: 
+    label: Fall Restraint Harness
+    alignment: Left
+
+  settings: 
+    number-of-columns: 1
+
+  multiple-values: 
+    type: Delimited List
+    separator: ':'
+
+  layout: 
+    sequence: 70
+    region: PPE Requirements # 26947595929347746
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tick-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC:Yes;Y'
+    display-extra-values: true
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_PPE_FALL_ARREST =======================
+  id: 27015369515886504
+  identification: 
+    name: P3_PPE_FALL_ARREST
+    type: Checkbox Group
+
+  label: 
+    label: Fall Arrest Harness
+    alignment: Left
+
+  settings: 
+    number-of-columns: 1
+
+  multiple-values: 
+    type: Delimited List
+    separator: ':'
+
+  layout: 
+    sequence: 80
+    region: PPE Requirements # 26947595929347746
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tick-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC:Yes;Y'
+    display-extra-values: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_PPE_EAR_DEFENDERS =====================
+  id: 27015468453886505
+  identification: 
+    name: P3_PPE_EAR_DEFENDERS
+    type: Checkbox Group
+
+  label: 
+    label: Ear Defenders/Plugs
+    alignment: Left
+
+  settings: 
+    number-of-columns: 1
+
+  multiple-values: 
+    type: Delimited List
+    separator: ':'
+
+  layout: 
+    sequence: 90
+    region: PPE Requirements # 26947595929347746
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tick-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC:Yes;Y'
+    display-extra-values: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_PPE_SAFETY_GLOVES =====================
+  id: 27015533639886506
+  identification: 
+    name: P3_PPE_SAFETY_GLOVES
+    type: Checkbox Group
+
+  label: 
+    label: Safety Gloves
+    alignment: Left
+
+  settings: 
+    number-of-columns: 1
+
+  multiple-values: 
+    type: Delimited List
+    separator: ':'
+
+  layout: 
+    sequence: 100
+    region: PPE Requirements # 26947595929347746
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tick-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC:Yes;Y'
+    display-extra-values: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P3_IS_CHANGED ============================
+  id: 30143343361642702
+  identification: 
+    name: P3_IS_CHANGED
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 40
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+buttons: 
+- # ====== Button: BACK ========================================
+  id: 27015706306886508
+  identification: 
+    button-name: BACK
+    label: Back
+
+  layout: 
+    sequence: 10
+    region: Buttons # 27015615881886507
+    slot: PREVIOUS
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text
+    hot: false
+    template-options: 
+    - '#DEFAULT#'
+
+  behavior: 
+    action: Redirect to Page in this Application
+    target: 
+      url: 'f?p=&APP_ID.:2:&SESSION.::&DEBUG.:2:P2_PERMIT_ID:&P3_PERMIT_ID.'
+      page: 2 # Site & Work Details
+      clear-cache: 2
+      values: 
+        p2_permit_id: '&P3_PERMIT_ID.'
+
+    warn-on-unsaved-changes: Do Not Check
+
+  advanced: 
+    static-id: BTN_BACK_P3
+
+- # ====== Button: SAVE_DRAFT ==================================
+  id: 27015845414886509
+  identification: 
+    button-name: SAVE_DRAFT
+    label: Save Draft
+
+  layout: 
+    sequence: 20
+    region: Buttons # 27015615881886507
+    slot: NEXT
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text
+    hot: false
+    template-options: 
+    - '#DEFAULT#'
+
+  behavior: 
+    action: Defined by Dynamic Action
+    execute-validations: true
+
+  advanced: 
+    static-id: BTN_SAVE_DRAFT_P3
+
+  security: 
+    authorization-scheme: Can Edit Permits # 31533963716212424
+
+- # ====== Button: NEXT_STEP ===================================
+  id: 27015908062886510
+  identification: 
+    button-name: NEXT_STEP
+    label: Next Step
+
+  layout: 
+    sequence: 30
+    region: Buttons # 27015615881886507
+    slot: NEXT
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text with Icon
+    hot: true
+    template-options: 
+    - '#DEFAULT#'
+    - t-Button--iconRight
+    icon: fa-arrow-right
+
+  behavior: 
+    action: Submit Page
+    execute-validations: true
+    show-processing: false
+    warn-on-unsaved-changes: Do Not Check
+
+  advanced: 
+    static-id: BTN_NEXT_STEP_P3
+
+dynamic-actions: 
+- # ====== Dynamic Action: Get Location and Next Step ==========
+  id: 30153697799398471
+  identification: 
+    name: Get Location and Next Step
+
+  execution: 
+    sequence: 10
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Click
+    selection-type: Button
+    button: NEXT_STEP # 27015908062886510
+
+  actions: 
+  - # ====== Action: Execute JavaScript Code =====================
+    id: 30154011180398458
+    identification: 
+      action: Execute JavaScript Code
+
+    settings: 
+      code: |
+        captureLocationThenSubmit('NEXT_STEP');
+        
+
+    affected-elements: 
+      selection-type: Item(s)
+      item(s): 
+      - P3_IS_CHANGED
+
+    execution: 
+      sequence: 10
+      event: Get Location and Next Step # 30153697799398471
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+- # ====== Dynamic Action: Get Location and Save Draft =========
+  id: 33350440547951418
+  identification: 
+    name: Get Location and Save Draft
+
+  execution: 
+    sequence: 20
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Click
+    selection-type: Button
+    button: SAVE_DRAFT # 27015845414886509
+
+  actions: 
+  - # ====== Action: Execute JavaScript Code =====================
+    id: 33350512772951419
+    identification: 
+      action: Execute JavaScript Code
+
+    settings: 
+      code: captureLocationThenSubmit('SAVE_DRAFT');
+
+    execution: 
+      sequence: 10
+      event: Get Location and Save Draft # 33350440547951418
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+validations: 
+- # ====== Validation: Permit ID Required ======================
+  id: 27016045833886511
+  identification: 
+    name: Permit ID Required
+
+  execution: 
+    sequence: 10
+
+  validation: 
+    type: Item is NOT NULL
+    item: P3_PERMIT_ID
+    always-execute: false
+
+  error: 
+    error-message: Permit ID is required. Please start from Step 1.
+    display-location: Inline with Field and in Notification
+
+- # ====== Validation: All Control Measures Must Be Confirmed ==
+  id: 45757058192782522
+  identification: 
+    name: All Control Measures Must Be Confirmed
+
+  execution: 
+    sequence: 20
+
+  validation: 
+    type: Function Body (returning Boolean)
+    language: PL/SQL
+    pl/sql-function-body: |
+      RETURN (
+          :P3_CM_01 IS NOT NULL AND :P3_CM_02 IS NOT NULL AND
+          :P3_CM_03 IS NOT NULL AND :P3_CM_04 IS NOT NULL AND
+          :P3_CM_05 IS NOT NULL AND :P3_CM_06 IS NOT NULL AND
+          :P3_CM_07 IS NOT NULL AND :P3_CM_08 IS NOT NULL AND
+          :P3_CM_09 IS NOT NULL AND :P3_CM_10 IS NOT NULL AND
+          :P3_CM_11 IS NOT NULL AND :P3_CM_12 IS NOT NULL AND
+          :P3_CM_13 IS NOT NULL AND :P3_CM_14 IS NOT NULL AND
+          :P3_CM_15 IS NOT NULL AND :P3_CM_16 IS NOT NULL
+      );
+    always-execute: true
+
+  error: 
+    error-message: All 16 control measures must be confirmed before proceeding to the next step.
+    display-location: Inline with Field and in Notification
+
+  server-side-condition: 
+    type: Request = Value
+    value: NEXT_STEP
+
+processes: 
+- # ====== Process: Load Control Measures and PPE Data =========
+  id: 27016141402886512
+  identification: 
+    name: Load Control Measures and PPE Data
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      BEGIN
+          -- Load permit info (PPE columns)
+          :P3_CURRENT_STEP := 'CONTROL_MEASURES';
+          SELECT
+              permit_number,
+              ppe_safety_helmet,
+              ppe_arc_flash,
+              ppe_safety_footwear,
+              ppe_hi_vis,
+              ppe_safety_goggles,
+              ppe_insulating_gloves,
+              ppe_fall_restraint,
+              ppe_fall_arrest,
+              ppe_ear_defenders,
+              ppe_safety_gloves,
+              workflow_status
+          INTO
+              :P3_PERMIT_NUMBER,
+              :P3_PPE_SAFETY_HELMET,
+              :P3_PPE_ARC_FLASH,
+              :P3_PPE_SAFETY_FOOTWEAR,
+              :P3_PPE_HI_VIS,
+              :P3_PPE_SAFETY_GOGGLES,
+              :P3_PPE_INSULATING_GLOVES,
+              :P3_PPE_FALL_RESTRAINT,
+              :P3_PPE_FALL_ARREST,
+              :P3_PPE_EAR_DEFENDERS,
+              :P3_PPE_SAFETY_GLOVES,
+              :P3_WORKFLOW_STATUS
+          FROM ptw_pro.ptw_lv_permits
+          WHERE permit_id = :P3_PERMIT_ID;
+      
+          -- Load control measures if they exist
+          BEGIN
+              SELECT
+                  control_measures_id,
+                  cm_01_site_induction,
+                  cm_02_risk_assessment,
+                  cm_03_competence_checked,
+                  cm_04_hazards_aware,
+                  cm_05_ppe_identified,
+                  cm_06_sources_isolated,
+                  cm_07_proved_dead,
+                  cm_08_stored_energy,
+                  cm_09_live_covered,
+                  cm_10_no_live_work,
+                  cm_11_first_aid,
+                  cm_12_barriers,
+                  cm_13_access_egress,
+                  cm_14_insulated_matting,
+                  cm_15_calibration_current,
+                  cm_16_danger_signs
+              INTO
+                  :P3_CONTROL_MEASURES_ID,
+                  :P3_CM_01,
+                  :P3_CM_02,
+                  :P3_CM_03,
+                  :P3_CM_04,
+                  :P3_CM_05,
+                  :P3_CM_06,
+                  :P3_CM_07,
+                  :P3_CM_08,
+                  :P3_CM_09,
+                  :P3_CM_10,
+                  :P3_CM_11,
+                  :P3_CM_12,
+                  :P3_CM_13,
+                  :P3_CM_14,
+                  :P3_CM_15,
+                  :P3_CM_16
+              FROM ptw_pro.ptw_lv_control_measures
+              WHERE permit_id = :P3_PERMIT_ID;
+          EXCEPTION
+              WHEN NO_DATA_FOUND THEN
+                  :P3_CONTROL_MEASURES_ID := NULL;
+          END;
+      
+      EXCEPTION
+          WHEN NO_DATA_FOUND THEN
+              apex_error.add_error(
+                  p_message => 'Permit not found.',
+                  p_display_location => apex_error.c_inline_in_notification
+              );
+      END;
+
+  execution: 
+    sequence: 10
+    point: Before Header
+    run-process: Once Per Page Visit (default)
+
+  server-side-condition: 
+    type: Item is NOT NULL
+    item: P3_PERMIT_ID
+
+- # ====== Process: Save Control Measures and PPE Data =========
+  id: 27016268704886513
+  identification: 
+    name: Save Control Measures and PPE Data
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      BEGIN
+          -- PART 1: Save PPE to ptw_lv_permits (always UPDATE, record already exists)
+          UPDATE ptw_pro.ptw_lv_permits
+          SET    ppe_safety_helmet       = :P3_PPE_SAFETY_HELMET,
+                 ppe_arc_flash           = :P3_PPE_ARC_FLASH,
+                 ppe_safety_footwear     = :P3_PPE_SAFETY_FOOTWEAR,
+                 ppe_hi_vis              = :P3_PPE_HI_VIS,
+                 ppe_safety_goggles      = :P3_PPE_SAFETY_GOGGLES,
+                 ppe_insulating_gloves   = :P3_PPE_INSULATING_GLOVES,
+                 ppe_fall_restraint      = :P3_PPE_FALL_RESTRAINT,
+                 ppe_fall_arrest         = :P3_PPE_FALL_ARREST,
+                 ppe_ear_defenders       = :P3_PPE_EAR_DEFENDERS,
+                 ppe_safety_gloves       = :P3_PPE_SAFETY_GLOVES,
+                 ppe_latitude            = :APP_LATITUDE,
+                 ppe_longitude           = :APP_LONGITUDE,
+                 current_step            = :P3_CURRENT_STEP,
+                 workflow_status         = :P3_WORKFLOW_STATUS,
+                 modified_by             = NVL(V('APP_USER'), USER),
+                 modified_date           = CURRENT_TIMESTAMP
+          WHERE  permit_id = :P3_PERMIT_ID;
+      
+          -- PART 2: Save Control Measures using MERGE (INSERT or UPDATE)
+          MERGE INTO ptw_pro.ptw_lv_control_measures tgt
+          USING (SELECT :P3_PERMIT_ID AS permit_id FROM dual) src
+          ON (tgt.permit_id = src.permit_id)
+          WHEN MATCHED THEN
+              UPDATE SET
+                  cm_01_site_induction      = :P3_CM_01,
+                  cm_02_risk_assessment     = :P3_CM_02,
+                  cm_03_competence_checked  = :P3_CM_03,
+                  cm_04_hazards_aware       = :P3_CM_04,
+                  cm_05_ppe_identified      = :P3_CM_05,
+                  cm_06_sources_isolated    = :P3_CM_06,
+                  cm_07_proved_dead         = :P3_CM_07,
+                  cm_08_stored_energy       = :P3_CM_08,
+                  cm_09_live_covered        = :P3_CM_09,
+                  cm_10_no_live_work        = :P3_CM_10,
+                  cm_11_first_aid           = :P3_CM_11,
+                  cm_12_barriers            = :P3_CM_12,
+                  cm_13_access_egress       = :P3_CM_13,
+                  cm_14_insulated_matting   = :P3_CM_14,
+                  cm_15_calibration_current = :P3_CM_15,
+                  cm_16_danger_signs        = :P3_CM_16,
+                  cm_latitude               = :APP_LATITUDE,
+                  cm_longitude              = :APP_LONGITUDE,
+                  modified_date             = CURRENT_TIMESTAMP
+          WHEN NOT MATCHED THEN
+              INSERT (
+                  permit_id,
+                  cm_01_site_induction,
+                  cm_02_risk_assessment,
+                  cm_03_competence_checked,
+                  cm_04_hazards_aware,
+                  cm_05_ppe_identified,
+                  cm_06_sources_isolated,
+                  cm_07_proved_dead,
+                  cm_08_stored_energy,
+                  cm_09_live_covered,
+                  cm_10_no_live_work,
+                  cm_11_first_aid,
+                  cm_12_barriers,
+                  cm_13_access_egress,
+                  cm_14_insulated_matting,
+                  cm_15_calibration_current,
+                  cm_16_danger_signs,
+                  cm_latitude,
+                  cm_longitude
+              ) VALUES (
+                  :P3_PERMIT_ID,
+                  :P3_CM_01,
+                  :P3_CM_02,
+                  :P3_CM_03,
+                  :P3_CM_04,
+                  :P3_CM_05,
+                  :P3_CM_06,
+                  :P3_CM_07,
+                  :P3_CM_08,
+                  :P3_CM_09,
+                  :P3_CM_10,
+                  :P3_CM_11,
+                  :P3_CM_12,
+                  :P3_CM_13,
+                  :P3_CM_14,
+                  :P3_CM_15,
+                  :P3_CM_16,
+                  :APP_LATITUDE,
+                  :APP_LONGITUDE
+              );
+      
+          COMMIT;
+      
+      EXCEPTION
+          WHEN OTHERS THEN
+              ROLLBACK;
+              apex_error.add_error(
+                  p_message          => 'Error saving control measures: ' || SQLERRM,
+                  p_display_location => apex_error.c_inline_in_notification
+              );
+              RAISE;
+      END;
+
+  execution: 
+    sequence: 10
+    point: Processing
+    run-process: Once Per Page Visit (default)
+
+  success-message: 
+    success-message: Control measures and PPE saved successfully.
+
+  error: 
+    display-location: Inline in Notification
+
+  server-side-condition: 
+    type: Expression
+    language: PL/SQL
+    pl/sql-expression: ":REQUEST IN ('SAVE_DRAFT','NEXT_STEP')"
+
+  security: 
+    authorization-scheme: Can Edit Permits # 31533963716212424
+
+- # ====== Process: Engineer Own Permit Check ==================
+  id: 30143851377642707
+  identification: 
+    name: Engineer Own Permit Check
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      DECLARE
+          v_is_engineer NUMBER;
+          v_is_owner    NUMBER;
+          v_is_auth     NUMBER;
+      BEGIN
+          SELECT COUNT(*) INTO v_is_engineer
+          FROM   ptw_pro.ptw_lv_user_roles_v          -- changed
+          WHERE  UPPER(username) = UPPER(V('APP_USER'))
+          AND    role_name = 'ENGINEER'
+          AND    is_active = 'Y';
+      
+          IF v_is_engineer > 0 AND :P3_PERMIT_ID IS NOT NULL THEN  -- use correct Pn_PERMIT_ID per page
+      
+              SELECT COUNT(*) INTO v_is_owner
+              FROM   ptw_pro.ptw_lv_permits
+              WHERE  permit_id = :P3_PERMIT_ID         -- use correct Pn_PERMIT_ID per page
+              AND    UPPER(created_by) = UPPER(V('APP_USER'));
+      
+              IF v_is_owner = 0 THEN
+      
+                SELECT COUNT(*) INTO v_is_auth 
+                FROM   ptw_pro.ptw_lv_permits
+                WHERE  permit_id = :P3_PERMIT_ID
+                AND    NVL(UPPER(auth_person_name),'XXX') = UPPER(V('APP_USER'));  -- check if the engineer is the auth_person
+      
+                IF v_is_auth = 0 THEN
+                  apex_error.add_error(
+                      p_message          => 'Access denied. You can only edit permits you have created.',
+                      p_display_location => apex_error.c_inline_in_notification
+                  );
+                  apex_util.redirect_url(
+                      apex_page.get_url(p_page => 1)
+                  );
+                END IF;
+              END IF;
+          END IF;
+      END;
+
+  execution: 
+    sequence: 20
+    point: Before Header
+    run-process: Once Per Page Visit (default)
+
+  server-side-condition: 
+    type: Item is NOT NULL
+    item: P3_PERMIT_ID
+
+branches: 
+- # ====== Branch: Go to Equipment Isolation (NEXT_STEP) =======
+  id: 27016855871886519
+  identification: 
+    name: Go to Equipment Isolation (NEXT_STEP)
+
+  execution: 
+    sequence: 10
+    point: After Processing
+
+  behavior: 
+    type: Page or URL (Redirect)
+    target: 
+      url: 'f?p=&APP_ID.:4:&SESSION.::&DEBUG.:4:P4_PERMIT_ID:&P3_PERMIT_ID.'
+      page: 4 # Equipment Isolation
+      clear-cache: 4
+      values: 
+        p4_permit_id: '&P3_PERMIT_ID.'
+
+  server-side-condition: 
+    type: Request = Value
+    value: NEXT_STEP
+
+- # ====== Branch: Refresh Current Page (SAVE_DRAFT) ===========
+  id: 27016963816886520
+  identification: 
+    name: Refresh Current Page (SAVE_DRAFT)
+
+  execution: 
+    sequence: 20
+    point: After Processing
+
+  behavior: 
+    type: Page or URL (Redirect)
+    target: 
+      url: 'f?p=&APP_ID.:3:&SESSION.::&DEBUG.:3:P3_PERMIT_ID:&P3_PERMIT_ID.'
+      page: 3 # Control Measures & PPE
+      clear-cache: 3
+      values: 
+        p3_permit_id: '&P3_PERMIT_ID.'
+
+  server-side-condition: 
+    type: Request = Value
+    value: SAVE_DRAFT
+

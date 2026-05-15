@@ -1,0 +1,2468 @@
+---
+# ====== Page: LV Monitoring =================================
+id: 10
+identification: 
+  name: LV Monitoring
+  alias: LV-MONITORING
+  title: Low Voltage Monitoring
+
+appearance: 
+  page-mode: Normal
+  page-template: Theme Default
+  template-options: 
+  - '#DEFAULT#'
+
+navigation-menu: 
+  override-user-interface-level: false
+
+navigation: 
+  cursor-focus: Do not focus cursor
+  warn-on-unsaved-changes: true
+
+javascript: 
+  file-urls: 
+  - '#APP_FILES#offline-storage#MIN#.js'
+  function-and-global-variable-declaration: |
+    let monitorSignaturePad;
+    
+    function initSignaturePads() {
+        setTimeout(function() {
+            initPad('monitorSignaturePad', 'P10_MONITOR_SIGNATURE_HIDDEN', function(pad) {
+                monitorSignaturePad = pad;
+    
+                // Override canvas size to be larger than the default
+                var canvas = document.getElementById('monitorSignaturePad');
+                var regionBody = canvas.closest('.t-Region-body') ||
+                                 canvas.closest('.t-ContentBody') ||
+                                 canvas.parentElement;
+                var newWidth  = regionBody ? regionBody.offsetWidth - 24 : 400;
+                var newHeight = window.innerWidth < 768 ? 150 : 200;
+    
+                canvas.width  = newWidth;
+                canvas.height = newHeight;
+                canvas.setAttribute('style',
+                    'width:'  + newWidth  + 'px !important;' +
+                    'height:' + newHeight + 'px !important;' +
+                    'border: 1px dashed var(--ut-component-border-color, #ccc);' +
+                    'border-radius: 4px;' +
+                    'touch-action: none;' +
+                    'cursor: crosshair;' +
+                    'display: block;'
+                );
+    
+                var existingDataUrl = apex.item('P10_MONITOR_SIGNATURE_DATA_URL').getValue();
+                var workflowStatus  = apex.item('P10_WORKFLOW_STATUS').getValue();
+    
+                setCanvasBackground(canvas);
+    
+                if (existingDataUrl) {
+                    loadSignature(pad, canvas, existingDataUrl);
+                    lockCanvas(canvas);
+                    var clearBtn = document.querySelector('.signature-controls button');
+                    if (clearBtn) clearBtn.style.display = 'none';
+                } else if (workflowStatus !== 'STARTED') {
+                    lockCanvas(canvas);
+                    var clearBtn = document.querySelector('.signature-controls button');
+                    if (clearBtn) clearBtn.style.display = 'none';
+                }
+            });
+        }, 200);
+    }
+    
+    function setCanvasBackground(canvas) {
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d');
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-over';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+    }
+    
+    function lockCanvas(canvas) {
+        if (!canvas) return;
+        canvas.style.pointerEvents  = 'none';
+        canvas.style.opacity        = '0.85';
+        canvas.style.cursor         = 'not-allowed';
+        canvas.style.backgroundColor = '#ffffff';
+        canvas.title                = 'Signature is locked';
+    }
+    
+    function clearMonitorSignature() {
+        if (monitorSignaturePad) monitorSignaturePad.clear();
+        apex.item('P10_MONITOR_SIGNATURE_HIDDEN').setValue('');
+        // Re-apply white background after clear
+        var canvas = document.getElementById('monitorSignaturePad');
+        setCanvasBackground(canvas);
+    }
+  execute-when-page-loads: |
+    initSignaturePads();
+    // Re-display existing signature if record already has one saved.
+    // P10_MONITOR_SIGNATURE_DATA_URL is populated by the Before Header
+    // process (BLOB → base64 data URL). Mirrors Page 5 loadSignature() call.
+    loadSignature('monitorSignaturePad', 'P10_MONITOR_SIGNATURE_DATA_URL');
+    
+    (function () {
+    
+        var TRISTATE_ITEMS = [
+            'P10_CHK_PERMIT_ON_DISPLAY',
+            'P10_CHK_ACCESS_EGRESS',
+            'P10_CHK_WARNING_SIGNS'
+        ];
+    
+        var BINARY_ITEMS = [
+            'P10_MS_CHECK1_IN_ORDER',
+            'P10_MS_CHECK2_IN_ORDER',
+            'P10_MS_CHECK3_IN_ORDER'
+        ];
+    
+        var TRISTATE_BADGES = [
+            { val: 'Y',  cls: 'cm-badge-yes', label: '✓' },
+            { val: 'N',  cls: 'cm-badge-no',  label: '✗' },
+            { val: 'NA', cls: 'cm-badge-na',  label: 'N/A' }
+        ];
+    
+        var BINARY_BADGES = [
+            { val: 'Y', cls: 'cm-badge-yes', label: '✓' },
+            { val: 'N', cls: 'cm-badge-no',  label: '✗' }
+        ];
+    
+        // Read-only when not STARTED, OR when viewing an existing monitoring record
+        var isReadOnly = (apex.item('P10_WORKFLOW_STATUS').getValue() !== 'STARTED') ||
+                         (apex.item('P10_MONITORING_ID').getValue() !== '' && 
+                          apex.item('P10_MONITORING_STATUS').getValue() === 'COMPLETED');
+    
+        function buildBadgeRow(itemName, badges) {
+            // apex.item().getValue() works in both edit and read-only mode
+            var currentVal = apex.item(itemName).getValue() || '';
+    
+            var $row = $('<div class="cm-badge-row"></div>').attr('data-item', itemName);
+    
+            badges.forEach(function (b) {
+                $('<span></span>')
+                    .addClass('cm-badge ' + b.cls)
+                    .toggleClass('cm-active', currentVal === b.val)
+                    .toggleClass('cm-badge-readonly', isReadOnly)
+                    .attr('data-value', b.val)
+                    .text(b.label)
+                    .appendTo($row);
+            });
+    
+            return $row;
+        }
+    
+        // Build tristate badges
+        TRISTATE_ITEMS.forEach(function (itemName) {
+            var $fc = $('#' + itemName).closest('.t-Form-fieldContainer');
+            if ($fc.length === 0) return;
+            $fc.find('.cm-badge-row').remove();
+            $fc.find('.t-Form-inputContainer').append(
+                buildBadgeRow(itemName, TRISTATE_BADGES)
+            );
+        });
+    
+        // Build binary badges
+        BINARY_ITEMS.forEach(function (itemName) {
+            var $fc = $('#' + itemName).closest('.t-Form-fieldContainer');
+            if ($fc.length === 0) return;
+            $fc.find('.cm-badge-row').remove();
+            $fc.find('.t-Form-inputContainer').append(
+                buildBadgeRow(itemName, BINARY_BADGES)
+            );
+        });
+    
+        // Hide native radio grids
+        $('.cm-tristate-item .apex-item-grid').hide();
+        $('.cm-binary-item .apex-item-radio').hide();
+    
+        // Delegated click — edit mode only
+        $(document).off('click.p10badges').on('click.p10badges', '.cm-badge:not(.cm-badge-readonly)', function () {
+            var $badge   = $(this);
+            var $row     = $badge.closest('.cm-badge-row');
+            var itemName = $row.attr('data-item');
+            var val      = $badge.attr('data-value');
+    
+            $('input[name="' + itemName + '"][value="' + val + '"]')
+                .prop('checked', true).trigger('change');
+    
+            $row.find('.cm-badge').removeClass('cm-active');
+            $badge.addClass('cm-active');
+        });
+    
+    }());
+
+css: 
+  inline: |
+    .monitoring-section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #003366;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.4rem;
+        border-bottom: 2px solid #003366;
+    }
+    
+    .monitoring-instruction {
+        font-size: 0.875rem;
+        color: #555;
+        font-style: italic;
+        margin-bottom: 1rem;
+        padding: 0.75rem 1rem;
+        background: #f0f4fa;
+        border-left: 4px solid #003366;
+        border-radius: 4px;
+    }
+    
+    .monitoring-checks-grid {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .monitoring-checks-grid th {
+        background: #003366;
+        color: #fff;
+        padding: 8px 12px;
+        text-align: center;
+        font-weight: 600;
+        border: 1px solid #002244;
+    }
+    
+    .monitoring-checks-grid td {
+        padding: 8px 12px;
+        border: 1px solid #dde;
+        vertical-align: middle;
+    }
+    
+    .monitoring-checks-grid tr:nth-child(even) td {
+        background: #f7f9fc;
+    }
+    
+    .method-check-box {
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background: #fff;
+    }
+    
+    .method-check-box h4 {
+        margin: 0 0 0.75rem 0;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #003366;
+    }
+    
+    .col-a-header {
+        background: #e8f0fb;
+        padding: 0.5rem;
+        border-radius: 4px;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.5rem;
+    }
+    
+    .col-b-header {
+        background: #fef8e7;
+        padding: 0.5rem;
+        border-radius: 4px;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.5rem;
+    }
+    
+    .geo-info {
+        font-size: 0.72rem;
+        color: #999;
+        margin-top: 4px;
+    }
+    
+
+read-only: 
+  type: Expression
+  language: PL/SQL
+  pl/sql-expression: ":P10_MONITORING_ID IS NOT NULL AND :P10_MONITORING_STATUS = 'COMPLETED'"
+
+security: 
+  authentication: Page Requires Authentication
+  deep-linking: Application Default
+  page-access-protection: Arguments Must Have Checksum
+  form-auto-complete: Off
+  browser-cache: Application Default
+
+session-management: 
+  rejoin-sessions: Application Default
+
+advanced: 
+  enable-duplicate-page-submissions: Yes - Enable page to be re-posted
+  reload-on-submit: Only for Success
+
+server-cache: 
+  caching: Disabled
+
+regions: 
+- # ====== Region: Permit Badge ================================
+  id: 40756625218498316
+  identification: 
+    name: Permit Badge
+    type: Static Content
+
+  source: 
+    html-code: |
+      <div style="margin-bottom: 20px;">
+          <span class="apex-badge" style="background-color: #3ea055; color: white; padding: 6px 16px; border-radius: 20px; font-weight: 600;">
+              Permit: &P10_PERMIT_NUMBER.
+          </span>
+      </div>
+
+  layout: 
+    sequence: 100
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Blank with Attributes
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Site Monitoring Checks ======================
+  id: 40756808181498318
+  identification: 
+    name: Site Monitoring Checks
+    title: Site Monitoring Checks
+    type: Static Content
+
+  layout: 
+    sequence: 110
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--showIcon
+    - t-Region--accent15
+    - t-Region--scrollBody
+    icon: fa-check-circle
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Method Statement Checks =====================
+  id: 40757578900498325
+  identification: 
+    name: Method Statement Checks
+    title: Checks Against Work Processes &amp; Method Statement
+    type: Static Content
+
+  source: 
+    html-code: |
+      <p class="monitoring-instruction">
+          Checks against work processes and method statement - considering the work involved under this Sanction, on<br>
+          reading the method detailed below an element you wish to check for compliance (note: the minimum is one<br>
+          check per task carried out under each Sanction, but more are recommended dependent on activity complexity)
+      </p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; font-weight:600;
+                  font-size:0.8rem; text-transform:uppercase; margin-bottom:0.5rem;">
+          <div class="col-a-header">&#x1F4CB; Column A &mdash; Detail the item or part of the method statement you decide to check</div>
+          <div class="col-b-header">&#x2705; Column B &mdash; All works carried out correctly, or non-conforming details</div>
+      </div>
+
+  layout: 
+    sequence: 120
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--showIcon
+    - t-Region--accent15
+    - t-Region--scrollBody
+    icon: fa-tasks
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Sign-off ====================================
+  id: 40758883896498338
+  identification: 
+    name: Sign-off
+    title: Monitoring Sign-Off
+    type: Static Content
+
+  layout: 
+    sequence: 250
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--showIcon
+    - t-Region--accent15
+    - t-Region--scrollBody
+    icon: fa-user-circle
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Signature Canvas ============================
+  id: 40759296869498342
+  identification: 
+    name: Signature Canvas
+    type: Static Content
+
+  source: 
+    html-code: |
+      
+      <div class="signature-pad-container">
+          <canvas id="monitorSignaturePad" class="signature-pad"></canvas>
+          <div class="signature-controls">
+              <button type="button" onclick="clearMonitorSignature()">Clear</button>
+          </div>
+      </div>
+
+  layout: 
+    sequence: 40
+    parent-region: Sign-off # 40758883896498338
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--removeHeader js-removeLandmark
+    - t-Region--scrollBody
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Buttons =====================================
+  id: 40759314865498343
+  identification: 
+    name: Buttons
+    type: Static Content
+
+  layout: 
+    sequence: 260
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Buttons Container
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+page-items: 
+- # ====== Page Item: P10_PERMIT_ID ============================
+  id: 40756370994498313
+  identification: 
+    name: P10_PERMIT_ID
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 30
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_MONITORING_ID ========================
+  id: 40756412291498314
+  identification: 
+    name: P10_MONITORING_ID
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 40
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_PERMIT_NUMBER ========================
+  id: 40756796685498317
+  identification: 
+    name: P10_PERMIT_NUMBER
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 70
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_CHK_PERMIT_ON_DISPLAY ================
+  id: 40756948759498319
+  identification: 
+    name: P10_CHK_PERMIT_ON_DISPLAY
+    type: Radio Group
+
+  label: 
+    label: Is Permit on display?
+    alignment: Left
+
+  settings: 
+    number-of-columns: 3
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 10
+    region: Site Monitoring Checks # 40756808181498318
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 4
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tristate-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC:Yes;Y,No;N,N/A;NA'
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_CHK_PERMIT_TIME ======================
+  id: 40757037068498320
+  identification: 
+    name: P10_CHK_PERMIT_TIME
+    type: Text Field
+
+  label: 
+    label: Time of Check
+    alignment: Left
+
+  settings: 
+    subtype: Text
+    trim-spaces: Leading and Trailing
+    text-case: NO CHANGE
+    submit-when-enter-pressed: false
+    disabled: false
+
+  layout: 
+    sequence: 20
+    region: Site Monitoring Checks # 40756808181498318
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 3
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    format-mask: 'HH:MI'
+    width: 30
+    value-placeholder: 'HH:MM'
+
+  validation: 
+    value-required: false
+    maximum-length: 5
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_CHK_ACCESS_EGRESS ====================
+  id: 40757109552498321
+  identification: 
+    name: P10_CHK_ACCESS_EGRESS
+    type: Radio Group
+
+  label: 
+    label: Is Access / Egress clear?
+    alignment: Left
+
+  settings: 
+    number-of-columns: 3
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 30
+    region: Site Monitoring Checks # 40756808181498318
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 4
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tristate-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC:Yes;Y,No;N,N/A;NA'
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_CHK_ACCESS_TIME ======================
+  id: 40757299824498322
+  identification: 
+    name: P10_CHK_ACCESS_TIME
+    type: Text Field
+
+  label: 
+    label: Time of check
+    alignment: Left
+
+  settings: 
+    subtype: Text
+    trim-spaces: Leading and Trailing
+    text-case: NO CHANGE
+    submit-when-enter-pressed: false
+    disabled: false
+
+  layout: 
+    sequence: 40
+    region: Site Monitoring Checks # 40756808181498318
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 3
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    format-mask: 'HH:MM'
+    width: 30
+    value-placeholder: 'HH:MM'
+
+  validation: 
+    value-required: false
+    maximum-length: 5
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_CHK_WARNING_SIGNS ====================
+  id: 40757385583498323
+  identification: 
+    name: P10_CHK_WARNING_SIGNS
+    type: Radio Group
+
+  label: 
+    label: Are warning signs in place?
+    alignment: Left
+
+  settings: 
+    number-of-columns: 3
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 50
+    region: Site Monitoring Checks # 40756808181498318
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 4
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-tristate-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC:Yes;Y,No;N,N/A;NA'
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_CHK_WARNING_TIME =====================
+  id: 40757409968498324
+  identification: 
+    name: P10_CHK_WARNING_TIME
+    type: Text Field
+
+  label: 
+    label: Time of check
+    alignment: Left
+
+  settings: 
+    subtype: Text
+    trim-spaces: Leading and Trailing
+    text-case: NO CHANGE
+    submit-when-enter-pressed: false
+    disabled: false
+
+  layout: 
+    sequence: 60
+    region: Site Monitoring Checks # 40756808181498318
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 3
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    format-mask: 'HH:MM'
+    width: 30
+    value-placeholder: 'HH:MM'
+
+  validation: 
+    value-required: false
+    maximum-length: 5
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_MS_CHECK1_DETAIL =====================
+  id: 40757678038498326
+  identification: 
+    name: P10_MS_CHECK1_DETAIL
+    type: Textarea
+
+  label: 
+    label: Check 1) Detail of check made
+    alignment: Left
+
+  settings: 
+    resizable: true
+    auto-height: false
+    character-counter: false
+    trim-spaces: Leading and Trailing
+
+  layout: 
+    sequence: 130
+    region: No Parent
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    width: 30
+    height: 4
+
+  validation: 
+    value-required: false
+    maximum-length: 1000
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_MS_CHECK1_IN_ORDER ===================
+  id: 40757759672498327
+  identification: 
+    name: P10_MS_CHECK1_IN_ORDER
+    type: Radio Group
+
+  label: 
+    label: All in order?
+    alignment: Left
+
+  settings: 
+    number-of-columns: 1
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 140
+    region: No Parent
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-binary-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC:Yes - All in Order;Y,No - Non-Conforming;N'
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_MS_CHECK1_TIME =======================
+  id: 40757874990498328
+  identification: 
+    name: P10_MS_CHECK1_TIME
+    type: Text Field
+
+  label: 
+    label: Enter time of check
+    alignment: Left
+
+  settings: 
+    subtype: Text
+    trim-spaces: Leading and Trailing
+    text-case: NO CHANGE
+    submit-when-enter-pressed: false
+    disabled: false
+
+  layout: 
+    sequence: 150
+    region: No Parent
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 3
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    width: 30
+    value-placeholder: 'HH:MM'
+
+  validation: 
+    value-required: false
+    maximum-length: 5
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_MS_CHECK1_COMMENTS ===================
+  id: 40757929896498329
+  identification: 
+    name: P10_MS_CHECK1_COMMENTS
+    type: Textarea
+
+  label: 
+    label: Comments
+    alignment: Left
+
+  settings: 
+    resizable: true
+    auto-height: false
+    character-counter: false
+    trim-spaces: Leading and Trailing
+
+  layout: 
+    sequence: 160
+    region: No Parent
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: 7
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    width: 30
+    height: 2
+
+  validation: 
+    value-required: false
+    maximum-length: 1000
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_MS_CHECK2_DETAIL =====================
+  id: 40758074172498330
+  identification: 
+    name: P10_MS_CHECK2_DETAIL
+    type: Textarea
+
+  label: 
+    label: Check 2) Detail of check made
+    alignment: Left
+
+  settings: 
+    resizable: true
+    auto-height: false
+    character-counter: false
+    trim-spaces: Leading and Trailing
+
+  layout: 
+    sequence: 170
+    region: No Parent
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    width: 30
+    height: 4
+
+  validation: 
+    value-required: false
+    maximum-length: 1000
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_MS_CHECK2_IN_ORDER ===================
+  id: 40758100703498331
+  identification: 
+    name: P10_MS_CHECK2_IN_ORDER
+    type: Radio Group
+
+  label: 
+    label: All in order?
+    alignment: Left
+
+  settings: 
+    number-of-columns: 1
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 180
+    region: No Parent
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-binary-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC:Yes - All in Order;Y,No - Non-Conforming;N'
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_MS_CHECK2_TIME =======================
+  id: 40758202652498332
+  identification: 
+    name: P10_MS_CHECK2_TIME
+    type: Text Field
+
+  label: 
+    label: Enter time of check
+    alignment: Left
+
+  settings: 
+    subtype: Text
+    trim-spaces: Leading and Trailing
+    text-case: NO CHANGE
+    submit-when-enter-pressed: false
+    disabled: false
+
+  layout: 
+    sequence: 190
+    region: No Parent
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 3
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    width: 30
+    value-placeholder: 'HH:MM'
+
+  validation: 
+    value-required: false
+    maximum-length: 5
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_MS_CHECK2_COMMENTS ===================
+  id: 40758315255498333
+  identification: 
+    name: P10_MS_CHECK2_COMMENTS
+    type: Textarea
+
+  label: 
+    label: Comments
+    alignment: Left
+
+  settings: 
+    resizable: true
+    auto-height: false
+    character-counter: false
+    trim-spaces: Leading and Trailing
+
+  layout: 
+    sequence: 200
+    region: No Parent
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: 7
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    width: 30
+    height: 2
+
+  validation: 
+    value-required: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_MS_CHECK3_DETAIL =====================
+  id: 40758415921498334
+  identification: 
+    name: P10_MS_CHECK3_DETAIL
+    type: Textarea
+
+  label: 
+    label: Check 3) Detail of check made
+    alignment: Left
+
+  settings: 
+    resizable: true
+    auto-height: false
+    character-counter: false
+    trim-spaces: Leading and Trailing
+
+  layout: 
+    sequence: 210
+    region: No Parent
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    width: 30
+    height: 4
+
+  validation: 
+    value-required: false
+    maximum-length: 1000
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_MS_CHECK3_IN_ORDER ===================
+  id: 40758515996498335
+  identification: 
+    name: P10_MS_CHECK3_IN_ORDER
+    type: Radio Group
+
+  label: 
+    label: All in order?
+    alignment: Left
+
+  settings: 
+    number-of-columns: 1
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 220
+    region: No Parent
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-binary-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC:Yes - All in Order;Y,No - Non-Conforming;N'
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_MS_CHECK3_TIME =======================
+  id: 40758619994498336
+  identification: 
+    name: P10_MS_CHECK3_TIME
+    type: Text Field
+
+  label: 
+    label: Enter time of check
+    alignment: Left
+
+  settings: 
+    subtype: Text
+    trim-spaces: Leading and Trailing
+    text-case: NO CHANGE
+    submit-when-enter-pressed: false
+    disabled: false
+
+  layout: 
+    sequence: 230
+    region: No Parent
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 3
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    width: 30
+    value-placeholder: 'HH:MM'
+
+  validation: 
+    value-required: false
+    maximum-length: 5
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_MS_CHECK3_COMMENTS ===================
+  id: 40758751775498337
+  identification: 
+    name: P10_MS_CHECK3_COMMENTS
+    type: Textarea
+
+  label: 
+    label: Comments
+    alignment: Left
+
+  settings: 
+    resizable: true
+    auto-height: false
+    character-counter: false
+    trim-spaces: Leading and Trailing
+
+  layout: 
+    sequence: 240
+    region: No Parent
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: 7
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    width: 30
+    height: 2
+
+  validation: 
+    value-required: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_MONITOR_NAME =========================
+  id: 40758952948498339
+  identification: 
+    name: P10_MONITOR_NAME
+    type: Text Field
+
+  label: 
+    label: Monitoring carried out by (Name)
+    alignment: Left
+
+  settings: 
+    subtype: Text
+    trim-spaces: Leading and Trailing
+    text-case: NO CHANGE
+    submit-when-enter-pressed: false
+    disabled: false
+
+  layout: 
+    sequence: 10
+    region: Sign-off # 40758883896498338
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Required - Floating
+    template-options: 
+    - '#DEFAULT#'
+    width: 30
+
+  validation: 
+    value-required: true
+    maximum-length: 200
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_MONITOR_DATE =========================
+  id: 40759052213498340
+  identification: 
+    name: P10_MONITOR_DATE
+    type: Text Field
+
+  label: 
+    label: Date
+    alignment: Left
+
+  settings: 
+    subtype: Text
+    trim-spaces: Leading and Trailing
+    text-case: NO CHANGE
+    submit-when-enter-pressed: false
+    disabled: false
+
+  layout: 
+    sequence: 20
+    region: Sign-off # 40758883896498338
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 4
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    format-mask: DD-MON-YYYY
+    width: 30
+    value-placeholder: DD-MON-YYYY
+
+  validation: 
+    value-required: true
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  default: 
+    type: SQL Query (return single value)
+    sql-query-(return-single-value): SELECT TO_CHAR(SYSDATE,'DD-MON-YYYY') FROM DUAL
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_MONITOR_SIGNATURE_HIDDEN =============
+  id: 40759179832498341
+  identification: 
+    name: P10_MONITOR_SIGNATURE_HIDDEN
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 30
+    region: Sign-off # 40758883896498338
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_MONITOR_SIGNATURE_DATA_URL ===========
+  id: 40759713686498347
+  identification: 
+    name: P10_MONITOR_SIGNATURE_DATA_URL
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 60
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_WORKFLOW_STATUS ======================
+  id: 45757281850782524
+  identification: 
+    name: P10_WORKFLOW_STATUS
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 80
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P10_MONITORING_STATUS ====================
+  id: 49364021888381901
+  identification: 
+    name: P10_MONITORING_STATUS
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 90
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+buttons: 
+- # ====== Button: BACK ========================================
+  id: 40759411875498344
+  identification: 
+    button-name: BACK
+    label: Back
+
+  layout: 
+    sequence: 10
+    region: Buttons # 40759314865498343
+    slot: PREVIOUS
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text
+    hot: false
+    template-options: 
+    - '#DEFAULT#'
+
+  behavior: 
+    action: Redirect to Page in this Application
+    target: 
+      url: 'f?p=&APP_ID.:1:&SESSION.::&DEBUG.:1::'
+      page: 1 # Dashboard
+      clear-cache: 1
+
+    warn-on-unsaved-changes: Do Not Check
+
+  advanced: 
+    static-id: BTN_BACK_P10
+
+- # ====== Button: SAVE_DRAFT ==================================
+  id: 40759594892498345
+  identification: 
+    button-name: SAVE_DRAFT
+    label: Save Draft
+
+  layout: 
+    sequence: 10
+    region: Buttons # 40759314865498343
+    slot: NEXT
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text
+    hot: false
+    template-options: 
+    - '#DEFAULT#'
+
+  behavior: 
+    action: Defined by Dynamic Action
+    execute-validations: false
+
+  advanced: 
+    static-id: BTN_SAVE_DRAFT_P10
+
+  server-side-condition: 
+    type: Item = Value
+    item: P10_MONITORING_STATUS
+    value: IN_PROGRESS
+
+- # ====== Button: SAVE_MONITORING =============================
+  id: 40759672326498346
+  identification: 
+    button-name: SAVE_MONITORING
+    label: Save Monitoring
+
+  layout: 
+    sequence: 10
+    region: Buttons # 40759314865498343
+    slot: NEXT
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text with Icon
+    hot: true
+    template-options: 
+    - '#DEFAULT#'
+    - t-Button--iconLeft
+    icon: fa-save
+
+  behavior: 
+    action: Defined by Dynamic Action
+    execute-validations: true
+
+  advanced: 
+    static-id: BTN_SAVE_MONITORING_P10
+
+  server-side-condition: 
+    type: Item = Value
+    item: P10_MONITORING_STATUS
+    value: IN_PROGRESS
+
+dynamic-actions: 
+- # ====== Dynamic Action: Click Save Draft ====================
+  id: 40760046358498350
+  identification: 
+    name: Click Save Draft
+
+  execution: 
+    sequence: 10
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Click
+    selection-type: Button
+    button: SAVE_DRAFT # 40759594892498345
+
+  actions: 
+  - # ====== Action: Execute JavaScript Code =====================
+    id: 41967040351328801
+    identification: 
+      action: Execute JavaScript Code
+
+    settings: 
+      code: captureLocationThenSubmit('SAVE_DRAFT');
+
+    execution: 
+      sequence: 10
+      event: Click Save Draft # 40760046358498350
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+- # ====== Dynamic Action: Click Save Monitoring ===============
+  id: 41967175979328802
+  identification: 
+    name: Click Save Monitoring
+
+  execution: 
+    sequence: 20
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Click
+    selection-type: Button
+    button: SAVE_MONITORING # 40759672326498346
+
+  actions: 
+  - # ====== Action: Execute JavaScript Code =====================
+    id: 41967273274328803
+    identification: 
+      action: Execute JavaScript Code
+
+    settings: 
+      code: |
+        saveSignatures();
+        captureLocationThenSubmit('SAVE_MONITORING');
+
+    execution: 
+      sequence: 10
+      event: Click Save Monitoring # 41967175979328802
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+validations: 
+- # ====== Validation: Monitor Name Required ===================
+  id: 41967311032328804
+  identification: 
+    name: Monitor Name Required
+
+  execution: 
+    sequence: 10
+
+  validation: 
+    type: Item is NOT NULL
+    item: P10_MONITOR_NAME
+    always-execute: false
+
+  error: 
+    error-message: Monitoring carried out by (Name) is required.
+    display-location: Inline with Field and in Notification
+    associated-item: P10_MONITOR_NAME # 40758952948498339
+
+  server-side-condition: 
+    type: Expression
+    language: PL/SQL
+    pl/sql-expression: ":REQUEST = 'SAVE_MONITORING'"
+
+- # ====== Validation: Monitor Date Required ===================
+  id: 41967434843328805
+  identification: 
+    name: Monitor Date Required
+
+  execution: 
+    sequence: 20
+
+  validation: 
+    type: Item is NOT NULL
+    item: P10_MONITOR_DATE
+    always-execute: false
+
+  error: 
+    error-message: Date is required.
+    display-location: Inline with Field and in Notification
+    associated-item: P10_MONITOR_DATE # 40759052213498340
+
+  server-side-condition: 
+    type: Expression
+    language: PL/SQL
+    pl/sql-expression: ":REQUEST = 'SAVE_MONITORING'"
+
+- # ====== Validation: At Least One Site Check Answered ========
+  id: 41967585696328806
+  identification: 
+    name: At Least One Site Check Answered
+
+  execution: 
+    sequence: 30
+
+  validation: 
+    type: Expression
+    language: PL/SQL
+    pl/sql-expression: |
+      :P10_CHK_PERMIT_ON_DISPLAY IS NOT NULL
+      OR :P10_CHK_ACCESS_EGRESS  IS NOT NULL
+      OR :P10_CHK_WARNING_SIGNS  IS NOT NULL
+    always-execute: false
+
+  error: 
+    error-message: Please complete at least one site monitoring check.
+    display-location: Inline with Field and in Notification
+
+  server-side-condition: 
+    type: Expression
+    language: PL/SQL
+    pl/sql-expression: ":REQUEST = 'SAVE_MONITORING'"
+
+- # ====== Validation: At Least One Method Statement Check =====
+  id: 41967601034328807
+  identification: 
+    name: At Least One Method Statement Check
+
+  execution: 
+    sequence: 40
+
+  validation: 
+    type: Expression
+    language: PL/SQL
+    pl/sql-expression: ':P10_MS_CHECK1_DETAIL IS NOT NULL'
+    always-execute: false
+
+  error: 
+    error-message: At least one method statement compliance check (Check 1) is required.
+    display-location: Inline with Field and in Notification
+    associated-item: P10_MS_CHECK1_DETAIL # 40757678038498326
+
+  server-side-condition: 
+    type: Expression
+    language: PL/SQL
+    pl/sql-expression: ":REQUEST = 'SAVE_MONITORING'"
+
+processes: 
+- # ====== Process: Load Monitoring Data =======================
+  id: 40759823698498348
+  identification: 
+    name: Load Monitoring Data
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      DECLARE
+          v_mon    ptw_pro.ptw_lv_monitoring%ROWTYPE;
+          v_clob   CLOB;
+      BEGIN
+          -- Always load permit number and workflow status
+          SELECT permit_number, workflow_status
+          INTO   :P10_PERMIT_NUMBER, :P10_WORKFLOW_STATUS
+          FROM   ptw_pro.ptw_lv_permits
+          WHERE  permit_id = :P10_PERMIT_ID;
+      
+          -- Only load monitoring data if editing an existing record
+          IF :P10_MONITORING_ID IS NOT NULL THEN
+              SELECT *
+              INTO   v_mon
+              FROM   ptw_pro.ptw_lv_monitoring
+              WHERE  monitoring_id = :P10_MONITORING_ID
+              AND    permit_id     = :P10_PERMIT_ID;
+      
+              :P10_CHK_PERMIT_ON_DISPLAY := v_mon.chk_permit_on_display;
+              :P10_CHK_PERMIT_TIME       := v_mon.chk_permit_time;
+              :P10_CHK_ACCESS_EGRESS     := v_mon.chk_access_egress;
+              :P10_CHK_ACCESS_TIME       := v_mon.chk_access_time;
+              :P10_CHK_WARNING_SIGNS     := v_mon.chk_warning_signs;
+              :P10_CHK_WARNING_TIME      := v_mon.chk_warning_time;
+              :P10_MS_CHECK1_DETAIL      := v_mon.ms_check1_detail;
+              :P10_MS_CHECK1_TIME        := v_mon.ms_check1_time;
+              :P10_MS_CHECK1_IN_ORDER    := v_mon.ms_check1_in_order;
+              :P10_MS_CHECK1_COMMENTS    := v_mon.ms_check1_comments;
+              :P10_MS_CHECK2_DETAIL      := v_mon.ms_check2_detail;
+              :P10_MS_CHECK2_TIME        := v_mon.ms_check2_time;
+              :P10_MS_CHECK2_IN_ORDER    := v_mon.ms_check2_in_order;
+              :P10_MS_CHECK2_COMMENTS    := v_mon.ms_check2_comments;
+              :P10_MS_CHECK3_DETAIL      := v_mon.ms_check3_detail;
+              :P10_MS_CHECK3_TIME        := v_mon.ms_check3_time;
+              :P10_MS_CHECK3_IN_ORDER    := v_mon.ms_check3_in_order;
+              :P10_MS_CHECK3_COMMENTS    := v_mon.ms_check3_comments;
+              :P10_MONITOR_NAME          := v_mon.monitor_name;
+              :P10_MONITORING_STATUS     := v_mon.monitoring_status;
+              :P10_MONITOR_DATE          := TO_CHAR(v_mon.monitor_date, 'DD-MON-YYYY');
+      
+              IF v_mon.monitor_signature IS NOT NULL
+                 AND DBMS_LOB.GETLENGTH(v_mon.monitor_signature) > 0
+              THEN
+                  v_clob := apex_web_service.blob2clobbase64(v_mon.monitor_signature);
+                  v_clob := REPLACE(REPLACE(v_clob, CHR(13), ''), CHR(10), '');
+                  :P10_MONITOR_SIGNATURE_DATA_URL :=
+                      'data:image/png;base64,' || DBMS_LOB.SUBSTR(v_clob, 32000, 1);
+              END IF;
+      
+          ELSE
+              -- New record — set defaults only
+              :P10_MONITOR_DATE               := TO_CHAR(SYSDATE, 'DD-MON-YYYY');
+              :P10_MONITOR_SIGNATURE_DATA_URL := NULL;
+              :P10_MONITORING_STATUS := 'IN_PROGRESS';
+          END IF;
+      
+      EXCEPTION
+          WHEN OTHERS THEN
+              apex_error.add_error(
+                  p_message          => 'Error loading monitoring data: ' || SQLERRM,
+                  p_display_location => apex_error.c_inline_in_notification
+              );
+      END;
+
+  execution: 
+    sequence: 10
+    point: Before Header
+    run-process: Once Per Page Visit (default)
+
+  server-side-condition: 
+    type: Item is NOT NULL
+    item: P10_PERMIT_ID
+
+- # ====== Process: Save Monitoring Data =======================
+  id: 40759936491498349
+  identification: 
+    name: Save Monitoring Data
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      DECLARE
+          v_sig     BLOB    := NULL;
+          v_raw     VARCHAR2(32767);
+          v_base64  VARCHAR2(32767);
+          v_pos     NUMBER;
+      BEGIN
+          -- -----------------------------------------------
+          -- Convert base64 signature to BLOB (if provided)
+          -- Same pattern as Pages 2-5.
+          -- -----------------------------------------------
+          v_raw := :P10_MONITOR_SIGNATURE_HIDDEN;
+          IF v_raw IS NOT NULL AND LENGTH(v_raw) > 22 THEN
+              v_pos    := INSTR(v_raw, ',');
+              v_base64 := SUBSTR(v_raw, v_pos + 1);
+              v_sig    := apex_web_service.clobbase642blob(TO_CLOB(v_base64));
+          END IF;
+      
+          -- -----------------------------------------------
+          -- UPSERT monitoring record
+          -- Location sourced from Application Items
+          -- :APP_LATITUDE / :APP_LONGITUDE — populated by
+          -- captureLocationThenSubmit() before page submit.
+          -- -----------------------------------------------
+          IF :P10_MONITORING_ID IS NOT NULL THEN
+              -- UPDATE
+              UPDATE ptw_pro.ptw_lv_monitoring
+              SET
+                  chk_permit_on_display  = :P10_CHK_PERMIT_ON_DISPLAY,
+                  chk_permit_time        = :P10_CHK_PERMIT_TIME,
+                  chk_access_egress      = :P10_CHK_ACCESS_EGRESS,
+                  chk_access_time        = :P10_CHK_ACCESS_TIME,
+                  chk_warning_signs      = :P10_CHK_WARNING_SIGNS,
+                  chk_warning_time       = :P10_CHK_WARNING_TIME,
+                  ms_check1_detail       = :P10_MS_CHECK1_DETAIL,
+                  ms_check1_time         = :P10_MS_CHECK1_TIME,
+                  ms_check1_in_order     = :P10_MS_CHECK1_IN_ORDER,
+                  ms_check1_comments     = :P10_MS_CHECK1_COMMENTS,
+                  ms_check2_detail       = :P10_MS_CHECK2_DETAIL,
+                  ms_check2_time         = :P10_MS_CHECK2_TIME,
+                  ms_check2_in_order     = :P10_MS_CHECK2_IN_ORDER,
+                  ms_check2_comments     = :P10_MS_CHECK2_COMMENTS,
+                  ms_check3_detail       = :P10_MS_CHECK3_DETAIL,
+                  ms_check3_time         = :P10_MS_CHECK3_TIME,
+                  ms_check3_in_order     = :P10_MS_CHECK3_IN_ORDER,
+                  ms_check3_comments     = :P10_MS_CHECK3_COMMENTS,
+                  monitor_name           = :P10_MONITOR_NAME,
+                  monitor_date           = TO_DATE(:P10_MONITOR_DATE, 'DD-MON-YYYY'),
+                  monitor_latitude       = :APP_LATITUDE,
+                  monitor_longitude      = :APP_LONGITUDE,
+                  monitor_signature      = CASE WHEN v_sig IS NOT NULL THEN v_sig
+                                                ELSE monitor_signature END,
+                  monitoring_status      = CASE WHEN :REQUEST = 'SAVE_DRAFT' THEN
+                                               'IN_PROGRESS'
+                                           ELSE 
+                                               'COMPLETED'
+                                           END,
+                  modified_date          = CURRENT_TIMESTAMP,
+                  modified_by            = NVL(V('APP_USER'), USER)
+              WHERE monitoring_id = :P10_MONITORING_ID;
+          ELSE
+              -- INSERT
+              INSERT INTO ptw_pro.ptw_lv_monitoring (
+                  permit_id,
+                  chk_permit_on_display,  chk_permit_time,
+                  chk_access_egress,      chk_access_time,
+                  chk_warning_signs,      chk_warning_time,
+                  ms_check1_detail,       ms_check1_time,
+                  ms_check1_in_order,     ms_check1_comments,
+                  ms_check2_detail,       ms_check2_time,
+                  ms_check2_in_order,     ms_check2_comments,
+                  ms_check3_detail,       ms_check3_time,
+                  ms_check3_in_order,     ms_check3_comments,
+                  monitor_name,           monitor_date,
+                  monitor_latitude,       monitor_longitude,
+                  monitor_signature,      monitoring_status,
+                  created_date,           created_by
+              ) VALUES (
+                  :P10_PERMIT_ID,
+                  :P10_CHK_PERMIT_ON_DISPLAY,  :P10_CHK_PERMIT_TIME,
+                  :P10_CHK_ACCESS_EGRESS,      :P10_CHK_ACCESS_TIME,
+                  :P10_CHK_WARNING_SIGNS,      :P10_CHK_WARNING_TIME,
+                  :P10_MS_CHECK1_DETAIL,       :P10_MS_CHECK1_TIME,
+                  :P10_MS_CHECK1_IN_ORDER,     :P10_MS_CHECK1_COMMENTS,
+                  :P10_MS_CHECK2_DETAIL,       :P10_MS_CHECK2_TIME,
+                  :P10_MS_CHECK2_IN_ORDER,     :P10_MS_CHECK2_COMMENTS,
+                  :P10_MS_CHECK3_DETAIL,       :P10_MS_CHECK3_TIME,
+                  :P10_MS_CHECK3_IN_ORDER,     :P10_MS_CHECK3_COMMENTS,
+                  :P10_MONITOR_NAME,           
+                  TO_DATE(:P10_MONITOR_DATE, 'DD-MON-YYYY'),
+                  :APP_LATITUDE,               :APP_LONGITUDE,
+                  v_sig,
+                  CASE WHEN :REQUEST = 'SAVE_DRAFT' THEN
+                      'IN_PROGRESS'
+                  ELSE 
+                      'COMPLETED'
+                  END,
+                  CURRENT_TIMESTAMP,           NVL(V('APP_USER'), USER)
+              )
+              RETURNING monitoring_id INTO :P10_MONITORING_ID;
+          END IF;
+      
+          apex_application.g_print_success_message :=
+              'Monitoring data saved successfully at ' ||
+              TO_CHAR(SYSDATE, 'DD-MON-YYYY HH24:MI') || '.';
+      
+      EXCEPTION
+          WHEN OTHERS THEN
+              apex_error.add_error(
+                  p_message          => 'Error saving monitoring data: ' || SQLERRM,
+                  p_display_location => apex_error.c_inline_in_notification
+              );
+      END;
+
+  execution: 
+    sequence: 10
+    point: After Submit
+    run-process: Once Per Page Visit (default)
+
+  error: 
+    display-location: Inline in Notification
+
+  server-side-condition: 
+    type: Expression
+    language: PL/SQL
+    pl/sql-expression: ":REQUEST IN ('SAVE_DRAFT','SAVE_MONITORING')"
+
+branches: 
+- # ====== Branch: Back to report - SAVE MONITORING ============
+  id: 41969353797328824
+  identification: 
+    name: Back to report - SAVE MONITORING
+
+  execution: 
+    sequence: 20
+    point: After Processing
+
+  behavior: 
+    type: Page or URL (Redirect)
+    target: 
+      url: 'f?p=&APP_ID.:1:&SESSION.::&DEBUG.:1::'
+      page: 1 # Dashboard
+      clear-cache: 1
+
+  server-side-condition: 
+    type: Expression
+    language: PL/SQL
+    pl/sql-expression: ":REQUEST IN ('SAVE_DRAFT','SAVE_MONITORING')"
+

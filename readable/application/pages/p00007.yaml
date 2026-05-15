@@ -1,0 +1,419 @@
+---
+# ====== Page: Location ======================================
+id: 7
+identification: 
+  name: Location
+  alias: LOCATION
+  title: Location
+
+appearance: 
+  page-mode: Modal Dialog
+  dialog-template: Modal Dialog
+  template-options: 
+  - '#DEFAULT#'
+
+dialog: 
+  chained: true
+  resizable: true
+
+navigation-menu: 
+  override-user-interface-level: false
+
+navigation: 
+  cursor-focus: Do not focus cursor
+  warn-on-unsaved-changes: false
+
+javascript: 
+  function-and-global-variable-declaration: |
+    setTimeout(function() {
+        var mapCanvas = document.querySelector('.ol-viewport');
+        console.log('Map canvas:', mapCanvas);
+        if (mapCanvas) {
+            var allDivs = document.querySelectorAll('div[id]');
+            allDivs.forEach(function(d) {
+                console.log('Div ID:', d.id, 'Classes:', d.className);
+            });
+        }
+    }, 5000);
+  execute-when-page-loads: |
+    // Wait for map to be fully initialised before manipulating it
+    $(document).on('spatialmapinitialized', function() {
+    
+        var mapObj = apex.region('history_map').call('getMapObject');
+        if (!mapObj) return;
+    
+        // Fly to the pin location at 100m zoom
+        // Coordinates must match what's in your layer SQL
+        var lat = &P7_LATITUDE.;
+        var lng = &P7_LONGITUDE.;
+    
+        mapObj.flyTo({
+            center: [ lng, lat ],
+            zoom:   18,
+            speed:  2
+        });
+    });
+
+css: 
+  inline: |
+    .ui-dialog {
+        border: 2px solid #000000 !important;
+        border-radius: 4px !important;
+    }
+
+security: 
+  authentication: Page Requires Authentication
+  deep-linking: Application Default
+  page-access-protection: Arguments Must Have Checksum
+  form-auto-complete: Off
+  browser-cache: Application Default
+
+session-management: 
+  rejoin-sessions: Application Default
+
+advanced: 
+  enable-duplicate-page-submissions: Yes - Enable page to be re-posted
+  reload-on-submit: Only for Success
+
+server-cache: 
+  caching: Disabled
+
+regions: 
+- # ====== Region: Location ====================================
+  id: 58110169498870687
+  identification: 
+    name: Location
+    type: Map
+
+  source: 
+    location: None
+
+  layout: 
+    sequence: 70
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Blank with Attributes
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    static-id: history_map
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    id: 29752025641080897
+    map: 
+      background: Built-In
+      standard: OpenStreetMap Bright
+      dark-mode: Same as Standard
+      height: 640
+
+    controls: 
+      navigation-bar: Zoom and Compass
+      navigation-bar-position: End
+      options: 
+      - Scale Bar
+      - Infinite Map
+      - Rectangle Zoom
+
+    initial-position-and-zoom: 
+      type: SQL Query
+      sql-query: |
+        SELECT longitude,
+               latitude,
+               18 AS zoomlevel
+        FROM   (
+            SELECT longitude,
+                   latitude,
+                   created_date,
+                   ROW_NUMBER() OVER (ORDER BY created_date DESC) AS rn
+            FROM   ptw_pro.ptw_stage_locations
+            WHERE  permit_id    = :P7_PERMIT_ID
+            AND    permit_stage = :P7_CURRENT_STAGE
+        )
+        WHERE rn = 1
+      geometry-column-data-type: Longitude/Latitude
+      initial-longitude-column: LONGITUDE
+      initial-latitude-column: LATITUDE
+      initial-zoomlevel-column: ZOOMLEVEL
+
+    legend: 
+      show: false
+
+    attributes: 
+      messages-position: Below
+      unit-system: Metric
+
+    performance: 
+      lazy-loading: true
+
+    layers: 
+    - # ====== Layer: Location =====================================
+      id: 29752518329080894
+      identification: 
+        name: Location
+        layer-type: Points
+
+      layout: 
+        sequence: 10
+
+      source: 
+        location: Local Database
+        type: SQL Query
+        sql-query: |
+          select PERMIT_ID,
+                 CASE PERMIT_STAGE
+                  WHEN 'SITE_WORK_DETAILS' THEN 'Step 1: Site and Work Details'
+                  WHEN 'CONTROL_MEASURES'  THEN 'Step 2: Control Measures'
+                  WHEN 'EQUIP_ISOLATION'   THEN 'Step 3: Equipment Isolation'
+                  WHEN 'AUTHORISATION'     THEN 'Step 4: Authorisation'
+                  WHEN 'CLEARANCE'         THEN 'Step 5: Clearance'
+                 ELSE PERMIT_STAGE
+                 END as step_display,
+                 LATITUDE,
+                 LONGITUDE,
+                 CREATED_DATE,
+                 CREATED_BY,
+                 PERMIT_STAGE
+          from   (SELECT MAX(psl.CREATED_DATE) created_date,
+                         psl.LONGITUDE,
+                         psl.LATITUDE,
+                         psl.permit_id,
+                         psl.permit_stage,
+                         psl.created_by      
+                  FROM   PTW_PRO.PTW_STAGE_LOCATIONS psl
+                  WHERE  psl.PERMIT_ID    = :P7_PERMIT_ID 
+                  AND    psl.PERMIT_STAGE = :P7_CURRENT_STAGE
+                  GROUP BY psl.permit_id,
+                           psl.permit_stage,
+                           psl.LONGITUDE,
+                           psl.LATITUDE,
+                           psl.created_by) map_data
+          
+        page-items-to-submit: 
+        - P7_PERMIT_ID
+        - P7_CURRENT_STAGE
+        - P7_CREATED_DATE
+        use-spatial-index: false
+
+      column-mapping: 
+        geometry-column-data-type: Longitude/Latitude
+        longitude-column: LONGITUDE
+        latitude-column: LATITUDE
+
+      point-objects: 
+        style: SVG
+        shape: Pin Circle
+        shape-scale: 3
+
+      appearance: 
+        fill-color: '#182bfc'
+
+      point-clustering: 
+        enable: false
+
+      tooltip: 
+        advanced-formatting: false
+
+      info-window: 
+        advanced-formatting: false
+
+      legend: 
+        show: true
+        enable-to-hide: true
+
+page-items: 
+- # ====== Page Item: P7_CREATED_DATE ==========================
+  id: 33350643652951420
+  identification: 
+    name: P7_CREATED_DATE
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 60
+    region: No Parent
+    slot: BODY
+
+  appearance: 
+    format-mask: 'DD-MON-YYYY HH24:MI'
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: false
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P7_LATITUDE ==============================
+  id: 41969669086328827
+  identification: 
+    name: P7_LATITUDE
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 30
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P7_LONGITUDE =============================
+  id: 41969726013328828
+  identification: 
+    name: P7_LONGITUDE
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 40
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P7_PERMIT_ID =============================
+  id: 58097411888997905
+  identification: 
+    name: P7_PERMIT_ID
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 10
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P7_CURRENT_STAGE =========================
+  id: 58097606026997906
+  identification: 
+    name: P7_CURRENT_STAGE
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 50
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+processes: 
+- # ====== Process: Load defaults ==============================
+  id: 41969583459328826
+  identification: 
+    name: Load defaults
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      SELECT latitude, longitude
+      INTO   :P7_LATITUDE, :P7_LONGITUDE
+      FROM   ptw_pro.ptw_stage_locations
+      WHERE  permit_id    = :P7_PERMIT_ID
+      AND    permit_stage = :P7_CURRENT_STAGE
+      ORDER  BY created_date DESC
+      FETCH  FIRST 1 ROW ONLY;
+
+  execution: 
+    sequence: 10
+    point: Before Header
+    run-process: Once Per Page Visit (default)
+

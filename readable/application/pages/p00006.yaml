@@ -1,0 +1,489 @@
+---
+# ====== Page: Permit History ================================
+id: 6
+identification: 
+  name: Permit History
+  alias: CHANGE-HISTORY
+  title: Permit History
+
+appearance: 
+  page-mode: Modal Dialog
+  dialog-template: Theme Default
+  template-options: 
+  - '#DEFAULT#'
+
+dialog: 
+  chained: true
+  resizable: true
+
+navigation-menu: 
+  override-user-interface-level: false
+
+navigation: 
+  cursor-focus: Do not focus cursor
+  warn-on-unsaved-changes: true
+
+security: 
+  authentication: Page Requires Authentication
+  deep-linking: Application Default
+  page-access-protection: Arguments Must Have Checksum
+  form-auto-complete: Off
+  browser-cache: Application Default
+
+session-management: 
+  rejoin-sessions: Application Default
+
+advanced: 
+  enable-duplicate-page-submissions: Yes - Enable page to be re-posted
+  reload-on-submit: Only for Success
+
+server-cache: 
+  caching: Disabled
+
+regions: 
+- # ====== Region: Permit History ==============================
+  id: 58090811857005130
+  identification: 
+    name: Permit History
+    type: Interactive Report
+
+  source: 
+    location: Local Database
+    type: SQL Query
+    sql-query: |
+      WITH max_row AS 
+        (
+          SELECT MAX(created_date) max_date,
+                 permit_id,
+                 permit_stage
+          FROM   ptw_pro.ptw_stage_locations
+          GROUP BY permit_id,
+                   permit_stage
+        )
+      select sl.PERMIT_ID,
+             CASE sl.PERMIT_STAGE
+              WHEN 'SITE_WORK_DETAILS' THEN 'Step 1: Site and Work Details'
+              WHEN 'CONTROL_MEASURES'  THEN 'Step 2: Control Measures'
+              WHEN 'EQUIP_ISOLATION'   THEN 'Step 3: Equipment Isolation'
+              WHEN 'AUTHORISATION'     THEN 'Step 4: Authorisation'
+              WHEN 'LIVE'              THEN 'Step 5: Live'
+             ELSE sl.PERMIT_STAGE
+             END as step_display,
+             sl.LATITUDE,
+             sl.LONGITUDE,
+             TO_CHAR(sl.CREATED_DATE, 'DD-MON-YYYY HH24:MI') AS CREATED_DATE,
+             sl.CREATED_BY,
+             sl.PERMIT_STAGE
+      from   ptw_pro.ptw_stage_locations sl
+      join   max_row mr on mr.permit_id = sl.permit_id
+        and mr.permit_stage = sl.permit_stage
+        and mr.max_date = sl.created_date 
+      where  sl.PERMIT_ID = :P6_PERMIT_ID
+      order by sl.created_date DESC
+    page-items-to-submit: 
+    - P6_PERMIT_ID
+
+  layout: 
+    sequence: 20
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--showIcon
+    - t-Region--accent15
+    - t-Region--scrollBody
+    icon: fa-history
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  server-cache: 
+    caching: Disabled
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    id: 58090849057005131
+    link: 
+      link-column: Exclude Link Column
+
+    pagination: 
+      type: Row Ranges X to Y
+      display-position: Bottom - Right
+
+    performance: 
+      lazy-loading: false
+      maximum-rows-to-process: 1000000
+
+    search-bar: 
+      include-search-bar: true
+      search-field: true
+      finder-drop-down: true
+      reports-select-list: false
+      rows-per-page-selector: false
+
+    actions-menu: 
+      include-actions-menu: false
+
+    heading: 
+      fixed-to: Page
+
+    icon-view: 
+      show: false
+
+    detail-view: 
+      show: false
+
+    saved-reports: 
+    - # ====== Saved Report: Primary Report ========================
+      id: 58110799769791971
+      identification: 
+        name: Primary Report
+        alias: 283634
+
+    columns: 
+    - # ====== Column: CREATED_DATE ================================
+      id: 33350742505951421
+      identification: 
+        column-name: CREATED_DATE
+        type: Plain Text
+
+      heading: 
+        heading: Created Date
+        alignment: start
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 90
+        column-alignment: start
+
+      accessibility: 
+        value-identifies-row: false
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
+    - # ====== Column: PERMIT_ID ===================================
+      id: 58090946778005132
+      identification: 
+        column-name: PERMIT_ID
+        type: Link
+
+      heading: 
+        heading: '&nbsp;'
+        alignment: center
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 10
+        column-alignment: center
+
+      accessibility: 
+        value-identifies-row: false
+
+      link: 
+        target: 
+          url: 'f?p=&APP_ID.:7:&SESSION.::&DEBUG.:7:P7_PERMIT_ID,P7_CURRENT_STAGE,P7_CREATED_DATE:#PERMIT_ID#,#PERMIT_STAGE#,#CREATED_DATE#'
+          page: 7 # Location
+          clear-cache: 7
+          values: 
+            p7_permit_id: '#PERMIT_ID#'
+            p7_current_stage: '#PERMIT_STAGE#'
+            p7_created_date: '#CREATED_DATE#'
+
+        link-text: <span class="fa fa-globe" title="Map"></span>
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
+    - # ====== Column: LATITUDE ====================================
+      id: 58091215081005134
+      identification: 
+        column-name: LATITUDE
+        type: Plain Text
+
+      heading: 
+        heading: Latitude
+        alignment: end
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 30
+        column-alignment: end
+
+      accessibility: 
+        value-identifies-row: false
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
+    - # ====== Column: LONGITUDE ===================================
+      id: 58091292072005135
+      identification: 
+        column-name: LONGITUDE
+        type: Plain Text
+
+      heading: 
+        heading: Longitude
+        alignment: end
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 40
+        column-alignment: end
+
+      accessibility: 
+        value-identifies-row: false
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
+    - # ====== Column: CREATED_BY ==================================
+      id: 58091536270005137
+      identification: 
+        column-name: CREATED_BY
+        type: Plain Text
+
+      heading: 
+        heading: Created By
+        alignment: start
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 60
+        column-alignment: start
+
+      accessibility: 
+        value-identifies-row: false
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
+    - # ====== Column: STEP_DISPLAY ================================
+      id: 58091967249005142
+      identification: 
+        column-name: STEP_DISPLAY
+        type: Plain Text
+
+      heading: 
+        heading: Step Display
+        alignment: start
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 70
+        column-alignment: start
+
+      accessibility: 
+        value-identifies-row: false
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
+    - # ====== Column: PERMIT_STAGE ================================
+      id: 58092134160005143
+      identification: 
+        column-name: PERMIT_STAGE
+        type: Plain Text
+
+      heading: 
+        heading: Permit Stage
+        alignment: start
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 80
+        column-alignment: start
+
+      accessibility: 
+        value-identifies-row: false
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
+page-items: 
+- # ====== Page Item: P6_PERMIT_ID =============================
+  id: 58095076771005044
+  identification: 
+    name: P6_PERMIT_ID
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 10
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+

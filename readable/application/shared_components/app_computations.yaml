@@ -1,0 +1,79 @@
+---
+- # ====== Application Computation: APP_IS_ENGINEER ============
+  id: 46108373139319593
+  identification: 
+    item-name: APP_IS_ENGINEER
+
+  execution: 
+    sequence: 10
+    point: AFTER_LOGIN
+
+  computation: 
+    type: Function Body
+    language: PL/SQL
+    pl/sql-function-body: |
+      DECLARE
+          v_count NUMBER;
+      BEGIN
+          SELECT COUNT(*) INTO v_count
+          FROM   ptw_pro.ptw_lv_user_roles_v
+          WHERE  UPPER(username) = UPPER(V('APP_USER'))
+          AND    role_name       = 'ENGINEER'
+          AND    is_active       = 'Y';
+          RETURN CASE WHEN v_count > 0 THEN 'Y' ELSE 'N' END;
+      END;
+
+  subscription: 
+    version-number: 46857048030146
+
+- # ====== Application Computation: APP_IS_ADMIN ===============
+  id: 46109066903404734
+  identification: 
+    item-name: APP_IS_ADMIN
+
+  execution: 
+    sequence: 10
+    point: AFTER_LOGIN
+
+  computation: 
+    type: Function Body
+    language: PL/SQL
+    pl/sql-function-body: |
+      DECLARE
+          v_ptw_admin  NUMBER;
+          v_ws_admin   VARCHAR2(3);
+      BEGIN
+          -- Check PTW assigned admin roles
+          SELECT COUNT(*)
+          INTO   v_ptw_admin
+          FROM   ptw_pro.ptw_lv_user_roles_v
+          WHERE  UPPER(username) = UPPER(V('APP_USER'))
+          AND    role_name IN ('ADMIN', 'ADMIN_CONTRACT_SUPPORT')
+          AND    is_active = 'Y';
+      
+          -- Check workspace administrator (same pattern as Page 8)
+          BEGIN
+              SELECT is_admin
+              INTO   v_ws_admin
+              FROM   apex_workspace_apex_users
+              WHERE  UPPER(user_name)  = UPPER(V('APP_USER'))
+              AND    workspace_name    = (
+                         SELECT workspace FROM apex_applications
+                         WHERE  application_id = :APP_ID
+                     );
+          EXCEPTION
+              WHEN NO_DATA_FOUND THEN v_ws_admin := 'No';
+          END;
+      
+          RETURN CASE
+                     WHEN v_ptw_admin > 0 OR v_ws_admin = 'Yes'
+                     THEN 'Y'
+                     ELSE 'N'
+                 END;
+      EXCEPTION
+          WHEN OTHERS THEN RETURN 'N';
+      END;
+
+  subscription: 
+    version-number: 46857048022620
+

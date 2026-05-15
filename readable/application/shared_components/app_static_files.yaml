@@ -1,0 +1,163 @@
+---
+- # ====== Static Application File: icons/app-icon-32.png ======
+  id: 26417385881144605
+  identification: 
+    file-name: icons/app-icon-32.png
+
+  attributes: 
+    mime-type: image/png
+    file-character-set: Unicode UTF-8
+
+- # ====== Static Application File: icons/app-icon-144-rounded.p
+  id: 26417657342144607
+  identification: 
+    file-name: icons/app-icon-144-rounded.png
+
+  attributes: 
+    mime-type: image/png
+    file-character-set: Unicode UTF-8
+
+- # ====== Static Application File: icons/app-icon-192.png =====
+  id: 26417901253144609
+  identification: 
+    file-name: icons/app-icon-192.png
+
+  attributes: 
+    mime-type: image/png
+    file-character-set: Unicode UTF-8
+
+- # ====== Static Application File: icons/app-icon-256-rounded.p
+  id: 26418225111144610
+  identification: 
+    file-name: icons/app-icon-256-rounded.png
+
+  attributes: 
+    mime-type: image/png
+    file-character-set: Unicode UTF-8
+
+- # ====== Static Application File: icons/app-icon-512.png =====
+  id: 26418562212144612
+  identification: 
+    file-name: icons/app-icon-512.png
+
+  attributes: 
+    mime-type: image/png
+    file-character-set: Unicode UTF-8
+
+- # ====== Static Application File: BGIS_Logo.png ==============
+  id: 26754729965282193
+  identification: 
+    file-name: BGIS_Logo.png
+
+  attributes: 
+    mime-type: image/png
+    file-character-set: Unicode UTF-8
+
+- # ====== Static Application File: BGIS_Logo.jpg ==============
+  id: 26758130456415163
+  identification: 
+    file-name: BGIS_Logo.jpg
+
+  attributes: 
+    mime-type: image/jpeg
+    file-character-set: Unicode UTF-8
+
+- # ====== Static Application File: geoLocation.js =============
+  id: 29941148842425804
+  identification: 
+    file-name: geoLocation.js
+
+  attributes: 
+    mime-type: text/javascript
+    file-character-set: Unicode UTF-8
+
+- # ====== Static Application File: geoLocation.min.js =========
+  id: 29942133668424566
+  identification: 
+    file-name: geoLocation.min.js
+
+  attributes: 
+    mime-type: text/javascript
+    file-character-set: Unicode UTF-8
+
+- # ====== Static Application File: offline-storage.js =========
+  id: 33347056946071958
+  identification: 
+    file-name: offline-storage.js
+
+  attributes: 
+    mime-type: text/javascript
+    file-character-set: Unicode UTF-8
+
+- # ====== Static Application File: offline-storage.min.js =====
+  id: 33347876791071322
+  identification: 
+    file-name: offline-storage.min.js
+
+  attributes: 
+    mime-type: text/javascript
+    file-character-set: Unicode UTF-8
+
+- # ====== Static Application File: ptw-utils.js ===============
+  id: 33410899592733296
+  identification: 
+    file-name: ptw-utils.js
+
+  attributes: 
+    mime-type: text/javascript
+    file-character-set: Unicode UTF-8
+
+- # ====== Static Application File: ptw-global.css =============
+  id: 38942269241554987
+  identification: 
+    file-name: ptw-global.css
+
+  attributes: 
+    mime-type: text/css
+    file-character-set: Unicode UTF-8
+
+- # ====== Static Application File: offline-nav.min.js =========
+  id: 41975713065158005
+  identification: 
+    file-name: offline-nav.min.js
+
+  attributes: 
+    mime-type: text/javascript
+    file-character-set: Unicode UTF-8
+
+- # ====== Static Application File: ptw-global.min.css =========
+  id: 46156871257086381
+  identification: 
+    file-name: ptw-global.min.css
+
+  attributes: 
+    mime-type: text/css
+    file-character-set: Unicode UTF-8
+
+- # ====== Static Application File: ptw-utils.min.js ===========
+  id: 46160680956869832
+  identification: 
+    file-name: ptw-utils.min.js
+
+  attributes: 
+    mime-type: text/javascript
+    file-character-set: Unicode UTF-8
+
+- # ====== Static Application File: offline-nav.js =============
+  id: 99100000000000001
+  identification: 
+    file-name: offline-nav.js
+
+  attributes: 
+    mime-type: text/javascript
+    file-character-set: Unicode UTF-8
+
+- # ====== Static Application File: offline-nav#MIN#.js ========
+  id: 99100000000000002
+  identification: 
+    file-name: offline-nav#MIN#.js
+
+  attributes: 
+    mime-type: text/javascript
+    file-character-set: Unicode UTF-8
+

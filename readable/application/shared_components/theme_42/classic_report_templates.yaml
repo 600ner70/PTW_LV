@@ -1,0 +1,22 @@
+---
+- # ====== Classic Report Template: PTW Cards - No Wrapper =====
+  id: 46213173237812182
+  identification: 
+    name: PTW Cards - No Wrapper
+    identifier: PTW_CARDS_NO_WRAPPER
+    class: One Column Unordered List
+
+  advanced: 
+    translatable: false
+
+  attributes: 
+    type: Generic Columns (column template)
+
+  report-template: 
+    top: ' '
+    bottom: ' '
+
+  column-template-1: 
+    template: '#COLUMN_VALUE#'
+    condition: 0
+

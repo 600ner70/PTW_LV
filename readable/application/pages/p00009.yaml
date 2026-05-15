@@ -1,0 +1,903 @@
+---
+# ====== Page: Start Permit ==================================
+id: 9
+identification: 
+  name: Start Permit
+  alias: START-PERMIT
+  title: Start Permit -  &P9_PERMIT_NUMBER.
+
+appearance: 
+  page-mode: Modal Dialog
+  dialog-template: Theme Default
+  template-options: 
+  - '#DEFAULT#'
+
+dialog: 
+  chained: true
+  resizable: true
+
+navigation-menu: 
+  override-user-interface-level: false
+
+navigation: 
+  cursor-focus: Do not focus cursor
+  warn-on-unsaved-changes: true
+
+security: 
+  authentication: Page Requires Authentication
+  deep-linking: Application Default
+  page-access-protection: Arguments Must Have Checksum
+  form-auto-complete: Off
+  browser-cache: Application Default
+
+session-management: 
+  rejoin-sessions: Application Default
+
+advanced: 
+  enable-duplicate-page-submissions: Yes - Enable page to be re-posted
+  reload-on-submit: Only for Success
+
+server-cache: 
+  caching: Disabled
+
+regions: 
+- # ====== Region: Immediate Dates =============================
+  id: 37956111549176022
+  identification: 
+    name: Immediate Dates
+    type: Static Content
+
+  source: 
+    html-code: |
+      <div id="p9ImmediateDates" class="t-Alert t-Alert--info t-Alert--horizontal">
+        <div class="t-Alert-wrap">
+          <div class="t-Alert-icon"><span class="t-Icon fa fa-clock-o"></span></div>
+          <div class="t-Alert-content">
+            <div class="t-Alert-body">
+              Permit will be valid: <strong id="p9ImmFrom"></strong> &mdash; <strong id="p9ImmTo"></strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+  layout: 
+    sequence: 100
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--showIcon
+    - t-Region--accent15
+    - t-Region--scrollBody
+    icon: fa-clock-o
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Buttons =====================================
+  id: 37956800412176029
+  identification: 
+    name: Buttons
+    type: Static Content
+
+  layout: 
+    sequence: 110
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Buttons Container
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Permit Duration Notice ======================
+  id: 90823356109525380
+  identification: 
+    name: Permit Duration Notice
+    type: Static Content
+
+  source: 
+    html-code: |
+      <div class="ptw-section-card">
+          <div class="ptw-section-body">
+              <div class="declaration-box">
+                  This Permit <strong>MUST</strong> be issued for the <strong>SHORTEST</strong> reasonable period of TIME (never usually longer than 12 Hours).
+              </div>
+          </div>
+      </div>
+      
+
+  layout: 
+    sequence: 60
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--showIcon
+    - t-Region--accent15
+    - t-Region--scrollBody
+    icon: fa-clock-o
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+page-items: 
+- # ====== Page Item: P9_START_DATE ============================
+  id: 32190486101430887
+  identification: 
+    name: P9_START_DATE
+    type: Date Picker
+
+  label: 
+    label: START (Date & Time)
+    alignment: Left
+
+  settings: 
+    show-time: true
+    display-as: Popup
+    minimum-date: None
+    maximum-date: None
+    multiple-months: No
+    use-defaults: true
+
+  layout: 
+    sequence: 80
+    region: No Parent
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    format-mask: 'DD-MON-YYYY HH24:MI'
+    width: 30
+
+  validation: 
+    value-required: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P9_END_DATE ==============================
+  id: 32190723937428243
+  identification: 
+    name: P9_END_DATE
+    type: Date Picker
+
+  label: 
+    label: END (Date & Time)
+    alignment: Left
+
+  settings: 
+    show-time: true
+    display-as: Popup
+    minimum-date: None
+    maximum-date: None
+    multiple-months: No
+    use-defaults: true
+
+  layout: 
+    sequence: 90
+    region: No Parent
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    format-mask: 'DD-MON-YYYY HH24:MI'
+    width: 30
+
+  validation: 
+    value-required: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P9_PERMIT_ID =============================
+  id: 37955802975176019
+  identification: 
+    name: P9_PERMIT_ID
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 30
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P9_PERMIT_NUMBER =========================
+  id: 37955933568176020
+  identification: 
+    name: P9_PERMIT_NUMBER
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 40
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P9_START_MODE ============================
+  id: 37956092869176021
+  identification: 
+    name: P9_START_MODE
+    type: Radio Group
+
+  label: 
+    label: Choose the permit validity window
+    alignment: Left
+
+  settings: 
+    number-of-columns: 2
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 70
+    region: No Parent
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Shared Component
+    list-of-values: PTW_START_MODE # 35799750662081781
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P9_WORKFLOW_STATUS =======================
+  id: 41970267257328833
+  identification: 
+    name: P9_WORKFLOW_STATUS
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 50
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+buttons: 
+- # ====== Button: CANCEL ======================================
+  id: 37956912458176030
+  identification: 
+    button-name: CANCEL
+    label: Cancel
+
+  layout: 
+    sequence: 10
+    region: Buttons # 37956800412176029
+    slot: CLOSE
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text
+    hot: false
+    template-options: 
+    - '#DEFAULT#'
+
+  behavior: 
+    action: Defined by Dynamic Action
+    execute-validations: true
+
+- # ====== Button: START_PERMIT ================================
+  id: 37957245700176033
+  identification: 
+    button-name: START_PERMIT
+    label: Start Permit
+
+  layout: 
+    sequence: 20
+    region: Buttons # 37956800412176029
+    slot: NEXT
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text with Icon
+    hot: true
+    template-options: 
+    - '#DEFAULT#'
+    - t-Button--iconLeft
+    icon: fa-play-circle
+
+  behavior: 
+    action: Defined by Dynamic Action
+    execute-validations: true
+
+dynamic-actions: 
+- # ====== Dynamic Action: Set Immediate Dates on Load =========
+  id: 37956270772176023
+  identification: 
+    name: Set Immediate Dates on Load
+
+  execution: 
+    sequence: 10
+    event-scope: Static
+
+  when: 
+    event: Page Load
+
+  actions: 
+  - # ====== Action: Execute JavaScript Code =====================
+    id: 37956389107176024
+    identification: 
+      action: Execute JavaScript Code
+
+    settings: 
+      code: |
+        var now    = new Date();
+        var toDate = new Date(now.getTime() + 12 * 60 * 60 * 1000);
+        function fmtDt(d) {
+            var m = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+            return String(d.getDate()).padStart(2,'0') + '-' + m[d.getMonth()] + '-' + d.getFullYear()
+                   + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+        }
+        $('#p9ImmFrom').text(fmtDt(now));
+        $('#p9ImmTo').text(fmtDt(toDate));
+        
+        // Default radio to IMMEDIATE
+        apex.item('P9_START_MODE').setValue('IMMEDIATE');
+        $('#p9ImmediateDates').show();
+        $('[id*="P9_START_DATE"], [id*="P9_END_DATE"]').closest('.t-Form-fieldContainer').hide();
+        
+        // Pre-populate date pickers with calculated values
+        apex.item('P9_START_DATE').setValue(fmtDt(now));
+        apex.item('P9_END_DATE').setValue(fmtDt(toDate));
+
+    execution: 
+      sequence: 10
+      event: Set Immediate Dates on Load # 37956270772176023
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+- # ====== Dynamic Action: Toggle Date Fields on Mode Change ===
+  id: 37956436560176025
+  identification: 
+    name: Toggle Date Fields on Mode Change
+
+  execution: 
+    sequence: 20
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Change
+    selection-type: Item(s)
+    item(s): 
+    - P9_START_MODE
+
+  actions: 
+  - # ====== Action: Execute JavaScript Code =====================
+    id: 37956524938176026
+    identification: 
+      action: Execute JavaScript Code
+
+    settings: 
+      code: |
+        if (apex.item('P9_START_MODE').getValue() === 'IMMEDIATE') {
+            $('#p9ImmediateDates').show();
+            $('[id*="P9_START_DATE"], [id*="P9_END_DATE"]').closest('.t-Form-fieldContainer').hide();
+        } else {
+            $('#p9ImmediateDates').hide();
+            $('[id*="P9_START_DATE"], [id*="P9_END_DATE"]').closest('.t-Form-fieldContainer').show();
+        }
+
+    execution: 
+      sequence: 10
+      event: Toggle Date Fields on Mode Change # 37956436560176025
+      fire-when-event-result-is: True
+      fire-on-initialization: true
+
+- # ====== Dynamic Action: Auto-calc End Date on Start Date chan
+  id: 37956604539176027
+  identification: 
+    name: Auto-calc End Date on Start Date change
+
+  execution: 
+    sequence: 30
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Change
+    selection-type: Item(s)
+    item(s): 
+    - P9_START_DATE
+
+  actions: 
+  - # ====== Action: Execute JavaScript Code =====================
+    id: 37956712007176028
+    identification: 
+      action: Execute JavaScript Code
+
+    settings: 
+      code: |
+        var startVal = apex.item('P9_START_DATE').getValue();
+        if (startVal) {
+            var sd = new Date(startVal.replace(
+                /(\d{2})-([A-Z]{3})-(\d{4}) (\d{2}):(\d{2})/,
+                function(_, d, mon, y, h, mi) {
+                    var mns = {JAN:0,FEB:1,MAR:2,APR:3,MAY:4,JUN:5,JUL:6,AUG:7,SEP:8,OCT:9,NOV:10,DEC:11};
+                    return y + '-' + String(mns[mon]+1).padStart(2,'0') + '-' + d + 'T' + h + ':' + mi;
+                }
+            ));
+            var ed = new Date(sd.getTime() + 12 * 60 * 60 * 1000);
+            var m = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+            var fmtd = String(ed.getDate()).padStart(2,'0') + '-' + m[ed.getMonth()] + '-'
+                       + ed.getFullYear() + ' ' + String(ed.getHours()).padStart(2,'0')
+                       + ':' + String(ed.getMinutes()).padStart(2,'0');
+            apex.item('P9_END_DATE').setValue(fmtd);
+        }
+
+    execution: 
+      sequence: 10
+      event: Auto-calc End Date on Start Date change # 37956604539176027
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+- # ====== Dynamic Action: Cancel processing ===================
+  id: 37957003350176031
+  identification: 
+    name: Cancel processing
+
+  execution: 
+    sequence: 40
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Click
+    selection-type: Button
+    button: CANCEL # 37956912458176030
+
+  actions: 
+  - # ====== Action: Close Dialog ================================
+    id: 37957164218176032
+    identification: 
+      action: Close Dialog
+
+    execution: 
+      sequence: 10
+      event: Cancel processing # 37957003350176031
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+- # ====== Dynamic Action: Start the permit ====================
+  id: 37957343314176034
+  identification: 
+    name: Start the permit
+
+  execution: 
+    sequence: 50
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Click
+    selection-type: Button
+    button: START_PERMIT # 37957245700176033
+
+  actions: 
+  - # ====== Action: Execute JavaScript Code =====================
+    id: 37957411066176035
+    identification: 
+      action: Execute JavaScript Code
+
+    settings: 
+      code: captureLocationThenSubmit('START_PERMIT');
+
+    execution: 
+      sequence: 10
+      event: Start the permit # 37957343314176034
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+validations: 
+- # ====== Validation: Start Date Required (Scheduled) =========
+  id: 37957549216176036
+  identification: 
+    name: Start Date Required (Scheduled)
+
+  execution: 
+    sequence: 10
+
+  validation: 
+    type: Item is NOT NULL
+    item: P9_START_DATE
+    always-execute: false
+
+  error: 
+    error-message: Start Date is required.
+    display-location: Inline with Field and in Notification
+
+  server-side-condition: 
+    type: Item = Value
+    item: P9_START_MODE
+    value: SCHEDULED
+
+- # ====== Validation: End Date Required (Scheduled) ===========
+  id: 37957664630176037
+  identification: 
+    name: End Date Required (Scheduled)
+
+  execution: 
+    sequence: 20
+
+  validation: 
+    type: Item is NOT NULL
+    item: P9_END_DATE
+    always-execute: false
+
+  error: 
+    error-message: End date is required.
+    display-location: Inline with Field and in Notification
+
+  server-side-condition: 
+    type: Item = Value
+    item: P9_START_MODE
+    value: SCHEDULED
+
+- # ====== Validation: End after Start =========================
+  id: 37957713806176038
+  identification: 
+    name: End after Start
+
+  execution: 
+    sequence: 30
+
+  validation: 
+    type: Function Body (returning Error Text)
+    language: PL/SQL
+    pl/sql-function-body-returning-error-text: |
+      BEGIN
+        IF :P9_END_DATE <= :P9_START_DATE THEN
+          RETURN 'End Date must be after Start Date.';
+        END IF;
+      END;
+    always-execute: false
+
+  error: 
+    display-location: Inline with Field and in Notification
+
+  server-side-condition: 
+    type: Item = Value
+    item: P9_START_MODE
+    value: SCHEDULED
+
+- # ====== Validation: Max of 12 hours =========================
+  id: 37957836247176039
+  identification: 
+    name: Max of 12 hours
+
+  execution: 
+    sequence: 40
+
+  validation: 
+    type: Function Body (returning Boolean)
+    language: PL/SQL
+    pl/sql-function-body: |
+      BEGIN
+          RETURN NOT (
+              :P9_START_MODE = 'SCHEDULED' AND
+              :P9_START_DATE IS NOT NULL AND
+              :P9_END_DATE IS NOT NULL AND
+              (TO_DATE(:P9_END_DATE, 'DD-MON-YYYY HH24:MI') - 
+               TO_DATE(:P9_START_DATE, 'DD-MON-YYYY HH24:MI')) * 24 > 12
+          );
+      EXCEPTION WHEN OTHERS THEN RETURN TRUE;
+      END;
+    always-execute: false
+
+  error: 
+    error-message: A permit can only be open for maximum of 12 hours.
+    display-location: Inline with Field and in Notification
+
+processes: 
+- # ====== Process: Start Permit ===============================
+  id: 37957981155176040
+  identification: 
+    name: Start Permit
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      DECLARE
+          v_from_dt DATE;
+          v_to_dt   DATE;
+          v_now     DATE := SYSDATE;
+      BEGIN
+          IF :P9_START_MODE = 'IMMEDIATE' THEN
+              v_from_dt := v_now;
+              v_to_dt   := v_now + 12/24;
+          ELSE
+              v_from_dt := TO_DATE(:P9_START_DATE, 'DD-MON-YYYY HH24:MI');
+              v_to_dt   := TO_DATE(:P9_END_DATE,   'DD-MON-YYYY HH24:MI');
+          END IF;
+      
+          UPDATE ptw_pro.ptw_lv_permits
+          SET    workflow_status    = 'STARTED',
+                 current_step       = 'LIVE',
+                 started_datetime   = v_from_dt,
+                 ended_datetime     = v_to_dt,
+                 started_latitude   = TO_NUMBER(:APP_LATITUDE),
+                 started_longitude  = TO_NUMBER(:APP_LONGITUDE),
+                 modified_by        = V('APP_USER'),
+                 modified_date      = v_now
+          WHERE  permit_id = :P9_PERMIT_ID;
+      
+          IF SQL%ROWCOUNT = 0 THEN
+              RAISE_APPLICATION_ERROR(-20001, 'Permit not found.');
+          END IF;
+      
+          COMMIT;
+          :P9_WORKFLOW_STATUS := 'STARTED';
+          apex_application.g_print_success_message := 'Permit started successfully.';
+      EXCEPTION
+          WHEN OTHERS THEN
+              ROLLBACK;
+              apex_error.add_error(
+                  p_message          => 'Error starting permit: ' || SQLERRM,
+                  p_display_location => apex_error.c_inline_in_notification
+              );
+      END;
+
+  execution: 
+    sequence: 10
+    point: After Submit
+    run-process: Once Per Page Visit (default)
+
+  error: 
+    display-location: Inline in Notification
+
+  server-side-condition: 
+    type: Request = Value
+    value: START_PERMIT
+
+- # ====== Process: Close Dialog ===============================
+  id: 37958131306176042
+  identification: 
+    name: Close Dialog
+    type: Close Dialog
+    execution-chain: None
+
+  settings: 
+    items-to-return-: 
+    - P9_WORKFLOW_STATUS
+    show-success-messages: false
+
+  execution: 
+    sequence: 20
+    point: After Submit
+    run-process: Once Per Page Visit (default)
+
+  error: 
+    display-location: Inline in Notification
+
+  server-side-condition: 
+    type: Never
+
+branches: 
+- # ====== Branch: Back to dashboard ===========================
+  id: 45757381141782525
+  identification: 
+    name: Back to dashboard
+
+  execution: 
+    sequence: 10
+    point: After Submit
+
+  behavior: 
+    type: Page or URL (Redirect)
+    target: 
+      url: 'f?p=&APP_ID.:1:&SESSION.::&DEBUG.:1::'
+      page: 1 # Dashboard
+      clear-cache: 1
+
+  server-side-condition: 
+    type: Request = Value
+    value: START_PERMIT
+

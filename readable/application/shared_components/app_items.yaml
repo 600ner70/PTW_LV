@@ -1,0 +1,53 @@
+---
+- # ====== Application Item: APP_LONGITUDE =====================
+  id: 33449999278968941
+  identification: 
+    name: APP_LONGITUDE
+    scope: Application
+
+  security: 
+    session-state-protection: Restricted - May not be set from browser
+    escape-special-characters: true
+
+  subscription: 
+    version-number: 46483335370242
+
+- # ====== Application Item: APP_LATITUDE ======================
+  id: 33450190462967352
+  identification: 
+    name: APP_LATITUDE
+    scope: Application
+
+  security: 
+    session-state-protection: Restricted - May not be set from browser
+    escape-special-characters: true
+
+  subscription: 
+    version-number: 46483335402462
+
+- # ====== Application Item: APP_IS_ENGINEER ===================
+  id: 46107438026284653
+  identification: 
+    name: APP_IS_ENGINEER
+    scope: Application
+
+  security: 
+    session-state-protection: Restricted - May not be set from browser
+    escape-special-characters: true
+
+  subscription: 
+    version-number: 46857033149769
+
+- # ====== Application Item: APP_IS_ADMIN ======================
+  id: 46108593711330235
+  identification: 
+    name: APP_IS_ADMIN
+    scope: Application
+
+  security: 
+    session-state-protection: Restricted - May not be set from browser
+    escape-special-characters: true
+
+  subscription: 
+    version-number: 46857033709824
+

@@ -1,0 +1,394 @@
+/* PTW Global Styles - white background on editable inputs */
+.apex-item-text:not([disabled]):not([readonly]),
+.apex-item-textarea:not([disabled]):not([readonly]),
+.apex-item-number:not([disabled]):not([readonly]),
+.apex-item-select:not([disabled]):not([readonly]) {
+    background-color: #ffffff !important;
+    --a-field-input-background-color: #ffffff;
+    --a-field-input-state-background-color: #ffffff;
+}
+
+/* Fix floating label grey bar on textareas - target the wrapper */
+.apex-item-wrapper--textarea {
+    --a-field-input-background-color: #ffffff;
+    --a-field-input-state-background-color: #ffffff;
+}
+
+/* PROVEN FIX: The grey label strip in edit mode is caused by
+   .t-Form-label::before inside the textarea wrapper inheriting
+   --a-field-input-state-background-color = rgb(213,209,209).
+   Confirmed via DevTools: Label ::before bg: rgb(213, 209, 209)
+   Fix: force ::before transparent on editable textareas. */
+.apex-item-wrapper--textarea .t-Form-label::before {
+    background-color: transparent !important;
+}
+
+/* READONLY TEXTAREA: APEX 24.2 uses class apex-item-textarea-readonly.
+   Confirmed via DevTools inspection. */
+textarea.apex-item-textarea-readonly,
+textarea[aria-readonly="true"] {
+    background-color: rgb(213, 209, 209) !important;
+    resize: none !important;
+}
+
+/* Restore the label ::before grey in readonly mode so it matches */
+.apex-item-wrapper--textarea:has(textarea.apex-item-textarea-readonly) .t-Form-label::before {
+    background-color: rgb(213, 209, 209) !important;
+}
+
+/* White background on read-only textareas and inputs in Redwood */
+textarea[readonly],
+textarea[aria-readonly="true"],
+.apex-item-textarea[readonly],
+.apex-item-text[readonly] {
+    background-color: #ffffff !important;
+    --a-field-input-background-color: #ffffff !important;
+    --a-field-input-state-background-color: #ffffff !important;
+}
+
+/* Grouped action buttons in IR */
+.ptw-action-btns {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+/* Fixed width placeholder to keep alignment consistent
+   when conditional buttons (delete/suspend/monitoring) are absent */
+.ptw-action-placeholder {
+    display: inline-block;
+    width: 32px;
+}
+
+.t-Button--hot {
+    --a-button-background-color: var(--ut-palette-info);
+    --a-button-border-color: var(--ut-palette-info);
+    --a-button-text-color: #ffffff;
+}
+
+.t-Button--hot:hover,
+.t-Button--hot:focus {
+    --a-button-background-color: var(--ut-palette-info-dark);
+    --a-button-border-color: var(--ut-palette-info-dark);
+}
+
+/* Hide connection status on non-touch/desktop devices */
+@media (hover: hover) and (pointer: fine) {
+  #connection-status {
+    display: none !important;
+  }
+}
+
+/* Fix for Button issues on mobiles in Redwood (light) theme */
+@media (max-width: 767px) {
+    .t-ButtonRegion-wrap {
+        overflow: hidden !important;
+    }
+    
+    .t-ButtonRegion-col--right {
+        min-width: 0 !important;
+    }
+
+    /* Collapse empty middle column, give left and right equal space */
+    .t-ButtonRegion .t-ButtonRegion-wrap {
+        grid-template-columns: minmax(0, auto) 0 1fr !important;
+    }
+}
+
+.cm-checklist {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+}
+
+.cm-checklist th {
+    background: #003366;
+    color: white;
+    padding: 10px 15px;
+    text-align: left;
+    font-weight: 600;
+}
+
+.cm-checklist td {
+    padding: 10px 15px;
+    border-bottom: 1px solid #e0e0e0;
+    vertical-align: top;
+}
+
+.cm-checklist tr:nth-child(even) {
+    background: #f8f9fa;
+}
+
+.cm-checklist .cm-number {
+    width: 40px;
+    text-align: center;
+    font-weight: 600;
+    color: #003366;
+}
+
+.cm-checklist .cm-radio {
+    width: 80px;
+    text-align: center;
+}
+
+.ppe-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    padding: 15px;
+}
+
+.ppe-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background: #f8f9fa;
+}
+
+/* Force radio group labels to wrap for long text */
+.t-Form-labelContainer {
+    white-space: normal !important;
+}
+
+.t-Form-labelContainer label {
+    white-space: normal !important;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* ==========================================================
+   CM TRISTATE BADGES — Y/N/NA
+   JS-driven: JS hides native radio options and injects badges.
+   CSS only provides badge styles + layout.
+   ========================================================== */
+
+.cm-tristate-item .apex-item-grid {
+    display: none !important;
+    pointer-events: none !important;
+}
+
+/* Badge row injected by JS */
+.cm-badge-row {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+    align-items: center;
+    margin-top: 4px;
+}
+
+/* Individual badge button */
+.cm-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 34px;
+    border-radius: 8px;
+    border: 2px solid #ced4da;
+    background: #f0f0f0;
+    color: #aaa;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 1.3rem;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    user-select: none;
+    line-height: 1;
+}
+
+.cm-badge:hover {
+    border-color: #999;
+    background: #e2e6ea;
+}
+
+/* Selected states */
+.cm-badge.cm-badge-yes.cm-active {
+    background: #28a745;
+    border-color: #1e7e34;
+    color: #fff;
+}
+.cm-badge.cm-badge-no.cm-active {
+    background: #dc3545;
+    border-color: #a71d2a;
+    color: #fff;
+}
+.cm-badge.cm-badge-na.cm-active {
+    background: #0d6efd;
+    border-color: #0a58ca;
+    color: #fff;
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+}
+
+/* Read-only: no pointer, no hover */
+.cm-badge.cm-badge-readonly {
+    cursor: default;
+}
+.cm-badge.cm-badge-readonly:hover {
+    background: #f0f0f0;
+    border-color: #ced4da;
+    color: #aaa;
+}
+.cm-badge.cm-badge-yes.cm-active.cm-badge-readonly:hover {
+    background: #28a745;
+    border-color: #1e7e34;
+    color: #fff;
+}
+.cm-badge.cm-badge-no.cm-active.cm-badge-readonly:hover {
+    background: #dc3545;
+    border-color: #a71d2a;
+    color: #fff;
+}
+.cm-badge.cm-badge-na.cm-active.cm-badge-readonly:hover {
+    background: #0d6efd;
+    border-color: #0a58ca;
+    color: #fff;
+}
+
+/* Read-only null badge */
+.cm-badge.cm-badge-null {
+    font-size: 1rem;
+    color: #ccc;
+}
+
+/* Question label text wrap (unchanged) */
+.cm-tristate-item .t-Form-labelContainer label {
+    white-space: normal !important;
+    word-wrap: break-word;
+}
+
+/* ==========================================================
+   BINARY YES/NO BADGES — Y=green / N=red
+   ========================================================== */
+
+.cm-binary-item .apex-item-grid {
+    display: none !important;
+    pointer-events: none !important;
+}
+
+.cm-binary-item .apex-item-radio {
+    display: none !important;
+    pointer-events: none !important;
+}
+
+.binary-badge-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.binary-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 34px;
+    border-radius: 8px;
+    border: 2px solid #ced4da;
+    background: #f0f0f0;
+    color: #aaa;
+    font-weight: 700;
+    font-size: 1.3rem;
+    cursor: pointer;
+    line-height: 1;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    user-select: none;
+}
+
+.binary-badge:hover {
+    border-color: #999;
+    background: #e2e6ea;
+}
+
+.binary-badge-yes.cm-active {
+    background: #28a745;
+    border-color: #1e7e34;
+    color: #fff;
+}
+
+.binary-badge-no.cm-active {
+    background: #dc3545;
+    border-color: #a71d2a;
+    color: #fff;
+}
+
+.binary-badge.binary-readonly {
+    cursor: default;
+}
+
+.binary-badge.binary-readonly:hover {
+    background: #f0f0f0;
+    border-color: #ced4da;
+    color: #aaa;
+}
+
+.binary-badge-yes.cm-active.binary-readonly:hover {
+    background: #28a745;
+    border-color: #1e7e34;
+    color: #fff;
+}
+
+.binary-badge-no.cm-active.binary-readonly:hover {
+    background: #dc3545;
+    border-color: #a71d2a;
+    color: #fff;
+}
+
+/* ── Required asterisk on each item ── */
+.cm-required-star {
+    color: #c0392b;
+    font-weight: 700;
+    margin-left: 2px;
+}
+
+/* PPE tick badge */
+.cm-tick-item .apex-item-checkbox {
+    display: none !important;
+}
+.ppe-badge-row {
+    display: flex;
+    margin-top: 4px;
+}
+.ppe-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 34px;
+    border-radius: 8px;
+    border: 2px solid #ced4da;
+    background: #f0f0f0;
+    color: #aaa;
+    font-size: 1.4rem;
+    font-weight: 700;
+    cursor: pointer;
+    line-height: 1;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    user-select: none;
+}
+.ppe-badge:hover {
+    border-color: #999;
+    background: #e2e6ea;
+}
+.ppe-badge.ppe-active {
+    background: #28a745;
+    border-color: #1e7e34;
+    color: #fff;
+}
+.ppe-badge.ppe-readonly {
+    cursor: default;
+}
+.ppe-badge.ppe-readonly:hover {
+    background: #f0f0f0 !important;
+    border-color: #ced4da !important;
+    color: #aaa !important;
+}
+.ppe-badge.ppe-active.ppe-readonly:hover {
+    background: #28a745 !important;
+    border-color: #1e7e34 !important;
+    color: #fff !important;
+}

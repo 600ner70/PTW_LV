@@ -522,7 +522,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_region_css_classes=>'no-print'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>2126429139436695430
-,p_plug_display_sequence=>20
+,p_plug_display_sequence=>40
 ,p_location=>null
 ,p_ai_enabled=>false
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
@@ -534,7 +534,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_name=>'PTW Report Content'
 ,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>30
+,p_plug_display_sequence=>50
 ,p_location=>null
 ,p_function_body_language=>'PLSQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -564,14 +564,22 @@ wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(42026152934651854)
 ,p_button_sequence=>30
 ,p_button_plug_id=>wwv_flow_imp.id(67013347421929736)
-,p_button_name=>'BACK_TO_DASHBOARD'
+,p_button_name=>'BACK'
 ,p_button_action=>'REDIRECT_PAGE'
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
 ,p_button_template_id=>2082829544945815391
-,p_button_image_alt=>'Back To Dashboard'
-,p_button_redirect_url=>'f?p=&APP_ID.:1:&SESSION.::&DEBUG.:1::'
+,p_button_image_alt=>'Back'
+,p_button_redirect_url=>'f?p=&APP_ID.:&P300_RETURN_PAGE.:&SESSION.::&DEBUG.:::'
 ,p_icon_css_classes=>'fa-arrow-left'
 ,p_grid_new_row=>'Y'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(49364719163381908)
+,p_name=>'P300_RETURN_PAGE'
+,p_item_sequence=>30
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(67015084508929672)

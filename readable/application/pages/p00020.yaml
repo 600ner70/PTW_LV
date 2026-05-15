@@ -1,0 +1,144 @@
+---
+# ====== Page: Photo Download ================================
+id: 20
+identification: 
+  name: Photo Download
+  alias: PHOTO-DOWNLOAD
+  title: Photo Download
+
+appearance: 
+  page-mode: Normal
+  page-template: Theme Default
+  template-options: 
+  - '#DEFAULT#'
+
+navigation-menu: 
+  override-user-interface-level: false
+
+navigation: 
+  cursor-focus: Do not focus cursor
+  warn-on-unsaved-changes: true
+
+security: 
+  authentication: Page Requires Authentication
+  deep-linking: Application Default
+  page-access-protection: Arguments Must Have Checksum
+  form-auto-complete: Off
+  browser-cache: Application Default
+
+session-management: 
+  rejoin-sessions: Application Default
+
+advanced: 
+  enable-duplicate-page-submissions: Yes - Enable page to be re-posted
+  reload-on-submit: Only for Success
+
+server-cache: 
+  caching: Disabled
+
+page-items: 
+- # ====== Page Item: P20_PHOTO_ID =============================
+  id: 40755195550498301
+  identification: 
+    name: P20_PHOTO_ID
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 30
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P20_PERMIT_ID ============================
+  id: 40755372545498303
+  identification: 
+    name: P20_PERMIT_ID
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 40
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+processes: 
+- # ====== Process: Stream Photo ===============================
+  id: 40755250521498302
+  identification: 
+    name: Stream Photo
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      DECLARE
+          l_blob      BLOB;
+          l_mime_type VARCHAR2(100);
+          l_file_name VARCHAR2(255);
+      BEGIN
+          SELECT photo_data, mime_type, file_name
+          INTO   l_blob, l_mime_type, l_file_name
+          FROM   ptw_pro.ptw_lv_permit_photos
+          WHERE  photo_id = TO_NUMBER(:P20_PHOTO_ID);
+      
+          owa_util.mime_header(NVL(l_mime_type, 'image/jpeg'), FALSE);
+          htp.p('Content-Length: ' || DBMS_LOB.GETLENGTH(l_blob));
+          htp.p('Content-Disposition: inline; filename="' || NVL(l_file_name, 'photo.jpg') || '"');
+          htp.p('Cache-Control: private, max-age=3600');
+          owa_util.http_header_close;
+          wpg_docload.download_file(l_blob);
+          apex_application.stop_apex_engine;
+      
+      EXCEPTION
+          WHEN apex_application.e_stop_apex_engine THEN RAISE;
+          WHEN NO_DATA_FOUND THEN apex_application.stop_apex_engine;
+          WHEN OTHERS THEN apex_application.stop_apex_engine;
+      END;
+
+  execution: 
+    sequence: 10
+    point: Before Header
+    run-process: Once Per Page Visit (default)
+
+  server-side-condition: 
+    type: Item is NOT NULL
+    item: P20_PHOTO_ID
+

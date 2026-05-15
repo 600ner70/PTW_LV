@@ -1,0 +1,777 @@
+---
+# ====== Page: Permit Search =================================
+id: 50
+identification: 
+  name: Permit Search
+  alias: PERMIT-SEARCH
+  title: Permit Search
+
+appearance: 
+  page-mode: Normal
+  page-template: Left Side Column
+  template-options: 
+  - '#DEFAULT#'
+
+navigation-menu: 
+  override-user-interface-level: false
+
+navigation: 
+  cursor-focus: Do not focus cursor
+  warn-on-unsaved-changes: true
+
+css: 
+  inline: |
+    .ptw-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    .ptw-badge--live       { background: #28a745; color: #ffffff; }
+    .ptw-badge--authorised { background: #6c757d; color: #ffffff; }
+    .ptw-badge--completed  { background: #6f42c1; color: #ffffff; }
+    .ptw-badge--lapsed     { background: #6c757d; color: #ffffff; }
+    .ptw-badge--suspended { background:  #fd7e14; color: #ffffff; }
+    .ptw-badge--cancelled  { background: #dc3545; color: #ffffff; }
+    .ptw-badge--inprogress { background: #17a2b8; color: #ffffff; }
+    
+    /* Permit number link — match page 1 teal */
+    .t-Card-title a {
+        color: #1a6cb5 !important;
+        text-decoration: none !important;
+        font-weight: 600 !important;
+    }
+    .t-Card-title a:hover {
+        text-decoration: underline !important;
+    }
+
+security: 
+  authorization-scheme: Administration Rights # 26419849891144614
+  authentication: Page Requires Authentication
+  deep-linking: Application Default
+  page-access-protection: Arguments Must Have Checksum
+  form-auto-complete: Off
+  browser-cache: Application Default
+
+session-management: 
+  rejoin-sessions: Application Default
+
+advanced: 
+  enable-duplicate-page-submissions: Yes - Enable page to be re-posted
+  reload-on-submit: Only for Success
+
+server-cache: 
+  caching: Disabled
+
+regions: 
+- # ====== Region: Search Results ==============================
+  id: 49754433545978464
+  identification: 
+    name: Search Results
+    type: Cards
+
+  source: 
+    location: Local Database
+    type: SQL Query
+    sql-query: |
+      SELECT
+          p.permit_id,
+          p.permit_number,
+          p.site_details,
+          p.area_of_works,
+          p.work_description,
+          p.supervising_company || ' - ' || p.person_in_charge_name AS person_in_charge,
+          p.supervising_company,
+          p.person_in_charge_name,
+          p.workflow_status,
+          p.created_by,
+          p.auth_person_name,
+          p.started_datetime,
+          p.ended_datetime,
+          p.created_date,
+          p.ptw_type,
+          '<span class="ptw-badge ' ||
+          CASE p.workflow_status
+              WHEN 'STARTED'     THEN 'ptw-badge--live'
+              WHEN 'COMPLETED'   THEN 'ptw-badge--completed'
+              WHEN 'AUTHORISED'  THEN 'ptw-badge--authorised'
+              WHEN 'LAPSED'      THEN 'ptw-badge--lapsed'
+              WHEN 'SUSPENDED'   THEN 'ptw-badge--suspended'
+              WHEN 'CANCELLED'   THEN 'ptw-badge--cancelled'
+              WHEN 'IN_PROGRESS' THEN 'ptw-badge--inprogress'
+              ELSE 'ptw-badge--lapsed'
+          END || '">' ||
+          CASE p.workflow_status
+              WHEN 'STARTED'     THEN 'Live'
+              WHEN 'COMPLETED'   THEN 'Completed'
+              WHEN 'AUTHORISED'  THEN 'Authorised'
+              WHEN 'LAPSED'      THEN 'Lapsed'
+              WHEN 'SUSPENDED'   THEN 'Suspended'
+              WHEN 'CANCELLED'   THEN 'Cancelled'
+              WHEN 'IN_PROGRESS' THEN 'In Progress'
+              ELSE p.workflow_status
+          END || '</span>' AS status_badge_html,
+          apex_page.get_url(
+              p_page   => 300,
+              p_items  => 'P300_PERMIT_ID,P300_RETURN_PAGE',
+              p_values => p.permit_id || ',50'
+          ) AS pdf_url
+      FROM ptw_pro.ptw_lv_permits p
+
+  order-by: 
+    type: Item
+    item: 
+      item-name: P50_ORDER_BY
+      order-bys: 
+      - key: PERMIT_ID
+        clause: '"PERMIT_ID" asc'
+
+      - key: PERSON_IN_CHARGE
+        clause: '"PERSON_IN_CHARGE" asc'
+
+      - key: WORKFLOW_STATUS
+        clause: '"WORKFLOW_STATUS" asc'
+
+      - key: CREATED_DATE
+        clause: '"CREATED_DATE" desc'
+
+  layout: 
+    sequence: 40
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Cards Container
+    template-options: 
+    - '#DEFAULT#'
+    - t-CardsRegion--hideHeader js-addHiddenHeadingRoleDesc
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    id: 49758489812978507
+    appearance: 
+      layout: Grid
+      grid-columns: Auto
+
+    title: 
+      advanced-formatting: true
+      html-expression: <a href="&PDF_URL.">&PERMIT_NUMBER.</a>
+
+    subtitle: 
+      advanced-formatting: true
+      html-expression: '&STATUS_BADGE_HTML!RAW.'
+
+    body: 
+      advanced-formatting: true
+      html-expression: |
+        &PERSON_IN_CHARGE.<br>
+        &SITE_DETAILS!RAW.
+
+    secondary-body: 
+      advanced-formatting: false
+
+    icon-and-badge: 
+      icon-source: No Icon
+
+    media: 
+      advanced-formatting: false
+      source: No Media
+
+    performance: 
+      lazy-loading: false
+
+    pagination: 
+      type: Scroll
+      show-total-count: false
+
+- # ====== Region: Search ======================================
+  id: 49754560449978464
+  identification: 
+    name: Search
+    type: Faceted Search
+
+  source: 
+    filtered-region: Search Results # 49754433545978464
+
+  layout: 
+    sequence: 20
+    parent-region: No Parent
+    slot: REGION_POSITION_02
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--noPadding
+    - t-Region--hideHeader js-addHiddenHeadingRoleDesc
+    - t-Region--scrollBody
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+    landmark-label: Filters
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      batch-facet-changes: false
+      compact-numbers-threshold: 10000
+      show-current-facets: Selector
+      current-facets-selector: '#active_facets'
+      show-total-row-count: Yes
+      show-charts: Dialog
+      display-chart-for-top-n-values: 10
+
+  facets: 
+  - # ====== Facet: P50_SITE_DETAILS =============================
+    id: 49364510900381906
+    identification: 
+      name: P50_SITE_DETAILS
+      type: Checkbox Group
+
+    label: 
+      label: Sites
+      show-label-for-current-facet: true
+
+    layout: 
+      sequence: 50
+
+    appearance: 
+      display: Inline
+
+    list-of-values: 
+      type: Distinct Values
+      sort-direction: Ascending
+      include-null-option: false
+
+    list-entries: 
+      compute-counts: true
+      show-counts: true
+      zero-count-entries: Hide
+      sort-by-top-counts: true
+      show-selected-first: false
+      maximum-displayed-entries: 7
+      display-filter-initially: false
+
+    actions-menu: 
+      filter: true
+      chart: true
+
+    advanced: 
+      show-chart-initially: false
+      collapsible: false
+
+    source: 
+      database-column: SITE_DETAILS
+      data-type: VARCHAR2
+
+    multiple-values: 
+      type: No
+
+    security: 
+      store-value-encrypted-in-session-state: true
+      escape-special-characters: true
+
+  - # ====== Facet: P50_CREATED_DATE =============================
+    id: 49364658669381907
+    identification: 
+      name: P50_CREATED_DATE
+      type: Range
+
+    label: 
+      label: Created Date
+      show-label-for-current-facet: true
+
+    settings: 
+      select-multiple: false
+      manual-entry: false
+
+    layout: 
+      sequence: 20
+
+    appearance: 
+      display: Inline
+
+    list-entries: 
+      compute-counts: true
+      show-counts: true
+      zero-count-entries: Hide
+
+    advanced: 
+      collapsible: false
+
+    source: 
+      database-column: CREATED_DATE
+      data-type: DATE
+
+    security: 
+      store-value-encrypted-in-session-state: true
+
+  - # ====== Facet: P50_SEARCH ===================================
+    id: 49754946303978478
+    identification: 
+      name: P50_SEARCH
+      type: Search
+
+    label: 
+      label: Search
+
+    settings: 
+      search-type: Row Search
+      input-field: Top of Faceted Search Region
+
+    layout: 
+      sequence: 10
+
+    source: 
+      database-column(s): PERMIT_NUMBER,SITE_DETAILS,AREA_OF_WORKS,WORK_DESCRIPTION,PERSON_IN_CHARGE,SUPERVISING_COMPANY,PERSON_IN_CHARGE_NAME,WORKFLOW_STATUS,STATUS_DISPLAY,STATUS_CLASS,CREATED_BY,AUTH_PERSON_NAME,CURRENT_STEP,STEP_DISPLAY,PTW_TYPE
+
+    security: 
+      store-value-encrypted-in-session-state: true
+
+  - # ====== Facet: P50_WORKFLOW_STATUS ==========================
+    id: 49755365841978483
+    identification: 
+      name: P50_WORKFLOW_STATUS
+      type: Checkbox Group
+
+    label: 
+      label: Workflow Status
+      show-label-for-current-facet: true
+
+    layout: 
+      sequence: 30
+
+    appearance: 
+      display: Inline
+
+    list-of-values: 
+      type: Static Values
+      static-values: 'STATIC:Live;STARTED,Authorised;AUTHORISED,Completed;COMPLETED,Lapsed;LAPSED,In Progress;IN_PROGRESS,Suspended;SUSPENDED,Cancelled;CANCELLED'
+      include-null-option: false
+
+    list-entries: 
+      compute-counts: true
+      show-counts: true
+      zero-count-entries: Hide
+      sort-by-top-counts: true
+      show-selected-first: false
+      maximum-displayed-entries: 7
+      display-filter-initially: false
+
+    actions-menu: 
+      filter: true
+      chart: true
+
+    advanced: 
+      show-chart-initially: false
+      collapsible: false
+
+    source: 
+      database-column: WORKFLOW_STATUS
+      data-type: VARCHAR2
+
+    multiple-values: 
+      type: No
+
+    security: 
+      store-value-encrypted-in-session-state: true
+      escape-special-characters: true
+
+  - # ====== Facet: P50_PTW_TYPE =================================
+    id: 49756939978978488
+    identification: 
+      name: P50_PTW_TYPE
+      type: Checkbox Group
+
+    label: 
+      label: Ptw Type
+      show-label-for-current-facet: true
+
+    layout: 
+      sequence: 40
+
+    appearance: 
+      display: Inline
+
+    list-of-values: 
+      type: Distinct Values
+      sort-direction: Ascending
+      include-null-option: false
+
+    list-entries: 
+      compute-counts: true
+      show-counts: true
+      zero-count-entries: Hide
+      sort-by-top-counts: true
+      show-selected-first: false
+      maximum-displayed-entries: 7
+      display-filter-initially: false
+
+    actions-menu: 
+      filter: true
+      chart: true
+
+    advanced: 
+      show-chart-initially: false
+      collapsible: false
+
+    source: 
+      database-column: PTW_TYPE
+      data-type: VARCHAR2
+
+    multiple-values: 
+      type: No
+
+    security: 
+      store-value-encrypted-in-session-state: true
+      escape-special-characters: true
+
+  filters: 
+  - # ====== Filter: P50_SITE_DETAILS ============================
+    id: 49364510900381906
+    identification: 
+      name: P50_SITE_DETAILS
+      type: Checkbox Group
+
+    label: 
+      label: Sites
+
+    layout: 
+      sequence: 50
+
+    list-of-values: 
+      type: Distinct Values
+      sort-direction: Ascending
+      include-null-option: false
+
+    list-entries: 
+      compute-counts: true
+      show-counts: true
+      zero-count-entries: Hide
+      sort-by-top-counts: true
+      show-selected-first: false
+      client-side-filtering: false
+
+    suggestions: 
+      type: None
+
+    source: 
+      database-column: SITE_DETAILS
+      data-type: VARCHAR2
+
+    multiple-values: 
+      type: No
+
+    security: 
+      store-value-encrypted-in-session-state: true
+      escape-special-characters: true
+
+  - # ====== Filter: P50_CREATED_DATE ============================
+    id: 49364658669381907
+    identification: 
+      name: P50_CREATED_DATE
+      type: Range
+
+    label: 
+      label: Created Date
+
+    settings: 
+      select-multiple: false
+      manual-entry: false
+
+    layout: 
+      sequence: 20
+
+    appearance: 
+      format-mask: DD-MON-YYYY
+
+    list-entries: 
+      compute-counts: true
+      show-counts: true
+      zero-count-entries: Hide
+
+    suggestions: 
+      type: None
+
+    source: 
+      database-column: CREATED_DATE
+      data-type: DATE
+
+    security: 
+      store-value-encrypted-in-session-state: true
+
+  - # ====== Filter: P50_SEARCH ==================================
+    id: 49754946303978478
+    identification: 
+      name: P50_SEARCH
+      type: Search
+
+    label: 
+      label: Search
+
+    settings: 
+      search-type: Row Search
+      collapsed-search-field: false
+
+    layout: 
+      sequence: 10
+
+    source: 
+      database-column(s): PERMIT_NUMBER,SITE_DETAILS,AREA_OF_WORKS,WORK_DESCRIPTION,PERSON_IN_CHARGE,SUPERVISING_COMPANY,PERSON_IN_CHARGE_NAME,WORKFLOW_STATUS,STATUS_DISPLAY,STATUS_CLASS,CREATED_BY,AUTH_PERSON_NAME,CURRENT_STEP,STEP_DISPLAY,PTW_TYPE
+
+    security: 
+      store-value-encrypted-in-session-state: true
+
+  - # ====== Filter: P50_WORKFLOW_STATUS =========================
+    id: 49755365841978483
+    identification: 
+      name: P50_WORKFLOW_STATUS
+      type: Checkbox Group
+
+    label: 
+      label: Workflow Status
+
+    layout: 
+      sequence: 30
+
+    list-of-values: 
+      type: Static Values
+      static-values: 'STATIC:Live;STARTED,Authorised;AUTHORISED,Completed;COMPLETED,Lapsed;LAPSED,In Progress;IN_PROGRESS,Suspended;SUSPENDED,Cancelled;CANCELLED'
+      include-null-option: false
+
+    list-entries: 
+      compute-counts: true
+      show-counts: true
+      zero-count-entries: Hide
+      sort-by-top-counts: true
+      show-selected-first: false
+      client-side-filtering: false
+
+    suggestions: 
+      type: None
+
+    source: 
+      database-column: WORKFLOW_STATUS
+      data-type: VARCHAR2
+
+    multiple-values: 
+      type: No
+
+    security: 
+      store-value-encrypted-in-session-state: true
+      escape-special-characters: true
+
+  - # ====== Filter: P50_PTW_TYPE ================================
+    id: 49756939978978488
+    identification: 
+      name: P50_PTW_TYPE
+      type: Checkbox Group
+
+    label: 
+      label: Ptw Type
+
+    layout: 
+      sequence: 40
+
+    list-of-values: 
+      type: Distinct Values
+      sort-direction: Ascending
+      include-null-option: false
+
+    list-entries: 
+      compute-counts: true
+      show-counts: true
+      zero-count-entries: Hide
+      sort-by-top-counts: true
+      show-selected-first: false
+      client-side-filtering: false
+
+    suggestions: 
+      type: None
+
+    source: 
+      database-column: PTW_TYPE
+      data-type: VARCHAR2
+
+    multiple-values: 
+      type: No
+
+    security: 
+      store-value-encrypted-in-session-state: true
+      escape-special-characters: true
+
+- # ====== Region: Button Bar ==================================
+  id: 49757275480978489
+  identification: 
+    name: Button Bar
+    type: Static Content
+
+  source: 
+    html-code: <div id="active_facets"></div>
+
+  layout: 
+    sequence: 10
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Buttons Container
+    template-options: 
+    - '#DEFAULT#'
+    - t-ButtonRegion--noPadding
+    - t-ButtonRegion--noUI
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+page-items: 
+- # ====== Page Item: P50_ORDER_BY =============================
+  id: 49758999036978511
+  identification: 
+    name: P50_ORDER_BY
+    type: Select List
+
+  label: 
+    label: Order By
+    alignment: Left
+
+  settings: 
+    page-action-on-selection: None
+
+  multiple-values: 
+    type: No
+
+  layout: 
+    sequence: 10
+    region: Search Results # 49754433545978464
+    slot: ORDER_BY_ITEM
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    height: 1
+
+  validation: 
+    value-required: true
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC2:Permit Number;PERMIT_ID,Person In Charge;PERSON_IN_CHARGE,Workflow Status;WORKFLOW_STATUS,Created Date;CREATED_DATE'
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Ignore
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  default: 
+    type: Static
+    static-value: PERMIT_ID
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+buttons: 
+- # ====== Button: RESET =======================================
+  id: 49757786603978498
+  identification: 
+    button-name: RESET
+    label: Reset
+
+  layout: 
+    sequence: 10
+    region: Button Bar # 49757275480978489
+    slot: NEXT
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text with Icon
+    hot: false
+    template-options: 
+    - '#DEFAULT#'
+    - t-Button--noUI
+    - t-Button--iconLeft
+    icon: fa-undo
+
+  behavior: 
+    action: Redirect to Page in this Application
+    target: 
+      url: 'f?p=&APP_ID.:50:&APP_SESSION.::&DEBUG.:RR,50::'
+      page: 50 # Permit Search
+      clear-cache: RR,50
+
+    warn-on-unsaved-changes: Do Not Check
+

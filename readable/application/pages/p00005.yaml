@@ -1,0 +1,2478 @@
+---
+# ====== Page: Authorisation & Acceptance ====================
+id: 5
+identification: 
+  name: Authorisation & Acceptance
+  alias: AUTHORISATION-ACCEPTANCE
+  title: Authorisation & Acceptance
+
+appearance: 
+  page-mode: Normal
+  page-template: Theme Default
+  template-options: 
+  - '#DEFAULT#'
+
+navigation-menu: 
+  override-user-interface-level: false
+
+navigation: 
+  cursor-focus: Do not focus cursor
+  warn-on-unsaved-changes: true
+
+javascript: 
+  file-urls: 
+  - '#APP_FILES#offline-storage#MIN#.js'
+  function-and-global-variable-declaration: |
+    let authSignaturePad;
+    let acceptSignaturePad;
+    
+    function initSignaturePads() {
+        setTimeout(function() {
+            initPad('authSignaturePad',   'P5_AUTH_SIGNATURE_DATA',   function(pad) { authSignaturePad   = pad; });
+            initPad('acceptSignaturePad', 'P5_ACCEPT_SIGNATURE_DATA', function(pad) { acceptSignaturePad = pad; });
+        }, 200);
+    }
+    
+    function clearAuthSignature() {
+        if (authSignaturePad) {
+            authSignaturePad.clear();
+            apex.item('P5_AUTH_SIGNATURE_DATA').setValue('');
+        }
+    }
+    
+    function clearAcceptSignature() {
+        if (acceptSignaturePad) {
+            acceptSignaturePad.clear();
+            apex.item('P5_ACCEPT_SIGNATURE_DATA').setValue('');
+        }
+    }
+    
+    function saveSignatures() {
+        if (authSignaturePad   && !authSignaturePad.isEmpty)   { apex.item('P5_AUTH_SIGNATURE_DATA').setValue(authSignaturePad.getDataURL()); }
+        if (acceptSignaturePad && !acceptSignaturePad.isEmpty) { apex.item('P5_ACCEPT_SIGNATURE_DATA').setValue(acceptSignaturePad.getDataURL()); }
+    }
+    
+    function updateConnectionUI() {
+        const statusDiv  = document.getElementById('connection-status');
+        const statusIcon = document.getElementById('status-icon');
+        const statusText = document.getElementById('status-text');
+        if (!statusDiv) return;
+        if (navigator.onLine) {
+            statusDiv.style.backgroundColor = '#d4edda';
+            statusIcon.innerHTML = '\u2713';
+            statusText.innerHTML = 'Connected';
+        } else {
+            statusDiv.style.backgroundColor = '#fff3cd';
+            statusIcon.innerHTML = '\u26A0';
+            statusText.innerHTML = 'Offline Mode';
+        }
+    }
+    
+  execute-when-page-loads: |
+    $(document).on('dialogclose', function(e) {
+        console.log('dialogclose fired', e);
+    });
+    
+    $(document).on('apexafterclosedialog', function(e, data) {
+        console.log('apexafterclosedialog fired', data);
+    });
+
+css: 
+  inline: |
+    .ptw-workflow-progress {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin: 2rem 0;
+        padding: 1.5rem;
+        background: var(--ut-component-background-color, #ffffff);
+        border-radius: 8px;
+        border: 1px solid var(--ut-component-border-color, #e0e0e0);
+        position: relative;
+    }
+     
+    .ptw-workflow-progress::before {
+        content: '';
+        position: absolute;
+        top: 3rem;
+        left: 3rem;
+        right: 3rem;
+        height: 2px;
+        background: var(--ut-palette-neutral-300, #d0d0d0);
+        z-index: 0;
+    }
+     
+    .workflow-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        z-index: 1;
+        flex: 1;
+        gap: 0.5rem;
+    }
+     
+    .step-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: var(--ut-component-background-color, #ffffff);
+        border: 3px solid var(--ut-palette-neutral-300, #d0d0d0);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 1.125rem;
+        color: var(--ut-palette-neutral-500, #666666);
+        transition: all 0.3s ease;
+    }
+     
+    .workflow-step.active .step-icon {
+        background: #003366;
+        border-color: #003366;
+        color: #ffffff;
+        box-shadow: 0 4px 8px rgba(0, 51, 102, 0.2);
+    }
+     
+    .workflow-step.completed .step-icon {
+        background: var(--ut-palette-success, #3ea055);
+        border-color: var(--ut-palette-success, #3ea055);
+        color: #ffffff;
+    }
+     
+    .step-text {
+        font-size: 0.875rem;
+        text-align: center;
+        color: var(--ut-palette-neutral-600, #595959);
+        max-width: 100px;
+        line-height: 1.3;
+    }
+     
+    .workflow-step.active .step-text {
+        color: #003366;
+        font-weight: 600;
+    }
+     
+    @media (max-width: 768px) {
+        .ptw-workflow-progress {
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .workflow-step {
+            flex-basis: 30%;
+        }
+        .ptw-workflow-progress::before {
+            display: none;
+        }
+    }
+     
+    /* ---- Page-5-specific additions only ---- */
+     
+    /* Declaration box - uses APEX vars, no hard-coded colours */
+    .declaration-box {
+        background: var(--ut-palette-warning-light, #fff8e1);
+        border-left: 4px solid var(--ut-palette-warning, #f0ad4e);
+        padding: 1rem 1.25rem;
+        border-radius: 0 6px 6px 0;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+        color: var(--ut-component-font-color, #333333);
+        line-height: 1.5;
+    }
+     
+    .signature-pad-container {
+        border: 2px solid var(--ut-component-border-color, #d0d0d0);
+        border-radius: 8px;
+        background: #ffffff;
+        padding: 10px;
+        margin: 10px 0;
+    }
+    
+    .signature-pad {
+        width: 100%;
+        height: 150px;
+        border: 1px dashed #ccc;
+        border-radius: 4px;
+        touch-action: none;
+        cursor: crosshair;
+    }
+    
+    .signature-controls {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+        justify-content: flex-end;
+    }
+    
+    .signature-controls button {
+        padding: 6px 12px;
+        border-radius: 4px;
+        border: 1px solid #d0d0d0;
+        background: #f5f5f5;
+        cursor: pointer;
+        font-size: 0.875rem;
+    }
+    
+    .signature-controls button:hover {
+        background: #e0e0e0;
+    }
+
+read-only: 
+  type: Item != Value
+  item: P5_WORKFLOW_STATUS
+  value: IN_PROGRESS
+
+security: 
+  authentication: Page Requires Authentication
+  deep-linking: Application Default
+  page-access-protection: Arguments Must Have Checksum
+  form-auto-complete: Off
+  browser-cache: Application Default
+
+session-management: 
+  rejoin-sessions: Application Default
+
+advanced: 
+  enable-duplicate-page-submissions: Yes - Enable page to be re-posted
+  reload-on-submit: Only for Success
+
+server-cache: 
+  caching: Disabled
+
+regions: 
+- # ====== Region: Workflow Progress ===========================
+  id: 27354510223033416
+  identification: 
+    name: Workflow Progress
+    type: Static Content
+
+  source: 
+    html-code: |
+      <div class="ptw-workflow-progress">
+          <div class="workflow-step completed" data-step="1">
+              <span class="step-icon">&#10003;</span>
+              <span class="step-text">Site &amp; Work Details</span>
+          </div>
+          <div class="workflow-step completed" data-step="2">
+              <span class="step-icon">&#10003;</span>
+              <span class="step-text">Control Measures</span>
+          </div>
+          <div class="workflow-step completed" data-step="3">
+              <span class="step-icon">&#10003;</span>
+              <span class="step-text">Equipment Isolation</span>
+          </div>
+          <div class="workflow-step active" data-step="4">
+              <span class="step-icon">4</span>
+              <span class="step-text">Authorisation</span>
+          </div>
+          <div class="workflow-step" data-step="5">
+              <span class="step-icon">5</span>
+              <span class="step-text">Clearance</span>
+          </div>
+      </div>
+
+  layout: 
+    sequence: 190
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Blank with Attributes
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Authorisation Declaration ===================
+  id: 27354649096033417
+  identification: 
+    name: Authorisation Declaration
+    title: Authorisation of this Permit to Work
+    type: Static Content
+
+  source: 
+    html-code: |
+      <div class="ptw-section-card">
+          <div class="ptw-section-body">
+              <div class="declaration-box">
+                  <strong>Authorisation of this Permit to Work:</strong>
+                  I have reviewed all aspects of the task/activity and I am satisfied
+                  with the arrangements as detailed within the relevant risk assessment
+                  and method statement that have been put in place and certify that
+                  this activity detailed is authorised to proceed. Suitable insurance
+                  is in place, (employers and public liability).
+              </div>
+          </div>
+      </div>
+       
+
+  layout: 
+    sequence: 230
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--accent15
+    - t-Region--scrollBody
+    icon: fa-certificate
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Authorisation Fields ========================
+  id: 27354749922033418
+  identification: 
+    name: Authorisation Fields
+    title: Authorised Person Details
+    type: Static Content
+
+  layout: 
+    sequence: 240
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--accent15
+    - t-Region--scrollBody
+    icon: fa-signature
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: AuthSignature ===============================
+  id: 27355228671033423
+  identification: 
+    name: AuthSignature
+    title: Signature - Authorised Person
+    type: Static Content
+
+  source: 
+    html-code: |
+      <div class="signature-pad-container">
+          <canvas id="authSignaturePad" class="signature-pad"></canvas>
+          <div class="signature-controls">
+              <button type="button" id="BTN_CLEAR_AUTH_SIG_P5" onclick="clearAuthSignature()">Clear</button>
+          </div>
+          <div class="geo-info" id="authGeoInfo"></div>
+      </div>
+
+  layout: 
+    sequence: 50
+    parent-region: Authorisation Fields # 27354749922033418
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Blank with Attributes
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Acceptance Fields ===========================
+  id: 27355431661033425
+  identification: 
+    name: Acceptance Fields
+    title: Person in Charge of Works Details
+    type: Static Content
+
+  layout: 
+    sequence: 220
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--accent15
+    - t-Region--scrollBody
+    icon: fa-signature
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Acceptance Declaration ======================
+  id: 27355547264033426
+  identification: 
+    name: Acceptance Declaration
+    title: Acceptance of this Permit to Work
+    type: Static Content
+
+  source: 
+    html-code: |
+      <div class="ptw-section-card">
+          <div class="ptw-section-body">
+              <div class="declaration-box">
+                  <strong>Acceptance of this Permit to Work:</strong>
+                  I certify that I am competent to supervise and undertake the works
+                  detailed within this Permit to Work and have read and fully understand
+                  the documentation associated with this work activity. I am satisfied
+                  that those personnel who will be employed on the task are properly
+                  equipped and understand the relevant safety and emergency procedures
+                  to be followed and are competent to carry out these works.
+              </div>
+          </div>
+      </div>
+      
+
+  layout: 
+    sequence: 210
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--accent15
+    - t-Region--scrollBody
+    icon: fa-handshake-o
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: AccSignature ================================
+  id: 27356002085033431
+  identification: 
+    name: AccSignature
+    type: Static Content
+
+  source: 
+    html-code: |
+      <div class="signature-pad-container">
+          <canvas id="acceptSignaturePad" class="signature-pad"></canvas>
+          <div class="signature-controls">
+              <button type="button" id="BTN_CLEAR_ACCEPT_SIG_P5" onclick="clearAcceptSignature()">Clear</button>
+          </div>
+          <div class="geo-info" id="acceptGeoInfo"></div>
+      </div>
+
+  layout: 
+    sequence: 70
+    parent-region: Acceptance Fields # 27355431661033425
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Blank with Attributes
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Buttons =====================================
+  id: 27356182588033432
+  identification: 
+    name: Buttons
+    type: Static Content
+
+  layout: 
+    sequence: 250
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Buttons Container
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Role & Permit Status ========================
+  id: 37954746372176008
+  identification: 
+    name: Role & Permit Status
+    title: Role & Permit Status
+    type: Dynamic Content
+
+  source: 
+    language: PL/SQL
+    pl/sql-function-body-returning-a-clob: |
+      DECLARE
+          v_from_dt       DATE;
+          v_to_dt         DATE;
+          v_now           DATE          := SYSDATE;
+          v_clob          CLOB          := '';
+      BEGIN
+          -- Get permit validity window if set
+          BEGIN
+              SELECT started_datetime, ended_datetime
+              INTO   v_from_dt, v_to_dt
+              FROM   ptw_pro.ptw_lv_permits
+              WHERE  permit_id = :P5_PERMIT_ID;
+          EXCEPTION
+              WHEN NO_DATA_FOUND THEN NULL;
+          END;
+      
+          -- Permit validity window (only show if dates are set)
+          IF v_from_dt IS NOT NULL OR v_to_dt IS NOT NULL THEN
+              v_clob := v_clob ||
+                  '<div class="t-Alert t-Alert--info t-Alert--horizontal margin-bottom-sm" role="region">' ||
+                  '  <div class="t-Alert-wrap">' ||
+                  '    <div class="t-Alert-icon"><span class="t-Icon fa fa-clock-o"></span></div>' ||
+                  '    <div class="t-Alert-content">' ||
+                  '      <div class="t-Alert-body"><strong>Permit validity window:</strong> ';
+      
+              IF v_from_dt IS NOT NULL THEN
+                  v_clob := v_clob || 'From ' || TO_CHAR(v_from_dt, 'DD-MON-YYYY HH24:MI');
+              END IF;
+      
+              IF v_to_dt IS NOT NULL THEN
+                  v_clob := v_clob || ' &nbsp;&mdash;&nbsp; To ' || TO_CHAR(v_to_dt, 'DD-MON-YYYY HH24:MI');
+              END IF;
+      
+              IF v_to_dt IS NOT NULL AND v_now > v_to_dt THEN
+                  v_clob := v_clob || ' &nbsp;<strong style="color:var(--ut-palette-danger,#c0392b);">(Expired)</strong>';
+              END IF;
+      
+              v_clob := v_clob ||
+                  '      </div>' ||
+                  '    </div>' ||
+                  '  </div>' ||
+                  '</div>';
+          END IF;
+      
+          RETURN v_clob;
+      END;
+
+  layout: 
+    sequence: 10
+    parent-region: Authorisation Declaration # 27354649096033417
+    slot: SUB_REGIONS
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Blank with Attributes
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  server-cache: 
+    caching: Disabled
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    performance: 
+      lazy-loading: false
+
+- # ====== Region: SyncStatus ==================================
+  id: 59751115845944493
+  identification: 
+    name: SyncStatus
+    type: Static Content
+
+  source: 
+    html-code: |
+      <div id="connection-status" style="padding: 10px; margin-bottom: 10px; border-radius: 4px;">
+          <span id="status-icon"></span>
+          <span id="status-text"></span>
+          <!-- <button id="sync-btn" style="margin-left: 10px; display: none;">Sync Now</button> -->
+      </div>
+
+  layout: 
+    sequence: 180
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Blank with Attributes
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Permit Information Badge ====================
+  id: 59754344828705381
+  identification: 
+    name: Permit Information Badge
+    type: Static Content
+
+  source: 
+    html-code: |
+      <div style="margin-bottom: 20px;">
+          <span class="apex-badge" style="background-color: #3ea055; color: white; padding: 6px 16px; border-radius: 20px; font-weight: 600;">
+              Permit: &P5_PERMIT_NUMBER.
+          </span>
+      </div>
+
+  layout: 
+    sequence: 200
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: None
+    render-components: Above Content
+
+  advanced: 
+    exclude-title-from-translation: false
+
+  server-side-condition: 
+    type: Item is NOT NULL
+    item: P5_PERMIT_NUMBER
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+page-items: 
+- # ====== Page Item: P5_PERMIT_ID =============================
+  id: 27353728149033408
+  identification: 
+    name: P5_PERMIT_ID
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 30
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P5_PERMIT_NUMBER =========================
+  id: 27353854481033409
+  identification: 
+    name: P5_PERMIT_NUMBER
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 80
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P5_AUTH_SIGNATURE_DATA ===================
+  id: 27353970594033410
+  identification: 
+    name: P5_AUTH_SIGNATURE_DATA
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 90
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: false
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P5_ACCEPT_SIGNATURE_DATA =================
+  id: 27354075256033411
+  identification: 
+    name: P5_ACCEPT_SIGNATURE_DATA
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 100
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: false
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P5_AUTH_LATITUDE =========================
+  id: 27354116465033412
+  identification: 
+    name: P5_AUTH_LATITUDE
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 110
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P5_AUTH_LONGITUDE ========================
+  id: 27354271702033413
+  identification: 
+    name: P5_AUTH_LONGITUDE
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 120
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P5_ACCEPT_LATITUDE =======================
+  id: 27354339224033414
+  identification: 
+    name: P5_ACCEPT_LATITUDE
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 130
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P5_ACCEPT_LONGITUDE ======================
+  id: 27354445860033415
+  identification: 
+    name: P5_ACCEPT_LONGITUDE
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 140
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P5_AUTH_PERSON_MOBILE ====================
+  id: 27354949910033420
+  identification: 
+    name: P5_AUTH_PERSON_MOBILE
+    type: Text Field
+
+  label: 
+    label: Mobile Tel No.
+    alignment: Left
+
+  settings: 
+    subtype: Text
+    trim-spaces: Leading and Trailing
+    text-case: NO CHANGE
+    submit-when-enter-pressed: false
+    disabled: false
+
+  layout: 
+    sequence: 30
+    region: Authorisation Fields # 27354749922033418
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    width: 30
+
+  validation: 
+    value-required: false
+    maximum-length: 50
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P5_ACCEPT_PERSON_NAME ====================
+  id: 27355610155033427
+  identification: 
+    name: P5_ACCEPT_PERSON_NAME
+    type: Display Only
+
+  label: 
+    label: Name
+    alignment: Left
+
+  settings: 
+    format: Plain Text
+    based-on: Item Value
+    show-line-breaks: true
+    send-on-page-submit: false
+
+  layout: 
+    sequence: 20
+    region: Acceptance Fields # 27355431661033425
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: false
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P5_ACCEPT_PERSON_MOBILE ==================
+  id: 27355762469033428
+  identification: 
+    name: P5_ACCEPT_PERSON_MOBILE
+    type: Text Field
+
+  label: 
+    label: Mobile Tel. No.
+    alignment: Left
+
+  settings: 
+    subtype: Text
+    trim-spaces: Leading and Trailing
+    text-case: NO CHANGE
+    submit-when-enter-pressed: false
+    disabled: false
+
+  layout: 
+    sequence: 30
+    region: Acceptance Fields # 27355431661033425
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    width: 30
+
+  validation: 
+    value-required: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: false
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P5_ACCEPT_COMPANY ========================
+  id: 27355874180033429
+  identification: 
+    name: P5_ACCEPT_COMPANY
+    type: Display Only
+
+  label: 
+    label: Company
+    alignment: Left
+
+  settings: 
+    format: Plain Text
+    based-on: Item Value
+    show-line-breaks: true
+    send-on-page-submit: false
+
+  layout: 
+    sequence: 40
+    region: Acceptance Fields # 27355431661033425
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Static Value
+    static-value: The Company Limited
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: false
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P5_ACCEPT_DATETIME =======================
+  id: 27355946358033430
+  identification: 
+    name: P5_ACCEPT_DATETIME
+    type: Display Only
+
+  label: 
+    label: Date & Time
+    alignment: Left
+
+  settings: 
+    format: Plain Text
+    based-on: Item Value
+    show-line-breaks: true
+    send-on-page-submit: false
+
+  layout: 
+    sequence: 50
+    region: Acceptance Fields # 27355431661033425
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  default: 
+    type: SQL Query (return single value)
+    sql-query-(return-single-value): "SELECT TO_CHAR(SYSDATE,'DD-MON-YYYY HH24:MI') FROM dual;"
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: false
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P5_IS_CHANGED ============================
+  id: 30143518277642704
+  identification: 
+    name: P5_IS_CHANGED
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 50
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P5_CURRENT_STEP ==========================
+  id: 30143615815642705
+  identification: 
+    name: P5_CURRENT_STEP
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 60
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P5_WORKFLOW_STATUS =======================
+  id: 31607494167440636
+  identification: 
+    name: P5_WORKFLOW_STATUS
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 70
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P5_USER_CAN_AUTHORISE ====================
+  id: 33350836721951422
+  identification: 
+    name: P5_USER_CAN_AUTHORISE
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 150
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P5_AUTH_DATETIME =========================
+  id: 33351141764951425
+  identification: 
+    name: P5_AUTH_DATETIME
+    type: Date Picker
+
+  label: 
+    label: Authorisation Date
+    alignment: Left
+
+  settings: 
+    show-time: true
+    display-as: Popup
+    minimum-date: None
+    maximum-date: None
+    multiple-months: No
+    use-defaults: true
+
+  layout: 
+    sequence: 40
+    region: Authorisation Fields # 27354749922033418
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    format-mask: 'DD-MON-YYYY HH24:MI'
+    width: 30
+
+  validation: 
+    value-required: false
+    maximum-length: 20
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P5_AUTH_PERSON_SELECT ====================
+  id: 33352343405951437
+  identification: 
+    name: P5_AUTH_PERSON_SELECT
+    type: Select List
+
+  label: 
+    label: Authorising person
+    alignment: Left
+
+  settings: 
+    page-action-on-selection: None
+
+  multiple-values: 
+    type: No
+
+  layout: 
+    sequence: 10
+    region: Authorisation Fields # 27354749922033418
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    height: 1
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Shared Component
+    list-of-values: PTW_AUTHORISED_PERSONS # 35799522908090663
+    display-extra-values: true
+    display-null-value: true
+    null-display-value: '-- Select Authorising Person --'
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  server-side-condition: 
+    type: Item = Value
+    item: P5_WORKFLOW_STATUS
+    value: IN_PROGRESS
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P5_AUTH_PERSON_DISPLAY ===================
+  id: 37955311718176014
+  identification: 
+    name: P5_AUTH_PERSON_DISPLAY
+    type: Display Only
+
+  label: 
+    label: Authorising Person
+    alignment: Left
+
+  settings: 
+    format: Plain Text
+    based-on: Item Value
+    show-line-breaks: true
+    send-on-page-submit: false
+
+  layout: 
+    sequence: 20
+    region: Authorisation Fields # 27354749922033418
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  server-side-condition: 
+    type: Item != Value
+    item: P5_WORKFLOW_STATUS
+    value: IN_PROGRESS
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P5_REDIRECT_URL ==========================
+  id: 39963128282997107
+  identification: 
+    name: P5_REDIRECT_URL
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 40
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+buttons: 
+- # ====== Button: BACK ========================================
+  id: 27356264505033433
+  identification: 
+    button-name: BACK
+    label: Back
+
+  layout: 
+    sequence: 10
+    region: Buttons # 27356182588033432
+    slot: PREVIOUS
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text
+    hot: false
+    template-options: 
+    - '#DEFAULT#'
+
+  behavior: 
+    action: Redirect to Page in this Application
+    target: 
+      url: 'f?p=&APP_ID.:4:&SESSION.::&DEBUG.:4:P4_PERMIT_ID:&P5_PERMIT_ID.'
+      page: 4 # Equipment Isolation
+      clear-cache: 4
+      values: 
+        p4_permit_id: '&P5_PERMIT_ID.'
+
+    warn-on-unsaved-changes: Do Not Check
+
+  advanced: 
+    static-id: BTN_BACK_P5
+
+- # ====== Button: START_PERMIT ================================
+  id: 31606655096440628
+  identification: 
+    button-name: START_PERMIT
+    label: Start Permit
+
+  layout: 
+    sequence: 20
+    region: Buttons # 27356182588033432
+    slot: NEXT
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text with Icon
+    hot: true
+    template-options: 
+    - '#DEFAULT#'
+    - t-Button--iconLeft
+    icon: fa-clock-o
+
+  behavior: 
+    action: Redirect to Page in this Application
+    target: 
+      url: 'f?p=&APP_ID.:9:&SESSION.::&DEBUG.:9:P9_PERMIT_ID,P9_PERMIT_NUMBER:&P5_PERMIT_ID.,&P5_PERMIT_NUMBER.'
+      page: 9 # Start Permit
+      clear-cache: 9
+      values: 
+        p9_permit_id: '&P5_PERMIT_ID.'
+        p9_permit_number: '&P5_PERMIT_NUMBER.'
+
+    warn-on-unsaved-changes: Do Not Check
+
+  advanced: 
+    static-id: BTN_START_PERMIT_P5
+
+  server-side-condition: 
+    type: Item = Value
+    item: P5_WORKFLOW_STATUS
+    value: AUTHORISED
+
+- # ====== Button: AUTHORISE ===================================
+  id: 39966392216997139
+  identification: 
+    button-name: AUTHORISE
+    label: Authorise
+
+  layout: 
+    sequence: 10
+    region: Buttons # 27356182588033432
+    slot: NEXT
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text with Icon
+    hot: true
+    template-options: 
+    - '#DEFAULT#'
+    - t-Button--iconLeft
+    icon: fa-clipboard-check
+
+  behavior: 
+    action: Defined by Dynamic Action
+    execute-validations: true
+
+  advanced: 
+    static-id: BTN_AUTHORISE_P5
+
+  server-side-condition: 
+    type: Item = Value
+    item: P5_WORKFLOW_STATUS
+    value: IN_PROGRESS
+
+dynamic-actions: 
+- # ====== Dynamic Action: Save Signatures =====================
+  id: 31607259171440634
+  identification: 
+    name: Save Signatures
+
+  execution: 
+    sequence: 30
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Custom
+    custom-event: apexbeforepagesubmit
+    selection-type: JavaScript Expression
+    javascript-expression: document
+
+  actions: 
+  - # ====== Action: Execute JavaScript Code =====================
+    id: 33353206048951446
+    identification: 
+      action: Execute JavaScript Code
+
+    settings: 
+      code: |
+        saveSignatures();
+        
+
+    execution: 
+      sequence: 10
+      event: Save Signatures # 31607259171440634
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+- # ====== Dynamic Action: Initialise page =====================
+  id: 33352838421951442
+  identification: 
+    name: Initialise page
+
+  execution: 
+    sequence: 2
+    event-scope: Static
+
+  when: 
+    event: Page Load
+
+  actions: 
+  - # ====== Action: Signatures ==================================
+    id: 33352979633951443
+    identification: 
+      name: Signatures
+      action: Execute JavaScript Code
+
+    settings: 
+      code: |
+        initSignaturePads();
+        
+        // If read-only, disable canvases after pads have initialised
+        setTimeout(function() {
+            var status = apex.item('P5_WORKFLOW_STATUS').getValue();
+            if (status !== 'IN_PROGRESS' && status !== '') {
+                ['authSignaturePad', 'acceptSignaturePad'].forEach(function(id) {
+                    var canvas = document.getElementById(id);
+                    if (canvas) {
+                        canvas.style.pointerEvents = 'none';
+                        canvas.style.opacity       = '0.6';
+                        canvas.style.cursor        = 'not-allowed';
+                        canvas.title               = 'This permit is read-only';
+                    }
+                });
+            }
+        }, 250);
+
+    execution: 
+      sequence: 20
+      event: Initialise page # 33352838421951442
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+  - # ====== Action: Connection UI ===============================
+    id: 33353070566951444
+    identification: 
+      name: Connection UI
+      action: Execute JavaScript Code
+
+    settings: 
+      code: |
+        updateConnectionUI();
+        window.addEventListener('online',  updateConnectionUI);
+        window.addEventListener('offline', updateConnectionUI);
+        
+        window.addEventListener('resize', function() {
+            initSignaturePads();
+        });
+
+    execution: 
+      sequence: 60
+      event: Initialise page # 33352838421951442
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+  - # ====== Action: Manage Offline ==============================
+    id: 33353132786951445
+    identification: 
+      name: Manage Offline
+      action: Execute JavaScript Code
+
+    settings: 
+      code: |
+        OfflineStorage.initDB();
+        ConnectionManager.init();
+
+    execution: 
+      sequence: 70
+      event: Initialise page # 33352838421951442
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+  - # ====== Action: Load Signatures =============================
+    id: 37955275603176013
+    identification: 
+      name: Load Signatures
+      action: Execute JavaScript Code
+
+    settings: 
+      code: |
+        var authData   = apex.item('P5_AUTH_SIGNATURE_DATA').getValue();
+        var acceptData = apex.item('P5_ACCEPT_SIGNATURE_DATA').getValue();
+        
+        if (authData) {
+            loadSignature(authSignaturePad,
+                document.getElementById('authSignaturePad'),
+                'data:image/png;base64,' + authData);
+        }
+        if (acceptData) {
+            loadSignature(acceptSignaturePad,
+                document.getElementById('acceptSignaturePad'),
+                'data:image/png;base64,' + acceptData);
+        }
+
+    execution: 
+      sequence: 50
+      event: Initialise page # 33352838421951442
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+    server-side-condition: 
+      type: Never
+
+  - # ====== Action: Load the Auth person details ================
+    id: 37955420884176015
+    identification: 
+      name: Load the Auth person details
+      action: Execute Server-side Code
+
+    settings: 
+      language: PE.PROPERTY.SOURCE_SNIPPET_LANG.LOV.PLSQL.D
+      pl/sql-code: |
+        BEGIN
+            SELECT mobile_no,
+                   first_name || ' ' || last_name
+            INTO   :P5_AUTH_PERSON_MOBILE,
+                   :P5_AUTH_PERSON_DISPLAY
+            FROM   ptw_pro.ptw_lv_users
+            WHERE  UPPER(username) = UPPER(:P5_AUTH_PERSON_SELECT);
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                :P5_AUTH_PERSON_MOBILE  := NULL;
+                :P5_AUTH_PERSON_DISPLAY := NULL;
+        END;
+      items-to-submit: 
+      - P5_AUTH_PERSON_SELECT
+      items-to-return: 
+      - P5_AUTH_PERSON_DISPLAY
+      - P5_AUTH_PERSON_MOBILE
+      suppress-change-event: false
+
+    execution: 
+      sequence: 40
+      event: Initialise page # 33352838421951442
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+      stop-execution-on-error: true
+      wait-for-result: true
+
+- # ====== Dynamic Action: Set Page Read-Only when not IN_PROGRE
+  id: 37954230775176003
+  identification: 
+    name: Set Page Read-Only when not IN_PROGRESS
+
+  execution: 
+    sequence: 70
+    event-scope: Static
+
+  when: 
+    event: Page Load
+
+  server-side-condition: 
+    type: Expression
+    language: PL/SQL
+    pl/sql-expression: ":P5_WORKFLOW_STATUS IN ('AUTHORISED', 'STARTED')"
+
+  actions: 
+  - # ====== Action: Execute JavaScript Code =====================
+    id: 37954370773176004
+    identification: 
+      action: Execute JavaScript Code
+
+    settings: 
+      code: |2
+         // Disable signature canvases
+         ['authSignaturePad', 'acceptSignaturePad'].forEach(function(id) {
+             var canvas = document.getElementById(id);
+             if (canvas) {
+                 canvas.style.pointerEvents = 'none';
+                 canvas.style.opacity       = '0.6';
+                 canvas.style.cursor        = 'not-allowed';
+                 canvas.title               = 'This permit is read-only';
+                     }
+             });
+        // Hide Clear Signature buttons
+        $('#BTN_CLEAR_AUTH_SIG_P5, #BTN_CLEAR_ACCEPT_SIG_P5').hide();
+        // Hide Save Draft and Authorise buttons when read-only
+        //$('#BTN_SAVE_DRAFT_P5, #BTN_START_PERMIT_P5').hide();
+        // Disable all editable items via APEX API
+        apex.item('P5_AUTH_PERSON_SELECT').disable();
+        apex.item('P5_AUTH_DATETIME').disable();
+        apex.item('P5_ACCEPT_PERSON_NAME').disable();
+        apex.item('P5_ACCEPT_PERSON_COMPANY').disable();
+        apex.item('P5_ACCEPT_DATETIME').disable();
+        
+
+    execution: 
+      sequence: 10
+      event: Set Page Read-Only when not IN_PROGRESS # 37954230775176003
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+- # ====== Dynamic Action: Authorisors mobile No load ==========
+  id: 37954826633176009
+  identification: 
+    name: Authorisors mobile No load
+
+  execution: 
+    sequence: 90
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Change
+    selection-type: Item(s)
+    item(s): 
+    - P5_AUTH_PERSON_SELECT
+
+  actions: 
+  - # ====== Action: Execute Server-side Code ====================
+    id: 37954991974176010
+    identification: 
+      action: Execute Server-side Code
+
+    settings: 
+      language: PE.PROPERTY.SOURCE_SNIPPET_LANG.LOV.PLSQL.D
+      pl/sql-code: |
+        BEGIN
+            SELECT first_name||' '||last_name, mobile_no
+            INTO   :P5_AUTH_PERSON_DISPLAY, :P5_AUTH_PERSON_MOBILE
+            FROM   ptw_pro.ptw_lv_users
+            WHERE  UPPER(username) = UPPER(:P5_AUTH_PERSON_SELECT);
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN NULL;
+        END;
+      items-to-submit: 
+      - P5_AUTH_PERSON_SELECT
+      items-to-return: 
+      - P5_AUTH_PERSON_MOBILE
+      suppress-change-event: false
+
+    execution: 
+      sequence: 10
+      event: Authorisors mobile No load # 37954826633176009
+      fire-when-event-result-is: True
+      fire-on-initialization: true
+      stop-execution-on-error: true
+      wait-for-result: true
+
+- # ====== Dynamic Action: Click the Authorise button ==========
+  id: 39962598630997101
+  identification: 
+    name: Click the Authorise button
+
+  execution: 
+    sequence: 110
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Click
+    selection-type: Button
+    button: AUTHORISE # 39966392216997139
+
+  actions: 
+  - # ====== Action: Execute JavaScript Code =====================
+    id: 39962698061997102
+    identification: 
+      action: Execute JavaScript Code
+
+    settings: 
+      code: |
+        ptwShowAuthoriseDeclaration();
+        
+        
+        
+
+    execution: 
+      sequence: 10
+      event: Click the Authorise button # 39962598630997101
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+- # ====== Dynamic Action: When Start permit screen closed =====
+  id: 39967216755997148
+  identification: 
+    name: When Start permit screen closed
+
+  execution: 
+    sequence: 120
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Dialog Closed
+    selection-type: JavaScript Expression
+    javascript-expression: document
+
+  actions: 
+  - # ====== Action: Refresh =====================================
+    id: 39967324340997149
+    identification: 
+      action: Refresh
+
+    settings: 
+      maintain-pagination: false
+
+    affected-elements: 
+      selection-type: JavaScript Expression
+      javascript-expression: |
+        apex.navigation.redirect(apex.util.makeApplicationUrl({
+            pageId: 5
+        }));
+
+    execution: 
+      sequence: 20
+      event: When Start permit screen closed # 39967216755997148
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+validations: 
+- # ====== Validation: Permit ID Required ======================
+  id: 27356512824033436
+  identification: 
+    name: Permit ID Required
+
+  execution: 
+    sequence: 10
+
+  validation: 
+    type: Item is NOT NULL
+    item: P5_PERMIT_ID
+    always-execute: false
+
+  error: 
+    error-message: Permit ID is required.
+    display-location: Inline with Field and in Notification
+
+- # ====== Validation: Auth Person Name Required ===============
+  id: 27356670959033437
+  identification: 
+    name: Auth Person Name Required
+
+  execution: 
+    sequence: 20
+
+  validation: 
+    type: Item is NOT NULL
+    item: P5_AUTH_PERSON_SELECT
+    always-execute: false
+
+  error: 
+    error-message: Authorised person name is required.
+    display-location: Inline with Field and in Notification
+
+  server-side-condition: 
+    when-button-pressed: AUTHORISE # 39966392216997139
+
+- # ====== Validation: Auth Signature Required =================
+  id: 27356727784033438
+  identification: 
+    name: Auth Signature Required
+
+  execution: 
+    sequence: 48
+
+  validation: 
+    type: Item is NOT NULL
+    item: P5_AUTH_SIGNATURE_DATA
+    always-execute: false
+
+  error: 
+    error-message: Authorised person signature is required.
+    display-location: Inline with Field and in Notification
+
+  server-side-condition: 
+    when-button-pressed: AUTHORISE # 39966392216997139
+
+- # ====== Validation: No Self-Authorisation ===================
+  id: 33352170367951435
+  identification: 
+    name: No Self-Authorisation
+
+  execution: 
+    sequence: 27
+
+  validation: 
+    type: Function Body (returning Boolean)
+    language: PL/SQL
+    pl/sql-function-body: |
+      BEGIN
+        DECLARE
+          l_name VARCHAR2(200);
+        BEGIN
+          BEGIN
+            SELECT first_name || ' ' || last_name
+            INTO   l_name
+            FROM   ptw_pro.ptw_lv_user_roles_v
+            WHERE  username = :P5_AUTH_PERSON_SELECT;
+          EXCEPTION
+            WHEN OTHERS THEN l_name := NULL; 
+          END;
+          RETURN NOT (
+              l_name  IS NOT NULL AND
+              l_name IS NOT NULL AND
+              UPPER(TRIM(l_name)) = UPPER(TRIM(:P5_ACCEPT_PERSON_NAME))
+          );
+        END;
+      EXCEPTION
+          WHEN OTHERS THEN RETURN TRUE;
+      END;
+    always-execute: false
+
+  error: 
+    error-message: The Authorised Person and Person in Charge of Works cannot be the same individual. A permit must not be self-authorised.
+    display-location: Inline with Field and in Notification
+
+  server-side-condition: 
+    when-button-pressed: AUTHORISE # 39966392216997139
+
+- # ====== Validation: Accept Signature required ===============
+  id: 37958677119176047
+  identification: 
+    name: Accept Signature required
+
+  execution: 
+    sequence: 38
+
+  validation: 
+    type: Item is NOT NULL
+    item: P5_ACCEPT_SIGNATURE_DATA
+    always-execute: false
+
+  error: 
+    error-message: Person in charge signature is required.
+    display-location: Inline with Field and in Notification
+
+  server-side-condition: 
+    when-button-pressed: AUTHORISE # 39966392216997139
+
+- # ====== Validation: Accept person cannot be NULL ============
+  id: 37958766966176048
+  identification: 
+    name: Accept person cannot be NULL
+
+  execution: 
+    sequence: 58
+
+  validation: 
+    type: Item is NOT NULL
+    item: P5_ACCEPT_PERSON_NAME
+    always-execute: false
+
+  error: 
+    error-message: Person in Charge cannot be blank.
+    display-location: Inline with Field and in Notification
+
+  server-side-condition: 
+    when-button-pressed: AUTHORISE # 39966392216997139
+
+processes: 
+- # ====== Process: Load Authorisation and Acceptance Data =====
+  id: 27356851819033439
+  identification: 
+    name: Load Authorisation and Acceptance Data
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      BEGIN
+          :P5_CURRENT_STEP := 'AUTHORISATION';
+          SELECT
+              permit_number,
+              auth_person_name,
+              auth_person_mobile,
+              auth_latitude,
+              auth_longitude,
+              TO_CHAR(auth_datetime, 'DD-MON-YYYY HH24:MI'),
+              accept_person_name,
+              accept_person_mobile,
+              accept_company,
+              TO_CHAR(accept_datetime, 'DD-MON-YYYY HH24:MI'),
+              accept_latitude,
+              accept_longitude,
+              workflow_status
+          INTO
+              :P5_PERMIT_NUMBER,
+              :P5_AUTH_PERSON_SELECT,
+              :P5_AUTH_PERSON_MOBILE,
+              :P5_AUTH_LATITUDE,
+              :P5_AUTH_LONGITUDE,
+              :P5_AUTH_DATETIME,
+              :P5_ACCEPT_PERSON_NAME,
+              :P5_ACCEPT_PERSON_MOBILE,
+              :P5_ACCEPT_COMPANY,
+              :P5_ACCEPT_DATETIME,
+              :P5_ACCEPT_LATITUDE,
+              :P5_ACCEPT_LONGITUDE,
+              :P5_WORKFLOW_STATUS
+          FROM ptw_pro.ptw_lv_permits
+          WHERE permit_id = :P5_PERMIT_ID;
+      
+          IF :P5_ACCEPT_DATETIME IS NULL THEN
+              :P5_ACCEPT_DATETIME := TO_CHAR(SYSDATE, 'DD-MON-YYYY HH24:MI');
+          END IF;
+          IF :P5_AUTH_DATETIME IS NULL THEN
+              :P5_AUTH_DATETIME := TO_CHAR(SYSDATE, 'DD-MON-YYYY HH24:MI');
+          END IF;
+      
+      EXCEPTION
+          WHEN NO_DATA_FOUND THEN
+              :P5_ACCEPT_DATETIME := TO_CHAR(SYSDATE, 'DD-MON-YYYY HH24:MI');
+              :P5_AUTH_DATETIME := TO_CHAR(SYSDATE, 'DD-MON-YYYY HH24:MI');
+              :P5_WORKFLOW_STATUS := 'IN_PROGRESS';
+      END;
+      
+      IF :P5_ACCEPT_COMPANY IS NULL AND :P5_ACCEPT_PERSON_NAME IS NULL THEN
+          --
+          BEGIN
+            SELECT person_in_charge_name, supervising_company
+            INTO   :P5_ACCEPT_PERSON_NAME, :P5_ACCEPT_COMPANY
+            FROM   ptw_pro.ptw_lv_permits
+            WHERE  permit_id = :P5_PERMIT_ID;
+          EXCEPTION
+            WHEN OTHERS THEN
+              NULL;
+          END;
+      END IF;
+      BEGIN
+        SELECT 'data:image/png;base64,' || apex_web_service.blob2clobbase64(auth_person_signature),
+             'data:image/png;base64,' || apex_web_service.blob2clobbase64(accept_person_signature)
+        INTO   :P5_AUTH_SIGNATURE_DATA,
+             :P5_ACCEPT_SIGNATURE_DATA
+        FROM   ptw_pro.ptw_lv_permits
+        WHERE  permit_id = :P5_PERMIT_ID
+        AND    (auth_person_signature IS NOT NULL OR accept_person_signature IS NOT NULL);
+      EXCEPTION
+        WHEN OTHERS THEN
+          NULL;
+      END;
+      
+      
+      
+      
+      
+      
+      
+
+  execution: 
+    sequence: 10
+    point: Before Header
+    run-process: Once Per Page Visit (default)
+
+- # ====== Process: Save Authorisation and Acceptance Data =====
+  id: 27356922514033440
+  identification: 
+    name: Save Authorisation and Acceptance Data
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      DECLARE
+          v_auth_sig_blob BLOB;
+          v_accept_sig_blob BLOB;
+      
+          FUNCTION base64_to_blob(p_base64 CLOB) RETURN BLOB IS
+              v_blob BLOB;
+              v_clob CLOB;
+          BEGIN
+              IF p_base64 IS NULL THEN
+                  RETURN NULL;
+              END IF;
+              v_clob := REGEXP_REPLACE(p_base64, '^data:image/[^;]+;base64,', '');
+              v_blob := apex_web_service.clobbase642blob(v_clob);
+              RETURN v_blob;
+          END base64_to_blob;
+      
+      BEGIN
+      
+          v_auth_sig_blob := base64_to_blob(:P5_AUTH_SIGNATURE_DATA);
+          v_accept_sig_blob := base64_to_blob(:P5_ACCEPT_SIGNATURE_DATA);
+      
+            UPDATE ptw_pro.ptw_lv_permits
+            SET auth_person_name   = UPPER(:P5_AUTH_PERSON_SELECT),
+          --   SET auth_person_name   = (SELECT first_name || ' ' || last_name
+          --                             FROM   ptw_pro.ptw_lv_users
+          --                             WHERE  UPPER(username) = UPPER(:P5_AUTH_PERSON_SELECT)),
+                auth_person_signature = v_auth_sig_blob,
+                auth_person_mobile = (SELECT mobile_no
+                                      FROM   ptw_pro.ptw_lv_users
+                                      WHERE  UPPER(username) = UPPER(:P5_AUTH_PERSON_SELECT)),
+                auth_datetime = TO_DATE(:P5_AUTH_DATETIME, 'DD-MON-YYYY HH24:MI'),
+                auth_latitude = :APP_LATITUDE,
+                auth_longitude = :APP_LONGITUDE,
+                accept_person_name = :P5_ACCEPT_PERSON_NAME,
+                accept_person_signature = v_accept_sig_blob,
+                accept_person_mobile = :P5_ACCEPT_PERSON_MOBILE,
+                accept_company = :P5_ACCEPT_COMPANY,
+                accept_datetime = TO_DATE(:P5_ACCEPT_DATETIME,'DD-MON-YYYY HH24:MI'),
+                accept_latitude = :APP_LATITUDE,
+                accept_longitude = :APP_LONGITUDE,
+                workflow_status = 'AUTHORISED',
+                current_step = 'AUTHORISATION',
+                modified_by = NVL(V('APP_USER'), USER),
+                modified_date = CURRENT_TIMESTAMP
+            WHERE permit_id = :P5_PERMIT_ID;
+      
+            COMMIT;
+      
+          apex_application.g_print_success_message :=
+              CASE WHEN :REQUEST = 'AUTHORISE'
+                   THEN 'Permit ' || :P5_PERMIT_NUMBER || ' has been authorised.'
+                   ELSE 'Permit ' || :P5_PERMIT_NUMBER || ' saved successfully.'
+              END;
+          
+          :P5_WORKFLOW_STATUS := 'AUTHORISED';
+      
+      EXCEPTION
+          WHEN OTHERS THEN
+              ROLLBACK;
+              apex_error.add_error(
+                  p_message => 'Error saving authorisation data: ' || SQLERRM,
+                  p_display_location => apex_error.c_inline_in_notification
+              );
+      --        RAISE;
+      END;
+
+  execution: 
+    sequence: 10
+    point: Processing
+    run-process: Once Per Page Visit (default)
+
+  error: 
+    display-location: Inline in Notification
+
+  server-side-condition: 
+    type: Item = Value
+    item: P5_WORKFLOW_STATUS
+    value: IN_PROGRESS
+
+branches: 
+- # ====== Branch: Refresh page after submit ===================
+  id: 39966797793997143
+  identification: 
+    name: Refresh page after submit
+
+  execution: 
+    sequence: 10
+    point: After Processing
+
+  behavior: 
+    type: Page or URL (Redirect)
+    target: 
+      url: 'f?p=&APP_ID.:5:&SESSION.::&DEBUG.:5:P5_PERMIT_ID:&P5_PERMIT_ID.'
+      page: 5 # Authorisation & Acceptance
+      clear-cache: 5
+      values: 
+        p5_permit_id: '&P5_PERMIT_ID.'
+
+  server-side-condition: 
+    when-button-pressed: AUTHORISE # 39966392216997139
+
