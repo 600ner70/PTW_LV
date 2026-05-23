@@ -5,7 +5,7 @@ begin
 --   Manifest End
 wwv_flow_imp.component_begin (
  p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.15'
+,p_release=>'24.2.16'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
@@ -375,7 +375,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_display_sequence=>40
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'<div style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">',
+'<div style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; min-height: 80px;">',
 '    <div>',
 '        <h1 style="font-size: 2rem; color: #13294b; margin-bottom: 5px;">',
 '            Permit to Work',
@@ -384,7 +384,7 @@ wwv_flow_imp_page.create_page_plug(
 '            BGIS - Low Voltage Electrical Permit Management',
 '        </p>',
 '    </div>',
-'    <!-- <img src="#APP_FILES#BGIS_Logo.jpg" alt="BGIS" style="height: 60px;"> -->',
+'    <img src="#APP_FILES#BGIS_Logo.jpg" alt="BGIS" style="height: 60px;">',
 '</div>'))
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',

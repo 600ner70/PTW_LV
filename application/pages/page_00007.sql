@@ -5,7 +5,7 @@ begin
 --   Manifest End
 wwv_flow_imp.component_begin (
  p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.15'
+,p_release=>'24.2.16'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
@@ -117,7 +117,10 @@ wwv_flow_imp_page.create_map_region_layer(
 '        WHEN ''CONTROL_MEASURES''  THEN ''Step 2: Control Measures''',
 '        WHEN ''EQUIP_ISOLATION''   THEN ''Step 3: Equipment Isolation''',
 '        WHEN ''AUTHORISATION''     THEN ''Step 4: Authorisation''',
-'        WHEN ''CLEARANCE''         THEN ''Step 5: Clearance''',
+'        WHEN ''COMPLETED''         THEN ''Step 5: Live''',
+'        WHEN ''MONITORING''        THEN ''Step 6: Monitoring''',
+'        WHEN ''CLEARANCE''         THEN ''Step 7: Clearnace''',
+'        WHEN ''CANCELLED''         THEN ''Cancelled''',
 '       ELSE PERMIT_STAGE',
 '       END as step_display,',
 '       LATITUDE,',

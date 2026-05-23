@@ -403,3 +403,39 @@ function ptwShowAuthoriseDeclaration() {
         captureLocationThenSubmit('AUTHORISE');
     });
 }
+
+// =============================================================
+// SESSION TIMEOUT GUARD
+// Flushes offline queue and saves signatures before the APEX
+// session timeout dialog redirects to login.
+// Relies on APEX built-in apexbeforelogout / apexwindowunload
+// events. Called automatically — no page-level wiring needed
+// as ptw-utils.js loads globally via Page 0.
+// =============================================================
+
+(function () {
+    'use strict';
+
+    function ptwFlushBeforeTimeout() {
+        // 1. Save signatures if on a page that has them
+        if (typeof saveSignatures === 'function') {
+            try { saveSignatures(); } catch (e) { /* ignore */ }
+        }
+
+        // 2. Flush any pending offline records
+        if (window.OfflineStorage && typeof OfflineStorage.syncIfOnline === 'function') {
+            try { OfflineStorage.syncIfOnline(); } catch (e) { /* ignore */ }
+        }
+    }
+
+    // APEX fires this before session expiry redirect
+    $(window).on('apexwindowunload', function () {
+        ptwFlushBeforeTimeout();
+    });
+
+    // Belt-and-braces: also fires on tab close / navigate away
+    window.addEventListener('beforeunload', function () {
+        ptwFlushBeforeTimeout();
+    });
+
+}());

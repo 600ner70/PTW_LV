@@ -5,7 +5,7 @@ begin
 --   Manifest End
 wwv_flow_imp.component_begin (
  p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.15'
+,p_release=>'24.2.16'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
@@ -1078,6 +1078,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Save Control Measures and PPE Data'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'BEGIN',
+'  IF :P3_WORKFLOW_STATUS = ''IN_PROGRESS'' THEN',
 '    -- PART 1: Save PPE to ptw_lv_permits (always UPDATE, record already exists)',
 '    UPDATE ptw_pro.ptw_lv_permits',
 '    SET    ppe_safety_helmet       = :P3_PPE_SAFETY_HELMET,',
@@ -1167,6 +1168,7 @@ wwv_flow_imp_page.create_page_process(
 '        );',
 '',
 '    COMMIT;',
+'  END IF;',
 '',
 'EXCEPTION',
 '    WHEN OTHERS THEN',

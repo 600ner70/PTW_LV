@@ -5,7 +5,7 @@
     name: Navigation Menu
 
   subscription: 
-    version-number: 46977818153741
+    version-number: 46977940508624
 
   source: 
     type: Static Values
@@ -258,6 +258,34 @@
 
     security: 
       authorization-scheme: Administration Rights # 26419849891144614
+
+  - # ====== Entry: Permit Analytics =============================
+    id: 50549056600996657
+    label: 
+      label: Permit Analytics
+
+    icon: 
+      image/icon-css-classes: fa-pie-chart
+
+    layout: 
+      sequence: 101
+      parent-entry: Reports # 49781486325693551
+
+    is-current: 
+      type: Pages
+      pages: 
+      - 51
+
+    link: 
+      target: 
+        url: 'f?p=&APP_ID.:51:&APP_SESSION.::&DEBUG.:::'
+        page: 51 # Permit Analytics
+
+    click-counting: 
+      count-clicks: false
+
+    user-defined-attributes: 
+      translatable: false
 
 - # ====== List: Navigation Bar ================================
   id: 26416210318144596

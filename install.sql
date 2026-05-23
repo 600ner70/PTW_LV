@@ -96,6 +96,7 @@ prompt --install
 @@application/pages/page_00017.sql
 @@application/pages/page_00020.sql
 @@application/pages/page_00050.sql
+@@application/pages/page_00051.sql
 @@application/pages/page_00300.sql
 @@application/pages/page_09999.sql
 @@application/deployment/definition.sql

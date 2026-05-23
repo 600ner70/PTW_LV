@@ -89,10 +89,6 @@ DD-MON-YYYY HH24:MI
 - `Function and Global Variable Declaration` property
 - `File URLs` property (for referencing JS files per-page)
 
-**Page 0 DOES have:**
-- Hidden items: `P0_LATITUDE`, `P0_LONGITUDE`
-- These are global session state items used across all pages
-
 ### Reusable JavaScript Functions — USE STATIC APPLICATION FILES
 Any JavaScript function needed on more than one page **must** go in a
 Static Application File, not in a Dynamic Action or page-level JS.
@@ -137,13 +133,13 @@ function captureLocationThenSubmit(request, callback) {
     if (!navigator.geolocation) { doSubmit(); return; }
     navigator.geolocation.getCurrentPosition(
         function(position) {
-            apex.item('P0_LATITUDE').setValue(position.coords.latitude);
-            apex.item('P0_LONGITUDE').setValue(position.coords.longitude);
+            apex.item('APP_LATITUDE').setValue(position.coords.latitude);
+            apex.item('APP_LONGITUDE').setValue(position.coords.longitude);
             doSubmit();
         },
         function(error) {
-            apex.item('P0_LATITUDE').setValue('');
-            apex.item('P0_LONGITUDE').setValue('');
+            apex.item('APP_LATITUDE').setValue('');
+            apex.item('APP_LONGITUDE').setValue('');
             doSubmit(); // always submit even if location fails
         },
         { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
@@ -188,12 +184,12 @@ captureLocationThenSubmit('SAVE_DRAFT');
 
 ---
 
-## 6. PAGE 0 — GLOBAL ITEMS
+## 6. GLOBAL ITEMS
 
 | Item | Type | Purpose |
 |------|------|---------|
-| `P0_LATITUDE` | Hidden (Value Protected: N) | Current GPS latitude |
-| `P0_LONGITUDE` | Hidden (Value Protected: N) | Current GPS longitude |
+| `APP_LATITUDE` | Application item | Current GPS latitude |
+| `APP_LONGITUDE` | Application item | Current GPS longitude |
 
 These are populated by `captureLocationThenSubmit()` just before each form submit
 and used in DML processes on pages 2–5 to record location at time of save.

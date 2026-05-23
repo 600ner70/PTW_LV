@@ -40,8 +40,8 @@ authorization:
 
 session-management: 
   rejoin-sessions: Disabled
-  maximum-session-idle-time: 7200
-  session-timeout-warning: 3300
+  maximum-session-idle-time: 600
+  session-timeout-warning: 480
 
 session-state-protection: 
   enabled: true
@@ -128,7 +128,7 @@ attributes:
   auto-dismiss-success-messages: false
 
 subscription: 
-  version-number: 46977820206627
+  version-number: 47067254054399
 
 substitutions: 
 - # ====== Substitution: APP_NAME ==============================

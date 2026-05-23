@@ -398,7 +398,7 @@ regions:
 
   source: 
     html-code: |
-      <div style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
+      <div style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; min-height: 80px;">
           <div>
               <h1 style="font-size: 2rem; color: #13294b; margin-bottom: 5px;">
                   Permit to Work
@@ -407,7 +407,7 @@ regions:
                   BGIS - Low Voltage Electrical Permit Management
               </p>
           </div>
-          <!-- <img src="#APP_FILES#BGIS_Logo.jpg" alt="BGIS" style="height: 60px;"> -->
+          <img src="#APP_FILES#BGIS_Logo.jpg" alt="BGIS" style="height: 60px;">
       </div>
 
   layout: 

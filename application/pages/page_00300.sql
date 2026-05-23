@@ -5,7 +5,7 @@ begin
 --   Manifest End
 wwv_flow_imp.component_begin (
  p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.15'
+,p_release=>'24.2.16'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
@@ -17,6 +17,60 @@ wwv_flow_imp_page.create_page(
 ,p_alias=>'PTW-PDF-REPORT'
 ,p_step_title=>'PTW PDF Report'
 ,p_autocomplete_on_off=>'OFF'
+,p_javascript_code_onload=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'(function () {',
+'    var BINARY_ITEMS = [''P300_INCLUDE_HISTORY''];',
+'',
+'    var BADGES = [',
+unistr('        { val: ''Y'', cls: ''binary-badge-yes'', label: ''\2713'' },'),
+unistr('        { val: ''N'', cls: ''binary-badge-no'',  label: ''\2717'' }'),
+'    ];',
+'',
+'    function initBinaryBadges() {',
+'        BINARY_ITEMS.forEach(function (itemName) {',
+'            var $fc = $(''#'' + itemName).closest(''.t-Form-fieldContainer'');',
+'            if ($fc.length === 0) return;',
+'',
+'            $fc.find(''.binary-badge-row'').remove();',
+'',
+'            var currentVal = apex.item(itemName).getValue() || ''N'';',
+'            var $row = $(''<div class="binary-badge-row"></div>'').attr(''data-item'', itemName);',
+'',
+'            BADGES.forEach(function (b) {',
+'                $(''<span></span>'')',
+'                    .addClass(''binary-badge '' + b.cls)',
+'                    .toggleClass(''cm-active'', currentVal === b.val)',
+'                    .attr(''data-value'', b.val)',
+'                    .text(b.label)',
+'                    .appendTo($row);',
+'            });',
+'',
+'            $fc.find(''.t-Form-inputContainer'').append($row);',
+'        });',
+'',
+'        $(''.cm-binary-item .apex-item-grid'').hide();',
+'        $(''.cm-binary-item .apex-item-radio'').hide();',
+'    }',
+'',
+'    $(document).off(''click.p300binary'').on(''click.p300binary'', ''.cm-binary-item .binary-badge'', function () {',
+'        var $badge   = $(this);',
+'        var $row     = $badge.closest(''.binary-badge-row'');',
+'        var itemName = $row.attr(''data-item'');',
+'        var val      = $badge.attr(''data-value'');',
+'',
+'        // Set the underlying radio value',
+'        $(''input[name="'' + itemName + ''"][value="'' + val + ''"]'').prop(''checked'', true).trigger(''change'');',
+'',
+'        // Update badge highlight',
+'        $row.find(''.binary-badge'').removeClass(''cm-active'');',
+'        $badge.addClass(''cm-active'');',
+'    });',
+'',
+'    // Run after page loads',
+'    apex.jQuery(document).ready(function () {',
+'        initBinaryBadges();',
+'    });',
+'}());'))
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '/* =====================================================',
 '   GP15 COMMERCIAL GAS SERVICE REPORT - PROFESSIONAL PDF CSS',
@@ -509,6 +563,16 @@ wwv_flow_imp_page.create_page(
 '        page-break-inside: avoid;',
 '    }',
 '}',
+'',
+'.ptw-history-binary .t-Form-inputContainer {',
+'    display: flex;',
+'    justify-content: flex-start;',
+'}',
+'',
+'.ptw-history-binary .binary-badge-row {',
+'    margin-top: 6px;',
+'    margin-left: 0;',
+'}',
 ''))
 ,p_step_template=>2979075366320325194
 ,p_page_template_options=>'#DEFAULT#'
@@ -539,26 +603,15 @@ wwv_flow_imp_page.create_page_plug(
 ,p_function_body_language=>'PLSQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'BEGIN',
-'    RETURN ptw_pro.generate_ptw_lv_pdf(p_permit_id => :P300_PERMIT_ID);',
+'    RETURN ptw_pro.generate_ptw_lv_pdf(',
+'        p_permit_id       => :P300_PERMIT_ID,',
+'        p_include_history => NVL(:P300_INCLUDE_HISTORY, ''N'')',
+'    );',
 'END;'))
 ,p_lazy_loading=>false
 ,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
-,p_ajax_items_to_submit=>'P300_PERMIT_ID'
+,p_ajax_items_to_submit=>'P300_PERMIT_ID,P300_INCLUDE_HISTORY'
 ,p_ai_enabled=>false
-);
-wwv_flow_imp_page.create_page_button(
- p_id=>wwv_flow_imp.id(42025765972651856)
-,p_button_sequence=>10
-,p_button_plug_id=>wwv_flow_imp.id(67013347421929736)
-,p_button_name=>'PRINT_PDF'
-,p_button_action=>'DEFINED_BY_DA'
-,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
-,p_button_template_id=>2082829544945815391
-,p_button_is_hot=>'Y'
-,p_button_image_alt=>'Print/Save as PDF'
-,p_warn_on_unsaved_changes=>null
-,p_icon_css_classes=>'fa-print'
-,p_grid_new_row=>'Y'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(42026152934651854)
@@ -573,6 +626,21 @@ wwv_flow_imp_page.create_page_button(
 ,p_icon_css_classes=>'fa-arrow-left'
 ,p_grid_new_row=>'Y'
 );
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(42025765972651856)
+,p_button_sequence=>40
+,p_button_plug_id=>wwv_flow_imp.id(67013347421929736)
+,p_button_name=>'PRINT_PDF'
+,p_button_action=>'DEFINED_BY_DA'
+,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
+,p_button_template_id=>2082829544945815391
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>'Print/Save as PDF'
+,p_warn_on_unsaved_changes=>null
+,p_icon_css_classes=>'fa-print'
+,p_grid_new_row=>'N'
+,p_grid_new_column=>'Y'
+);
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(49364719163381908)
 ,p_name=>'P300_RETURN_PAGE'
@@ -580,6 +648,26 @@ wwv_flow_imp_page.create_page_item(
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(50565118794122734)
+,p_name=>'P300_INCLUDE_HISTORY'
+,p_item_sequence=>50
+,p_item_plug_id=>wwv_flow_imp.id(67013347421929736)
+,p_item_default=>'N'
+,p_prompt=>'Include Permit History?'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_lov=>'STATIC:Yes;Y,No;N'
+,p_display_when=>'P300_RETURN_PAGE'
+,p_display_when2=>'50'
+,p_display_when_type=>'VAL_OF_ITEM_IN_COND_EQ_COND2'
+,p_field_template=>2318601014859922299
+,p_item_css_classes=>'cm-binary-item ptw-history-binary no-print'
+,p_item_template_options=>'#DEFAULT#'
+,p_lov_display_extra=>'NO'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'number_of_columns', '2',
+  'page_action_on_selection', 'NONE')).to_clob
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(67015084508929672)
@@ -608,6 +696,27 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_execute_on_page_init=>'N'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
 ,p_attribute_01=>'window.print()'
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(50565230556122735)
+,p_name=>'Refresh Report on History Toggle'
+,p_event_sequence=>20
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P300_INCLUDE_HISTORY'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(50565381299122736)
+,p_event_id=>wwv_flow_imp.id(50565230556122735)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'REGION'
+,p_affected_region_id=>wwv_flow_imp.id(67013758101929740)
+,p_attribute_01=>'N'
 );
 wwv_flow_imp.component_end;
 end;

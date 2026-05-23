@@ -2518,6 +2518,7 @@ processes:
           END save_isolation_row;
       
       BEGIN
+        IF :P4_WORKFLOW_STATUS = 'IN_PROGRESS' THEN
           -- Save each isolation row
           save_isolation_row(:P4_ISO_1_ID, :P4_PERMIT_ID, 1, :P4_ISO_1_EQUIPMENT, :P4_ISO_1_MEANS, :P4_ISO_1_LOCK_NO);
           save_isolation_row(:P4_ISO_2_ID, :P4_PERMIT_ID, 2, :P4_ISO_2_EQUIPMENT, :P4_ISO_2_MEANS, :P4_ISO_2_LOCK_NO);
@@ -2535,7 +2536,7 @@ processes:
           WHERE permit_id = :P4_PERMIT_ID;
       
           COMMIT;
-      
+        END IF;
       EXCEPTION
           WHEN OTHERS THEN
               ROLLBACK;

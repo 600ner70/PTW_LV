@@ -5,7 +5,7 @@ begin
 --   Manifest End
 wwv_flow_imp.component_begin (
  p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.15'
+,p_release=>'24.2.16'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
@@ -1372,6 +1372,7 @@ wwv_flow_imp_page.create_page_process(
 '    END save_isolation_row;',
 '',
 'BEGIN',
+'  IF :P4_WORKFLOW_STATUS = ''IN_PROGRESS'' THEN',
 '    -- Save each isolation row',
 '    save_isolation_row(:P4_ISO_1_ID, :P4_PERMIT_ID, 1, :P4_ISO_1_EQUIPMENT, :P4_ISO_1_MEANS, :P4_ISO_1_LOCK_NO);',
 '    save_isolation_row(:P4_ISO_2_ID, :P4_PERMIT_ID, 2, :P4_ISO_2_EQUIPMENT, :P4_ISO_2_MEANS, :P4_ISO_2_LOCK_NO);',
@@ -1389,7 +1390,7 @@ wwv_flow_imp_page.create_page_process(
 '    WHERE permit_id = :P4_PERMIT_ID;',
 '',
 '    COMMIT;',
-'',
+'  END IF;',
 'EXCEPTION',
 '    WHEN OTHERS THEN',
 '        ROLLBACK;',

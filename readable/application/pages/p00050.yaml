@@ -457,6 +457,55 @@ regions:
       store-value-encrypted-in-session-state: true
       escape-special-characters: true
 
+  - # ====== Facet: P50_PERSON_IN_CHARGE =========================
+    id: 50565011258122733
+    identification: 
+      name: P50_PERSON_IN_CHARGE
+      type: Checkbox Group
+
+    label: 
+      label: Person In Charge
+      show-label-for-current-facet: true
+
+    layout: 
+      sequence: 60
+
+    appearance: 
+      display: Inline
+
+    list-of-values: 
+      type: Distinct Values
+      sort-direction: Ascending
+      include-null-option: false
+
+    list-entries: 
+      compute-counts: true
+      show-counts: true
+      zero-count-entries: Hide
+      sort-by-top-counts: true
+      show-selected-first: false
+      maximum-displayed-entries: 7
+      display-filter-initially: false
+
+    actions-menu: 
+      filter: true
+      chart: true
+
+    advanced: 
+      show-chart-initially: false
+      collapsible: false
+
+    source: 
+      database-column: PERSON_IN_CHARGE_NAME
+      data-type: VARCHAR2
+
+    multiple-values: 
+      type: No
+
+    security: 
+      store-value-encrypted-in-session-state: true
+      escape-special-characters: true
+
   filters: 
   - # ====== Filter: P50_SITE_DETAILS ============================
     id: 49364510900381906
@@ -622,6 +671,45 @@ regions:
 
     source: 
       database-column: PTW_TYPE
+      data-type: VARCHAR2
+
+    multiple-values: 
+      type: No
+
+    security: 
+      store-value-encrypted-in-session-state: true
+      escape-special-characters: true
+
+  - # ====== Filter: P50_PERSON_IN_CHARGE ========================
+    id: 50565011258122733
+    identification: 
+      name: P50_PERSON_IN_CHARGE
+      type: Checkbox Group
+
+    label: 
+      label: Person In Charge
+
+    layout: 
+      sequence: 60
+
+    list-of-values: 
+      type: Distinct Values
+      sort-direction: Ascending
+      include-null-option: false
+
+    list-entries: 
+      compute-counts: true
+      show-counts: true
+      zero-count-entries: Hide
+      sort-by-top-counts: true
+      show-selected-first: false
+      client-side-filtering: false
+
+    suggestions: 
+      type: None
+
+    source: 
+      database-column: PERSON_IN_CHARGE_NAME
       data-type: VARCHAR2
 
     multiple-values: 

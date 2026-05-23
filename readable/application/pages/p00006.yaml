@@ -67,6 +67,9 @@ regions:
               WHEN 'EQUIP_ISOLATION'   THEN 'Step 3: Equipment Isolation'
               WHEN 'AUTHORISATION'     THEN 'Step 4: Authorisation'
               WHEN 'LIVE'              THEN 'Step 5: Live'
+              WHEN 'MONITORING'        THEN 'Step 6: Monitoring'
+              WHEN 'CLEARANCE'         THEN 'Step 7: Clearance'
+              WHEN 'CANCELLED'         THEN 'Cancelled'
              ELSE sl.PERMIT_STAGE
              END as step_display,
              sl.LATITUDE,

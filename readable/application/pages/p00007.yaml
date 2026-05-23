@@ -183,7 +183,10 @@ regions:
                   WHEN 'CONTROL_MEASURES'  THEN 'Step 2: Control Measures'
                   WHEN 'EQUIP_ISOLATION'   THEN 'Step 3: Equipment Isolation'
                   WHEN 'AUTHORISATION'     THEN 'Step 4: Authorisation'
-                  WHEN 'CLEARANCE'         THEN 'Step 5: Clearance'
+                  WHEN 'COMPLETED'         THEN 'Step 5: Live'
+                  WHEN 'MONITORING'        THEN 'Step 6: Monitoring'
+                  WHEN 'CLEARANCE'         THEN 'Step 7: Clearnace'
+                  WHEN 'CANCELLED'         THEN 'Cancelled'
                  ELSE PERMIT_STAGE
                  END as step_display,
                  LATITUDE,

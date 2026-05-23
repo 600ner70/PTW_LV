@@ -861,8 +861,7 @@ regions:
     - t-Region--showIcon
     - t-Region--accent15
     - t-Region--scrollBody
-    css-classes: 
-    - fa-pencil-square-o
+    icon: fa-pencil-square-o
     render-components: Above Content
 
   accessibility: 
@@ -1697,8 +1696,8 @@ processes:
                  cancel_person_name     = UPPER(TRIM(:P17_CANCEL_PERSON_NAME)),
                  cancel_person_signature = v_sig_blob,
                  cancel_datetime        = SYSDATE,
-                 cancel_latitude        = :P0_LATITUDE,
-                 cancel_longitude       = :P0_LONGITUDE,
+                 cancel_latitude        = :APP_LATITUDE,
+                 cancel_longitude       = :APP_LONGITUDE,
                  workflow_status        = 'CANCELLED',
                  current_step           = 'CANCELLED',
                  completion_date        = SYSDATE,

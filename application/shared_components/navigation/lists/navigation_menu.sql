@@ -5,7 +5,7 @@ begin
 --   Manifest End
 wwv_flow_imp.component_begin (
  p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.15'
+,p_release=>'24.2.16'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
@@ -15,7 +15,7 @@ wwv_flow_imp_shared.create_list(
  p_id=>wwv_flow_imp.id(26415021693144587)
 ,p_name=>'Navigation Menu'
 ,p_list_status=>'PUBLIC'
-,p_version_scn=>46977818153741
+,p_version_scn=>46977940508624
 );
 wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(26426875280144645)
@@ -100,6 +100,16 @@ wwv_flow_imp_shared.create_list_item(
 ,p_parent_list_item_id=>wwv_flow_imp.id(49781486325693551)
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'50'
+);
+wwv_flow_imp_shared.create_list_item(
+ p_id=>wwv_flow_imp.id(50549056600996657)
+,p_list_item_display_sequence=>101
+,p_list_item_link_text=>'Permit Analytics'
+,p_list_item_link_target=>'f?p=&APP_ID.:51:&APP_SESSION.::&DEBUG.:::'
+,p_list_item_icon=>'fa-pie-chart'
+,p_parent_list_item_id=>wwv_flow_imp.id(49781486325693551)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'51'
 );
 wwv_flow_imp.component_end;
 end;

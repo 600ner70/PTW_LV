@@ -1,0 +1,2153 @@
+---
+# ====== Page: Permit Analytics ==============================
+id: 51
+identification: 
+  name: Permit Analytics
+  alias: PERMIT-ANALYTICS
+  title: Permit Analytics
+
+appearance: 
+  page-mode: Normal
+  page-template: Left Side Column
+  template-options: 
+  - '#DEFAULT#'
+
+navigation-menu: 
+  override-user-interface-level: false
+
+navigation: 
+  cursor-focus: Do not focus cursor
+  warn-on-unsaved-changes: false
+
+javascript: 
+  function-and-global-variable-declaration: |
+    // Refresh all chart and KPI regions after any filter change
+    function p51RefreshCharts() {
+        apex.region('p51-bar-company').refresh();
+        apex.region('p51-pie-status').refresh();
+        apex.region('p51-line-trend').refresh();
+    }
+    
+    // Called by chart bar onclick — filters IR to that company
+    function p51DrillCompany(companyVal) {
+        apex.item('P51_DRILL_COMPANY').setValue(companyVal);
+        apex.item('P51_DRILL_STATUS').setValue('');
+        var banner = document.getElementById('p51-drill-banner');
+        var text   = document.getElementById('p51-drill-text');
+        if (banner && text) {
+            text.textContent = 'Filtered: Company = ' + companyVal;
+            banner.classList.add('active');
+        }
+        apex.region('p51-results').refresh();
+    }
+    
+    // Called by chart slice onclick — filters IR to that status
+    function p51DrillStatus(statusVal) {
+        apex.item('P51_DRILL_STATUS').setValue(statusVal);
+        apex.item('P51_DRILL_COMPANY').setValue('');
+        var banner = document.getElementById('p51-drill-banner');
+        var text   = document.getElementById('p51-drill-text');
+        if (banner && text) {
+            text.textContent = 'Filtered: Status = ' + statusVal;
+            banner.classList.add('active');
+        }
+        apex.region('p51-results').refresh();
+    }
+    
+    // Called by the Clear link in the drill banner
+    function p51ClearDrill() {
+        apex.item('P51_DRILL_STATUS').setValue('');
+        apex.item('P51_DRILL_COMPANY').setValue('');
+        var banner = document.getElementById('p51-drill-banner');
+        if (banner) banner.classList.remove('active');
+        apex.region('p51-results').refresh();
+    }
+    
+
+css: 
+  inline: |
+    .p51-kpi-strip {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 4px;
+    }
+    .p51-kpi-box {
+        flex: 1;
+        min-width: 120px;
+        background: #ffffff;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        padding: 14px 18px;
+        text-align: center;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .p51-kpi-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #003366;
+        line-height: 1.1;
+    }
+    .p51-kpi-label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #595959;
+        margin-top: 4px;
+    }
+    .p51-kpi-box.kpi-live   .p51-kpi-value { color: #28a745; }
+    .p51-kpi-box.kpi-active .p51-kpi-value { color: #17a2b8; }
+    .p51-kpi-box.kpi-done   .p51-kpi-value { color: #6f42c1; }
+    .p51-kpi-box.kpi-cancel .p51-kpi-value { color: #dc3545; }
+    
+    .p51-drill-banner {
+        display: none;
+        background: #e8f4fd;
+        border-left: 4px solid #17a2b8;
+        padding: 8px 14px;
+        border-radius: 0 4px 4px 0;
+        margin-bottom: 8px;
+        font-size: 0.875rem;
+        color: #003366;
+        font-weight: 600;
+    }
+    .p51-drill-banner.active {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .p51-drill-clear {
+        cursor: pointer;
+        color: #17a2b8;
+        font-size: 0.8rem;
+        font-weight: 400;
+        text-decoration: underline;
+    }
+    
+    .ptw-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    .ptw-badge--live       { background: #28a745; color: #fff; }
+    .ptw-badge--authorised { background: #6c757d; color: #fff; }
+    .ptw-badge--completed  { background: #6f42c1; color: #fff; }
+    .ptw-badge--lapsed     { background: #6c757d; color: #fff; }
+    .ptw-badge--suspended  { background: #fd7e14; color: #fff; }
+    .ptw-badge--cancelled  { background: #dc3545; color: #fff; }
+    .ptw-badge--inprogress { background: #17a2b8; color: #fff; }
+    
+    #p51_active_facets { margin-bottom: 8px; }
+    
+
+security: 
+  authorization-scheme: Administration Rights # 26419849891144614
+  authentication: Page Requires Authentication
+  deep-linking: Application Default
+  page-access-protection: Arguments Must Have Checksum
+  form-auto-complete: Off
+  browser-cache: Application Default
+
+session-management: 
+  rejoin-sessions: Application Default
+
+advanced: 
+  enable-duplicate-page-submissions: Yes - Enable page to be re-posted
+  reload-on-submit: Only for Success
+
+server-cache: 
+  caching: Disabled
+
+regions: 
+- # ====== Region: Analytics Results ===========================
+  id: 49365002800381911
+  identification: 
+    name: Analytics Results
+    title: Permit Results
+    type: Classic Report
+
+  source: 
+    location: Local Database
+    type: SQL Query
+    sql-query: |
+      SELECT
+          p.permit_id,
+          p.permit_number,
+          p.status_display,
+          p.workflow_status,
+          p.company,
+          p.person_in_charge,
+          p.site_details,
+          p.created_date,
+          TO_CHAR(p.created_date,    'DD-Mon-YYYY')          AS created_display,
+          TO_CHAR(p.auth_datetime,   'DD-Mon-YYYY HH24:MI')  AS authorised_display,
+          TO_CHAR(p.started_datetime,'DD-Mon-YYYY HH24:MI')  AS started_display,
+          TO_CHAR(p.ended_datetime,  'DD-Mon-YYYY HH24:MI')  AS ended_display,
+          TO_CHAR(p.clear_datetime,  'DD-Mon-YYYY HH24:MI')  AS cleared_display,
+          TO_CHAR(p.cancel_datetime, 'DD-Mon-YYYY HH24:MI')  AS cancelled_display,
+          p.has_clearance,
+          p.has_cancellation,
+          p.has_photos,
+          '<span class="ptw-badge ' ||
+          CASE p.workflow_status
+              WHEN 'STARTED'     THEN 'ptw-badge--live'
+              WHEN 'COMPLETED'   THEN 'ptw-badge--completed'
+              WHEN 'AUTHORISED'  THEN 'ptw-badge--authorised'
+              WHEN 'LAPSED'      THEN 'ptw-badge--lapsed'
+              WHEN 'SUSPENDED'   THEN 'ptw-badge--suspended'
+              WHEN 'CANCELLED'   THEN 'ptw-badge--cancelled'
+              WHEN 'IN_PROGRESS' THEN 'ptw-badge--inprogress'
+              ELSE                    'ptw-badge--lapsed'
+          END || '">' || p.status_display || '</span>'        AS status_badge_html,
+          apex_page.get_url(
+              p_page   => 2,
+              p_items  => 'P2_PERMIT_ID',
+              p_values => p.permit_id
+          )                                                   AS permit_link
+      FROM ptw_pro.ptw_lv_analytics_v p
+      WHERE (
+          :P51_DRILL_STATUS  IS NULL
+          OR p.workflow_status = :P51_DRILL_STATUS
+      )
+      AND (
+          :P51_DRILL_COMPANY IS NULL
+          OR p.company        = :P51_DRILL_COMPANY
+      )
+    page-items-to-submit: 
+    - P51_DRILL_STATUS
+    - P51_DRILL_COMPANY
+
+  order-by: 
+    type: None
+
+  layout: 
+    sequence: 50
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--showIcon
+    - t-Region--accent15
+    - t-Region--scrollBody
+    icon: fa-table
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    static-id: p51-results
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  server-cache: 
+    caching: Disabled
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    layout: 
+      number-of-rows-type: Static Value
+      number-of-rows: 15
+
+    appearance: 
+      template-type: Theme
+      template: Standard
+      template-options: 
+      - '#DEFAULT#'
+      - t-Report--altRowsDefault
+      - t-Report--rowHighlight
+
+    pagination: 
+      type: Row Ranges X to Y (with next and previous links)
+      display-position: Bottom - Right
+      partial-page-refresh: true
+
+    performance: 
+      lazy-loading: false
+
+    break-formatting: 
+      break-columns: No Break
+
+    advanced: 
+      strip-html: false
+      sort-nulls: Last
+
+    heading: 
+      type: Custom Headings
+
+    download: 
+      csv-export-enabled: false
+
+    printing: 
+      enabled: false
+
+  columns: 
+  - # ====== Column: PERMIT_ID ===================================
+    id: 49367335075381934
+    identification: 
+      column-name: PERMIT_ID
+      type: Hidden
+
+    layout: 
+      sequence: 10
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: PERMIT_NUMBER ===============================
+    id: 49367465681381935
+    identification: 
+      column-name: PERMIT_NUMBER
+      type: Link
+
+    heading: 
+      heading: Permit
+      alignment: start
+
+    layout: 
+      sequence: 20
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    link: 
+      target: 
+        url: 'f?p=&APP_ID.:2:&APP_SESSION.::&DEBUG.:2:P2_PERMIT_ID:#PERMIT_ID#'
+        page: 2 # Site & Work Details
+        clear-cache: 2
+        values: 
+          p2_permit_id: '#PERMIT_ID#'
+
+      link-text: '#PERMIT_NUMBER#'
+
+    sorting: 
+      sortable: true
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: false
+
+  - # ====== Column: STATUS_DISPLAY ==============================
+    id: 49367524624381936
+    identification: 
+      column-name: STATUS_DISPLAY
+      type: Hidden
+
+    layout: 
+      sequence: 160
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: WORKFLOW_STATUS =============================
+    id: 49367626089381937
+    identification: 
+      column-name: WORKFLOW_STATUS
+      type: Hidden
+
+    layout: 
+      sequence: 170
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: COMPANY =====================================
+    id: 49367766201381938
+    identification: 
+      column-name: COMPANY
+      type: Plain Text
+
+    heading: 
+      heading: Company
+      alignment: start
+
+    layout: 
+      sequence: 40
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: true
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: PERSON_IN_CHARGE ============================
+    id: 49367812721381939
+    identification: 
+      column-name: PERSON_IN_CHARGE
+      type: Plain Text
+
+    heading: 
+      heading: Person In Charge
+      alignment: start
+
+    layout: 
+      sequence: 50
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: true
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: SITE_DETAILS ================================
+    id: 49367958426381940
+    identification: 
+      column-name: SITE_DETAILS
+      type: Plain Text
+
+    heading: 
+      heading: Site
+      alignment: start
+
+    layout: 
+      sequence: 60
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: true
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: CREATED_DATE ================================
+    id: 49368040485381941
+    identification: 
+      column-name: CREATED_DATE
+      type: Hidden
+
+    layout: 
+      sequence: 180
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: CREATED_DISPLAY =============================
+    id: 49368123122381942
+    identification: 
+      column-name: CREATED_DISPLAY
+      type: Plain Text
+
+    heading: 
+      heading: Created
+      alignment: start
+
+    layout: 
+      sequence: 70
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: true
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: AUTHORISED_DISPLAY ==========================
+    id: 49368227142381943
+    identification: 
+      column-name: AUTHORISED_DISPLAY
+      type: Plain Text
+
+    heading: 
+      heading: Authorised
+      alignment: start
+
+    layout: 
+      sequence: 80
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: true
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: STARTED_DISPLAY =============================
+    id: 49368351053381944
+    identification: 
+      column-name: STARTED_DISPLAY
+      type: Plain Text
+
+    heading: 
+      heading: Started (LIVE)
+      alignment: start
+
+    layout: 
+      sequence: 90
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: true
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: ENDED_DISPLAY ===============================
+    id: 49368481263381945
+    identification: 
+      column-name: ENDED_DISPLAY
+      type: Plain Text
+
+    heading: 
+      heading: Permit Expiry
+      alignment: start
+
+    layout: 
+      sequence: 100
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: true
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: CLEARED_DISPLAY =============================
+    id: 49368564838381946
+    identification: 
+      column-name: CLEARED_DISPLAY
+      type: Plain Text
+
+    heading: 
+      heading: Cleared
+      alignment: start
+
+    layout: 
+      sequence: 110
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: true
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: CANCELLED_DISPLAY ===========================
+    id: 49368638597381947
+    identification: 
+      column-name: CANCELLED_DISPLAY
+      type: Plain Text
+
+    heading: 
+      heading: Cancelled
+      alignment: start
+
+    layout: 
+      sequence: 120
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: true
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: HAS_CLEARANCE ===============================
+    id: 49368732489381948
+    identification: 
+      column-name: HAS_CLEARANCE
+      type: Plain Text
+
+    heading: 
+      heading: Clearance Data?
+      alignment: start
+
+    layout: 
+      sequence: 130
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: true
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: HAS_CANCELLATION ============================
+    id: 49368826823381949
+    identification: 
+      column-name: HAS_CANCELLATION
+      type: Plain Text
+
+    heading: 
+      heading: Cancellation Data?
+      alignment: start
+
+    layout: 
+      sequence: 140
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: true
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: HAS_PHOTOS ==================================
+    id: 49368901212381950
+    identification: 
+      column-name: HAS_PHOTOS
+      type: Plain Text
+
+    heading: 
+      heading: Photos?
+      alignment: start
+
+    layout: 
+      sequence: 150
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: true
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: STATUS_BADGE_HTML ===========================
+    id: 50561856444122701
+    identification: 
+      column-name: STATUS_BADGE_HTML
+      type: Plain Text
+
+    heading: 
+      heading: Status
+      alignment: start
+
+    layout: 
+      sequence: 30
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: true
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: false
+
+  - # ====== Column: PERMIT_LINK =================================
+    id: 50561956581122702
+    identification: 
+      column-name: PERMIT_LINK
+      type: Hidden
+
+    layout: 
+      sequence: 200
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+- # ====== Region: Filters =====================================
+  id: 49367146226381932
+  identification: 
+    name: Filters
+    title: Filters
+    type: Faceted Search
+
+  source: 
+    filtered-region: Analytics Results # 49365002800381911
+
+  layout: 
+    sequence: 60
+    parent-region: No Parent
+    slot: REGION_POSITION_02
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--noPadding
+    - t-Region--removeHeader js-removeLandmark
+    - t-Region--scrollBody
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+    landmark-label: Filters
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      batch-facet-changes: false
+      compact-numbers-threshold: 10000
+      show-current-facets: Selector
+      current-facets-selector: '#p51_active_facets'
+      show-total-row-count: Yes
+      show-charts: No
+
+  facets: 
+  - # ====== Facet: P51_SEARCH ===================================
+    id: 49367252259381933
+    identification: 
+      name: P51_SEARCH
+      type: Search
+
+    label: 
+      label: Search
+
+    settings: 
+      search-type: Row Search
+      input-field: Top of Faceted Search Region
+
+    layout: 
+      sequence: 10
+
+    source: 
+      database-column(s): PERMIT_NUMBER, SITE_DETAILS, COMPANY,PERSON_IN_CHARGE, STATUS_DISPLAY, WORKFLOW_STATUS
+
+    security: 
+      store-value-encrypted-in-session-state: true
+
+  - # ====== Facet: P51_WORKFLOW_STATUS ==========================
+    id: 50562044170122703
+    identification: 
+      name: P51_WORKFLOW_STATUS
+      type: Checkbox Group
+
+    label: 
+      label: Workflow Status
+      show-label-for-current-facet: true
+
+    layout: 
+      sequence: 20
+
+    appearance: 
+      display: Inline
+
+    list-of-values: 
+      type: Distinct Values
+      sort-direction: Ascending
+      include-null-option: false
+
+    list-entries: 
+      compute-counts: true
+      show-counts: true
+      zero-count-entries: Hide
+      sort-by-top-counts: true
+      show-selected-first: false
+      maximum-displayed-entries: 7
+      display-filter-initially: false
+
+    actions-menu: 
+      filter: true
+      chart: true
+
+    advanced: 
+      show-chart-initially: false
+      collapsible: false
+
+    source: 
+      database-column: WORKFLOW_STATUS
+      data-type: VARCHAR2
+
+    multiple-values: 
+      type: No
+
+    security: 
+      store-value-encrypted-in-session-state: true
+      escape-special-characters: true
+
+  - # ====== Facet: P51_COMPANY ==================================
+    id: 50562189267122704
+    identification: 
+      name: P51_COMPANY
+      type: Checkbox Group
+
+    label: 
+      label: Company
+      show-label-for-current-facet: true
+
+    layout: 
+      sequence: 30
+
+    appearance: 
+      display: Inline
+
+    list-of-values: 
+      type: Distinct Values
+      sort-direction: Ascending
+      include-null-option: false
+
+    list-entries: 
+      compute-counts: true
+      show-counts: true
+      zero-count-entries: Hide
+      sort-by-top-counts: true
+      show-selected-first: false
+      maximum-displayed-entries: 7
+      display-filter-initially: false
+
+    actions-menu: 
+      filter: true
+      chart: true
+
+    advanced: 
+      show-chart-initially: false
+      collapsible: false
+
+    source: 
+      database-column: COMPANY
+      data-type: VARCHAR2
+
+    multiple-values: 
+      type: No
+
+    security: 
+      store-value-encrypted-in-session-state: true
+      escape-special-characters: true
+
+  - # ====== Facet: P51_PERSON_IN_CHARGE =========================
+    id: 50562252886122705
+    identification: 
+      name: P51_PERSON_IN_CHARGE
+      type: Checkbox Group
+
+    label: 
+      label: Person In Charge
+      show-label-for-current-facet: true
+
+    layout: 
+      sequence: 40
+
+    appearance: 
+      display: Inline
+
+    list-of-values: 
+      type: Distinct Values
+      sort-direction: Ascending
+      include-null-option: false
+
+    list-entries: 
+      compute-counts: true
+      show-counts: true
+      zero-count-entries: Hide
+      sort-by-top-counts: true
+      show-selected-first: false
+      maximum-displayed-entries: 7
+      display-filter-initially: false
+
+    actions-menu: 
+      filter: true
+      chart: true
+
+    advanced: 
+      show-chart-initially: false
+      collapsible: false
+
+    source: 
+      database-column: PERSON_IN_CHARGE
+      data-type: VARCHAR2
+
+    multiple-values: 
+      type: No
+
+    security: 
+      store-value-encrypted-in-session-state: true
+      escape-special-characters: true
+
+  - # ====== Facet: P51_SITE_DETAILS =============================
+    id: 50562364304122706
+    identification: 
+      name: P51_SITE_DETAILS
+      type: Checkbox Group
+
+    label: 
+      label: Site Details
+      show-label-for-current-facet: true
+
+    layout: 
+      sequence: 50
+
+    appearance: 
+      display: Inline
+
+    list-of-values: 
+      type: Distinct Values
+      sort-direction: Ascending
+      include-null-option: false
+
+    list-entries: 
+      compute-counts: true
+      show-counts: true
+      zero-count-entries: Hide
+      sort-by-top-counts: true
+      show-selected-first: false
+      maximum-displayed-entries: 7
+      display-filter-initially: false
+
+    actions-menu: 
+      filter: true
+      chart: true
+
+    advanced: 
+      show-chart-initially: false
+      collapsible: false
+
+    source: 
+      database-column: SITE_DETAILS
+      data-type: VARCHAR2
+
+    multiple-values: 
+      type: No
+
+    security: 
+      store-value-encrypted-in-session-state: true
+      escape-special-characters: true
+
+  - # ====== Facet: P51_CREATED_DATE =============================
+    id: 50562461208122707
+    identification: 
+      name: P51_CREATED_DATE
+      type: Range
+
+    label: 
+      label: Created Date
+      show-label-for-current-facet: true
+
+    settings: 
+      select-multiple: false
+      manual-entry: false
+
+    layout: 
+      sequence: 60
+
+    appearance: 
+      display: Inline
+
+    list-entries: 
+      compute-counts: true
+      show-counts: true
+      zero-count-entries: Hide
+
+    advanced: 
+      collapsible: false
+
+    source: 
+      database-column: CREATED_DATE
+      data-type: DATE
+
+    security: 
+      store-value-encrypted-in-session-state: true
+
+  filters: 
+  - # ====== Filter: P51_SEARCH ==================================
+    id: 49367252259381933
+    identification: 
+      name: P51_SEARCH
+      type: Search
+
+    label: 
+      label: Search
+
+    settings: 
+      search-type: Row Search
+      collapsed-search-field: false
+
+    layout: 
+      sequence: 10
+
+    source: 
+      database-column(s): PERMIT_NUMBER, SITE_DETAILS, COMPANY,PERSON_IN_CHARGE, STATUS_DISPLAY, WORKFLOW_STATUS
+
+    security: 
+      store-value-encrypted-in-session-state: true
+
+  - # ====== Filter: P51_WORKFLOW_STATUS =========================
+    id: 50562044170122703
+    identification: 
+      name: P51_WORKFLOW_STATUS
+      type: Checkbox Group
+
+    label: 
+      label: Workflow Status
+
+    layout: 
+      sequence: 20
+
+    list-of-values: 
+      type: Distinct Values
+      sort-direction: Ascending
+      include-null-option: false
+
+    list-entries: 
+      compute-counts: true
+      show-counts: true
+      zero-count-entries: Hide
+      sort-by-top-counts: true
+      show-selected-first: false
+      client-side-filtering: false
+
+    suggestions: 
+      type: None
+
+    source: 
+      database-column: WORKFLOW_STATUS
+      data-type: VARCHAR2
+
+    multiple-values: 
+      type: No
+
+    security: 
+      store-value-encrypted-in-session-state: true
+      escape-special-characters: true
+
+  - # ====== Filter: P51_COMPANY =================================
+    id: 50562189267122704
+    identification: 
+      name: P51_COMPANY
+      type: Checkbox Group
+
+    label: 
+      label: Company
+
+    layout: 
+      sequence: 30
+
+    list-of-values: 
+      type: Distinct Values
+      sort-direction: Ascending
+      include-null-option: false
+
+    list-entries: 
+      compute-counts: true
+      show-counts: true
+      zero-count-entries: Hide
+      sort-by-top-counts: true
+      show-selected-first: false
+      client-side-filtering: false
+
+    suggestions: 
+      type: None
+
+    source: 
+      database-column: COMPANY
+      data-type: VARCHAR2
+
+    multiple-values: 
+      type: No
+
+    security: 
+      store-value-encrypted-in-session-state: true
+      escape-special-characters: true
+
+  - # ====== Filter: P51_PERSON_IN_CHARGE ========================
+    id: 50562252886122705
+    identification: 
+      name: P51_PERSON_IN_CHARGE
+      type: Checkbox Group
+
+    label: 
+      label: Person In Charge
+
+    layout: 
+      sequence: 40
+
+    list-of-values: 
+      type: Distinct Values
+      sort-direction: Ascending
+      include-null-option: false
+
+    list-entries: 
+      compute-counts: true
+      show-counts: true
+      zero-count-entries: Hide
+      sort-by-top-counts: true
+      show-selected-first: false
+      client-side-filtering: false
+
+    suggestions: 
+      type: None
+
+    source: 
+      database-column: PERSON_IN_CHARGE
+      data-type: VARCHAR2
+
+    multiple-values: 
+      type: No
+
+    security: 
+      store-value-encrypted-in-session-state: true
+      escape-special-characters: true
+
+  - # ====== Filter: P51_SITE_DETAILS ============================
+    id: 50562364304122706
+    identification: 
+      name: P51_SITE_DETAILS
+      type: Checkbox Group
+
+    label: 
+      label: Site Details
+
+    layout: 
+      sequence: 50
+
+    list-of-values: 
+      type: Distinct Values
+      sort-direction: Ascending
+      include-null-option: false
+
+    list-entries: 
+      compute-counts: true
+      show-counts: true
+      zero-count-entries: Hide
+      sort-by-top-counts: true
+      show-selected-first: false
+      client-side-filtering: false
+
+    suggestions: 
+      type: None
+
+    source: 
+      database-column: SITE_DETAILS
+      data-type: VARCHAR2
+
+    multiple-values: 
+      type: No
+
+    security: 
+      store-value-encrypted-in-session-state: true
+      escape-special-characters: true
+
+  - # ====== Filter: P51_CREATED_DATE ============================
+    id: 50562461208122707
+    identification: 
+      name: P51_CREATED_DATE
+      type: Range
+
+    label: 
+      label: Created Date
+
+    settings: 
+      select-multiple: false
+      manual-entry: false
+
+    layout: 
+      sequence: 60
+
+    appearance: 
+      format-mask: DD-MON-YYYY
+
+    list-entries: 
+      compute-counts: true
+      show-counts: true
+      zero-count-entries: Hide
+
+    suggestions: 
+      type: None
+
+    source: 
+      database-column: CREATED_DATE
+      data-type: DATE
+
+    security: 
+      store-value-encrypted-in-session-state: true
+
+- # ====== Region: Chart Controls ==============================
+  id: 50562546560122708
+  identification: 
+    name: Chart Controls
+    type: Static Content
+
+  source: 
+    html-code: |
+      <div id="p51_active_facets" style="margin-bottom:6px;"></div>
+      <div id="p51-drill-banner" class="p51-drill-banner">
+          <span id="p51-drill-text">Filtered by chart selection</span>
+          <span class="p51-drill-clear" onclick="p51ClearDrill()">&#10005; Clear filter</span>
+      </div>
+
+  layout: 
+    sequence: 60
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Blank with Attributes
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Permits by Company ==========================
+  id: 50562661707122709
+  identification: 
+    name: Permits by Company
+    title: Permits by Company
+    type: Chart
+
+  source: 
+    location: None
+
+  layout: 
+    sequence: 70
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--showIcon
+    - t-Region--accent15
+    - t-Region--scrollBody
+    icon: fa-bar-chart
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    static-id: p51-bar-company
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  security: 
+    escape-special-characters: true
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    id: 50562720136122710
+    chart: 
+      type: Bar
+
+    appearance: 
+      orientation: Vertical
+      stack: false
+
+    layout: 
+      height: 320
+
+    data-cursor: 
+      cursor: Automatic
+      behavior: Automatic
+      dim-on-hover: true
+
+    multi-series-chart-data: 
+      fill-gaps-in-chart-data: true
+      sort-order: Label - Ascending
+      render-gap-as-zero: true
+
+    settings: 
+      zoom-and-scroll: No
+
+    animation: 
+      on-display: Automatic
+      on-data-change: Automatic
+
+    tooltip: 
+      show: true
+      show-series-name: true
+      show-group-name: true
+      show-value: true
+
+    legend: 
+      show: false
+
+    series: 
+    - # ====== Series: Permits =====================================
+      id: 50562869798122711
+      identification: 
+        name: Permits
+
+      execution: 
+        sequence: 10
+
+      source: 
+        location: Local Database
+        type: SQL Query
+        sql-query: |
+          SELECT
+              company          AS label,
+              COUNT(*)         AS permit_count
+          FROM ptw_pro.ptw_lv_analytics_v
+          GROUP BY company
+          ORDER BY COUNT(*) DESC
+          FETCH FIRST 15 ROWS ONLY
+
+      order-by: 
+        type: None
+
+      column-mapping: 
+        label: LABEL
+        value: PERMIT_COUNT
+
+      appearance: 
+        color: '#344b5c'
+        assigned-to-y2-axis: false
+
+      link: 
+        type: Redirect to URL
+        target: "javascript:p51DrillCompany('#LABEL#');"
+
+      label: 
+        show: false
+
+    axes: 
+    - # ====== Axis: x =============================================
+      id: 50562921409122712
+      identification: 
+        name: x
+        show-axis: true
+
+      value: 
+        format-scaling: Automatic
+        baseline-scaling: Zero
+        scale: Linear
+
+      major-ticks: 
+        show: Yes
+
+      minor-ticks: 
+        show: false
+
+      tick-label: 
+        show: true
+        rotation: true
+        position: Outside
+
+    - # ====== Axis: y =============================================
+      id: 50563034779122713
+      identification: 
+        name: y
+        show-axis: true
+
+      value: 
+        format: Decimal
+        decimal-places: 0
+        format-scaling: None
+        baseline-scaling: Zero
+        scale: Linear
+
+      appearance: 
+        position: Automatic
+
+      major-ticks: 
+        show: Yes
+
+      minor-ticks: 
+        show: false
+
+      tick-label: 
+        show: true
+
+- # ====== Region: Permits by Status ===========================
+  id: 50563124160122714
+  identification: 
+    name: Permits by Status
+    title: Permits by Status
+    type: Chart
+
+  source: 
+    location: None
+
+  layout: 
+    sequence: 80
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 6
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--showIcon
+    - t-Region--accent15
+    - t-Region--scrollBody
+    icon: fa-pie-chart
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    static-id: p51-pie-status
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  security: 
+    escape-special-characters: true
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    id: 50563288667122715
+    chart: 
+      type: Pie
+
+    layout: 
+      height: 320
+
+    data-cursor: 
+      cursor: Automatic
+      behavior: Automatic
+      dim-on-hover: true
+
+    settings: 
+      pie-selection-effect: Highlight
+
+    value: 
+      pie-chart-other-threshold: 0
+      format: Decimal
+      decimal-places: 0
+      format-scaling: None
+
+    animation: 
+      on-display: Automatic
+      on-data-change: Automatic
+
+    tooltip: 
+      show: true
+      show-series-name: true
+      show-value: true
+
+    legend: 
+      show: true
+      position: Automatic
+      hide-and-show-behavior: Rescale
+
+    series: 
+    - # ====== Series: Status Breakdown ============================
+      id: 50563338076122716
+      identification: 
+        name: Status Breakdown
+
+      execution: 
+        sequence: 10
+
+      source: 
+        location: Local Database
+        type: SQL Query
+        sql-query: |
+          SELECT
+              status_display   AS label,
+              workflow_status  AS status_val,
+              COUNT(*)         AS permit_count,
+              status_colour    AS series_color
+          FROM ptw_pro.ptw_lv_analytics_v
+          GROUP BY status_display, workflow_status, status_colour
+          ORDER BY COUNT(*) DESC
+
+      order-by: 
+        type: None
+
+      column-mapping: 
+        label: LABEL
+        value: PERMIT_COUNT
+
+      appearance: 
+        color: '#SERIES_COLOR#'
+
+      link: 
+        type: Redirect to URL
+        target: "javascript:p51DrillStatus('#STATUS_VAL#');"
+
+      label: 
+        show: true
+        position: Automatic
+        display-as: Label
+
+- # ====== Region: Permit Trend ================================
+  id: 50563603389122719
+  identification: 
+    name: Permit Trend
+    type: Chart
+
+  source: 
+    location: None
+
+  layout: 
+    sequence: 90
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--showIcon
+    - t-Region--accent15
+    - t-Region--scrollBody
+    icon: fa-line-chart
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    static-id: p51-line-trend
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  security: 
+    escape-special-characters: true
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    id: 50563765858122720
+    chart: 
+      type: Line
+
+    appearance: 
+      orientation: Vertical
+      stack: false
+
+    layout: 
+      height: 280
+
+    data-cursor: 
+      cursor: Automatic
+      behavior: Automatic
+      dim-on-hover: true
+
+    multi-series-chart-data: 
+      fill-gaps-in-chart-data: true
+      sort-order: Label - Ascending
+      render-gap-as-zero: true
+
+    settings: 
+      zoom-and-scroll: No
+
+    animation: 
+      on-display: Automatic
+      on-data-change: Automatic
+
+    tooltip: 
+      show: true
+      show-series-name: true
+      show-group-name: true
+      show-value: true
+
+    legend: 
+      show: false
+
+    series: 
+    - # ====== Series: Total Permits ===============================
+      id: 50563859619122721
+      identification: 
+        name: Total Permits
+
+      execution: 
+        sequence: 10
+
+      source: 
+        location: Local Database
+        type: SQL Query
+        sql-query: |
+          SELECT
+              CASE :P51_TIME_GROUPING
+                  WHEN 'DAILY'  THEN TO_CHAR(group_daily,   'DD-Mon-YYYY')
+                  WHEN 'WEEKLY' THEN 'Wk ' || TO_CHAR(group_weekly, 'IW YYYY')
+                  ELSE               TO_CHAR(group_monthly,  'Mon-YYYY')
+              END              AS period_label,
+              CASE :P51_TIME_GROUPING
+                  WHEN 'DAILY'  THEN group_daily
+                  WHEN 'WEEKLY' THEN group_weekly
+                  ELSE               group_monthly
+              END              AS period_date,
+              COUNT(*)         AS permit_count
+          FROM ptw_pro.ptw_lv_analytics_v
+          GROUP BY
+              CASE :P51_TIME_GROUPING
+                  WHEN 'DAILY'  THEN group_daily
+                  WHEN 'WEEKLY' THEN group_weekly
+                  ELSE               group_monthly
+              END,
+              CASE :P51_TIME_GROUPING
+                  WHEN 'DAILY'  THEN TO_CHAR(group_daily,   'DD-Mon-YYYY')
+                  WHEN 'WEEKLY' THEN 'Wk ' || TO_CHAR(group_weekly, 'IW YYYY')
+                  ELSE               TO_CHAR(group_monthly,  'Mon-YYYY')
+              END
+          ORDER BY
+              CASE :P51_TIME_GROUPING
+                  WHEN 'DAILY'  THEN group_daily
+                  WHEN 'WEEKLY' THEN group_weekly
+                  ELSE               group_monthly
+              END
+        page-items-to-submit: 
+        - P51_TIME_GROUPING
+        - ' P51_WORKFLOW_STATUS'
+        - P51_COMPANY
+        - ' P51_SITE_DETAILS'
+        - P51_PERSON_IN_CHARGE
+        - ' P51_CREATED_DATE'
+        - ' P51_SEARCH'
+
+      order-by: 
+        type: None
+
+      column-mapping: 
+        label: PERIOD_LABEL
+        value: PERMIT_COUNT
+
+      appearance: 
+        color: '#4a9fd4'
+        assigned-to-y2-axis: false
+
+      line: 
+        style: Solid
+        type: Automatic
+
+      marker: 
+        show: Automatic
+        shape: Automatic
+
+      label: 
+        show: false
+
+    axes: 
+    - # ====== Axis: x =============================================
+      id: 50563952723122722
+      identification: 
+        name: x
+        show-axis: true
+
+      value: 
+        format-scaling: Automatic
+        baseline-scaling: Zero
+        scale: Linear
+
+      major-ticks: 
+        show: Yes
+
+      minor-ticks: 
+        show: false
+
+      tick-label: 
+        show: true
+        rotation: true
+        position: Outside
+
+    - # ====== Axis: y =============================================
+      id: 50564054709122723
+      identification: 
+        name: y
+        show-axis: true
+
+      value: 
+        format: Decimal
+        decimal-places: 0
+        format-scaling: None
+        baseline-scaling: Zero
+        scale: Linear
+
+      appearance: 
+        position: Automatic
+
+      major-ticks: 
+        show: Yes
+
+      minor-ticks: 
+        show: false
+
+      tick-label: 
+        show: true
+
+page-items: 
+- # ====== Page Item: P51_DRILL_STATUS =========================
+  id: 49364851127381909
+  identification: 
+    name: P51_DRILL_STATUS
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 30
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P51_DRILL_COMPANY ========================
+  id: 49364990378381910
+  identification: 
+    name: P51_DRILL_COMPANY
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 40
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P51_TIME_GROUPING ========================
+  id: 50564173043122724
+  identification: 
+    name: P51_TIME_GROUPING
+    type: Select List
+
+  label: 
+    label: Group By
+    alignment: Left
+
+  settings: 
+    page-action-on-selection: None
+
+  multiple-values: 
+    type: No
+
+  layout: 
+    sequence: 10
+    region: Permit Trend # 50563603389122719
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    height: 1
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC:Monthly;MONTHLY,Weekly;WEEKLY,Daily;DAILY'
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Ignore
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  default: 
+    type: Static
+    static-value: MONTHLY
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+dynamic-actions: 
+- # ====== Dynamic Action: Facet Change - Refresh Charts =======
+  id: 50564285901122725
+  identification: 
+    name: Facet Change - Refresh Charts
+
+  execution: 
+    sequence: 10
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: After Refresh
+    selection-type: Region
+    region: Analytics Results # 49365002800381911
+
+  actions: 
+  - # ====== Action: Execute JavaScript Code =====================
+    id: 50564313343122726
+    identification: 
+      action: Execute JavaScript Code
+
+    settings: 
+      code: p51RefreshCharts();
+
+    execution: 
+      sequence: 10
+      event: Facet Change - Refresh Charts # 50564285901122725
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+- # ====== Dynamic Action: Time Grouping Change ================
+  id: 50564469247122727
+  identification: 
+    name: Time Grouping Change
+
+  execution: 
+    sequence: 20
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Change
+    selection-type: Item(s)
+    item(s): 
+    - P51_TIME_GROUPING
+
+  actions: 
+  - # ====== Action: Refresh =====================================
+    id: 50564568660122728
+    identification: 
+      action: Refresh
+
+    settings: 
+      maintain-pagination: false
+
+    affected-elements: 
+      selection-type: Region
+      region: Permit Trend # 50563603389122719
+
+    execution: 
+      sequence: 10
+      event: Time Grouping Change # 50564469247122727
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+- # ====== Dynamic Action: Drill Company - Refresh Report ======
+  id: 50564658304122729
+  identification: 
+    name: Drill Company - Refresh Report
+
+  execution: 
+    sequence: 30
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Change
+    selection-type: Item(s)
+    item(s): 
+    - P51_DRILL_COMPANY
+
+  actions: 
+  - # ====== Action: Refresh =====================================
+    id: 50564712982122730
+    identification: 
+      action: Refresh
+
+    settings: 
+      maintain-pagination: false
+
+    affected-elements: 
+      selection-type: Region
+      region: Analytics Results # 49365002800381911
+
+    execution: 
+      sequence: 10
+      event: Drill Company - Refresh Report # 50564658304122729
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+- # ====== Dynamic Action: Drill Status - Refresh Report =======
+  id: 50564848440122731
+  identification: 
+    name: Drill Status - Refresh Report
+
+  execution: 
+    sequence: 40
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Change
+    selection-type: Item(s)
+    item(s): 
+    - P51_DRILL_STATUS
+
+  actions: 
+  - # ====== Action: Refresh =====================================
+    id: 50564927828122732
+    identification: 
+      action: Refresh
+
+    settings: 
+      maintain-pagination: false
+
+    affected-elements: 
+      selection-type: Region
+      region: Analytics Results # 49365002800381911
+
+    execution: 
+      sequence: 10
+      event: Drill Status - Refresh Report # 50564848440122731
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+

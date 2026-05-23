@@ -5,7 +5,7 @@ begin
 --   Manifest End
 wwv_flow_imp.component_begin (
  p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.15'
+,p_release=>'24.2.16'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
@@ -914,6 +914,7 @@ wwv_flow_imp_page.create_page_process(
 '    v_permit_id NUMBER;',
 '    v_permit_number VARCHAR2(50);',
 'BEGIN',
+'  IF :P2_WORKFLOW_STATUS = ''IN_PROGRESS'' THEN',
 '    IF :P2_PERMIT_ID IS NULL THEN',
 '        -- INSERT NEW PERMIT',
 '        INSERT INTO ptw_pro.ptw_lv_permits (',
@@ -1001,6 +1002,7 @@ unistr('        -- SQL%ROWCOUNT = 0 is fine here \2014 means nothing changed, no
 '    END IF;',
 '',
 '    COMMIT;',
+'  END IF;',
 '',
 'EXCEPTION',
 '    WHEN OTHERS THEN',

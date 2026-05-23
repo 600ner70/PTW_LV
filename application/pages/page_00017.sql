@@ -5,7 +5,7 @@ begin
 --   Manifest End
 wwv_flow_imp.component_begin (
  p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.15'
+,p_release=>'24.2.16'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
@@ -715,7 +715,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_name=>'Signature'
 ,p_title=>'Authorised Person Signature'
 ,p_region_name=>'p17-signature-region'
-,p_region_css_classes=>'fa-pencil-square-o'
+,p_icon_css_classes=>'fa-pencil-square-o'
 ,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
 ,p_plug_display_sequence=>140
@@ -1128,8 +1128,8 @@ wwv_flow_imp_page.create_page_process(
 '           cancel_person_name     = UPPER(TRIM(:P17_CANCEL_PERSON_NAME)),',
 '           cancel_person_signature = v_sig_blob,',
 '           cancel_datetime        = SYSDATE,',
-'           cancel_latitude        = :P0_LATITUDE,',
-'           cancel_longitude       = :P0_LONGITUDE,',
+'           cancel_latitude        = :APP_LATITUDE,',
+'           cancel_longitude       = :APP_LONGITUDE,',
 '           workflow_status        = ''CANCELLED'',',
 '           current_step           = ''CANCELLED'',',
 '           completion_date        = SYSDATE,',
