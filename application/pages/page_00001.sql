@@ -5,7 +5,7 @@ begin
 --   Manifest End
 wwv_flow_imp.component_begin (
  p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.16'
+,p_release=>'24.2.17'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
@@ -397,7 +397,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_icon_css_classes=>'fa-bolt'
 ,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>120
+,p_plug_display_sequence=>60
 ,p_location=>null
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
@@ -413,7 +413,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
 ,p_component_template_options=>'#DEFAULT#'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>130
+,p_plug_display_sequence=>70
 ,p_query_type=>'SQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'SELECT',
@@ -901,7 +901,7 @@ wwv_flow_imp_page.create_report_region(
 ,p_title=>'Recent Permits'
 ,p_region_name=>'recentPermitsMobile'
 ,p_template=>4072358936313175081
-,p_display_sequence=>140
+,p_display_sequence=>80
 ,p_region_css_classes=>'ptw-mobile-only'
 ,p_icon_css_classes=>'fa-list'
 ,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
@@ -1396,6 +1396,78 @@ wwv_flow_imp_page.create_report_columns(
 ,p_display_as=>'WITHOUT_MODIFICATION'
 ,p_derived_column=>'N'
 );
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(52465325062584450)
+,p_plug_name=>'Viewing As (Super User)'
+,p_title=>'Viewing As (Super User)'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>4072358936313175081
+,p_plug_display_sequence=>50
+,p_location=>null
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'    l_html          CLOB;',
+'    l_company_name  ptw_pro.ptw_lv_companies.company_name%TYPE;',
+'    l_override      VARCHAR2(50) := V(''G_OVERRIDE_COMPANY_ID'');',
+'    l_is_super      VARCHAR2(1);',
+'BEGIN',
+'    -- Show this banner only for super users who currently',
+'    -- have a company override set. Everyone else: nothing.',
+'    BEGIN',
+'        SELECT is_super_user',
+'        INTO   l_is_super',
+'        FROM   ptw_pro.ptw_lv_users',
+'        WHERE  UPPER(username) = UPPER(:APP_USER)',
+'        AND    is_active = ''Y'';',
+'    EXCEPTION',
+'        WHEN NO_DATA_FOUND THEN',
+'            l_is_super := ''N'';',
+'    END;',
+' ',
+'    IF l_is_super != ''Y'' OR l_override IS NULL OR l_override = '''' THEN',
+'        RETURN NULL;',
+'    END IF;',
+' ',
+'    BEGIN',
+'        SELECT company_name',
+'        INTO   l_company_name',
+'        FROM   ptw_pro.ptw_lv_companies',
+'        WHERE  company_id = TO_NUMBER(l_override);',
+'    EXCEPTION',
+'        WHEN NO_DATA_FOUND THEN',
+'            -- Override points to a company_id that doesn''t',
+'            -- exist (largely theoretical - companies can''t be',
+'            -- deleted, only deactivated). Defensive only.',
+'            l_company_name := ''an unknown company'';',
+'    END;',
+' ',
+'    l_html := ''<div class="admin-page-header" ''',
+'           || ''     style="background:#fff8e1;border:1px solid #ffe082;">''',
+'           || ''  <p style="margin:0;display:flex;align-items:center;gap:10px;">''',
+'           || ''    <span class="fa fa-eye"></span>''',
+'           || ''    <span>Viewing as <strong>''',
+'           ||          apex_escape.html(l_company_name)',
+'           ||      ''</strong></span>''',
+'           || ''    <button type="button" ''',
+'           || ''            class="t-Button t-Button--small t-Button--simple" ''',
+'           || ''            onclick="apex.submit(''''CLEAR_OVERRIDE'''');">''',
+'           || ''      Return to Super User View''',
+'           || ''    </button>''',
+'           || ''  </p>''',
+'           || ''</div>'';',
+' ',
+'    RETURN l_html;',
+'END;'))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+,p_plug_display_condition_type=>'EXISTS'
+,p_plug_display_when_condition=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'        SELECT 1',
+'        FROM   ptw_pro.ptw_lv_users',
+'        WHERE  UPPER(username) = UPPER(:APP_USER)',
+'        AND    is_super_user = ''Y'''))
+);
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(25227561481353115)
 ,p_button_sequence=>10
@@ -1470,10 +1542,20 @@ wwv_flow_imp_page.create_page_branch(
 ,p_branch_condition_type=>'REQUEST_IN_CONDITION'
 ,p_branch_condition=>'DELETE_PERMIT'
 );
+wwv_flow_imp_page.create_page_branch(
+ p_id=>wwv_flow_imp.id(52494338428962702)
+,p_branch_name=>'Reload Dashboard'
+,p_branch_action=>'f?p=&APP_ID.:1:&SESSION.::&DEBUG.:1::'
+,p_branch_point=>'AFTER_PROCESSING'
+,p_branch_type=>'REDIRECT_URL'
+,p_branch_sequence=>20
+,p_branch_condition_type=>'REQUEST_EQUALS_CONDITION'
+,p_branch_condition=>'CLEAR_OVERRIDE'
+);
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(25229693304353136)
 ,p_name=>'P1_PERMIT_ID'
-,p_item_sequence=>150
+,p_item_sequence=>90
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
@@ -1481,7 +1563,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(31605987809440621)
 ,p_name=>'P1_SELECTED_PERMIT_ID'
-,p_item_sequence=>160
+,p_item_sequence=>100
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
@@ -1489,7 +1571,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(31606037892440622)
 ,p_name=>'P1_SUSPEND_REASON'
-,p_item_sequence=>170
+,p_item_sequence=>110
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
@@ -1497,7 +1579,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(45756121958782513)
 ,p_name=>'P1_CLEAR_PERMIT_ID'
-,p_item_sequence=>180
+,p_item_sequence=>120
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
@@ -1698,6 +1780,22 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_when_type=>'EXPRESSION'
 ,p_process_when2=>'PLSQL'
 ,p_internal_uid=>31606355068440625
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(52494299876962701)
+,p_process_sequence=>40
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Clear Company Override'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'BEGIN',
+'    APEX_UTIL.SET_SESSION_STATE(''G_OVERRIDE_COMPANY_ID'', NULL);',
+'END;'))
+,p_process_clob_language=>'PLSQL'
+,p_error_display_location=>'INLINE_IN_NOTIFICATION'
+,p_process_when=>'CLEAR_OVERRIDE'
+,p_process_when_type=>'REQUEST_EQUALS_CONDITION'
+,p_internal_uid=>52494299876962701
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(33350169044951415)

@@ -5,7 +5,7 @@ begin
 --   Manifest End
 wwv_flow_imp.component_begin (
  p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.16'
+,p_release=>'24.2.17'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
@@ -20,8 +20,8 @@ wwv_imp_workspace.create_flow(
 ,p_page_protection_enabled_y_n=>'Y'
 ,p_checksum_salt=>'A9926E9A37BC8591E2F899AA8424E879CD546B06F9181DA62E16FA46A2A826D9'
 ,p_bookmark_checksum_function=>'SH512'
-,p_max_session_idle_sec=>600
-,p_session_timeout_warning_sec=>480
+,p_max_session_idle_sec=>3400
+,p_session_timeout_warning_sec=>3200
 ,p_compatibility_mode=>'24.2'
 ,p_flow_language=>'en'
 ,p_flow_language_derived_from=>'FLOW_PRIMARY_LANGUAGE'
@@ -51,7 +51,7 @@ wwv_imp_workspace.create_flow(
 ,p_substitution_value_02=>'DEV'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_files_version=>260
-,p_version_scn=>47067254054399
+,p_version_scn=>47255099647566
 ,p_print_server_type=>'NATIVE'
 ,p_file_storage=>'DB'
 ,p_is_pwa=>'Y'

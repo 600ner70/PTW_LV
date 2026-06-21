@@ -38,6 +38,7 @@ prompt --install
 @@application/shared_components/security/authorizations/can_delete_permits.sql
 @@application/shared_components/security/authorizations/can_export_reports.sql
 @@application/shared_components/security/authorizations/can_generate_pdf.sql
+@@application/shared_components/security/authorizations/super_user_rights.sql
 @@application/shared_components/security/app_access_control/administrator.sql
 @@application/shared_components/security/app_access_control/contributor.sql
 @@application/shared_components/security/app_access_control/reader.sql
@@ -49,6 +50,7 @@ prompt --install
 @@application/shared_components/logic/application_items/app_is_engineer.sql
 @@application/shared_components/logic/application_items/app_latitude.sql
 @@application/shared_components/logic/application_items/app_longitude.sql
+@@application/shared_components/logic/application_items/g_override_company_id.sql
 @@application/shared_components/logic/application_computations/app_is_engineer.sql
 @@application/shared_components/logic/application_computations/app_is_admin.sql
 @@application/shared_components/logic/application_settings.sql
@@ -95,6 +97,12 @@ prompt --install
 @@application/pages/page_00016.sql
 @@application/pages/page_00017.sql
 @@application/pages/page_00020.sql
+@@application/pages/page_00021.sql
+@@application/pages/page_00022.sql
+@@application/pages/page_00023.sql
+@@application/pages/page_00024.sql
+@@application/pages/page_00025.sql
+@@application/pages/page_00026.sql
 @@application/pages/page_00050.sql
 @@application/pages/page_00051.sql
 @@application/pages/page_00300.sql

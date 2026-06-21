@@ -5,7 +5,7 @@ begin
 --   Manifest End
 wwv_flow_imp.component_begin (
  p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.16'
+,p_release=>'24.2.17'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
@@ -21,7 +21,7 @@ wwv_flow_imp_page.create_page(
 ,p_page_template_options=>'#DEFAULT#'
 ,p_dialog_resizable=>'Y'
 ,p_protection_level=>'C'
-,p_page_component_map=>'17'
+,p_page_component_map=>'16'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(40553413561170616)
@@ -100,18 +100,61 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(40553683189170618)
 ,p_name=>'P14_PTW_TYPES'
-,p_item_sequence=>10
+,p_item_sequence=>20
 ,p_item_plug_id=>wwv_flow_imp.id(40553413561170616)
 ,p_prompt=>'Available types'
 ,p_display_as=>'NATIVE_SELECT_LIST'
 ,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'SELECT type_desc d,',
-'       ptw_type  r',
-'FROM   ptw_pro.ptw_types',
-'WHERE  available = ''Y'';'))
+'SELECT t.type_desc d,',
+'       t.ptw_type  r',
+'FROM   ptw_pro.ptw_types t',
+'JOIN   ptw_pro.ptw_lv_company_types ct ON ct.type_id = t.type_id',
+'WHERE  t.available = ''Y''',
+'AND    ct.is_active = ''Y''',
+'AND    ct.company_id in (SELECT company_id',
+'                         FROM   ptw_pro.ptw_lv_users',
+'                         WHERE ((UPPER(username) = UPPER(v(''APP_USER''))',
+'                         AND    is_super_user <> ''Y'')',
+'                         OR     (company_id = :P14_COMPANY_ID)))',
+'ORDER  BY t.type_desc'))
 ,p_lov_display_null=>'YES'
 ,p_lov_null_text=>'- Select -'
+,p_lov_cascade_parent_items=>'P14_COMPANY_ID'
+,p_ajax_items_to_submit=>'P14_COMPANY_ID'
+,p_ajax_optimize_refresh=>'Y'
 ,p_cHeight=>1
+,p_field_template=>1609121967514267634
+,p_item_template_options=>'#DEFAULT#'
+,p_lov_display_extra=>'NO'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'page_action_on_selection', 'NONE')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(52465015239584447)
+,p_name=>'P14_COMPANY_ID'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(40553413561170616)
+,p_prompt=>'Create permit for company'
+,p_source=>'V(''G_OVERRIDE_COMPANY_ID'')'
+,p_source_type=>'EXPRESSION'
+,p_source_language=>'PLSQL'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'SELECT company_name d,',
+'       company_id   r',
+'FROM   ptw_pro.ptw_lv_companies',
+'WHERE  is_active = ''Y''',
+'ORDER  BY company_name'))
+,p_lov_display_null=>'YES'
+,p_lov_null_text=>'-- Select --'
+,p_cHeight=>1
+,p_display_when=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'SELECT 1 ',
+'FROM ptw_pro.ptw_lv_users',
+'WHERE UPPER(username) = UPPER(:APP_USER)',
+'AND   is_super_user = ''Y''',
+'AND   is_active = ''Y'''))
+,p_display_when_type=>'EXISTS'
 ,p_field_template=>1609121967514267634
 ,p_item_template_options=>'#DEFAULT#'
 ,p_lov_display_extra=>'NO'
@@ -130,9 +173,34 @@ wwv_flow_imp_page.create_page_validation(
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(52465166751584448)
+,p_validation_name=>'Company required for Super User'
+,p_validation_sequence=>20
+,p_validation=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'    l_count NUMBER;',
+'BEGIN',
+'    SELECT COUNT(*)',
+'    INTO   l_count',
+'    FROM   ptw_pro.ptw_lv_users',
+'    WHERE  UPPER(username) = UPPER(:APP_USER)',
+'    AND    is_super_user = ''Y''',
+'    AND    is_active = ''Y'';',
+'',
+'    IF l_count > 0 AND :P14_COMPANY_ID IS NULL THEN',
+'      RETURN ''Super User - Please select a company before continuing.'';',
+'    END IF;',
+'END;'))
+,p_validation2=>'PLSQL'
+,p_validation_type=>'FUNC_BODY_RETURNING_ERR_TEXT'
+,p_when_button_pressed=>wwv_flow_imp.id(40553968345170621)
+,p_associated_item=>wwv_flow_imp.id(52465015239584447)
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+);
+wwv_flow_imp_page.create_page_validation(
  p_id=>wwv_flow_imp.id(40554251233170624)
 ,p_validation_name=>'Is an available PTW?'
-,p_validation_sequence=>20
+,p_validation_sequence=>30
 ,p_validation=>':P14_PTW_TYPES = ''LV ISOLATION'''
 ,p_validation2=>'PLSQL'
 ,p_validation_type=>'EXPRESSION'
@@ -141,6 +209,65 @@ wwv_flow_imp_page.create_page_validation(
 ,p_validation_condition=>'CREATE'
 ,p_validation_condition_type=>'REQUEST_EQUALS_CONDITION'
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(52494489024962703)
+,p_name=>'Refresh PTW Types on Company Change'
+,p_event_sequence=>10
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P14_COMPANY_ID'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(52494668297962705)
+,p_event_id=>wwv_flow_imp.id(52494489024962703)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
+,p_attribute_01=>'NULL;'
+,p_attribute_02=>'P14_COMPANY_ID'
+,p_attribute_05=>'PLSQL'
+,p_wait_for_result=>'Y'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(52494565850962704)
+,p_event_id=>wwv_flow_imp.id(52494489024962703)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'ITEM'
+,p_affected_elements=>'P14_PTW_TYPES'
+,p_attribute_01=>'N'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(52465285312584449)
+,p_process_sequence=>10
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Set Company Override'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'  l_count NUMBER;',
+'BEGIN',
+'    SELECT COUNT(*)',
+'    INTO   l_count',
+'    FROM   ptw_pro.ptw_lv_users',
+'    WHERE  UPPER(username) = UPPER(:APP_USER)',
+'    AND    is_super_user = ''Y''',
+'    AND    is_active = ''Y'';',
+'    ',
+'    IF l_count > 0 THEN',
+'        APEX_UTIL.SET_SESSION_STATE(''G_OVERRIDE_COMPANY_ID'', :P14_COMPANY_ID);',
+'    END IF;',
+'END;'))
+,p_process_clob_language=>'PLSQL'
+,p_error_display_location=>'INLINE_IN_NOTIFICATION'
+,p_process_when_button_id=>wwv_flow_imp.id(40553968345170621)
+,p_internal_uid=>52465285312584449
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(40554413173170626)

@@ -5,7 +5,7 @@ begin
 --   Manifest End
 wwv_flow_imp.component_begin (
  p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.16'
+,p_release=>'24.2.17'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
@@ -15,7 +15,7 @@ wwv_flow_imp_shared.create_list(
  p_id=>wwv_flow_imp.id(26415021693144587)
 ,p_name=>'Navigation Menu'
 ,p_list_status=>'PUBLIC'
-,p_version_scn=>46977940508624
+,p_version_scn=>47254851861180
 );
 wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(26426875280144645)
@@ -84,6 +84,16 @@ wwv_flow_imp_shared.create_list_item(
 ,p_list_item_current_type=>'TARGET_PAGE'
 );
 wwv_flow_imp_shared.create_list_item(
+ p_id=>wwv_flow_imp.id(52472331257340516)
+,p_list_item_display_sequence=>141
+,p_list_item_link_text=>'Permit Types'
+,p_list_item_link_target=>'f?p=&APP_ID.:23:&APP_SESSION.::&DEBUG.:::'
+,p_list_item_icon=>'fa-keyboard-o'
+,p_parent_list_item_id=>wwv_flow_imp.id(31589599630638717)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'23'
+);
+wwv_flow_imp_shared.create_list_item(
  p_id=>wwv_flow_imp.id(49781486325693551)
 ,p_list_item_display_sequence=>90
 ,p_list_item_link_text=>'Reports'
@@ -110,6 +120,35 @@ wwv_flow_imp_shared.create_list_item(
 ,p_parent_list_item_id=>wwv_flow_imp.id(49781486325693551)
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'51'
+);
+wwv_flow_imp_shared.create_list_item(
+ p_id=>wwv_flow_imp.id(52452098132289180)
+,p_list_item_display_sequence=>121
+,p_list_item_link_text=>'Super User Admin'
+,p_list_item_icon=>'fa-gear'
+,p_security_scheme=>wwv_flow_imp.id(52412848522131878)
+,p_list_item_current_type=>'TARGET_PAGE'
+);
+wwv_flow_imp_shared.create_list_item(
+ p_id=>wwv_flow_imp.id(52413161183145953)
+,p_list_item_display_sequence=>111
+,p_list_item_link_text=>'Companies'
+,p_list_item_link_target=>'f?p=&APP_ID.:21:&SESSION.::&DEBUG.::::'
+,p_list_item_icon=>'fa-industry'
+,p_parent_list_item_id=>wwv_flow_imp.id(52452098132289180)
+,p_security_scheme=>wwv_flow_imp.id(52412848522131878)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'21'
+);
+wwv_flow_imp_shared.create_list_item(
+ p_id=>wwv_flow_imp.id(52453203231436871)
+,p_list_item_display_sequence=>131
+,p_list_item_link_text=>'Master Permit Types'
+,p_list_item_link_target=>'f?p=&APP_ID.:22:&APP_SESSION.::&DEBUG.:::'
+,p_list_item_icon=>'fa-keyboard-o'
+,p_parent_list_item_id=>wwv_flow_imp.id(52452098132289180)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'22'
 );
 wwv_flow_imp.component_end;
 end;
