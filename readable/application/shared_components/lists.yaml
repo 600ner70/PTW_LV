@@ -5,7 +5,7 @@
     name: Navigation Menu
 
   subscription: 
-    version-number: 46977940508624
+    version-number: 47330696847795
 
   source: 
     type: Static Values
@@ -280,6 +280,141 @@
       target: 
         url: 'f?p=&APP_ID.:51:&APP_SESSION.::&DEBUG.:::'
         page: 51 # Permit Analytics
+
+    click-counting: 
+      count-clicks: false
+
+    user-defined-attributes: 
+      translatable: false
+
+  - # ====== Entry: Companies ====================================
+    id: 52413161183145953
+    label: 
+      label: Companies
+
+    icon: 
+      image/icon-css-classes: fa-industry
+
+    layout: 
+      sequence: 111
+      parent-entry: Super User Admin # 52452098132289180
+
+    is-current: 
+      type: Pages
+      pages: 
+      - 21
+
+    link: 
+      target: 
+        url: 'f?p=&APP_ID.:21:&SESSION.::&DEBUG.::::'
+        page: 21 # Companies
+
+    click-counting: 
+      count-clicks: false
+
+    user-defined-attributes: 
+      translatable: false
+
+    security: 
+      authorization-scheme: Super User Rights # 52412848522131878
+
+  - # ====== Entry: Super User Admin =============================
+    id: 52452098132289180
+    label: 
+      label: Super User Admin
+
+    icon: 
+      image/icon-css-classes: fa-gear
+
+    layout: 
+      sequence: 121
+
+    is-current: 
+      type: Target Page
+
+    user-defined-attributes: 
+      translatable: false
+
+    security: 
+      authorization-scheme: Super User Rights # 52412848522131878
+
+  - # ====== Entry: Master Permit Types ==========================
+    id: 52453203231436871
+    label: 
+      label: Master Permit Types
+
+    icon: 
+      image/icon-css-classes: fa-keyboard-o
+
+    layout: 
+      sequence: 131
+      parent-entry: Super User Admin # 52452098132289180
+
+    is-current: 
+      type: Pages
+      pages: 
+      - 22
+
+    link: 
+      target: 
+        url: 'f?p=&APP_ID.:22:&APP_SESSION.::&DEBUG.:::'
+        page: 22 # Master Permit Types
+
+    click-counting: 
+      count-clicks: false
+
+    user-defined-attributes: 
+      translatable: false
+
+  - # ====== Entry: Permit Types =================================
+    id: 52472331257340516
+    label: 
+      label: Permit Types
+
+    icon: 
+      image/icon-css-classes: fa-keyboard-o
+
+    layout: 
+      sequence: 141
+      parent-entry: Admin # 31589599630638717
+
+    is-current: 
+      type: Pages
+      pages: 
+      - 23
+
+    link: 
+      target: 
+        url: 'f?p=&APP_ID.:23:&APP_SESSION.::&DEBUG.:::'
+        page: 23 # Permit Types
+
+    click-counting: 
+      count-clicks: false
+
+    user-defined-attributes: 
+      translatable: false
+
+  - # ====== Entry: Set Active Company ===========================
+    id: 52956337049658654
+    label: 
+      label: Set Active Company
+
+    icon: 
+      image/icon-css-classes: fa-eye
+
+    layout: 
+      sequence: 151
+      parent-entry: Super User Admin # 52452098132289180
+
+    is-current: 
+      type: Pages
+      pages: 
+      - 28
+
+    link: 
+      target: 
+        url: 'f?p=&APP_ID.:28:&SESSION.::&DEBUG.::::'
+        page: 28 # Set Active Company
 
     click-counting: 
       count-clicks: false

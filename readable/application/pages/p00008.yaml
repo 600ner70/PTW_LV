@@ -631,6 +631,23 @@ regions:
                  WHERE  application_id = :APP_ID
              )
       AND    u.is_active IS NOT NULL
+      AND (
+          -- Super user, no override: see everyone (unrestricted)
+          (
+              EXISTS (SELECT 1 FROM ptw_pro.ptw_lv_users su
+                       WHERE UPPER(su.username) = UPPER(:APP_USER)
+                       AND   su.is_super_user = 'Y' AND su.is_active = 'Y')
+              AND (V('G_OVERRIDE_COMPANY_ID') IS NULL OR V('G_OVERRIDE_COMPANY_ID') = '')
+          )
+          OR
+          -- Everyone else (normal users, or super users WITH an
+          -- override): see only your "effective company"
+          u.company_id = NVL(
+              TO_NUMBER(V('G_OVERRIDE_COMPANY_ID')),
+              (SELECT company_id FROM ptw_pro.ptw_lv_users
+                WHERE UPPER(username) = UPPER(:APP_USER))
+          )
+      )
       GROUP  BY
           au.user_name, u.email_address, u.mobile_no,
           u.first_name, u.last_name, u.job_title, u.is_active,
@@ -2614,6 +2631,17 @@ dynamic-actions:
         BEGIN
             l_username := UPPER(:P8_SELECTED_USERNAME);
         
+            BEGIN
+                ptw_pro.ptw_sec_pkg.check_user_in_company(l_username);
+            EXCEPTION
+                WHEN OTHERS THEN
+                    apex_error.add_error(
+                        p_message          => 'Access denied: this user does not belong to your company.',
+                        p_display_location => apex_error.c_inline_in_notification
+                    );
+                    RETURN;
+            END;
+        
             -- Verify user exists in APEX
             DECLARE
                 l_count NUMBER;
@@ -2858,6 +2886,8 @@ processes:
               RETURN;
           END IF;
       
+          ptw_pro.ptw_sec_pkg.check_user_in_company(:P8_SELECTED_USERNAME);
+      
           l_user_name := UPPER(:P8_SELECTED_USERNAME);
       
           -- Get caller's highest role for restriction checks
@@ -3073,6 +3103,8 @@ processes:
                   RETURN;
           END;
       
+          ptw_pro.ptw_sec_pkg.check_user_in_company(l_user_name);
+      
           -- Step 1b: Get the numeric user_id needed by EDIT_USER
           l_user_id := APEX_UTIL.GET_USER_ID(p_username => l_user_name);
       
@@ -3143,10 +3175,19 @@ processes:
     pl/sql-code: |
       DECLARE
           l_user_role_id NUMBER;
+          l_username     VARCHAR2(100);
       BEGIN
           l_user_role_id := TO_NUMBER(
                                 REPLACE(:REQUEST, 'DEACTIVATE_ROLE_', '')
                             );
+      
+          SELECT u.username
+          INTO   l_username
+          FROM   ptw_pro.ptw_lv_user_role_assignments ur
+          JOIN   ptw_pro.ptw_lv_users u ON u.user_id = ur.user_id
+          WHERE  ur.user_role_id = l_user_role_id;
+       
+          ptw_pro.ptw_sec_pkg.check_user_in_company(l_username);
        
           UPDATE ptw_pro.ptw_lv_user_role_assignments
           SET    is_active     = 'N',
@@ -3158,6 +3199,11 @@ processes:
           apex_application.g_print_success_message := 'Role deactivated successfully.';
        
       EXCEPTION
+          WHEN NO_DATA_FOUND THEN
+              apex_error.add_error(
+                  p_message          => 'Role assignment not found.',
+                  p_display_location => apex_error.c_inline_in_notification
+              );
           WHEN OTHERS THEN
               ROLLBACK;
               apex_error.add_error(
@@ -3223,13 +3269,22 @@ processes:
     pl/sql-code: |
       DECLARE
           l_user_role_id NUMBER;
+          l_username     VARCHAR2(100);
       BEGIN
           l_user_role_id := TO_NUMBER(
                                 REPLACE(:REQUEST, 'REACTIVATE_ROLE_', '')
                             );
+      
+          SELECT u.username
+          INTO   l_username
+          FROM   ptw_pro.ptw_lv_user_role_assignments ur
+          JOIN   ptw_pro.ptw_lv_users u ON u.user_id = ur.user_id
+          WHERE  ur.user_role_id = l_user_role_id;
+       
+          ptw_pro.ptw_sec_pkg.check_user_in_company(l_username);
        
           UPDATE ptw_pro.ptw_lv_user_role_assignments
-          SET    is_active     = 'Y',
+          SET    is_active     = 'N',
                  modified_date = CURRENT_TIMESTAMP,
                  modified_by   = NVL(V('APP_USER'), USER)
           WHERE  user_role_id  = l_user_role_id;
@@ -3238,6 +3293,11 @@ processes:
           apex_application.g_print_success_message := 'Role reactivated successfully.';
        
       EXCEPTION
+          WHEN NO_DATA_FOUND THEN
+              apex_error.add_error(
+                  p_message          => 'Role assignment not found.',
+                  p_display_location => apex_error.c_inline_in_notification
+              );
           WHEN OTHERS THEN
               ROLLBACK;
               apex_error.add_error(
@@ -3282,6 +3342,8 @@ processes:
               );
               RETURN;
           END IF;
+      
+          ptw_pro.ptw_sec_pkg.check_user_in_company(l_username);
       
           -- Unlock APEX account
           APEX_UTIL.UNLOCK_ACCOUNT(p_user_name => l_username);

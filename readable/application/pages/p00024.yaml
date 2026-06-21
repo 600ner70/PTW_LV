@@ -1,0 +1,919 @@
+---
+# ====== Page: Edit Company ==================================
+id: 24
+identification: 
+  name: Edit Company
+  alias: EDIT-COMPANY
+  title: Add/Edit Company
+
+appearance: 
+  page-mode: Modal Dialog
+  dialog-template: Theme Default
+  template-options: 
+  - '#DEFAULT#'
+
+dialog: 
+  chained: true
+  resizable: true
+
+navigation-menu: 
+  override-user-interface-level: false
+
+navigation: 
+  cursor-focus: Do not focus cursor
+  warn-on-unsaved-changes: true
+
+javascript: 
+  execute-when-page-loads: |
+    (function () {
+        var BINARY_ITEMS = ['P24_IS_ACTIVE'];
+    
+        var BADGES = [
+            { val: 'Y', cls: 'binary-badge-yes', label: '✓' },
+            { val: 'N', cls: 'binary-badge-no',  label: '✗' }
+        ];
+    
+        BINARY_ITEMS.forEach(function (itemName) {
+            var $fc = $('#' + itemName).closest('.t-Form-fieldContainer');
+            if ($fc.length === 0) return;
+    
+            $fc.find('.binary-badge-row').remove();
+    
+            var currentVal = $('input[name="' + itemName + '"]:checked').val() || '';
+    
+            var $row = $('<div class="binary-badge-row"></div>').attr('data-item', itemName);
+    
+            BADGES.forEach(function (b) {
+                $('<span></span>')
+                    .addClass('binary-badge ' + b.cls)
+                    .toggleClass('cm-active', currentVal === b.val)
+                    .attr('data-value', b.val)
+                    .text(b.label)
+                    .appendTo($row);
+            });
+    
+            $fc.find('.t-Form-inputContainer').append($row);
+        });
+    
+        $('.cm-binary-item .apex-item-grid').hide();
+    
+        $(document).off('click.binarybadge24').on('click.binarybadge24', '.binary-badge:not(.binary-readonly)', function () {
+            var $badge   = $(this);
+            var $row     = $badge.closest('.binary-badge-row');
+            var itemName = $row.attr('data-item');
+            var val      = $badge.attr('data-value');
+    
+            $('input[name="' + itemName + '"][value="' + val + '"]')
+                .prop('checked', true).trigger('change');
+    
+            $row.find('.binary-badge').removeClass('cm-active');
+            $badge.addClass('cm-active');
+        });
+    }());
+
+security: 
+  authorization-scheme: Super User Rights # 52412848522131878
+  authentication: Page Requires Authentication
+  deep-linking: Application Default
+  page-access-protection: Arguments Must Have Checksum
+  form-auto-complete: Off
+  browser-cache: Application Default
+
+session-management: 
+  rejoin-sessions: Application Default
+
+advanced: 
+  enable-duplicate-page-submissions: Yes - Enable page to be re-posted
+  reload-on-submit: Only for Success
+
+server-cache: 
+  caching: Disabled
+
+regions: 
+- # ====== Region: Company Details =============================
+  id: 52415430252182118
+  identification: 
+    name: Company Details
+    title: Company Details
+    type: Static Content
+
+  layout: 
+    sequence: 40
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Blank with Attributes
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Buttons =====================================
+  id: 52416089146182124
+  identification: 
+    name: Buttons
+    type: Static Content
+
+  layout: 
+    sequence: 50
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Buttons Container
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+page-items: 
+- # ====== Page Item: P24_COMPANY_ID ===========================
+  id: 52415360719182117
+  identification: 
+    name: P24_COMPANY_ID
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 30
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P24_COMPANY_NAME =========================
+  id: 52415521718182119
+  identification: 
+    name: P24_COMPANY_NAME
+    type: Text Field
+
+  label: 
+    label: Company Name
+    alignment: Left
+
+  settings: 
+    subtype: Text
+    trim-spaces: Leading and Trailing
+    text-case: NO CHANGE
+    submit-when-enter-pressed: false
+    disabled: false
+
+  layout: 
+    sequence: 10
+    region: Company Details # 52415430252182118
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 3
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    width: 30
+
+  validation: 
+    value-required: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  read-only: 
+    type: Item is NOT NULL
+    item: P24_COMPANY_ID
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P24_COMPANY_CODE =========================
+  id: 52415614297182120
+  identification: 
+    name: P24_COMPANY_CODE
+    type: Text Field
+
+  label: 
+    label: Company Code
+    alignment: Left
+
+  settings: 
+    subtype: Text
+    trim-spaces: Leading and Trailing
+    text-case: NO CHANGE
+    submit-when-enter-pressed: false
+    disabled: false
+
+  layout: 
+    sequence: 20
+    region: Company Details # 52415430252182118
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 3
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    width: 30
+
+  validation: 
+    value-required: false
+
+  advanced: 
+    custom-attributes: 
+    - 'style="text-transform:uppercase"'
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  read-only: 
+    type: Item is NOT NULL
+    item: P24_COMPANY_ID
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P24_IS_ACTIVE ============================
+  id: 52415733172182121
+  identification: 
+    name: P24_IS_ACTIVE
+    type: Radio Group
+
+  label: 
+    label: Active?
+    alignment: Left
+
+  settings: 
+    number-of-columns: 2
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 50
+    region: Company Details # 52415430252182118
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-binary-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC:Yes;Y,No;N'
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  default: 
+    type: Static
+    static-value: Y
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P24_CREATED_DATE =========================
+  id: 52415835734182122
+  identification: 
+    name: P24_CREATED_DATE
+    type: Display Only
+
+  label: 
+    label: Date Created
+    alignment: Left
+
+  settings: 
+    format: Plain Text
+    based-on: Item Value
+    show-line-breaks: true
+    send-on-page-submit: true
+
+  layout: 
+    sequence: 60
+    region: Company Details # 52415430252182118
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    format-mask: 'DD-MON-YYYY HH24:MI'
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  server-side-condition: 
+    type: Item is NOT NULL
+    item: P24_COMPANY_ID
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P24_USER_COUNT ===========================
+  id: 52415992923182123
+  identification: 
+    name: P24_USER_COUNT
+    type: Display Only
+
+  label: 
+    label: Users in this Company
+    alignment: Left
+
+  settings: 
+    format: Plain Text
+    based-on: Item Value
+    show-line-breaks: true
+    send-on-page-submit: true
+
+  layout: 
+    sequence: 70
+    region: Company Details # 52415430252182118
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: SQL Query (return single value)
+    sql-query: |
+      SELECT COUNT(*) 
+      FROM   ptw_pro.ptw_lv_users
+      WHERE  company_id = :P24_COMPANY_ID
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  server-side-condition: 
+    type: Item is NOT NULL
+    item: P24_COMPANY_ID
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+  help: 
+    inline-help-text: Informational only - helps super user judge whether a company can safely be deleted
+
+- # ====== Page Item: P24_PERMIT_PREFIX ========================
+  id: 52495863962962717
+  identification: 
+    name: P24_PERMIT_PREFIX
+    type: Text Field
+
+  label: 
+    label: Permit Number Prefix
+    alignment: Left
+
+  settings: 
+    subtype: Text
+    trim-spaces: Leading and Trailing
+    text-case: NO CHANGE
+    submit-when-enter-pressed: false
+    disabled: false
+
+  layout: 
+    sequence: 30
+    region: Company Details # 52415430252182118
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 3
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    width: 30
+    value-placeholder: e.g. MWM
+
+  validation: 
+    value-required: false
+    maximum-length: 4
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  server-side-condition: 
+    type: Item is NULL
+    item: P24_COMPANY_ID
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P24_PERMIT_PREFIX_DISPLAY ================
+  id: 52495959704962718
+  identification: 
+    name: P24_PERMIT_PREFIX_DISPLAY
+    type: Display Only
+
+  label: 
+    label: Permit Prefix Display
+    alignment: Left
+
+  settings: 
+    format: Plain Text
+    based-on: Item Value
+    show-line-breaks: true
+    send-on-page-submit: true
+
+  layout: 
+    sequence: 40
+    region: Company Details # 52415430252182118
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 3
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+
+  advanced: 
+    custom-attributes: 
+    - 'style="text-transform:uppercase"'
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  server-side-condition: 
+    type: Item is NOT NULL
+    item: P24_COMPANY_ID
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+buttons: 
+- # ====== Button: SAVE ========================================
+  id: 52416184904182125
+  identification: 
+    button-name: SAVE
+    label: Save
+
+  layout: 
+    sequence: 10
+    region: Buttons # 52416089146182124
+    slot: CREATE
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text with Icon
+    hot: true
+    template-options: 
+    - '#DEFAULT#'
+    - t-Button--iconLeft
+    icon: fa-save
+
+  behavior: 
+    action: Submit Page
+    execute-validations: true
+    show-processing: false
+    warn-on-unsaved-changes: Do Not Check
+
+  advanced: 
+    static-id: BTN_SAVE_P24
+
+- # ====== Button: CANCEL ======================================
+  id: 52416260898182126
+  identification: 
+    button-name: CANCEL
+    label: Cancel
+
+  layout: 
+    sequence: 10
+    region: Buttons # 52416089146182124
+    slot: CLOSE
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text
+    hot: false
+    template-options: 
+    - '#DEFAULT#'
+
+  behavior: 
+    action: Redirect to Page in this Application
+    target: 
+      url: 'f?p=&APP_ID.:21:&SESSION.::&DEBUG.:21::'
+      page: 21 # Companies
+      clear-cache: 21
+
+    warn-on-unsaved-changes: Do Not Check
+
+  advanced: 
+    static-id: BTN_CANCEL_P24
+
+validations: 
+- # ====== Validation: Company Name Required ===================
+  id: 52416641408182130
+  identification: 
+    name: Company Name Required
+
+  execution: 
+    sequence: 10
+
+  validation: 
+    type: Item is NOT NULL
+    item: P24_COMPANY_NAME
+    always-execute: false
+
+  error: 
+    error-message: Company Name is required.
+    display-location: Inline with Field and in Notification
+    associated-item: P24_COMPANY_NAME # 52415521718182119
+
+  server-side-condition: 
+    when-button-pressed: SAVE # 52416184904182125
+
+- # ====== Validation: Company Code Must Be Unique =============
+  id: 52416710609182131
+  identification: 
+    name: Company Code Must Be Unique
+
+  execution: 
+    sequence: 20
+
+  validation: 
+    type: Function Body (returning Boolean)
+    language: PL/SQL
+    pl/sql-function-body: |
+      DECLARE
+          v_count NUMBER;
+      BEGIN
+          -- company_code has a UNIQUE constraint but is nullable;
+          -- NULLs don't violate uniqueness, so only check when a
+          -- value is actually entered.
+          IF :P24_COMPANY_CODE IS NULL THEN
+              RETURN TRUE;
+          END IF;
+      
+          SELECT COUNT(*) INTO v_count
+          FROM   ptw_pro.ptw_lv_companies
+          WHERE  UPPER(company_code) = UPPER(:P24_COMPANY_CODE)
+          AND    (company_id != :P24_COMPANY_ID OR :P24_COMPANY_ID IS NULL);
+          RETURN v_count = 0;
+      END;
+    always-execute: false
+
+  error: 
+    error-message: This Company Code is already in use by another company. Please choose a different code, or leave it blank.
+    display-location: Inline with Field and in Notification
+    associated-item: P24_COMPANY_CODE # 52415614297182120
+
+  server-side-condition: 
+    when-button-pressed: SAVE # 52416184904182125
+
+- # ====== Validation: Prefix Required and Valid ===============
+  id: 52496007143962719
+  identification: 
+    name: Prefix Required and Valid
+
+  execution: 
+    sequence: 30
+
+  validation: 
+    type: Function Body (returning Boolean)
+    language: PL/SQL
+    pl/sql-function-body: |
+      DECLARE
+          v_prefix VARCHAR2(4) := TRIM(:P24_PERMIT_PREFIX);
+      BEGIN
+          -- Only validate in create mode (item is hidden on edit)
+          IF :P24_COMPANY_ID IS NOT NULL THEN
+              RETURN TRUE;
+          END IF;
+      
+          RETURN v_prefix IS NOT NULL
+             AND LENGTH(v_prefix) BETWEEN 1 AND 4
+             AND UPPER(v_prefix) = v_prefix;
+      END;
+    always-execute: false
+
+  error: 
+    error-message: Permit Number Prefix is required and must be 1-4 uppercase letters (e.g. MWM).
+    display-location: Inline with Field and in Notification
+    associated-item: P24_PERMIT_PREFIX # 52495863962962717
+
+- # ====== Validation: Prefix Must Be Unique ===================
+  id: 52496175209962720
+  identification: 
+    name: Prefix Must Be Unique
+
+  execution: 
+    sequence: 40
+
+  validation: 
+    type: Function Body (returning Boolean)
+    language: PL/SQL
+    pl/sql-function-body: |
+      DECLARE
+          v_count NUMBER;
+      BEGIN
+          -- Only validate in create mode
+          IF :P24_COMPANY_ID IS NOT NULL THEN
+              RETURN TRUE;
+          END IF;
+      
+          SELECT COUNT(*) INTO v_count
+          FROM   ptw_pro.ptw_lv_companies
+          WHERE  UPPER(permit_prefix) = UPPER(TRIM(:P24_PERMIT_PREFIX));
+      
+          RETURN v_count = 0;
+      END;
+    always-execute: false
+
+  error: 
+    error-message: This prefix is already used by another company. Please choose a different one.
+    display-location: Inline with Field and in Notification
+    associated-item: P24_PERMIT_PREFIX # 52495863962962717
+
+processes: 
+- # ====== Process: Fetch Company ==============================
+  id: 52416338328182127
+  identification: 
+    name: Fetch Company
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      BEGIN
+          --
+          SELECT c.company_name,
+                 c.company_code,
+                 c.permit_prefix,
+                 c.is_active,
+                 TO_CHAR(c.created_date, 'DD-MON-YYYY') AS created_date,
+                 (SELECT COUNT(*) FROM ptw_pro.ptw_lv_users u
+                   WHERE u.company_id = c.company_id)   AS user_count
+          INTO   :P24_COMPANY_NAME,
+                 :P24_COMPANY_CODE,
+                 :P24_PERMIT_PREFIX_DISPLAY,
+                 :P24_IS_ACTIVE,
+                 :P24_CREATED_DATE,
+                 :P24_USER_COUNT
+          FROM   ptw_pro.ptw_lv_companies c
+          WHERE  company_id = :P24_COMPANY_ID
+          ORDER  BY c.company_name;
+      END;
+      
+
+  execution: 
+    sequence: 10
+    point: Before Header
+    run-process: Once Per Page Visit (default)
+
+  server-side-condition: 
+    type: Item is NOT NULL
+    item: P24_COMPANY_ID
+
+- # ====== Process: Save Company ===============================
+  id: 52416461002182128
+  identification: 
+    name: Save Company
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      IF :P24_COMPANY_ID IS NOT NULL THEN
+      
+          DECLARE
+              l_db_comp_is_active VARCHAR2(1);
+          BEGIN
+              --
+              SELECT is_active
+              INTO   l_db_comp_is_active
+              FROM   ptw_pro.ptw_lv_companies
+              WHERE  company_id = :P24_COMPANY_ID;
+              --
+              IF l_db_comp_is_active != :P24_IS_ACTIVE THEN
+                  --
+                  UPDATE ptw_pro.ptw_lv_companies
+                  SET    is_active = :P24_IS_ACTIVE
+                  WHERE  company_id = :P24_COMPANY_ID;
+              END IF;
+          END;
+      
+      ELSE
+      
+          INSERT INTO ptw_pro.ptw_lv_companies
+              (company_name, company_code, is_active, permit_prefix)
+          VALUES (
+              :P24_COMPANY_NAME,
+              :P24_COMPANY_CODE,
+              :P24_IS_ACTIVE,
+              :P24_PERMIT_PREFIX
+          );
+      
+      END IF;
+      
+      
+
+  execution: 
+    sequence: 10
+    point: Processing
+    run-process: Once Per Page Visit (default)
+
+  error: 
+    display-location: Inline in Notification
+
+branches: 
+- # ====== Branch: Return to Page 21 ===========================
+  id: 52416510073182129
+  identification: 
+    name: Return to Page 21
+
+  execution: 
+    sequence: 10
+    point: After Processing
+
+  behavior: 
+    type: Page or URL (Redirect)
+    target: 
+      url: 'f?p=&APP_ID.:21:&SESSION.::&DEBUG.:21::'
+      page: 21 # Companies
+      clear-cache: 21
+

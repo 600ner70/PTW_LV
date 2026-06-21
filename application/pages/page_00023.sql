@@ -105,7 +105,7 @@ wwv_flow_imp_page.create_report_region(
 ,p_name=>'Permit Types'
 ,p_title=>'Permit Types'
 ,p_template=>4072358936313175081
-,p_display_sequence=>40
+,p_display_sequence=>60
 ,p_icon_css_classes=>'fa-tags'
 ,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
 ,p_component_template_options=>'#DEFAULT#:t-Report--altRowsDefault:t-Report--rowHighlight'
@@ -140,6 +140,8 @@ wwv_flow_imp_page.create_report_region(
 '                     WHERE ct.type_id = t.type_id)',
 ') x',
 'ORDER BY x.ptw_type'))
+,p_display_when_condition=>'G_OVERRIDE_COMPANY_ID'
+,p_display_condition_type=>'ITEM_IS_NOT_NULL'
 ,p_ajax_enabled=>'Y'
 ,p_lazy_loading=>false
 ,p_query_row_template=>2538654340625403440
@@ -201,6 +203,54 @@ wwv_flow_imp_page.create_report_columns(
 ,p_display_as=>'WITHOUT_MODIFICATION'
 ,p_derived_column=>'N'
 ,p_include_in_export=>'Y'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(52496227297962721)
+,p_plug_name=>'Super User Current Company'
+,p_region_template_options=>'#DEFAULT#:t-BreadcrumbRegion--useBreadcrumbTitle'
+,p_plug_template=>2531463326621247859
+,p_plug_display_sequence=>50
+,p_location=>null
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'    v_override  VARCHAR2(50) := V(''G_OVERRIDE_COMPANY_ID'');',
+'    v_name      VARCHAR2(200);',
+'    v_html      CLOB;',
+'BEGIN',
+'    IF v_override IS NULL OR v_override = '''' THEN',
+'        RETURN NULL;',
+'    END IF;',
+'',
+'    SELECT company_name',
+'    INTO   v_name',
+'    FROM   ptw_pro.ptw_lv_companies',
+'    WHERE  company_id = TO_NUMBER(v_override);',
+'',
+'    v_html := ''<p><strong>Switched to Company: </strong>'' ',
+'           || apex_escape.html(v_name) || ''</p>'';',
+'',
+'    RETURN v_html;',
+'',
+'EXCEPTION',
+'    WHEN OTHERS THEN RETURN NULL;',
+'END;'))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+,p_plug_display_condition_type=>'FUNCTION_BODY'
+,p_plug_display_when_condition=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'    v_is_super VARCHAR2(1);',
+'BEGIN',
+'    SELECT is_super_user INTO v_is_super',
+'    FROM   ptw_pro.ptw_lv_users',
+'    WHERE  UPPER(username) = UPPER(:APP_USER)',
+'    AND    is_active = ''Y'';',
+'    RETURN v_is_super = ''Y'';',
+'EXCEPTION',
+'    WHEN OTHERS THEN RETURN FALSE;',
+'END;'))
+,p_plug_display_when_cond2=>'PLSQL'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(52464752525584444)

@@ -296,3 +296,36 @@
       You do not have permission to perform this action.
       Please contact your system administrator.
 
+- # ====== Authorization: Super User Rights ====================
+  id: 52412848522131878
+  identification: 
+    name: Super User Rights
+
+  subscription: 
+    version-number: 47254822226326
+
+  authorization-scheme: 
+    type: PL/SQL Function Returning Boolean
+
+  settings: 
+    pl/sql-function-body: |
+      DECLARE
+          v_count NUMBER;
+      BEGIN
+          SELECT COUNT(*)
+          INTO   v_count
+          FROM   ptw_pro.ptw_lv_users
+          WHERE  UPPER(username) = UPPER(:APP_USER)
+          AND    is_super_user   = 'Y'
+          AND    is_active       = 'Y';
+          RETURN v_count > 0;
+      EXCEPTION
+          WHEN OTHERS THEN RETURN FALSE;
+      END;
+
+  server-cache: 
+    evaluation-point: Once per Session
+
+  error: 
+    error-message: Access denied - Super User rights required.
+

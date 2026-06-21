@@ -23,6 +23,11 @@ wwv_flow_imp_shared.create_list_of_values(
 'WHERE  u.role_name IN (''ADMIN'', ''AUTHORISER'')',
 'AND    u.username <> ''PTW_PRO''',
 'AND    u.is_active = ''Y''',
+'AND    u.company_id = (',
+'    SELECT company_id',
+'    FROM   ptw_pro.ptw_lv_users',
+'    WHERE  UPPER(username) = UPPER(:APP_USER)',
+')',
 'ORDER BY display_value'))
 ,p_source_type=>'SQL'
 ,p_location=>'LOCAL'
@@ -30,7 +35,7 @@ wwv_flow_imp_shared.create_list_of_values(
 ,p_display_column_name=>'DISPLAY_VALUE'
 ,p_group_sort_direction=>'ASC'
 ,p_default_sort_direction=>'ASC'
-,p_version_scn=>46647446830926
+,p_version_scn=>47332139550510
 );
 wwv_flow_imp.component_end;
 end;

@@ -1,0 +1,881 @@
+---
+# ====== Page: Companies =====================================
+id: 21
+identification: 
+  name: Companies
+  alias: COMPANIES
+  title: Companies
+
+appearance: 
+  page-mode: Normal
+  page-template: Theme Default
+  template-options: 
+  - '#DEFAULT#'
+
+navigation-menu: 
+  override-user-interface-level: false
+
+navigation: 
+  cursor-focus: Do not focus cursor
+  warn-on-unsaved-changes: true
+
+javascript: 
+  execute-when-page-loads: |
+    (function () {
+        var BINARY_ITEMS = ['P21_IS_ACTIVE'];
+    
+        var BADGES = [
+            { val: 'Y', cls: 'binary-badge-yes', label: '✓' },
+            { val: 'N', cls: 'binary-badge-no',  label: '✗' }
+        ];
+    
+        BINARY_ITEMS.forEach(function (itemName) {
+            var $fc = $('#' + itemName).closest('.t-Form-fieldContainer');
+            if ($fc.length === 0) return;
+    
+            $fc.find('.binary-badge-row').remove();
+    
+            var currentVal = $('input[name="' + itemName + '"]:checked').val() || '';
+    
+            var $row = $('<div class="binary-badge-row"></div>').attr('data-item', itemName);
+    
+            BADGES.forEach(function (b) {
+                $('<span></span>')
+                    .addClass('binary-badge ' + b.cls)
+                    .toggleClass('cm-active', currentVal === b.val)
+                    .attr('data-value', b.val)
+                    .text(b.label)
+                    .appendTo($row);
+            });
+    
+            $fc.find('.t-Form-inputContainer').append($row);
+        });
+    
+        $('.cm-binary-item .apex-item-grid').hide();
+    
+        $(document).off('click.binarybadge21').on('click.binarybadge21', '.binary-badge:not(.binary-readonly)', function () {
+            var $badge   = $(this);
+            var $row     = $badge.closest('.binary-badge-row');
+            var itemName = $row.attr('data-item');
+            var val      = $badge.attr('data-value');
+    
+            $('input[name="' + itemName + '"][value="' + val + '"]')
+                .prop('checked', true).trigger('change');
+    
+            $row.find('.binary-badge').removeClass('cm-active');
+            $badge.addClass('cm-active');
+        });
+    }());
+
+css: 
+  inline: |
+    .admin-page-header {
+        background: linear-gradient(135deg, #003366 0%, #005599 100%);
+        color: white;
+        padding: 25px 30px;
+        border-radius: 8px;
+        margin-bottom: 25px;
+    }
+    .admin-page-header h1 { margin: 0 0 5px 0; font-size: 1.75rem; font-weight: 700; }
+    .admin-page-header p  { margin: 0; opacity: 0.85; font-size: 0.95rem; }
+
+security: 
+  authorization-scheme: Super User Rights # 52412848522131878
+  authentication: Page Requires Authentication
+  deep-linking: Application Default
+  page-access-protection: Arguments Must Have Checksum
+  form-auto-complete: Off
+  browser-cache: Application Default
+
+session-management: 
+  rejoin-sessions: Application Default
+
+advanced: 
+  enable-duplicate-page-submissions: Yes - Enable page to be re-posted
+  reload-on-submit: Only for Success
+
+server-cache: 
+  caching: Disabled
+
+regions: 
+- # ====== Region: Page Header =================================
+  id: 50565856142122741
+  identification: 
+    name: Page Header
+    type: Dynamic Content
+
+  source: 
+    language: PL/SQL
+    pl/sql-function-body-returning-a-clob: |
+      DECLARE
+          l_is_admin  VARCHAR2(1) := 'N';
+          l_html      CLOB;
+      BEGIN
+          BEGIN
+              SELECT CASE is_admin WHEN 'Yes' THEN 'Y' ELSE 'N' END
+              INTO   l_is_admin
+              FROM   apex_workspace_apex_users
+              WHERE  UPPER(user_name)  = UPPER(V('APP_USER'))
+              AND    workspace_name    = (
+                         SELECT workspace FROM apex_applications
+                         WHERE  application_id = :APP_ID
+                     );
+          EXCEPTION
+              WHEN NO_DATA_FOUND THEN l_is_admin := 'N';
+          END;
+      
+          l_html := '<div class="admin-page-header">'
+                 || '  <div style="display:flex; justify-content:space-between; align-items:center;">'
+                 || '    <div>'
+                 || '      <h1>Companies</h1>'
+                 || '      <p>Manage companies using this application. Each user belongs to '
+                 || '         one company, or is a Super User with access to all companies.</p>'
+                 || '    </div>';
+      
+          IF l_is_admin = 'Y' THEN
+              l_html := l_html
+                     || '<div style="flex-shrink:0; margin-left:20px;">'
+                     || '  <span style="background:#dc3545; color:white;'
+                     || '             display:inline-flex; align-items:center;'
+                     || '             padding:6px 16px; border-radius:20px;'
+                     || '             font-size:0.78rem; font-weight:700;'
+                     || '             letter-spacing:0.5px; text-transform:uppercase;'
+                     || '             box-shadow:0 2px 4px rgba(0,0,0,0.3);'
+                     || '             white-space:nowrap;">'
+                     || '  <span class="fa fa-shield" style="margin-right:8px; font-size:0.9rem;"></span>'
+                     || '  Workspace Administrator'
+                     || '</span>'
+                     || '</div>';
+          END IF;
+      
+          l_html := l_html
+                 || '  </div>'
+                 || '</div>';
+      
+          RETURN l_html;
+      END;
+
+  layout: 
+    sequence: 50
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Blank with Attributes
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  server-cache: 
+    caching: Disabled
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    performance: 
+      lazy-loading: false
+
+- # ====== Region: Companies ===================================
+  id: 50565961300122742
+  identification: 
+    name: Companies
+    title: Companies
+    type: Interactive Report
+
+  source: 
+    location: Local Database
+    type: SQL Query
+    sql-query: |
+      SELECT c.company_id,
+             c.company_name,
+             c.company_code,
+             CASE c.is_active WHEN 'Y' THEN 'Active' ELSE 'Inactive' END AS status,
+             c.is_active,
+             TO_CHAR(c.created_date, 'DD-MON-YYYY HH24:MI') AS created_date,
+             created_by,
+             TO_CHAR(c.modified_date, 'DD-MON-YYYY HH24:MI') AS modified_date,
+             modified_by,
+             (SELECT COUNT(*) FROM ptw_pro.ptw_lv_users u
+               WHERE u.company_id = c.company_id)   AS user_count,
+             (SELECT COUNT(*) FROM ptw_pro.ptw_lv_permits p
+               WHERE p.company_id = c.company_id)   AS permit_count
+      FROM   ptw_pro.ptw_lv_companies c
+      ORDER  BY c.company_name
+
+  layout: 
+    sequence: 70
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--showIcon
+    - t-Region--accent15
+    - t-Region--scrollBody
+    icon: fa-building
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  server-cache: 
+    caching: Disabled
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    id: 50566022873122743
+    link: 
+      link-column: Exclude Link Column
+
+    pagination: 
+      type: Row Ranges X to Y
+      display-position: Bottom - Right
+
+    performance: 
+      lazy-loading: false
+      maximum-rows-to-process: 1000000
+
+    search-bar: 
+      include-search-bar: true
+      search-field: true
+      finder-drop-down: true
+      reports-select-list: true
+      rows-per-page-selector: false
+
+    actions-menu: 
+      include-actions-menu: true
+      filter: true
+      select-columns: true
+      rows-per-page: true
+      sort: true
+      control-break: true
+      highlight: true
+      compute: true
+      aggregate: true
+      chart: true
+      group-by: true
+      pivot: true
+      flashback: true
+      save-report: true
+      save-public-report: false
+      reset: true
+      help: true
+      download: true
+      subscription: true
+
+    download: 
+      formats: 
+      - CSV
+      - HTML
+      - Excel
+      - PDF
+      send-as-email: true
+
+    heading: 
+      fixed-to: Page
+
+    icon-view: 
+      show: false
+
+    detail-view: 
+      show: false
+
+    saved-reports: 
+    - # ====== Saved Report: Primary Report ========================
+      id: 52427205848351061
+      identification: 
+        name: Primary Report
+        alias: 524273
+
+    columns: 
+    - # ====== Column: COMPANY_ID ==================================
+      id: 50566130078122744
+      identification: 
+        column-name: COMPANY_ID
+        type: Link
+
+      heading: 
+        heading: '&nbsp.'
+        alignment: end
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 10
+        column-alignment: end
+
+      accessibility: 
+        value-identifies-row: false
+
+      link: 
+        target: 
+          url: 'f?p=&APP_ID.:24:&SESSION.::&DEBUG.:21:P24_COMPANY_ID:#COMPANY_ID#'
+          page: 24 # Edit Company
+          clear-cache: 21
+          values: 
+            p24_company_id: '#COMPANY_ID#'
+
+        link-text: <span class="fa fa-edit" title="Edit"></span>
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
+    - # ====== Column: COMPANY_NAME ================================
+      id: 50566296045122745
+      identification: 
+        column-name: COMPANY_NAME
+        type: Plain Text
+
+      heading: 
+        heading: Company Name
+        alignment: start
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 20
+        column-alignment: start
+
+      accessibility: 
+        value-identifies-row: false
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
+    - # ====== Column: COMPANY_CODE ================================
+      id: 50566394348122746
+      identification: 
+        column-name: COMPANY_CODE
+        type: Plain Text
+
+      heading: 
+        heading: Company Code
+        alignment: start
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 30
+        column-alignment: start
+
+      accessibility: 
+        value-identifies-row: false
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
+    - # ====== Column: STATUS ======================================
+      id: 50566406422122747
+      identification: 
+        column-name: STATUS
+        type: Plain Text
+
+      heading: 
+        heading: Status
+        alignment: start
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 40
+        column-alignment: start
+
+      accessibility: 
+        value-identifies-row: false
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
+    - # ====== Column: IS_ACTIVE ===================================
+      id: 50566552114122748
+      identification: 
+        column-name: IS_ACTIVE
+        type: Hidden
+
+      heading: 
+        heading: Is Active
+
+      layout: 
+        sequence: 50
+
+      source: 
+        primary-key: false
+
+      security: 
+        escape-special-characters: true
+
+    - # ====== Column: CREATED_DATE ================================
+      id: 50566679465122749
+      identification: 
+        column-name: CREATED_DATE
+        type: Plain Text
+
+      heading: 
+        heading: Created Date
+        alignment: start
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 60
+        column-alignment: start
+
+      accessibility: 
+        value-identifies-row: false
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
+    - # ====== Column: USER_COUNT ==================================
+      id: 50566708303122750
+      identification: 
+        column-name: USER_COUNT
+        type: Plain Text
+
+      heading: 
+        heading: User Count
+        alignment: end
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 70
+        column-alignment: end
+
+      accessibility: 
+        value-identifies-row: false
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
+    - # ====== Column: PERMIT_COUNT ================================
+      id: 52413753494182101
+      identification: 
+        column-name: PERMIT_COUNT
+        type: Plain Text
+
+      heading: 
+        heading: Permit Count
+        alignment: end
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 80
+        column-alignment: end
+
+      accessibility: 
+        value-identifies-row: false
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
+    - # ====== Column: CREATED_BY ==================================
+      id: 52416837009182132
+      identification: 
+        column-name: CREATED_BY
+        type: Plain Text
+
+      heading: 
+        heading: Created By
+        alignment: start
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 90
+        column-alignment: start
+
+      accessibility: 
+        value-identifies-row: false
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
+    - # ====== Column: MODIFIED_BY =================================
+      id: 52417094992182134
+      identification: 
+        column-name: MODIFIED_BY
+        type: Plain Text
+
+      heading: 
+        heading: Modified By
+        alignment: start
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 110
+        column-alignment: start
+
+      accessibility: 
+        value-identifies-row: false
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
+    - # ====== Column: MODIFIED_DATE ===============================
+      id: 52417295055182136
+      identification: 
+        column-name: MODIFIED_DATE
+        type: Plain Text
+
+      heading: 
+        heading: Modified Date
+        alignment: start
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 120
+        column-alignment: start
+
+      accessibility: 
+        value-identifies-row: false
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
+    printing: 
+      output: 
+        layout: Default Report Layout
+        view-file-as: Attachment
+
+      page: 
+        size: Letter
+        orientation: Landscape
+        units: Inches
+        width: 11
+        height: 8.5
+        border-width: 0.5
+        border-color: '#666666'
+
+      page-header: 
+        font: Helvetica
+        font-weight: Normal
+        font-size: 12
+        font-color: '#000000'
+        alignment: center
+        page-header-text: Companies
+
+      column-headings: 
+        font: Helvetica
+        font-weight: Bold
+        font-size: 10
+        font-color: '#000000'
+        background-color: '#EEEEEE'
+
+      columns: 
+        font: Helvetica
+        font-weight: Normal
+        font-size: 10
+        font-color: '#000000'
+        background-color: '#FFFFFF'
+
+      page-footer: 
+        font: Helvetica
+        font-weight: Normal
+        font-size: 12
+        font-color: '#000000'
+        alignment: center
+
+page-items: 
+- # ====== Page Item: P21_COMPANY_ID ===========================
+  id: 50565756370122740
+  identification: 
+    name: P21_COMPANY_ID
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 30
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+buttons: 
+- # ====== Button: CREATE ======================================
+  id: 52415135982182115
+  identification: 
+    button-name: CREATE
+    label: Add New Company
+
+  layout: 
+    sequence: 10
+    region: Companies # 50565961300122742
+    slot: RIGHT_OF_IR_SEARCH_BAR
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text with Icon
+    hot: true
+    template-options: 
+    - '#DEFAULT#'
+    - t-Button--iconLeft
+    icon: fa-building-o
+
+  behavior: 
+    action: Redirect to Page in this Application
+    target: 
+      url: 'f?p=&APP_ID.:24:&SESSION.::&DEBUG.:24::'
+      page: 24 # Edit Company
+      clear-cache: 24
+
+    warn-on-unsaved-changes: Do Not Check
+
+branches: 
+- # ====== Branch: Refresh the page ============================
+  id: 52414881846182112
+  identification: 
+    name: Refresh the page
+
+  execution: 
+    sequence: 10
+    point: After Processing
+
+  behavior: 
+    type: Page or URL (Redirect)
+    target: 
+      url: 'f?p=&APP_ID.:21:&SESSION.::&DEBUG.:21::'
+      page: 21 # Companies
+      clear-cache: 21
+

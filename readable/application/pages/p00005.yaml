@@ -1259,8 +1259,7 @@ page-items:
     warn-on-unsaved-changes: Page Default
 
   source: 
-    type: Static Value
-    static-value: The Company Limited
+    type: Null
     used: Only when current value in session state is null
 
   session-state: 

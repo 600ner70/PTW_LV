@@ -1,0 +1,623 @@
+---
+# ====== Page: Permit Types ==================================
+id: 23
+identification: 
+  name: Permit Types
+  alias: PERMIT-TYPES
+  title: Permit Types
+
+appearance: 
+  page-mode: Normal
+  page-template: Theme Default
+  template-options: 
+  - '#DEFAULT#'
+  css-classes: 
+  - ptw-locked-note
+
+navigation-menu: 
+  override-user-interface-level: false
+
+navigation: 
+  cursor-focus: Do not focus cursor
+  warn-on-unsaved-changes: true
+
+css: 
+  inline: |
+    .admin-page-header {
+        background: linear-gradient(135deg, #003366 0%, #005599 100%);
+        color: white;
+        padding: 25px 30px;
+        border-radius: 8px;
+        margin-bottom: 25px;
+    }
+    .admin-page-header h1 { margin: 0 0 5px 0; font-size: 1.75rem; font-weight: 700; }
+    .admin-page-header p  { margin: 0; opacity: 0.85; font-size: 0.95rem; }
+    
+    .ptw-locked-note {
+        color: #888;
+        font-style: italic;
+        margin-left: 6px;
+        font-size: 0.9em;
+    }
+
+security: 
+  authorization-scheme: Administration Rights # 26419849891144614
+  authentication: Page Requires Authentication
+  deep-linking: Application Default
+  page-access-protection: Arguments Must Have Checksum
+  form-auto-complete: Off
+  browser-cache: Application Default
+
+session-management: 
+  rejoin-sessions: Application Default
+
+advanced: 
+  enable-duplicate-page-submissions: Yes - Enable page to be re-posted
+  reload-on-submit: Only for Success
+
+server-cache: 
+  caching: Disabled
+
+regions: 
+- # ====== Region: Page Header =================================
+  id: 52461800210584415
+  identification: 
+    name: Page Header
+    type: Dynamic Content
+
+  source: 
+    language: PL/SQL
+    pl/sql-function-body-returning-a-clob: |
+      DECLARE
+          l_is_admin  VARCHAR2(1) := 'N';
+          l_html      CLOB;
+      BEGIN
+          BEGIN
+              SELECT CASE is_admin WHEN 'Yes' THEN 'Y' ELSE 'N' END
+              INTO   l_is_admin
+              FROM   apex_workspace_apex_users
+              WHERE  UPPER(user_name)  = UPPER(V('APP_USER'))
+              AND    workspace_name    = (
+                         SELECT workspace FROM apex_applications
+                         WHERE  application_id = :APP_ID
+                     );
+          EXCEPTION
+              WHEN NO_DATA_FOUND THEN l_is_admin := 'N';
+          END;
+      
+          l_html := '<div class="admin-page-header">'
+                 || '  <div style="display:flex; justify-content:space-between; align-items:center;">'
+                 || '    <div>'
+                 || '  <h1>Permit Types</h1>'
+                 || '  <p>Permit types your company is licensed to use. Use '
+                 || '     <strong>Add Type to Company</strong> to make additional '
+                 || '     master permit types available to your users.</p>'
+                 || '    </div>';
+      
+          IF l_is_admin = 'Y' THEN
+              l_html := l_html
+                     || '<div style="flex-shrink:0; margin-left:20px;">'
+                     || '  <span style="background:#dc3545; color:white;'
+                     || '             display:inline-flex; align-items:center;'
+                     || '             padding:6px 16px; border-radius:20px;'
+                     || '             font-size:0.78rem; font-weight:700;'
+                     || '             letter-spacing:0.5px; text-transform:uppercase;'
+                     || '             box-shadow:0 2px 4px rgba(0,0,0,0.3);'
+                     || '             white-space:nowrap;">'
+                     || '  <span class="fa fa-shield" style="margin-right:8px; font-size:0.9rem;"></span>'
+                     || '  Workspace Administrator'
+                     || '</span>'
+                     || '</div>';
+          END IF;
+      
+          l_html := l_html
+                 || '  </div>'
+                 || '</div>';
+      
+          RETURN l_html;
+      END;
+
+  layout: 
+    sequence: 30
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--removeHeader js-removeLandmark
+    - t-Region--scrollBody
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  server-cache: 
+    caching: Disabled
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    performance: 
+      lazy-loading: false
+
+- # ====== Region: Permit Types ================================
+  id: 52461942092584416
+  identification: 
+    name: Permit Types
+    title: Permit Types
+    type: Classic Report
+
+  source: 
+    location: Local Database
+    type: SQL Query
+    sql-query: |
+      SELECT x.type_id,
+             x.ptw_type,
+             x.type_desc,
+             x.permit_count,
+             CASE
+                 WHEN x.permit_count = 0 THEN
+                     apex_item.select_list(1, x.current_assigned, 'Yes;Y,No;N',
+                                            'class="ptw-assigned-select"')
+                     || apex_item.hidden(2, x.type_id)
+                 ELSE
+                     (CASE x.current_assigned WHEN 'Y' THEN 'Yes' ELSE 'No' END)
+                     || ' <span class="ptw-locked-note">(in use - cannot remove)</span>'
+             END AS assigned
+      FROM (
+          SELECT t.type_id,
+                 t.ptw_type,
+                 t.type_desc,
+                 NVL((SELECT ct.is_active FROM ptw_pro.ptw_lv_company_types ct
+                       WHERE ct.type_id = t.type_id), 'N') AS current_assigned,
+                 (SELECT COUNT(*) FROM ptw_pro.ptw_lv_permits p
+                   WHERE p.ptw_type = t.ptw_type) AS permit_count
+          FROM   ptw_pro.ptw_types t
+          WHERE  t.available = 'Y'
+             OR  EXISTS (SELECT 1 FROM ptw_pro.ptw_lv_company_types ct
+                           WHERE ct.type_id = t.type_id)
+      ) x
+      ORDER BY x.ptw_type
+
+  order-by: 
+    type: None
+
+  layout: 
+    sequence: 60
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--showIcon
+    - t-Region--accent15
+    - t-Region--scrollBody
+    icon: fa-tags
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  server-side-condition: 
+    type: Item is NOT NULL
+    item: G_OVERRIDE_COMPANY_ID
+
+  server-cache: 
+    caching: Disabled
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    layout: 
+      number-of-rows-type: Static Value
+      number-of-rows: 15
+
+    appearance: 
+      template-type: Theme
+      template: Standard
+      template-options: 
+      - '#DEFAULT#'
+      - t-Report--altRowsDefault
+      - t-Report--rowHighlight
+
+    pagination: 
+      type: Row Ranges X to Y (with next and previous links)
+      display-position: Bottom - Right
+      partial-page-refresh: true
+
+    performance: 
+      lazy-loading: false
+
+    break-formatting: 
+      break-columns: No Break
+
+    advanced: 
+      strip-html: false
+      sort-nulls: Last
+
+    heading: 
+      type: Custom Headings
+
+    download: 
+      csv-export-enabled: false
+
+    printing: 
+      enabled: false
+
+  columns: 
+  - # ====== Column: PTW_TYPE ====================================
+    id: 52464004838584437
+    identification: 
+      column-name: PTW_TYPE
+      type: Plain Text
+
+    heading: 
+      heading: Type Code
+      alignment: start
+
+    layout: 
+      sequence: 20
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: false
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: TYPE_DESC ===================================
+    id: 52464132863584438
+    identification: 
+      column-name: TYPE_DESC
+      type: Plain Text
+
+    heading: 
+      heading: Description
+      alignment: start
+
+    layout: 
+      sequence: 30
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: false
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: PERMIT_COUNT ================================
+    id: 52464474529584441
+    identification: 
+      column-name: PERMIT_COUNT
+      type: Plain Text
+
+    heading: 
+      heading: Permits Using This Type
+      alignment: end
+
+    layout: 
+      sequence: 60
+      column-alignment: end
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: false
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: TYPE_ID =====================================
+    id: 52464597899584442
+    identification: 
+      column-name: TYPE_ID
+      type: Hidden
+
+    layout: 
+      sequence: 70
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: ASSIGNED ====================================
+    id: 52464630543584443
+    identification: 
+      column-name: ASSIGNED
+      type: Plain Text
+
+    heading: 
+      heading: Assigned to us
+      alignment: start
+
+    layout: 
+      sequence: 80
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: false
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: false
+
+- # ====== Region: Super User Current Company ==================
+  id: 52496227297962721
+  identification: 
+    name: Super User Current Company
+    type: Dynamic Content
+
+  source: 
+    language: PL/SQL
+    pl/sql-function-body-returning-a-clob: |
+      DECLARE
+          v_override  VARCHAR2(50) := V('G_OVERRIDE_COMPANY_ID');
+          v_name      VARCHAR2(200);
+          v_html      CLOB;
+      BEGIN
+          IF v_override IS NULL OR v_override = '' THEN
+              RETURN NULL;
+          END IF;
+      
+          SELECT company_name
+          INTO   v_name
+          FROM   ptw_pro.ptw_lv_companies
+          WHERE  company_id = TO_NUMBER(v_override);
+      
+          v_html := '<p><strong>Switched to Company: </strong>' 
+                 || apex_escape.html(v_name) || '</p>';
+      
+          RETURN v_html;
+      
+      EXCEPTION
+          WHEN OTHERS THEN RETURN NULL;
+      END;
+
+  layout: 
+    sequence: 50
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Title Bar
+    template-options: 
+    - '#DEFAULT#'
+    - t-BreadcrumbRegion--useBreadcrumbTitle
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  server-side-condition: 
+    type: Function Body
+    language: PL/SQL
+    pl/sql-function-body: |
+      DECLARE
+          v_is_super VARCHAR2(1);
+      BEGIN
+          SELECT is_super_user INTO v_is_super
+          FROM   ptw_pro.ptw_lv_users
+          WHERE  UPPER(username) = UPPER(:APP_USER)
+          AND    is_active = 'Y';
+          RETURN v_is_super = 'Y';
+      EXCEPTION
+          WHEN OTHERS THEN RETURN FALSE;
+      END;
+
+  server-cache: 
+    caching: Disabled
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    performance: 
+      lazy-loading: false
+
+buttons: 
+- # ====== Button: SAVE ========================================
+  id: 52464752525584444
+  identification: 
+    button-name: SAVE
+    label: Save
+
+  layout: 
+    sequence: 10
+    region: Permit Types # 52461942092584416
+    slot: ABOVE_BOX
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    horizontal-alignment: Right
+
+  appearance: 
+    button-template: Text with Icon
+    hot: true
+    template-options: 
+    - '#DEFAULT#'
+    - t-Button--iconLeft
+    icon: fa-save
+
+  behavior: 
+    action: Submit Page
+    execute-validations: true
+    show-processing: false
+    warn-on-unsaved-changes: Do Not Check
+
+processes: 
+- # ====== Process: Save Permit Type Assignments ===============
+  id: 52464836682584445
+  identification: 
+    name: Save Permit Type Assignments
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      DECLARE
+          v_company_id NUMBER;
+          v_exists     NUMBER;
+          v_used       NUMBER;
+          v_type_id    NUMBER;
+          v_new_val    VARCHAR2(1);
+      BEGIN
+          SELECT company_id
+          INTO   v_company_id
+          FROM   ptw_pro.ptw_lv_users
+          WHERE  UPPER(username) = UPPER(SYS_CONTEXT('APEX$SESSION', 'APP_USER'));
+      
+          FOR i IN 1 .. apex_application.g_f02.count LOOP
+              v_type_id := apex_application.g_f02(i);
+              v_new_val := apex_application.g_f01(i);
+      
+              SELECT COUNT(*) INTO v_exists
+              FROM   ptw_pro.ptw_lv_company_types
+              WHERE  type_id = v_type_id;          -- VPD-scoped
+      
+              IF v_new_val = 'Y' AND v_exists = 0 THEN
+      
+                  INSERT INTO ptw_pro.ptw_lv_company_types (company_id, type_id, is_active)
+                  VALUES (v_company_id, v_type_id, 'Y');
+      
+              ELSIF v_new_val = 'N' AND v_exists > 0 THEN
+      
+                  -- Defense in depth: re-verify not in use before
+                  -- removing. The UI never offers "No" for a
+                  -- permit_count > 0 row, so this should only ever
+                  -- be 0 here - but re-check in case of a tampered
+                  -- submission or a permit created moments ago.
+                  SELECT COUNT(*) INTO v_used
+                  FROM   ptw_pro.ptw_lv_permits p
+                  WHERE  p.ptw_type = (SELECT ptw_type FROM ptw_pro.ptw_types
+                                         WHERE type_id = v_type_id);
+      
+                  IF v_used = 0 THEN
+                      DELETE FROM ptw_pro.ptw_lv_company_types
+                      WHERE  type_id = v_type_id;  -- VPD-scoped
+                  END IF;
+                  -- else: silently skip - row stays assigned
+      
+              END IF;
+              -- else: unchanged, no-op
+      
+          END LOOP;
+      END;
+
+  execution: 
+    sequence: 10
+    point: Processing
+    run-process: Once Per Page Visit (default)
+
+  success-message: 
+    success-message: Permit types updated.
+
+  error: 
+    display-location: Inline in Notification
+
+  server-side-condition: 
+    when-button-pressed: SAVE # 52464752525584444
+
+branches: 
+- # ====== Branch: Reload Permit Types =========================
+  id: 52464996995584446
+  identification: 
+    name: Reload Permit Types
+
+  execution: 
+    sequence: 10
+    point: After Processing
+
+  behavior: 
+    type: Page or URL (Redirect)
+    target: 
+      url: 'f?p=&APP_ID.:23:&SESSION.::&DEBUG.:23::'
+      page: 23 # Permit Types
+      clear-cache: 23
+

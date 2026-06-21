@@ -51,3 +51,16 @@
   subscription: 
     version-number: 46857033709824
 
+- # ====== Application Item: G_OVERRIDE_COMPANY_ID =============
+  id: 52448169030127115
+  identification: 
+    name: G_OVERRIDE_COMPANY_ID
+    scope: Application
+
+  security: 
+    session-state-protection: Restricted - May not be set from browser
+    escape-special-characters: true
+
+  subscription: 
+    version-number: 47254835603203
+

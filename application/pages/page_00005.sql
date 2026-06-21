@@ -666,8 +666,6 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>40
 ,p_item_plug_id=>wwv_flow_imp.id(27355431661033425)
 ,p_prompt=>'Company'
-,p_source=>'The Company Limited'
-,p_source_type=>'STATIC'
 ,p_display_as=>'NATIVE_DISPLAY_ONLY'
 ,p_colspan=>6
 ,p_field_template=>1609121967514267634

@@ -200,6 +200,87 @@ page-items:
     type: No
 
   layout: 
+    sequence: 20
+    region: PTW available types # 40553413561170616
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    height: 1
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: SQL Query
+    sql-query: |
+      SELECT t.type_desc d,
+             t.ptw_type  r
+      FROM   ptw_pro.ptw_types t
+      JOIN   ptw_pro.ptw_lv_company_types ct ON ct.type_id = t.type_id
+      WHERE  t.available = 'Y'
+      AND    ct.is_active = 'Y'
+      AND    ct.company_id in (SELECT company_id
+                               FROM   ptw_pro.ptw_lv_users
+                               WHERE ((UPPER(username) = UPPER(v('APP_USER'))
+                               AND    is_super_user <> 'Y')
+                               OR     (company_id = :P14_COMPANY_ID)))
+      ORDER  BY t.type_desc
+    display-extra-values: false
+    display-null-value: true
+    null-display-value: '- Select -'
+
+  cascading-list-of-values: 
+    parent-item(s): 
+    - P14_COMPANY_ID
+    items-to-submit: 
+    - P14_COMPANY_ID
+    parent-required: true
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P14_COMPANY_ID ===========================
+  id: 52465015239584447
+  identification: 
+    name: P14_COMPANY_ID
+    type: Select List
+
+  label: 
+    label: Create permit for company
+    alignment: Left
+
+  settings: 
+    page-action-on-selection: None
+
+  multiple-values: 
+    type: No
+
+  layout: 
     sequence: 10
     region: PTW available types # 40553413561170616
     slot: BODY
@@ -223,19 +304,22 @@ page-items:
   list-of-values: 
     type: SQL Query
     sql-query: |
-      SELECT type_desc d,
-             ptw_type  r
-      FROM   ptw_pro.ptw_types
-      WHERE  available = 'Y';
+      SELECT company_name d,
+             company_id   r
+      FROM   ptw_pro.ptw_lv_companies
+      WHERE  is_active = 'Y'
+      ORDER  BY company_name
     display-extra-values: false
     display-null-value: true
-    null-display-value: '- Select -'
+    null-display-value: '-- Select --'
 
   advanced: 
     warn-on-unsaved-changes: Page Default
 
   source: 
-    type: Null
+    type: Expression
+    language: PL/SQL
+    pl/sql-expression: V('G_OVERRIDE_COMPANY_ID')
     used: Only when current value in session state is null
 
   session-state: 
@@ -243,6 +327,15 @@ page-items:
 
   quick-picks: 
     show-quick-picks: false
+
+  server-side-condition: 
+    type: Rows returned
+    sql-query: |
+      SELECT 1 
+      FROM ptw_pro.ptw_lv_users
+      WHERE UPPER(username) = UPPER(:APP_USER)
+      AND   is_super_user = 'Y'
+      AND   is_active = 'Y'
 
   security: 
     session-state-protection: Unrestricted
@@ -314,6 +407,62 @@ buttons:
   advanced: 
     static-id: P14_CREATE_BTN
 
+dynamic-actions: 
+- # ====== Dynamic Action: Refresh PTW Types on Company Change =
+  id: 52494489024962703
+  identification: 
+    name: Refresh PTW Types on Company Change
+
+  execution: 
+    sequence: 10
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Change
+    selection-type: Item(s)
+    item(s): 
+    - P14_COMPANY_ID
+
+  actions: 
+  - # ====== Action: Refresh =====================================
+    id: 52494565850962704
+    identification: 
+      action: Refresh
+
+    settings: 
+      maintain-pagination: false
+
+    affected-elements: 
+      selection-type: Item(s)
+      item(s): 
+      - P14_PTW_TYPES
+
+    execution: 
+      sequence: 20
+      event: Refresh PTW Types on Company Change # 52494489024962703
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+  - # ====== Action: Execute Server-side Code ====================
+    id: 52494668297962705
+    identification: 
+      action: Execute Server-side Code
+
+    settings: 
+      language: PE.PROPERTY.SOURCE_SNIPPET_LANG.LOV.PLSQL.D
+      pl/sql-code: NULL;
+      items-to-submit: 
+      - P14_COMPANY_ID
+
+    execution: 
+      sequence: 10
+      event: Refresh PTW Types on Company Change # 52494489024962703
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+      stop-execution-on-error: true
+      wait-for-result: true
+
 validations: 
 - # ====== Validation: Is an available PTW? ====================
   id: 40554251233170624
@@ -321,7 +470,7 @@ validations:
     name: Is an available PTW?
 
   execution: 
-    sequence: 20
+    sequence: 30
 
   validation: 
     type: Expression
@@ -358,6 +507,41 @@ validations:
   server-side-condition: 
     when-button-pressed: CREATE # 40553968345170621
 
+- # ====== Validation: Company required for Super User =========
+  id: 52465166751584448
+  identification: 
+    name: Company required for Super User
+
+  execution: 
+    sequence: 20
+
+  validation: 
+    type: Function Body (returning Error Text)
+    language: PL/SQL
+    pl/sql-function-body-returning-error-text: |
+      DECLARE
+          l_count NUMBER;
+      BEGIN
+          SELECT COUNT(*)
+          INTO   l_count
+          FROM   ptw_pro.ptw_lv_users
+          WHERE  UPPER(username) = UPPER(:APP_USER)
+          AND    is_super_user = 'Y'
+          AND    is_active = 'Y';
+      
+          IF l_count > 0 AND :P14_COMPANY_ID IS NULL THEN
+            RETURN 'Super User - Please select a company before continuing.';
+          END IF;
+      END;
+    always-execute: false
+
+  error: 
+    display-location: Inline with Field and in Notification
+    associated-item: P14_COMPANY_ID # 52465015239584447
+
+  server-side-condition: 
+    when-button-pressed: CREATE # 40553968345170621
+
 processes: 
 - # ====== Process: Back to Dashboard ==========================
   id: 40554413173170626
@@ -379,6 +563,43 @@ processes:
 
   server-side-condition: 
     when-button-pressed: CANCEL # 40553863773170620
+
+- # ====== Process: Set Company Override =======================
+  id: 52465285312584449
+  identification: 
+    name: Set Company Override
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      DECLARE
+        l_count NUMBER;
+      BEGIN
+          SELECT COUNT(*)
+          INTO   l_count
+          FROM   ptw_pro.ptw_lv_users
+          WHERE  UPPER(username) = UPPER(:APP_USER)
+          AND    is_super_user = 'Y'
+          AND    is_active = 'Y';
+          
+          IF l_count > 0 THEN
+              APEX_UTIL.SET_SESSION_STATE('G_OVERRIDE_COMPANY_ID', :P14_COMPANY_ID);
+          END IF;
+      END;
+
+  execution: 
+    sequence: 10
+    point: Processing
+    run-process: Once Per Page Visit (default)
+
+  error: 
+    display-location: Inline in Notification
+
+  server-side-condition: 
+    when-button-pressed: CREATE # 40553968345170621
 
 branches: 
 - # ====== Branch: Go to create a PTW ==========================

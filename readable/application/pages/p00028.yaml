@@ -1,0 +1,471 @@
+---
+# ====== Page: Set Active Company ============================
+id: 28
+identification: 
+  name: Set Active Company
+  alias: SET-ACTIVE-COMPANY
+  title: Set Active Company
+
+appearance: 
+  page-mode: Normal
+  page-template: Theme Default
+  template-options: 
+  - '#DEFAULT#'
+
+navigation-menu: 
+  override-user-interface-level: false
+
+navigation: 
+  cursor-focus: Do not focus cursor
+  warn-on-unsaved-changes: true
+
+css: 
+  inline: |
+    .admin-page-header {
+        background: linear-gradient(135deg, #003366 0%, #005599 100%);
+        color: white;
+        padding: 25px 30px;
+        border-radius: 8px;
+        margin-bottom: 25px;
+    }
+    .admin-page-header h1 { margin: 0 0 5px 0; font-size: 1.75rem; font-weight: 700; }
+    .admin-page-header p  { margin: 0; opacity: 0.85; font-size: 0.95rem; }
+
+security: 
+  authorization-scheme: Super User Rights # 52412848522131878
+  authentication: Page Requires Authentication
+  deep-linking: Application Default
+  page-access-protection: Arguments Must Have Checksum
+  form-auto-complete: Off
+  browser-cache: Application Default
+
+session-management: 
+  rejoin-sessions: Application Default
+
+advanced: 
+  enable-duplicate-page-submissions: Yes - Enable page to be re-posted
+  reload-on-submit: Only for Success
+
+server-cache: 
+  caching: Disabled
+
+regions: 
+- # ====== Region: Page Header =================================
+  id: 52494724784962706
+  identification: 
+    name: Page Header
+    type: Dynamic Content
+
+  source: 
+    language: PL/SQL
+    pl/sql-function-body-returning-a-clob: |
+      DECLARE
+          l_html CLOB;
+      BEGIN
+          l_html := '<div class="admin-page-header">'
+                 || '  <h1>Set Active Company</h1>'
+                 || '  <p>Choose a company to view and manage as. This applies across '
+                 || '     the whole application (dashboard, permit types, user '
+                 || '     maintenance, and creating permits) until you clear it or '
+                 || '     log out and back in.</p>'
+                 || '</div>';
+          RETURN l_html;
+      END;
+
+  layout: 
+    sequence: 30
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--removeHeader js-removeLandmark
+    - t-Region--scrollBody
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  server-cache: 
+    caching: Disabled
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    performance: 
+      lazy-loading: false
+
+- # ====== Region: Active Company ==============================
+  id: 52494859514962707
+  identification: 
+    name: Active Company
+    title: Active Company
+    type: Static Content
+
+  layout: 
+    sequence: 40
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--showIcon
+    - t-Region--accent15
+    - t-Region--scrollBody
+    icon: fa-building
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Buttons =====================================
+  id: 52495180908962710
+  identification: 
+    name: Buttons
+    type: Static Content
+
+  layout: 
+    sequence: 50
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Buttons Container
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+page-items: 
+- # ====== Page Item: P28_COMPANY_ID ===========================
+  id: 52494935017962708
+  identification: 
+    name: P28_COMPANY_ID
+    type: Select List
+
+  label: 
+    label: Active Company
+    alignment: Left
+
+  settings: 
+    page-action-on-selection: None
+
+  multiple-values: 
+    type: No
+
+  layout: 
+    sequence: 10
+    region: Active Company # 52494859514962707
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    height: 1
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: SQL Query
+    sql-query: |
+      SELECT company_name d,
+             company_id   r
+      FROM   ptw_pro.ptw_lv_companies
+      WHERE  is_active = 'Y'
+      ORDER  BY company_name;
+    display-extra-values: true
+    display-null-value: true
+    null-display-value: '-- View All Companies (no restriction) --'
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Expression
+    language: PL/SQL
+    pl/sql-expression: V('G_OVERRIDE_COMPANY_ID')
+    used: Always, replacing any existing value in session state
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P28_CURRENT_STATUS =======================
+  id: 52495028573962709
+  identification: 
+    name: P28_CURRENT_STATUS
+    type: Display Only
+
+  label: 
+    label: Currently
+    alignment: Left
+
+  settings: 
+    format: Plain Text
+    based-on: Item Value
+    show-line-breaks: true
+    send-on-page-submit: true
+
+  layout: 
+    sequence: 20
+    region: Active Company # 52494859514962707
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Function Body
+    language: PL/SQL
+    pl/sql-function-body: |
+      DECLARE
+              v_override  VARCHAR2(50)  := V('G_OVERRIDE_COMPANY_ID');
+              v_name      VARCHAR2(200);
+          BEGIN
+              IF v_override IS NULL OR v_override = '' THEN
+                  RETURN 'Viewing ALL companies (no restriction).';
+              END IF;
+      
+              BEGIN
+                  SELECT company_name
+                  INTO   v_name
+                  FROM   ptw_pro.ptw_lv_companies
+                  WHERE  company_id = TO_NUMBER(v_override);
+              EXCEPTION
+                  WHEN NO_DATA_FOUND THEN
+                      v_name := 'Unknown company (ID: ' || v_override || ')';
+              END;
+      
+              RETURN 'Viewing as: ' || v_name;
+          END;
+    used: Always, replacing any existing value in session state
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+buttons: 
+- # ====== Button: SET =========================================
+  id: 52495220439962711
+  identification: 
+    button-name: SET
+    label: Set Active Company
+
+  layout: 
+    sequence: 10
+    region: Buttons # 52495180908962710
+    slot: NEXT
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text
+    hot: true
+    template-options: 
+    - '#DEFAULT#'
+
+  behavior: 
+    action: Submit Page
+    execute-validations: true
+    show-processing: false
+    warn-on-unsaved-changes: Do Not Check
+
+  advanced: 
+    static-id: BTN_SET_P28
+
+- # ====== Button: CLEAR =======================================
+  id: 52495371259962712
+  identification: 
+    button-name: CLEAR
+    label: View All Companies
+
+  layout: 
+    sequence: 10
+    region: Buttons # 52495180908962710
+    slot: PREVIOUS
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text
+    hot: false
+    template-options: 
+    - '#DEFAULT#'
+
+  behavior: 
+    action: Submit Page
+    execute-validations: true
+    show-processing: false
+    warn-on-unsaved-changes: Do Not Check
+
+  advanced: 
+    static-id: BTN_CLEAR_P28
+
+processes: 
+- # ====== Process: Apply Active Company =======================
+  id: 52495491439962713
+  identification: 
+    name: Apply Active Company
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      BEGIN
+          APEX_UTIL.SET_SESSION_STATE('G_OVERRIDE_COMPANY_ID', :P28_COMPANY_ID);
+      END;
+
+  execution: 
+    sequence: 10
+    point: Processing
+    run-process: Once Per Page Visit (default)
+
+  success-message: 
+    success-message: Set new Active Company.
+
+  error: 
+    display-location: Inline in Notification
+
+  server-side-condition: 
+    when-button-pressed: SET # 52495220439962711
+
+- # ====== Process: Clear Active Company =======================
+  id: 52495536478962714
+  identification: 
+    name: Clear Active Company
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      BEGIN
+          APEX_UTIL.SET_SESSION_STATE('G_OVERRIDE_COMPANY_ID', NULL);
+      END;
+
+  execution: 
+    sequence: 20
+    point: Processing
+    run-process: Once Per Page Visit (default)
+
+  success-message: 
+    success-message: Cleared Company.
+
+  error: 
+    display-location: Inline in Notification
+
+  server-side-condition: 
+    when-button-pressed: CLEAR # 52495371259962712
+
+branches: 
+- # ====== Branch: Reload Page 28 ==============================
+  id: 52495602273962715
+  identification: 
+    name: Reload Page 28
+
+  execution: 
+    sequence: 10
+    point: After Processing
+
+  behavior: 
+    type: Page or URL (Redirect)
+    target: 
+      url: 'f?p=&APP_ID.:28:&SESSION.::&DEBUG.:28::'
+      page: 28 # Set Active Company
+      clear-cache: 28
+

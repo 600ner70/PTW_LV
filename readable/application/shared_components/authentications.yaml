@@ -5,10 +5,29 @@
     name: Oracle APEX Accounts
 
   subscription: 
-    version-number: 46468157622295
+    version-number: 47330703342339
 
   settings: 
     type: Oracle APEX Accounts
+
+  source: 
+    pl/sql-code: |
+      BEGIN
+          UPDATE ptw_pro.ptw_lv_users
+          SET    company_id = NULL
+          WHERE  UPPER(username) = UPPER(:APP_USER)
+          AND    is_super_user = 'Y'
+          AND    company_id IS NOT NULL;
+      
+          COMMIT;
+      EXCEPTION
+          WHEN OTHERS THEN
+              -- Never block login over this cleanup - log and
+              -- continue. (No dedicated log table exists yet; if
+              -- one is added later for app-wide error logging,
+              -- write to it here instead of silently swallowing.)
+              NULL;
+      END;
 
   session-not-valid: 
     redirect-to: Login Page

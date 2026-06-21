@@ -99,7 +99,7 @@
     name: PTW_AUTHORISED_PERSONS
 
   subscription: 
-    version-number: 46647446830926
+    version-number: 47332139550510
 
   source: 
     location: Local Database
@@ -113,6 +113,11 @@
       WHERE  u.role_name IN ('ADMIN', 'AUTHORISER')
       AND    u.username <> 'PTW_PRO'
       AND    u.is_active = 'Y'
+      AND    u.company_id = (
+          SELECT company_id
+          FROM   ptw_pro.ptw_lv_users
+          WHERE  UPPER(username) = UPPER(:APP_USER)
+      )
       ORDER BY display_value
 
   column-mapping: 

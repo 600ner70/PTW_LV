@@ -144,7 +144,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_prompt=>'Company Name'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>30
-,p_colspan=>6
+,p_colspan=>3
 ,p_read_only_when=>'P24_COMPANY_ID'
 ,p_read_only_when_type=>'ITEM_IS_NOT_NULL'
 ,p_field_template=>1609121967514267634
@@ -165,7 +165,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_cSize=>30
 ,p_tag_attributes=>'style="text-transform:uppercase"'
 ,p_begin_on_new_line=>'N'
-,p_colspan=>6
+,p_colspan=>3
 ,p_read_only_when=>'P24_COMPANY_ID'
 ,p_read_only_when_type=>'ITEM_IS_NOT_NULL'
 ,p_field_template=>1609121967514267634
@@ -179,7 +179,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(52415733172182121)
 ,p_name=>'P24_IS_ACTIVE'
-,p_item_sequence=>30
+,p_item_sequence=>50
 ,p_item_plug_id=>wwv_flow_imp.id(52415430252182118)
 ,p_item_default=>'Y'
 ,p_prompt=>'Active?'
@@ -197,7 +197,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(52415835734182122)
 ,p_name=>'P24_CREATED_DATE'
-,p_item_sequence=>40
+,p_item_sequence=>60
 ,p_item_plug_id=>wwv_flow_imp.id(52415430252182118)
 ,p_prompt=>'Date Created'
 ,p_format_mask=>'DD-MON-YYYY HH24:MI'
@@ -215,7 +215,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(52415992923182123)
 ,p_name=>'P24_USER_COUNT'
-,p_item_sequence=>50
+,p_item_sequence=>70
 ,p_item_plug_id=>wwv_flow_imp.id(52415430252182118)
 ,p_prompt=>'Users in this Company'
 ,p_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -231,6 +231,48 @@ wwv_flow_imp_page.create_page_item(
 ,p_field_template=>1609121967514267634
 ,p_item_template_options=>'#DEFAULT#'
 ,p_inline_help_text=>'Informational only - helps super user judge whether a company can safely be deleted'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'based_on', 'VALUE',
+  'format', 'PLAIN',
+  'send_on_page_submit', 'Y',
+  'show_line_breaks', 'Y')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(52495863962962717)
+,p_name=>'P24_PERMIT_PREFIX'
+,p_item_sequence=>30
+,p_item_plug_id=>wwv_flow_imp.id(52415430252182118)
+,p_prompt=>'Permit Number Prefix'
+,p_placeholder=>'e.g. MWM'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>30
+,p_cMaxlength=>4
+,p_begin_on_new_line=>'N'
+,p_colspan=>3
+,p_display_when=>'P24_COMPANY_ID'
+,p_display_when_type=>'ITEM_IS_NULL'
+,p_field_template=>1609121967514267634
+,p_item_template_options=>'#DEFAULT#'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'disabled', 'N',
+  'submit_when_enter_pressed', 'N',
+  'subtype', 'TEXT',
+  'trim_spaces', 'BOTH')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(52495959704962718)
+,p_name=>'P24_PERMIT_PREFIX_DISPLAY'
+,p_item_sequence=>40
+,p_item_plug_id=>wwv_flow_imp.id(52415430252182118)
+,p_prompt=>'Permit Prefix Display'
+,p_display_as=>'NATIVE_DISPLAY_ONLY'
+,p_tag_attributes=>'style="text-transform:uppercase"'
+,p_begin_on_new_line=>'N'
+,p_colspan=>3
+,p_display_when=>'P24_COMPANY_ID'
+,p_display_when_type=>'ITEM_IS_NOT_NULL'
+,p_field_template=>1609121967514267634
+,p_item_template_options=>'#DEFAULT#'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'based_on', 'VALUE',
   'format', 'PLAIN',
@@ -276,6 +318,54 @@ wwv_flow_imp_page.create_page_validation(
 ,p_associated_item=>wwv_flow_imp.id(52415614297182120)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(52496007143962719)
+,p_validation_name=>'Prefix Required and Valid'
+,p_validation_sequence=>30
+,p_validation=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'    v_prefix VARCHAR2(4) := TRIM(:P24_PERMIT_PREFIX);',
+'BEGIN',
+'    -- Only validate in create mode (item is hidden on edit)',
+'    IF :P24_COMPANY_ID IS NOT NULL THEN',
+'        RETURN TRUE;',
+'    END IF;',
+'',
+'    RETURN v_prefix IS NOT NULL',
+'       AND LENGTH(v_prefix) BETWEEN 1 AND 4',
+'       AND UPPER(v_prefix) = v_prefix;',
+'END;'))
+,p_validation2=>'PLSQL'
+,p_validation_type=>'FUNC_BODY_RETURNING_BOOLEAN'
+,p_error_message=>'Permit Number Prefix is required and must be 1-4 uppercase letters (e.g. MWM).'
+,p_associated_item=>wwv_flow_imp.id(52495863962962717)
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+);
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(52496175209962720)
+,p_validation_name=>'Prefix Must Be Unique'
+,p_validation_sequence=>40
+,p_validation=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'    v_count NUMBER;',
+'BEGIN',
+'    -- Only validate in create mode',
+'    IF :P24_COMPANY_ID IS NOT NULL THEN',
+'        RETURN TRUE;',
+'    END IF;',
+'',
+'    SELECT COUNT(*) INTO v_count',
+'    FROM   ptw_pro.ptw_lv_companies',
+'    WHERE  UPPER(permit_prefix) = UPPER(TRIM(:P24_PERMIT_PREFIX));',
+'',
+'    RETURN v_count = 0;',
+'END;'))
+,p_validation2=>'PLSQL'
+,p_validation_type=>'FUNC_BODY_RETURNING_BOOLEAN'
+,p_error_message=>'This prefix is already used by another company. Please choose a different one.'
+,p_associated_item=>wwv_flow_imp.id(52495863962962717)
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+);
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(52416461002182128)
 ,p_process_sequence=>10
@@ -304,8 +394,14 @@ wwv_flow_imp_page.create_page_process(
 '',
 'ELSE',
 '',
-'    INSERT INTO ptw_pro.ptw_lv_companies (company_name, company_code, is_active)',
-'    VALUES     (:P24_COMPANY_NAME, :P24_COMPANY_CODE, :P24_IS_ACTIVE);',
+'    INSERT INTO ptw_pro.ptw_lv_companies',
+'        (company_name, company_code, is_active, permit_prefix)',
+'    VALUES (',
+'        :P24_COMPANY_NAME,',
+'        :P24_COMPANY_CODE,',
+'        :P24_IS_ACTIVE,',
+'        :P24_PERMIT_PREFIX',
+'    );',
 '',
 'END IF;',
 '',
@@ -325,12 +421,14 @@ wwv_flow_imp_page.create_page_process(
 '    --',
 '    SELECT c.company_name,',
 '           c.company_code,',
+'           c.permit_prefix,',
 '           c.is_active,',
 '           TO_CHAR(c.created_date, ''DD-MON-YYYY'') AS created_date,',
 '           (SELECT COUNT(*) FROM ptw_pro.ptw_lv_users u',
 '             WHERE u.company_id = c.company_id)   AS user_count',
 '    INTO   :P24_COMPANY_NAME,',
 '           :P24_COMPANY_CODE,',
+'           :P24_PERMIT_PREFIX_DISPLAY,',
 '           :P24_IS_ACTIVE,',
 '           :P24_CREATED_DATE,',
 '           :P24_USER_COUNT',

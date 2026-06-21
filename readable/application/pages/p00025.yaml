@@ -1,0 +1,731 @@
+---
+# ====== Page: Add Permit Type ===============================
+id: 25
+identification: 
+  name: Add Permit Type
+  alias: ADD-PERMIT-TYPE
+  title: Add Permit Type
+
+appearance: 
+  page-mode: Modal Dialog
+  dialog-template: Theme Default
+  template-options: 
+  - '#DEFAULT#'
+
+dialog: 
+  chained: true
+  resizable: true
+
+navigation-menu: 
+  override-user-interface-level: false
+
+navigation: 
+  cursor-focus: Do not focus cursor
+  warn-on-unsaved-changes: true
+
+javascript: 
+  execute-when-page-loads: |
+    (function () {
+        var BINARY_ITEMS = ['P25_AVAILABLE'];
+    
+        var BADGES = [
+            { val: 'Y', cls: 'binary-badge-yes', label: '✓' },
+            { val: 'N', cls: 'binary-badge-no',  label: '✗' }
+        ];
+    
+        BINARY_ITEMS.forEach(function (itemName) {
+            var $fc = $('#' + itemName).closest('.t-Form-fieldContainer');
+            if ($fc.length === 0) return;
+    
+            $fc.find('.binary-badge-row').remove();
+    
+            var currentVal = $('input[name="' + itemName + '"]:checked').val() || '';
+    
+            var $row = $('<div class="binary-badge-row"></div>').attr('data-item', itemName);
+    
+            BADGES.forEach(function (b) {
+                $('<span></span>')
+                    .addClass('binary-badge ' + b.cls)
+                    .toggleClass('cm-active', currentVal === b.val)
+                    .attr('data-value', b.val)
+                    .text(b.label)
+                    .appendTo($row);
+            });
+    
+            $fc.find('.t-Form-inputContainer').append($row);
+        });
+    
+        $('.cm-binary-item .apex-item-grid').hide();
+    
+        $(document).off('click.binarybadge25').on('click.binarybadge25', '.binary-badge:not(.binary-readonly)', function () {
+            var $badge   = $(this);
+            var $row     = $badge.closest('.binary-badge-row');
+            var itemName = $row.attr('data-item');
+            var val      = $badge.attr('data-value');
+    
+            $('input[name="' + itemName + '"][value="' + val + '"]')
+                .prop('checked', true).trigger('change');
+    
+            $row.find('.binary-badge').removeClass('cm-active');
+            $badge.addClass('cm-active');
+        });
+    }());
+    
+
+security: 
+  authentication: Page Requires Authentication
+  deep-linking: Application Default
+  page-access-protection: Arguments Must Have Checksum
+  form-auto-complete: Off
+  browser-cache: Application Default
+
+session-management: 
+  rejoin-sessions: Application Default
+
+advanced: 
+  enable-duplicate-page-submissions: Yes - Enable page to be re-posted
+  reload-on-submit: Only for Success
+
+server-cache: 
+  caching: Disabled
+
+regions: 
+- # ====== Region: Permit Type Details =========================
+  id: 52418604179182150
+  identification: 
+    name: Permit Type Details
+    title: Permit Type Details
+    type: Static Content
+
+  layout: 
+    sequence: 40
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--showIcon
+    - t-Region--accent15
+    - t-Region--scrollBody
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Buttons =====================================
+  id: 52460929249584406
+  identification: 
+    name: Buttons
+    type: Static Content
+
+  layout: 
+    sequence: 50
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Buttons Container
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+page-items: 
+- # ====== Page Item: P25_TYPE_ID ==============================
+  id: 52418513607182149
+  identification: 
+    name: P25_TYPE_ID
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 30
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P25_PTW_TYPE =============================
+  id: 52460479828584401
+  identification: 
+    name: P25_PTW_TYPE
+    type: Text Field
+
+  label: 
+    label: Type code
+    alignment: Left
+
+  settings: 
+    subtype: Text
+    trim-spaces: Leading and Trailing
+    text-case: NO CHANGE
+    submit-when-enter-pressed: false
+    disabled: false
+
+  layout: 
+    sequence: 10
+    region: Permit Type Details # 52418604179182150
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    width: 30
+
+  validation: 
+    value-required: true
+
+  advanced: 
+    custom-attributes: 
+    - 'style="text-transform:uppercase"'
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  read-only: 
+    type: Item is NOT NULL
+    item: P25_TYPE_ID
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P25_TYPE_DESC ============================
+  id: 52460581646584402
+  identification: 
+    name: P25_TYPE_DESC
+    type: Text Field
+
+  label: 
+    label: Description
+    alignment: Left
+
+  settings: 
+    subtype: Text
+    trim-spaces: Leading and Trailing
+    text-case: NO CHANGE
+    submit-when-enter-pressed: false
+    disabled: false
+
+  layout: 
+    sequence: 20
+    region: Permit Type Details # 52418604179182150
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    width: 30
+
+  validation: 
+    value-required: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  read-only: 
+    type: Item is NOT NULL
+    item: P25_TYPE_ID
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P25_AVAILABLE ============================
+  id: 52460659488584403
+  identification: 
+    name: P25_AVAILABLE
+    type: Radio Group
+
+  label: 
+    label: Available?
+    alignment: Left
+
+  settings: 
+    number-of-columns: 2
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 30
+    region: Permit Type Details # 52418604179182150
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-binary-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC:Yes;Y,No;N'
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  default: 
+    type: Static
+    static-value: Y
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P25_CREATED_DATE =========================
+  id: 52460754604584404
+  identification: 
+    name: P25_CREATED_DATE
+    type: Display Only
+
+  label: 
+    label: Date Created
+    alignment: Left
+
+  settings: 
+    format: Plain Text
+    based-on: Item Value
+    show-line-breaks: true
+    send-on-page-submit: true
+
+  layout: 
+    sequence: 40
+    region: Permit Type Details # 52418604179182150
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    format-mask: DD-MON-YYYY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  server-side-condition: 
+    type: Item is NOT NULL
+    item: P25_TYPE_ID
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P25_COMPANY_COUNT ========================
+  id: 52460893928584405
+  identification: 
+    name: P25_COMPANY_COUNT
+    type: Display Only
+
+  label: 
+    label: Companies Using This Type
+    alignment: Left
+
+  settings: 
+    format: Plain Text
+    based-on: Item Value
+    show-line-breaks: true
+    send-on-page-submit: true
+
+  layout: 
+    sequence: 50
+    region: Permit Type Details # 52418604179182150
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: SQL Query (return single value)
+    sql-query: |
+      SELECT COUNT(*) FROM ptw_pro.ptw_lv_company_types
+      WHERE type_id = :P25_TYPE_ID AND is_active = 'Y'
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  server-side-condition: 
+    type: Item is NOT NULL
+    item: P25_TYPE_ID
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+buttons: 
+- # ====== Button: SAVE ========================================
+  id: 52461089934584407
+  identification: 
+    button-name: SAVE
+    label: Save
+
+  layout: 
+    sequence: 10
+    region: Buttons # 52460929249584406
+    slot: CREATE
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text with Icon
+    hot: true
+    template-options: 
+    - '#DEFAULT#'
+    - t-Button--iconLeft
+    icon: fa-save
+
+  behavior: 
+    action: Submit Page
+    execute-validations: true
+    show-processing: false
+    warn-on-unsaved-changes: Do Not Check
+
+  advanced: 
+    static-id: BTN_SAVE_P25
+
+- # ====== Button: CANCEL ======================================
+  id: 52461172915584408
+  identification: 
+    button-name: CANCEL
+    label: Cancel
+
+  layout: 
+    sequence: 10
+    region: Buttons # 52460929249584406
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    alignment: Left center
+
+  appearance: 
+    button-template: Text
+    hot: false
+    template-options: 
+    - '#DEFAULT#'
+
+  behavior: 
+    action: Redirect to Page in this Application
+    target: 
+      url: 'f?p=&APP_ID.:22:&SESSION.::&DEBUG.:22::'
+      page: 22 # Master Permit Types
+      clear-cache: 22
+
+    warn-on-unsaved-changes: Do Not Check
+
+  advanced: 
+    static-id: BTN_CANCEL_P25
+
+validations: 
+- # ====== Validation: Type Code Required ======================
+  id: 52461589023584412
+  identification: 
+    name: Type Code Required
+
+  execution: 
+    sequence: 10
+
+  validation: 
+    type: Item is NOT NULL
+    item: P25_PTW_TYPE
+    always-execute: false
+
+  error: 
+    error-message: Type Code is required.
+    display-location: Inline with Field and in Notification
+    associated-item: P25_PTW_TYPE # 52460479828584401
+
+  server-side-condition: 
+    when-button-pressed: SAVE # 52461089934584407
+
+- # ====== Validation: Description Required ====================
+  id: 52461649892584413
+  identification: 
+    name: Description Required
+
+  execution: 
+    sequence: 20
+
+  validation: 
+    type: Item is NOT NULL
+    item: P25_TYPE_DESC
+    always-execute: false
+
+  error: 
+    error-message: Description is required.
+    display-location: Inline with Field and in Notification
+    associated-item: P25_TYPE_DESC # 52460581646584402
+
+  server-side-condition: 
+    when-button-pressed: SAVE # 52461089934584407
+
+- # ====== Validation: Type Code Must Be Unique ================
+  id: 52461709490584414
+  identification: 
+    name: Type Code Must Be Unique
+
+  execution: 
+    sequence: 30
+
+  validation: 
+    type: Function Body (returning Boolean)
+    language: PL/SQL
+    pl/sql-function-body: |
+      DECLARE
+          v_count NUMBER;
+      BEGIN
+          SELECT COUNT(*) INTO v_count
+          FROM   ptw_pro.ptw_types
+          WHERE  UPPER(ptw_type) = UPPER(:P25_PTW_TYPE)
+          AND    (type_id != :P25_TYPE_ID OR :P25_TYPE_ID IS NULL);
+          RETURN v_count = 0;
+      END;
+    always-execute: false
+
+  error: 
+    error-message: This Type Code already exists. Please choose a different code.
+    display-location: Inline with Field and in Notification
+    associated-item: P25_PTW_TYPE # 52460479828584401
+
+  server-side-condition: 
+    when-button-pressed: SAVE # 52461089934584407
+
+processes: 
+- # ====== Process: Fetch Permit Type ==========================
+  id: 52461243254584409
+  identification: 
+    name: Fetch Permit Type
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      BEGIN
+          SELECT t.ptw_type,
+                 t.type_desc,
+                 t.available,
+                 TO_CHAR(t.created_date, 'DD-MON-YYYY') AS created_date,
+                 (SELECT COUNT(*) FROM ptw_pro.ptw_lv_company_types ct
+                   WHERE ct.type_id = t.type_id AND ct.is_active = 'Y') AS company_count
+          INTO   :P25_PTW_TYPE,
+                 :P25_TYPE_DESC,
+                 :P25_AVAILABLE,
+                 :P25_CREATED_DATE,
+                 :P25_COMPANY_COUNT
+          FROM   ptw_pro.ptw_types t
+          WHERE  type_id = :P25_TYPE_ID;
+      END;
+      
+
+  execution: 
+    sequence: 10
+    point: Before Header
+    run-process: Once Per Page Visit (default)
+
+  server-side-condition: 
+    type: Item is NOT NULL
+    item: P25_TYPE_ID
+
+- # ====== Process: Save Permit Type ===========================
+  id: 52461356308584410
+  identification: 
+    name: Save Permit Type
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      IF :P25_TYPE_ID IS NOT NULL THEN
+      
+          -- Existing type: ptw_type and type_desc are locked - only
+          -- available can change.
+          UPDATE ptw_pro.ptw_types
+          SET    available = :P25_AVAILABLE
+          WHERE  type_id = :P25_TYPE_ID;
+      
+      ELSE
+      
+          -- New type
+          INSERT INTO ptw_pro.ptw_types (ptw_type, type_desc, available)
+          VALUES     (:P25_PTW_TYPE, :P25_TYPE_DESC, :P25_AVAILABLE);
+      
+      END IF;
+      
+
+  execution: 
+    sequence: 10
+    point: Processing
+    run-process: Once Per Page Visit (default)
+
+  error: 
+    display-location: Inline in Notification
+
+branches: 
+- # ====== Branch: Back to page 22 =============================
+  id: 52461439650584411
+  identification: 
+    name: Back to page 22
+
+  execution: 
+    sequence: 10
+    point: After Processing
+
+  behavior: 
+    type: Page or URL (Redirect)
+    target: 
+      url: 'f?p=&APP_ID.:22:&SESSION.::&DEBUG.:22::'
+      page: 22 # Master Permit Types
+      clear-cache: 22
+

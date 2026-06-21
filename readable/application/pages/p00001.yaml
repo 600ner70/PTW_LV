@@ -371,6 +371,16 @@ css:
     .ptw-apex-dialog.ui-dialog .ui-dialog-buttonpane button.t-Button:hover {
         background-color: #e0e0e0 !important;
     }
+    
+    .admin-page-header {
+        background: linear-gradient(135deg, #003366 0%, #005599 100%);
+        color: white;
+        padding: 25px 30px;
+        border-radius: 8px;
+        margin-bottom: 25px;
+    }
+    .admin-page-header h1 { margin: 0 0 5px 0; font-size: 1.75rem; font-weight: 700; }
+    .admin-page-header p  { margin: 0; opacity: 0.85; font-size: 0.95rem; }
 
 security: 
   authentication: Page Requires Authentication
@@ -443,7 +453,7 @@ regions:
     type: Static Content
 
   layout: 
-    sequence: 120
+    sequence: 60
     parent-region: No Parent
     slot: BODY
     start-new-layout: false
@@ -732,7 +742,7 @@ regions:
       ORDER BY p.created_date DESC
 
   layout: 
-    sequence: 130
+    sequence: 70
     parent-region: No Parent
     slot: BODY
     start-new-layout: false
@@ -1743,7 +1753,7 @@ regions:
     type: None
 
   layout: 
-    sequence: 140
+    sequence: 80
     parent-region: No Parent
     slot: BODY
     start-new-layout: false
@@ -2167,6 +2177,113 @@ regions:
     security: 
       escape-special-characters: false
 
+- # ====== Region: Viewing As (Super User) =====================
+  id: 52465325062584450
+  identification: 
+    name: Viewing As (Super User)
+    title: Viewing As (Super User)
+    type: Dynamic Content
+
+  source: 
+    language: PL/SQL
+    pl/sql-function-body-returning-a-clob: |
+      DECLARE
+          l_html         CLOB;
+          l_company_name ptw_pro.ptw_lv_companies.company_name%TYPE;
+          l_override     VARCHAR2(50) := V('G_OVERRIDE_COMPANY_ID');
+          l_is_super     VARCHAR2(1);
+      BEGIN
+          BEGIN
+              SELECT is_super_user
+              INTO   l_is_super
+              FROM   ptw_pro.ptw_lv_users
+              WHERE  UPPER(username) = UPPER(:APP_USER)
+              AND    is_active = 'Y';
+          EXCEPTION
+              WHEN NO_DATA_FOUND THEN l_is_super := 'N';
+          END;
+      
+          IF l_is_super != 'Y' OR l_override IS NULL OR l_override = '' THEN
+              RETURN NULL;
+          END IF;
+      
+          BEGIN
+              SELECT company_name
+              INTO   l_company_name
+              FROM   ptw_pro.ptw_lv_companies
+              WHERE  company_id = TO_NUMBER(l_override);
+          EXCEPTION
+              WHEN NO_DATA_FOUND THEN l_company_name := 'Unknown Company';
+          END;
+      
+          l_html := '<div class="t-Alert t-Alert--info t-Alert--horizontal t-Alert--defaultIcons">'
+                 || '  <div class="t-Alert-wrap">'
+                 || '    <div class="t-Alert-icon"><span class="t-Icon fa-eye"></span></div>'
+                 || '    <div class="t-Alert-content">'
+                 || '      <div class="t-Alert-header">'
+                 || '        <h2 class="t-Alert-title">Viewing As (Super User): '
+                 ||              apex_escape.html(l_company_name)
+                 || '        </h2>'
+                 || '      </div>'
+                 || '    </div>'
+                 || '    <div class="t-Alert-buttons">'
+                 || '      <button type="button" class="t-Button t-Button--hot t-Button--simple"'
+                 || '              onclick="apex.submit(''CLEAR_OVERRIDE'');">'
+                 || '        Return to Super User View'
+                 || '      </button>'
+                 || '    </div>'
+                 || '  </div>'
+                 || '</div>';
+      
+          RETURN l_html;
+      
+      EXCEPTION
+          WHEN OTHERS THEN RETURN NULL;
+      END;
+
+  layout: 
+    sequence: 50
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--scrollBody
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  server-side-condition: 
+    type: Rows returned
+    sql-query: |2
+              SELECT 1
+              FROM   ptw_pro.ptw_lv_users
+              WHERE  UPPER(username) = UPPER(:APP_USER)
+              AND    is_super_user = 'Y'
+
+  server-cache: 
+    caching: Disabled
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    performance: 
+      lazy-loading: false
+
 page-items: 
 - # ====== Page Item: P1_PERMIT_ID =============================
   id: 25229693304353136
@@ -2178,7 +2295,7 @@ page-items:
     value-protected: false
 
   layout: 
-    sequence: 150
+    sequence: 90
     region: No Parent
     slot: BODY
 
@@ -2208,7 +2325,7 @@ page-items:
     value-protected: false
 
   layout: 
-    sequence: 160
+    sequence: 100
     region: No Parent
     slot: BODY
 
@@ -2238,7 +2355,7 @@ page-items:
     value-protected: false
 
   layout: 
-    sequence: 170
+    sequence: 110
     region: No Parent
     slot: BODY
 
@@ -2268,7 +2385,7 @@ page-items:
     value-protected: false
 
   layout: 
-    sequence: 180
+    sequence: 120
     region: No Parent
     slot: BODY
 
@@ -2693,6 +2810,33 @@ processes:
     point: Ajax Callback
     run-process: Once Per Page Visit (default)
 
+- # ====== Process: Clear Company Override =====================
+  id: 52494299876962701
+  identification: 
+    name: Clear Company Override
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      BEGIN
+          APEX_UTIL.SET_SESSION_STATE('G_OVERRIDE_COMPANY_ID', NULL);
+      END;
+
+  execution: 
+    sequence: 40
+    point: Processing
+    run-process: Once Per Page Visit (default)
+
+  error: 
+    display-location: Inline in Notification
+
+  server-side-condition: 
+    type: Request = Value
+    value: CLEAR_OVERRIDE
+
 branches: 
 - # ====== Branch: Refresh Dashboard After Delete ==============
   id: 25229805851353138
@@ -2715,4 +2859,24 @@ branches:
   server-side-condition: 
     type: Request is contained in Value
     value: DELETE_PERMIT
+
+- # ====== Branch: Reload Dashboard ============================
+  id: 52494338428962702
+  identification: 
+    name: Reload Dashboard
+
+  execution: 
+    sequence: 20
+    point: After Processing
+
+  behavior: 
+    type: Page or URL (Redirect)
+    target: 
+      url: 'f?p=&APP_ID.:1:&SESSION.::&DEBUG.:1::'
+      page: 1 # Dashboard
+      clear-cache: 1
+
+  server-side-condition: 
+    type: Request = Value
+    value: CLEAR_OVERRIDE
 
