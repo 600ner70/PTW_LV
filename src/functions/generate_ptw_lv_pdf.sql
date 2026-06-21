@@ -1,4 +1,4 @@
-create or replace FUNCTION generate_ptw_lv_pdf (
+create or replace FUNCTION PTW_PRO.generate_ptw_lv_pdf (
     p_permit_id       IN NUMBER,
     p_include_history IN VARCHAR2 DEFAULT 'N'
 ) RETURN CLOB
@@ -9,6 +9,10 @@ IS
     v_html       CLOB;
     v_mon_count  NUMBER := 0;
     v_mon_num    NUMBER := 0;
+    v_auth_person_fullname VARCHAR2(200);
+    v_logo_blob  BLOB;
+    v_logo_mime  VARCHAR2(100) := 'image/png';
+    v_logo_b64   CLOB;
 
     CURSOR c_isolation IS
         SELECT *
@@ -141,6 +145,11 @@ IS
 -- MAIN BODY
 -- ============================================================
 BEGIN
+    -- Initialise v_html as a true temporary CLOB in the LOB segment
+    -- rather than PGA memory. Prevents ORA-06502 when the CLOB grows
+    -- large (base64 logo + full permit HTML). Must be first statement.
+    DBMS_LOB.CREATETEMPORARY(v_html, TRUE, DBMS_LOB.CALL);
+
     IF p_permit_id IS NULL THEN
         RETURN '<div class="ptw-lv-report-container">'
             || '<h2 style="color:red;">No Permit Selected</h2></div>';
@@ -156,6 +165,27 @@ BEGIN
                 || '<h2 style="color:red;">Permit Not Found</h2>'
                 || '<p>Permit ID: ' || p_permit_id || '</p></div>';
     END;
+    
+    BEGIN
+        SELECT file_content
+        INTO   v_logo_blob
+        FROM   apex_application_static_files
+        WHERE  application_id = (
+                SELECT application_id
+                FROM   apex_applications
+                WHERE  alias = 'PTW-PRO'
+            )
+        AND    file_name = 'logo_' || v_permit.company_id || '.png';
+    
+        v_logo_b64 := apex_web_service.blob2clobbase64(v_logo_blob);
+        v_logo_b64 := REPLACE(REPLACE(v_logo_b64, CHR(10), ''), CHR(13), '');
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            -- No logo for this company - render PDF without logo
+            v_logo_b64 := NULL;
+        WHEN OTHERS THEN
+            v_logo_b64 := NULL;
+    END;
 
     BEGIN
         SELECT * INTO v_cm
@@ -168,6 +198,21 @@ BEGIN
     SELECT COUNT(*) INTO v_mon_count
     FROM   ptw_pro.ptw_lv_monitoring
     WHERE  permit_id = p_permit_id;
+    
+    BEGIN
+        SELECT first_name || ' ' || last_name
+        INTO   v_auth_person_fullname
+        FROM   ptw_pro.ptw_lv_users
+        WHERE  UPPER(username) = UPPER(v_permit.auth_person_name);
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            -- Username no longer exists (user deleted/renamed) -
+            -- fall back to the stored username so the PDF still
+            -- renders rather than showing blank.
+            v_auth_person_fullname := v_permit.auth_person_name;
+        WHEN OTHERS THEN
+            v_auth_person_fullname := v_permit.auth_person_name;
+    END;
 
     -- ============================================================
     -- HTML DOCUMENT + CSS
@@ -319,14 +364,25 @@ BEGIN
     -- ============================================================
     v_html := v_html || '
     <div class="ptw-lv-header">
-        <h1>Permit to Work &mdash; LV Electrical</h1>
+        <div style="display:flex;justify-content:space-between;
+                    align-items:center;margin-bottom:8px;">
+            <h1 style="margin:0;">Permit to Work &mdash; LV Electrical</h1>';
+    
+    IF v_logo_b64 IS NOT NULL THEN
+        v_html := v_html || '<img src="data:image/png;base64,';
+        DBMS_LOB.APPEND(v_html, v_logo_b64);
+        v_html := v_html || '" style="max-height:40px;margin-left:20px;" alt="Company Logo" />';
+    END IF;
+    
+    v_html := v_html || '
+        </div>
         <div class="header-refs">
-            <div>Safety Programme Reference No.:<br>
-                <strong>' || safe_val(v_permit.safety_programme_ref_no) || '</strong></div>
-            <div>Isolation &amp; Earthing Diagram Serial No.:<br>
-                <strong>' || safe_val(v_permit.isolation_diagram_serial_no) || '</strong></div>
-            <div>Permit to Work No.:<br>
-                <strong>' || safe_val(v_permit.permit_number) || '</strong></div>
+            <div>Safety Programme Reference No.:<br><strong>'
+        || safe_val(v_permit.safety_programme_ref_no) || '</strong></div>
+            <div>Isolation &amp; Earthing Diagram Serial No.:<br><strong>'
+        || safe_val(v_permit.isolation_diagram_serial_no) || '</strong></div>
+            <div>Permit to Work No.:<br><strong>'
+        || safe_val(v_permit.permit_number) || '</strong></div>
         </div>
     </div>';
 
@@ -533,13 +589,13 @@ BEGIN
             <tbody>';
 
     FOR iso IN c_isolation LOOP
-        v_html := v_html || '
+        DBMS_LOB.APPEND(v_html, TO_CLOB('
                 <tr>
                     <td style="text-align:center;font-weight:700;">' || iso.row_number         || '</td>
                     <td>'                                                                        || safe_val(iso.equipment_isolated) || '</td>
                     <td>'                                                                        || safe_val(iso.means_of_isolation)  || '</td>
                     <td>'                                                                        || safe_val(iso.safety_lock_no)      || '</td>
-                </tr>';
+                </tr>'));
     END LOOP;
 
     -- Fill any unused isolation rows up to 4
@@ -550,11 +606,11 @@ BEGIN
         FROM   ptw_pro.ptw_lv_equipment_isolation
         WHERE  permit_id = p_permit_id
     ) LOOP
-        v_html := v_html || '
+        DBMS_LOB.APPEND(v_html, TO_CLOB('
                 <tr>
                     <td style="text-align:center;font-weight:700;">' || i.rn || '</td>
                     <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
-                </tr>';
+                </tr>'));
     END LOOP;
 
     v_html := v_html || '
@@ -576,7 +632,7 @@ BEGIN
         </div>
         <div class="ptw-lv-row">
             <div class="ptw-lv-label">Authorised Person:</div>
-            <div class="ptw-lv-value">' || safe_val(v_permit.auth_person_name)   || '</div>
+            <div class="ptw-lv-value">' || safe_val(v_auth_person_fullname)   || '</div>
         </div>
         <div class="ptw-lv-row">
             <div class="ptw-lv-label">Mobile Tel No.:</div>
