@@ -310,7 +310,7 @@ regions:
       END;
 
   layout: 
-    sequence: 50
+    sequence: 40
     parent-region: No Parent
     slot: BODY
     start-new-layout: false
@@ -441,7 +441,7 @@ regions:
       </table>
 
   layout: 
-    sequence: 60
+    sequence: 50
     parent-region: No Parent
     slot: BODY
     start-new-layout: false
@@ -484,7 +484,7 @@ regions:
     type: Static Content
 
   layout: 
-    sequence: 70
+    sequence: 60
     parent-region: No Parent
     slot: BODY
     start-new-layout: false
@@ -542,7 +542,7 @@ regions:
       
 
   layout: 
-    sequence: 100
+    sequence: 90
     parent-region: No Parent
     slot: BODY
     start-new-layout: false
@@ -592,6 +592,7 @@ regions:
           au.user_name,
           u.email_address                                        AS email,
           u.mobile_no,
+          pt.team_name,
           u.first_name,
           u.last_name,
           u.job_title                                            AS description,
@@ -626,6 +627,7 @@ regions:
           ON ur.user_id         = u.user_id
       LEFT JOIN ptw_pro.ptw_lv_roles               r
           ON r.role_id          = ur.role_id
+      LEFT JOIN ptw_pro.ptw_lv_teams pt ON pt.team_id = u.team_id
       WHERE  au.workspace_name  = (
                  SELECT workspace FROM apex_applications
                  WHERE  application_id = :APP_ID
@@ -649,13 +651,13 @@ regions:
           )
       )
       GROUP  BY
-          au.user_name, u.email_address, u.mobile_no,
+          au.user_name, u.email_address, pt.team_name,u.mobile_no,
           u.first_name, u.last_name, u.job_title, u.is_active,
           au.account_locked
       ORDER  BY au.user_name
 
   layout: 
-    sequence: 110
+    sequence: 100
     parent-region: No Parent
     slot: BODY
     start-new-layout: false
@@ -1169,6 +1171,47 @@ regions:
       security: 
         escape-special-characters: false
 
+    - # ====== Column: TEAM_NAME ===================================
+      id: 53189603051153120
+      identification: 
+        column-name: TEAM_NAME
+        type: Plain Text
+
+      heading: 
+        heading: Team Name
+        alignment: start
+
+      single-row-view: 
+        use-column-heading: true
+
+      layout: 
+        sequence: 180
+        column-alignment: start
+
+      accessibility: 
+        value-identifies-row: false
+
+      source: 
+        primary-key: false
+
+      column-filter: 
+        type: Default Based on Column Type
+
+      enable-users-to: 
+        hide: true
+        sort: true
+        filter: true
+        highlight: true
+        control-break: true
+        aggregate: true
+        compute: true
+        chart: true
+        group-by: true
+        pivot: true
+
+      security: 
+        escape-special-characters: true
+
 - # ====== Region: User Role Assignments =======================
   id: 39963457956997110
   identification: 
@@ -1220,7 +1263,7 @@ regions:
     type: None
 
   layout: 
-    sequence: 90
+    sequence: 80
     parent-region: No Parent
     slot: BODY
     start-new-layout: false
@@ -1521,7 +1564,7 @@ regions:
       </div>
 
   layout: 
-    sequence: 80
+    sequence: 70
     parent-region: No Parent
     slot: BODY
     start-new-layout: false
@@ -2416,7 +2459,7 @@ page-items:
     sql-query: |
       SELECT team_name d, team_id r
                    FROM   ptw_pro.ptw_lv_teams
-                   WHERE  company_id = :effective_company_id  -- same resolution as rest of page
+                   WHERE  company_id = :P8_EFFECTIVE_COMPANY_ID -- same resolution as rest of page
                    AND    is_active = 'Y'
                    ORDER  BY team_name
     display-extra-values: false
@@ -2435,6 +2478,36 @@ page-items:
 
   quick-picks: 
     show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P8_EFFECTIVE_COMPANY_ID ==================
+  id: 53189408526153118
+  identification: 
+    name: P8_EFFECTIVE_COMPANY_ID
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 30
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
 
   security: 
     session-state-protection: Unrestricted
@@ -2744,13 +2817,15 @@ dynamic-actions:
                        u.email_address,
                        u.mobile_no,
                        u.job_title,
-                       u.is_active
+                       u.is_active,
+                       u.team_id
                 INTO   :P8_FIRST_NAME,
                        :P8_LAST_NAME,
                        :P8_EMAIL,
                        :P8_MOBILE_NO,
                        :P8_DESCRIPTION,
-                       :P8_IS_ACTIVE
+                       :P8_IS_ACTIVE,
+                       :P8_TEAM_ID
                 FROM   ptw_pro.ptw_lv_users u
                 WHERE  UPPER(u.username) = l_username;
             EXCEPTION
@@ -2807,6 +2882,7 @@ dynamic-actions:
       - P8_ROLE
       - P8_ACCOUNT_LOCKED
       - P8_IS_WORKSPACE_ADMIN
+      - P8_TEAM_ID
       suppress-change-event: false
 
     execution: 
@@ -2940,7 +3016,6 @@ processes:
       DECLARE
           l_user_id          NUMBER;
           l_user_name        VARCHAR2(100);
-          l_developer_role   VARCHAR2(200);
           l_caller_role      VARCHAR2(50);
           l_admin_role_count NUMBER;
           l_oper_role_count  NUMBER;
@@ -3008,7 +3083,8 @@ processes:
               RETURN;
           END IF;
       
-          -- Get APEX user_id
+          -- Get APEX user_id - read-only, GET_USER_ID is not admin-gated,
+          -- only the mutating calls removed below required it
           l_user_id := APEX_UTIL.GET_USER_ID(p_username => l_user_name);
           IF l_user_id IS NULL THEN
               apex_error.add_error(
@@ -3018,30 +3094,10 @@ processes:
               RETURN;
           END IF;
       
-          -- Preserve developer role
-          BEGIN
-              l_developer_role := APEX_UTIL.GET_USER_ROLES(p_username => l_user_name);
-          EXCEPTION
-              WHEN NO_DATA_FOUND THEN l_developer_role := NULL;
-          END;
-      
-          -- Update APEX account
-          APEX_UTIL.EDIT_USER(
-              p_user_id         => l_user_id,
-              p_user_name       => l_user_name,
-              p_first_name      => :P8_FIRST_NAME,
-              p_last_name       => :P8_LAST_NAME,
-              p_email_address   => :P8_EMAIL,
-              p_developer_roles => l_developer_role,
-              p_description     => :P8_DESCRIPTION
-          );
-      
-          -- Lock or unlock APEX account
-          IF :P8_IS_ACTIVE = 'N' THEN
-              APEX_UTIL.LOCK_ACCOUNT(p_user_name => l_user_name);
-          ELSE
-              APEX_UTIL.UNLOCK_ACCOUNT(p_user_name => l_user_name);
-          END IF;
+          -- REMOVED: APEX_UTIL.EDIT_USER and LOCK_ACCOUNT/UNLOCK_ACCOUNT -
+          -- ptw_lv_users is authoritative for profile + active status
+          -- app-wide; see Post-Authentication process for the login-time
+          -- deactivation gate that replaces native account locking.
       
           -- Update ptw_lv_users profile
           UPDATE ptw_pro.ptw_lv_users
@@ -3051,6 +3107,7 @@ processes:
                  mobile_no      = :P8_MOBILE_NO,
                  job_title      = :P8_DESCRIPTION,
                  is_active      = :P8_IS_ACTIVE,
+                 team_id        = :P8_TEAM_ID,
                  modified_date  = CURRENT_TIMESTAMP,
                  modified_by    = NVL(V('APP_USER'), USER)
           WHERE  UPPER(username) = l_user_name;
@@ -3446,6 +3503,44 @@ processes:
 
   server-side-condition: 
     when-button-pressed: UNLOCK_ACCOUNT # 39965438036997130
+
+- # ====== Process: Load Company data ==========================
+  id: 53189544258153119
+  identification: 
+    name: Load Company data
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      DECLARE
+          v_override   VARCHAR2(50) := V('G_OVERRIDE_COMPANY_ID');
+          v_company_id NUMBER;
+      BEGIN
+          IF v_override IS NOT NULL AND TRIM(v_override) IS NOT NULL THEN
+              v_company_id := TO_NUMBER(TRIM(v_override));
+          ELSE
+              BEGIN
+                  SELECT company_id INTO v_company_id
+                  FROM   ptw_pro.ptw_lv_users
+                  WHERE  UPPER(username) = UPPER(SYS_CONTEXT('APEX$SESSION', 'APP_USER'))
+                  AND    is_super_user   = 'N'
+                  AND    is_active       = 'Y';
+              EXCEPTION
+                  WHEN NO_DATA_FOUND THEN
+                      v_company_id := NULL;
+              END;
+          END IF;
+      
+          :P8_EFFECTIVE_COMPANY_ID := v_company_id;
+      END;
+
+  execution: 
+    sequence: 10
+    point: After Header
+    run-process: Once Per Page Visit (default)
 
 branches: 
 - # ====== Branch: Refresh after Update ========================

@@ -207,7 +207,10 @@ regions:
     template: Standard
     template-options: 
     - '#DEFAULT#'
+    - t-Region--showIcon
+    - t-Region--accent15
     - t-Region--scrollBody
+    icon: fa-clipboard-list
     render-components: Above Content
 
   accessibility: 
@@ -270,27 +273,10 @@ regions:
     id: 53155985179466128
     identification: 
       column-name: TYPE_ID
-      type: Plain Text
-
-    heading: 
-      heading: Type Id
-      alignment: end
+      type: Hidden
 
     layout: 
       sequence: 10
-      column-alignment: end
-
-    accessibility: 
-      value-identifies-row: false
-
-    sorting: 
-      sortable: false
-
-    export-/-printing: 
-      include-in-export-/-print: true
-
-    advanced: 
-      compute-sum: false
 
     ui-defaults-reference: 
       table-owner: Parsing Schema
@@ -787,6 +773,35 @@ processes:
 
   server-side-condition: 
     when-button-pressed: SAVE # 53155632757466125
+
+- # ====== Process: Load data ==================================
+  id: 53189108372153115
+  identification: 
+    name: Load data
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      SELECT team_name,
+             is_Active,
+             created_date
+      INTO   :P29_TEAM_NAME,
+             :P29_IS_ACTIVE,
+             :P29_CREATED_DATE
+      FROM   ptw_pro.ptw_lv_teams
+      WHERE  team_id = :P29_TEAM_ID;
+
+  execution: 
+    sequence: 10
+    point: After Header
+    run-process: Once Per Page Visit (default)
+
+  server-side-condition: 
+    type: Item is NOT NULL
+    item: P29_TEAM_ID
 
 branches: 
 - # ====== Branch: Return to page 27 ===========================

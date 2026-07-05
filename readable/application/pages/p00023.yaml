@@ -118,7 +118,7 @@ regions:
       END;
 
   layout: 
-    sequence: 30
+    sequence: 40
     parent-region: No Parent
     slot: BODY
     start-new-layout: false
@@ -165,38 +165,57 @@ regions:
     type: SQL Query
     sql-query: |
       SELECT x.type_id,
-             x.ptw_type,
              x.type_desc,
-             x.permit_count,
-             CASE
-                 WHEN x.permit_count = 0 THEN
-                     apex_item.select_list(1, x.current_assigned, 'Yes;Y,No;N',
-                                            'class="ptw-assigned-select"')
+             x.company_default,
+             CASE :P23_SCOPE
+                 WHEN 'COMPANY' THEN
+                     apex_item.select_list(1, x.company_setting, 'Yes;Y,No;N',
+                                            'class="ptw-company-select"')
                      || apex_item.hidden(2, x.type_id)
-                 ELSE
-                     (CASE x.current_assigned WHEN 'Y' THEN 'Yes' ELSE 'No' END)
-                     || ' <span class="ptw-locked-note">(in use - cannot remove)</span>'
-             END AS assigned
+                 WHEN 'TEAM' THEN
+                     apex_item.select_list(1, x.team_setting,
+                         'Inherit;INHERIT,Granted;Y,Denied;N',
+                         'class="ptw-team-select"')
+                     || apex_item.hidden(2, x.type_id)
+                 WHEN 'ENGINEER' THEN
+                     apex_item.checkbox(1, x.type_id,
+                         'class="ptw-competency-checkbox"' ||
+                         ' data-type-desc="' || APEX_ESCAPE.HTML(x.type_desc) || '"' ||
+                         CASE WHEN x.engineer_setting = 'Y' THEN ' checked="checked"' END)
+                     || apex_item.hidden(2, x.type_id)
+             END AS row_control,
+             x.competency_confirmed_by,
+             x.competency_confirmed_date
       FROM (
-          SELECT t.type_id,
-                 t.ptw_type,
-                 t.type_desc,
-                 NVL((SELECT ct.is_active FROM ptw_pro.ptw_lv_company_types ct
-                       WHERE ct.type_id = t.type_id), 'N') AS current_assigned,
-                 (SELECT COUNT(*) FROM ptw_pro.ptw_lv_permits p
-                   WHERE p.ptw_type = t.ptw_type) AS permit_count
-          FROM   ptw_pro.ptw_types t
-          WHERE  t.available = 'Y'
-             OR  EXISTS (SELECT 1 FROM ptw_pro.ptw_lv_company_types ct
-                           WHERE ct.type_id = t.type_id)
+          SELECT pt.type_id,
+                 pt.type_desc,
+                 ct.is_active                   AS company_default,
+                 NVL(ct.is_active, 'N')         AS company_setting,
+                 NVL(tt.is_active, 'INHERIT')   AS team_setting,
+                 NVL(ut.is_active, 'N')         AS engineer_setting,
+                 ut.modified_by                 AS competency_confirmed_by,
+                 ut.modified_date               AS competency_confirmed_date
+          FROM   ptw_pro.ptw_types pt
+          JOIN   ptw_pro.ptw_lv_company_types ct
+                 ON ct.type_id = pt.type_id AND ct.company_id = :P23_EFFECTIVE_COMPANY_ID
+          LEFT JOIN ptw_pro.ptw_lv_team_types tt
+                 ON tt.type_id = pt.type_id AND tt.team_id = :P23_TEAM_ID
+          LEFT JOIN ptw_pro.ptw_lv_user_types ut
+                 ON ut.type_id = pt.type_id AND ut.user_id = :P23_ENGINEER_ID
+          WHERE  pt.available = 'Y'
+          AND    ct.is_active = 'Y'
       ) x
-      ORDER BY x.ptw_type
+      ORDER BY x.type_desc
+    page-items-to-submit: 
+    - P23_TEAM_ID
+    - P23_ENGINEER_ID
+    - P23_EFFECTIVE_COMPANY_ID
 
   order-by: 
     type: None
 
   layout: 
-    sequence: 60
+    sequence: 110
     parent-region: No Parent
     slot: BODY
     start-new-layout: false
@@ -222,10 +241,6 @@ regions:
   advanced: 
     region-display-selector: false
     exclude-title-from-translation: false
-
-  server-side-condition: 
-    type: Item is NOT NULL
-    item: G_OVERRIDE_COMPANY_ID
 
   server-cache: 
     caching: Disabled
@@ -271,38 +286,6 @@ regions:
       enabled: false
 
   columns: 
-  - # ====== Column: PTW_TYPE ====================================
-    id: 52464004838584437
-    identification: 
-      column-name: PTW_TYPE
-      type: Plain Text
-
-    heading: 
-      heading: Type Code
-      alignment: start
-
-    layout: 
-      sequence: 20
-      column-alignment: start
-
-    accessibility: 
-      value-identifies-row: false
-
-    sorting: 
-      sortable: false
-
-    export-/-printing: 
-      include-in-export-/-print: true
-
-    advanced: 
-      compute-sum: false
-
-    ui-defaults-reference: 
-      table-owner: Parsing Schema
-
-    security: 
-      escape-special-characters: true
-
   - # ====== Column: TYPE_DESC ===================================
     id: 52464132863584438
     identification: 
@@ -316,38 +299,6 @@ regions:
     layout: 
       sequence: 30
       column-alignment: start
-
-    accessibility: 
-      value-identifies-row: false
-
-    sorting: 
-      sortable: false
-
-    export-/-printing: 
-      include-in-export-/-print: true
-
-    advanced: 
-      compute-sum: false
-
-    ui-defaults-reference: 
-      table-owner: Parsing Schema
-
-    security: 
-      escape-special-characters: true
-
-  - # ====== Column: PERMIT_COUNT ================================
-    id: 52464474529584441
-    identification: 
-      column-name: PERMIT_COUNT
-      type: Plain Text
-
-    heading: 
-      heading: Permits Using This Type
-      alignment: end
-
-    layout: 
-      sequence: 60
-      column-alignment: end
 
     accessibility: 
       value-identifies-row: false
@@ -382,18 +333,114 @@ regions:
     security: 
       escape-special-characters: true
 
-  - # ====== Column: ASSIGNED ====================================
-    id: 52464630543584443
+  - # ====== Column: COMPANY_DEFAULT =============================
+    id: 53188057368153104
     identification: 
-      column-name: ASSIGNED
+      column-name: COMPANY_DEFAULT
       type: Plain Text
 
     heading: 
-      heading: Assigned to us
+      heading: Company Default
       alignment: start
 
     layout: 
       sequence: 80
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: false
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: COMPETENCY_CONFIRMED_BY =====================
+    id: 53188223192153106
+    identification: 
+      column-name: COMPETENCY_CONFIRMED_BY
+      type: Plain Text
+
+    heading: 
+      heading: Competency Confirmed By
+      alignment: start
+
+    layout: 
+      sequence: 100
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: false
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: COMPETENCY_CONFIRMED_DATE ===================
+    id: 53188314740153107
+    identification: 
+      column-name: COMPETENCY_CONFIRMED_DATE
+      type: Plain Text
+
+    heading: 
+      heading: Competency Confirmed Date
+      alignment: start
+
+    layout: 
+      sequence: 110
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: false
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: ROW_CONTROL =================================
+    id: 53188481829153108
+    identification: 
+      column-name: ROW_CONTROL
+      type: Plain Text
+
+    heading: 
+      heading: Assignment
+      alignment: start
+
+    layout: 
+      sequence: 120
       column-alignment: start
 
     accessibility: 
@@ -497,6 +544,265 @@ regions:
     performance: 
       lazy-loading: false
 
+page-items: 
+- # ====== Page Item: P23_SCOPE ================================
+  id: 53156753085466136
+  identification: 
+    name: P23_SCOPE
+    type: Radio Group
+
+  label: 
+    label: Scope Selector
+    alignment: Left
+
+  settings: 
+    number-of-columns: 3
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 60
+    region: No Parent
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC:Company;COMPANY,Team;TEAM,Engineer;ENGINEER'
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  default: 
+    type: Static
+    static-value: COMPANY
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P23_TEAM_ID ==============================
+  id: 53156811548466137
+  identification: 
+    name: P23_TEAM_ID
+    type: Select List
+
+  label: 
+    label: Team
+    alignment: Left
+
+  settings: 
+    page-action-on-selection: None
+
+  multiple-values: 
+    type: No
+
+  layout: 
+    sequence: 70
+    region: No Parent
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    height: 1
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: SQL Query
+    sql-query: |
+      SELECT team_name d, team_id r
+      FROM   ptw_pro.ptw_lv_teams
+      WHERE  company_id = :P23_EFFECTIVE_COMPANY_ID  -- same resolution
+                                                 -- pattern as the
+                                                 -- rest of this page
+      AND    is_active = 'Y'
+      ORDER  BY team_name
+    display-extra-values: false
+    display-null-value: true
+    null-display-value: '-- Select Team --'
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P23_ENGINEER_ID ==========================
+  id: 53156945295466138
+  identification: 
+    name: P23_ENGINEER_ID
+    type: Select List
+
+  label: 
+    label: Engineer
+    alignment: Left
+
+  settings: 
+    page-action-on-selection: None
+
+  multiple-values: 
+    type: No
+
+  layout: 
+    sequence: 80
+    region: No Parent
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    height: 1
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: SQL Query
+    sql-query: |
+      SELECT first_name || ' ' || last_name || ' (' || username || ')' d,
+             user_id r
+      FROM   ptw_pro.ptw_lv_users
+      WHERE  company_id = :P23_EFFECTIVE_COMPANY_ID
+      AND    is_super_user = 'N'
+      AND    is_active = 'Y'
+      ORDER  BY last_name, first_name
+    display-extra-values: false
+    display-null-value: true
+    null-display-value: '-- Select Engineer --'
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P23_COMPETENCY_ACK =======================
+  id: 53157013726466139
+  identification: 
+    name: P23_COMPETENCY_ACK
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 100
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P23_EFFECTIVE_COMPANY_ID =================
+  id: 53188544069153109
+  identification: 
+    name: P23_EFFECTIVE_COMPANY_ID
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 90
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
 buttons: 
 - # ====== Button: SAVE ========================================
   id: 52464752525584444
@@ -529,6 +835,412 @@ buttons:
     show-processing: false
     warn-on-unsaved-changes: Do Not Check
 
+dynamic-actions: 
+- # ====== Dynamic Action: Scope Switch to Team ================
+  id: 53157168571466140
+  identification: 
+    name: Scope Switch to Team
+
+  execution: 
+    sequence: 10
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Change
+    selection-type: Item(s)
+    item(s): 
+    - P23_SCOPE
+
+  client-side-condition: 
+    type: Item = Value
+    item: P23_SCOPE
+    value: TEAM
+
+  actions: 
+  - # ====== Action: Show ========================================
+    id: 53157270575466141
+    identification: 
+      action: Show
+
+    affected-elements: 
+      selection-type: Item(s)
+      item(s): 
+      - P23_TEAM_ID
+
+    execution: 
+      sequence: 20
+      event: Scope Switch to Team # 53157168571466140
+      fire-when-event-result-is: True
+      fire-on-initialization: true
+
+  - # ====== Action: Refresh =====================================
+    id: 53157411209466143
+    identification: 
+      action: Refresh
+
+    settings: 
+      maintain-pagination: false
+
+    affected-elements: 
+      selection-type: Region
+      region: Permit Types # 52461942092584416
+
+    execution: 
+      sequence: 40
+      event: Scope Switch to Team # 53157168571466140
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+  - # ====== Action: Execute Server-side Code ====================
+    id: 53157548128466144
+    identification: 
+      action: Execute Server-side Code
+
+    settings: 
+      language: PE.PROPERTY.SOURCE_SNIPPET_LANG.LOV.PLSQL.D
+      pl/sql-code: NULL;
+      items-to-submit: 
+      - P23_SCOPE
+
+    execution: 
+      sequence: 10
+      event: Scope Switch to Team # 53157168571466140
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+      stop-execution-on-error: true
+      wait-for-result: true
+
+  - # ====== Action: Hide ========================================
+    id: 53157607649466145
+    identification: 
+      action: Hide
+
+    affected-elements: 
+      selection-type: Item(s)
+      item(s): 
+      - P23_TEAM_ID
+
+    execution: 
+      sequence: 10
+      event: Scope Switch to Team # 53157168571466140
+      fire-when-event-result-is: False
+      fire-on-initialization: true
+
+  - # ====== Action: Refresh =====================================
+    id: 53157714910466146
+    identification: 
+      action: Refresh
+
+    settings: 
+      maintain-pagination: false
+
+    affected-elements: 
+      selection-type: Region
+      region: Permit Types # 52461942092584416
+
+    execution: 
+      sequence: 20
+      event: Scope Switch to Team # 53157168571466140
+      fire-when-event-result-is: False
+      fire-on-initialization: false
+
+- # ====== Dynamic Action: Session state =======================
+  id: 53157874525466147
+  identification: 
+    name: Session state
+
+  execution: 
+    sequence: 5
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Change
+    selection-type: Item(s)
+    item(s): 
+    - P23_SCOPE
+
+  actions: 
+  - # ====== Action: Execute Server-side Code ====================
+    id: 53157925905466148
+    identification: 
+      action: Execute Server-side Code
+
+    settings: 
+      language: PE.PROPERTY.SOURCE_SNIPPET_LANG.LOV.PLSQL.D
+      pl/sql-code: NULL;
+      items-to-submit: 
+      - P23_SCOPE
+
+    execution: 
+      sequence: 10
+      event: Session state # 53157874525466147
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+      stop-execution-on-error: true
+      wait-for-result: true
+
+- # ====== Dynamic Action: Scope Switch to Engineer ============
+  id: 53158060686466149
+  identification: 
+    name: Scope Switch to Engineer
+
+  execution: 
+    sequence: 20
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Change
+    selection-type: Item(s)
+    item(s): 
+    - P23_SCOPE
+
+  client-side-condition: 
+    type: Item = Value
+    item: P23_SCOPE
+    value: ENGINEER
+
+  actions: 
+  - # ====== Action: Show ========================================
+    id: 53158141778466150
+    identification: 
+      action: Show
+
+    affected-elements: 
+      selection-type: Item(s)
+      item(s): 
+      - P23_ENGINEER_ID
+
+    execution: 
+      sequence: 10
+      event: Scope Switch to Engineer # 53158060686466149
+      fire-when-event-result-is: True
+      fire-on-initialization: true
+
+  - # ====== Action: Refresh =====================================
+    id: 53187753629153101
+    identification: 
+      action: Refresh
+
+    settings: 
+      maintain-pagination: false
+
+    affected-elements: 
+      selection-type: Region
+      region: Permit Types # 52461942092584416
+
+    execution: 
+      sequence: 20
+      event: Scope Switch to Engineer # 53158060686466149
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+  - # ====== Action: Hide ========================================
+    id: 53187850815153102
+    identification: 
+      action: Hide
+
+    affected-elements: 
+      selection-type: Item(s)
+      item(s): 
+      - P23_ENGINEER_ID
+
+    execution: 
+      sequence: 10
+      event: Scope Switch to Engineer # 53158060686466149
+      fire-when-event-result-is: False
+      fire-on-initialization: true
+
+  - # ====== Action: Refresh =====================================
+    id: 53187903083153103
+    identification: 
+      action: Refresh
+
+    settings: 
+      maintain-pagination: false
+
+    affected-elements: 
+      selection-type: Region
+      region: Permit Types # 52461942092584416
+
+    execution: 
+      sequence: 20
+      event: Scope Switch to Engineer # 53158060686466149
+      fire-when-event-result-is: False
+      fire-on-initialization: false
+
+- # ====== Dynamic Action: Competency Confirm Dialog ===========
+  id: 53188781398153111
+  identification: 
+    name: Competency Confirm Dialog
+
+  execution: 
+    sequence: 30
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Change
+    selection-type: jQuery Selector
+    jquery-selector: .ptw-competency-checkbox
+
+  actions: 
+  - # ====== Action: Execute JavaScript Code =====================
+    id: 53188810329153112
+    identification: 
+      action: Execute JavaScript Code
+
+    settings: 
+      code: |
+        var $cb = $(this.triggeringElement);
+        var typeDesc = $cb.data("type-desc");
+        
+        apex.confirm(
+            "Confirm you have personally verified this engineer is " +
+            "competent to issue " + typeDesc + "?",
+            function(okPressed) {
+                if (okPressed) {
+                    // P23_COMPETENCY_ACK is a real page item (unlike the
+                    // per-row checkbox above), so apex.item() is correct
+                    // and Oracle-documented here.
+                    apex.item("P23_COMPETENCY_ACK").setValue("Y");
+                } else {
+                    $cb.prop("checked", false);
+                }
+            }
+        );
+        
+
+    affected-elements: 
+      selection-type: Event Source
+
+    execution: 
+      sequence: 10
+      event: Competency Confirm Dialog # 53188781398153111
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+- # ====== Dynamic Action: when change Team list ===============
+  id: 53189215174153116
+  identification: 
+    name: when change Team list
+
+  execution: 
+    sequence: 40
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Change
+    selection-type: Item(s)
+    item(s): 
+    - P23_TEAM_ID
+
+  actions: 
+  - # ====== Action: Refresh =====================================
+    id: 53189348276153117
+    identification: 
+      action: Refresh
+
+    settings: 
+      maintain-pagination: false
+
+    affected-elements: 
+      selection-type: Region
+      region: Permit Types # 52461942092584416
+
+    execution: 
+      sequence: 10
+      event: when change Team list # 53189215174153116
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+- # ====== Dynamic Action: when change Engineer list ===========
+  id: 53189782609153121
+  identification: 
+    name: when change Engineer list
+
+  execution: 
+    sequence: 50
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Change
+    selection-type: Item(s)
+    item(s): 
+    - P23_ENGINEER_ID
+
+  actions: 
+  - # ====== Action: Refresh =====================================
+    id: 53189863009153122
+    identification: 
+      action: Refresh
+
+    settings: 
+      maintain-pagination: false
+
+    affected-elements: 
+      selection-type: Region
+      region: Permit Types # 52461942092584416
+
+    execution: 
+      sequence: 10
+      event: when change Engineer list # 53189782609153121
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+validations: 
+- # ====== Validation: Team is not null ========================
+  id: 53188983958153113
+  identification: 
+    name: Team is not null
+
+  execution: 
+    sequence: 10
+
+  validation: 
+    type: Item is NOT NULL
+    item: P23_TEAM_ID
+    always-execute: false
+
+  error: 
+    error-message: |
+      Team must be selected.
+      
+    display-location: Inline with Field and in Notification
+    associated-item: P23_TEAM_ID # 53156811548466137
+
+  server-side-condition: 
+    type: Item = Value
+    item: P23_SCOPE
+    value: TEAM
+
+- # ====== Validation: Engineer is not null ====================
+  id: 53189012131153114
+  identification: 
+    name: Engineer is not null
+
+  execution: 
+    sequence: 20
+
+  validation: 
+    type: Item is NOT NULL
+    item: P23_ENGINEER_ID
+    always-execute: false
+
+  error: 
+    error-message: Engineer must be selected.
+    display-location: Inline with Field and in Notification
+    associated-item: P23_ENGINEER_ID # 53156945295466138
+
+  server-side-condition: 
+    type: Item = Value
+    item: P23_SCOPE
+    value: ENGINEER
+
 processes: 
 - # ====== Process: Save Permit Type Assignments ===============
   id: 52464836682584445
@@ -547,99 +1259,129 @@ processes:
           v_exists     NUMBER;
           v_used       NUMBER;
           v_type_id    NUMBER;
-          v_new_val    VARCHAR2(1);
+          v_new_val    VARCHAR2(10);
       BEGIN
-          -- Resolve effective company_id: Super User override takes priority,
-          -- same pattern as the rest of this page (see report region above)
+          -- Resolve effective company_id - unchanged from v2 fix
           IF v_override IS NOT NULL AND TRIM(v_override) IS NOT NULL THEN
-              v_company_id := TO_NUMBER(TRIM(v_override));
+             v_company_id := TO_NUMBER(TRIM(v_override));
           ELSE
               BEGIN
-                  SELECT company_id
-                  INTO   v_company_id
-                  FROM   ptw_pro.ptw_lv_users
-                  WHERE  UPPER(username) = UPPER(SYS_CONTEXT('APEX$SESSION', 'APP_USER'))
-                  AND    is_super_user   = 'N'
-                  AND    is_active       = 'Y';
+                 SELECT company_id
+                 INTO   v_company_id
+                 FROM   ptw_pro.ptw_lv_users
+                 WHERE  UPPER(username) = UPPER(SYS_CONTEXT('APEX$SESSION', 'APP_USER'))
+                 AND    is_super_user   = 'N'
+                 AND    is_active       = 'Y';
               EXCEPTION
                   WHEN NO_DATA_FOUND THEN
-                      DECLARE
-                          v_is_super VARCHAR2(1);
-                      BEGIN
-                          SELECT is_super_user INTO v_is_super
-                          FROM   ptw_pro.ptw_lv_users
-                          WHERE  UPPER(username) = UPPER(SYS_CONTEXT('APEX$SESSION', 'APP_USER'))
-                          AND    is_active = 'Y';
-      
-                          IF v_is_super = 'Y' THEN
-                              apex_error.add_error(
-                                  p_message          => 'No active company selected. Use "Set Active Company" first.',
-                                  p_display_location => apex_error.c_inline_in_notification);
-                          ELSE
-                              apex_error.add_error(
-                                  p_message          => 'Unable to determine your company. Contact an administrator.',
-                                  p_display_location => apex_error.c_inline_in_notification);
-                          END IF;
-                      EXCEPTION
-                          WHEN NO_DATA_FOUND THEN
-                              apex_error.add_error(
-                                  p_message          => 'User account not found or inactive.',
-                                  p_display_location => apex_error.c_inline_in_notification);
-                      END;
-                      RETURN;
-              END;
+                     apex_error.add_error(
+                         p_message          => 'Unable to determine your company. Contact an administrator.',
+                         p_display_location => apex_error.c_inline_in_notification);
+                     RETURN;
+             END;
           END IF;
-      
           IF v_company_id IS NULL THEN
               apex_error.add_error(
-                  p_message          => 'No active company selected. Use "Set Active Company" first.',
-                  p_display_location => apex_error.c_inline_in_notification
-              );
+              p_message          => 'No active company selected. Use "Set Active Company" first.',
+              p_display_location => apex_error.c_inline_in_notification);
               RETURN;
+          END IF;
+      
+          -- Server-side enforcement of the competency confirm dialog -
+          -- don't trust client-side JS alone for a safety attestation
+          IF :P23_SCOPE = 'ENGINEER' AND :P23_COMPETENCY_ACK != 'Y' THEN
+              -- Only block if at least one row is being SET to Y;
+              -- unchecking (revoking) doesn't need the ack.
+              FOR i IN 1 .. apex_application.g_f02.count LOOP
+                  IF apex_application.g_f01(i) = 'Y' THEN
+                      apex_error.add_error(
+                          p_message          => 'Competency must be confirmed before saving.',
+                          p_display_location => apex_error.c_inline_in_notification);
+                      RETURN;
+                  END IF;
+              END LOOP;
           END IF;
       
           FOR i IN 1 .. apex_application.g_f02.count LOOP
               v_type_id := apex_application.g_f02(i);
               v_new_val := apex_application.g_f01(i);
+              CASE :P23_SCOPE
+              WHEN 'COMPANY' THEN
       
-              -- Explicit company_id filter: VPD does NOT scope this for super
-              -- users (company_policy returns NULL/no-restriction for them),
-              -- so this check must be company-safe on its own, independent of VPD.
-              SELECT COUNT(*) INTO v_exists
-              FROM   ptw_pro.ptw_lv_company_types
-              WHERE  type_id    = v_type_id
-              AND    company_id = v_company_id;
+                  SELECT COUNT(*) INTO v_exists
+                  FROM   ptw_pro.ptw_lv_company_types
+                  WHERE  type_id    = v_type_id
+                  AND    company_id = v_company_id;
       
-              IF v_new_val = 'Y' AND v_exists = 0 THEN
+                  IF v_new_val = 'Y' AND v_exists = 0 THEN
+                      INSERT INTO ptw_pro.ptw_lv_company_types (company_id, type_id, is_active)
+                      VALUES (v_company_id, v_type_id, 'Y');
+                  ELSIF v_new_val = 'N' AND v_exists > 0 THEN
       
-                  INSERT INTO ptw_pro.ptw_lv_company_types (company_id, type_id, is_active)
-                  VALUES (v_company_id, v_type_id, 'Y');
+                      SELECT COUNT(*) INTO v_used
+                      FROM   ptw_pro.ptw_lv_permits p
+                      WHERE  p.ptw_type = (SELECT ptw_type FROM ptw_pro.ptw_types
+                                           WHERE type_id = v_type_id);
       
-              ELSIF v_new_val = 'N' AND v_exists > 0 THEN
+                      IF v_used = 0 THEN
+                         DELETE FROM ptw_pro.ptw_lv_company_types
+                         WHERE  type_id    = v_type_id
+                         AND    company_id = v_company_id;
       
-                  SELECT COUNT(*) INTO v_used
-                  FROM   ptw_pro.ptw_lv_permits p
-                  WHERE  p.ptw_type = (SELECT ptw_type FROM ptw_pro.ptw_types
-                                         WHERE type_id = v_type_id);
+                         -- Cascade: revoking at company level invalidates
+                         -- any narrower grants (v2 fix, unchanged)
+                         DELETE FROM ptw_pro.ptw_lv_team_types
+                         WHERE  company_id = v_company_id
+                         AND    type_id    = v_type_id;
       
-                  IF v_used = 0 THEN
-                      DELETE FROM ptw_pro.ptw_lv_company_types
-                      WHERE  type_id    = v_type_id
-                      AND    company_id = v_company_id;
+                         DELETE FROM ptw_pro.ptw_lv_user_types
+                         WHERE  company_id = v_company_id
+                         AND    type_id    = v_type_id;
+                      END IF;
       
-                      DELETE FROM ptw_pro.ptw_lv_team_types
-                      WHERE  company_id = v_company_id
-                      AND    type_id    = v_type_id;
-      
-                      DELETE FROM ptw_pro.ptw_lv_user_types
-                      WHERE  company_id = v_company_id
-                      AND    type_id    = v_type_id;
                   END IF;
       
-              END IF;
+              WHEN 'TEAM' THEN
+      
+                  IF v_new_val = 'INHERIT' THEN
+                      DELETE FROM ptw_pro.ptw_lv_team_types
+                      WHERE  team_id = :P23_TEAM_ID AND type_id = v_type_id;
+                  ELSE
+                      MERGE INTO ptw_pro.ptw_lv_team_types tt
+                      USING (SELECT v_company_id AS company_id, :P23_TEAM_ID AS team_id,
+                                    v_type_id AS type_id FROM dual) src
+                      ON (tt.team_id = src.team_id AND tt.type_id = src.type_id)
+                      WHEN MATCHED THEN UPDATE SET is_active = v_new_val
+                      WHEN NOT MATCHED THEN INSERT (company_id, team_id, type_id, is_active)
+                                            VALUES (src.company_id, src.team_id, src.type_id, v_new_val);
+                  END IF;
+      
+              WHEN 'ENGINEER' THEN
+      
+                  IF v_new_val = 'Y' THEN
+                      MERGE INTO ptw_pro.ptw_lv_user_types ut
+                      USING (SELECT v_company_id AS company_id, :P23_ENGINEER_ID AS user_id,
+                                    v_type_id AS type_id FROM dual) src
+                      ON (ut.user_id = src.user_id AND ut.type_id = src.type_id)
+                      WHEN MATCHED THEN UPDATE SET is_active = 'Y'
+                      WHEN NOT MATCHED THEN INSERT (company_id, user_id, type_id, is_active)
+                                            VALUES (src.company_id, src.user_id, src.type_id, 'Y');
+                      -- created_by/modified_by stamped automatically -
+                      -- requires trg_ptw_lv_user_types_audit from
+                      -- STEP 0 (confirmed missing, added there)
+                  ELSE
+                      UPDATE ptw_pro.ptw_lv_user_types
+                      SET    is_active = 'N'
+                      WHERE  user_id = :P23_ENGINEER_ID AND type_id = v_type_id;
+                      -- row kept, not deleted - preserves created_by
+                      -- as historical record of original confirmation
+                  END IF;
+      
+              END CASE;
       
           END LOOP;
       END;
+      
 
   execution: 
     sequence: 10
@@ -654,6 +1396,44 @@ processes:
 
   server-side-condition: 
     when-button-pressed: SAVE # 52464752525584444
+
+- # ====== Process: Load data ==================================
+  id: 53188634878153110
+  identification: 
+    name: Load data
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      DECLARE
+          v_override   VARCHAR2(50) := V('G_OVERRIDE_COMPANY_ID');
+          v_company_id NUMBER;
+      BEGIN
+          IF v_override IS NOT NULL AND TRIM(v_override) IS NOT NULL THEN
+              v_company_id := TO_NUMBER(TRIM(v_override));
+          ELSE
+              BEGIN
+                  SELECT company_id INTO v_company_id
+                  FROM   ptw_pro.ptw_lv_users
+                  WHERE  UPPER(username) = UPPER(SYS_CONTEXT('APEX$SESSION', 'APP_USER'))
+                  AND    is_super_user   = 'N'
+                  AND    is_active       = 'Y';
+              EXCEPTION
+                  WHEN NO_DATA_FOUND THEN
+                      v_company_id := NULL;
+              END;
+          END IF;
+      
+          :P23_EFFECTIVE_COMPANY_ID := v_company_id;
+      END;
+
+  execution: 
+    sequence: 10
+    point: After Header
+    run-process: Once Per Page Visit (default)
 
 branches: 
 - # ====== Branch: Reload Permit Types =========================

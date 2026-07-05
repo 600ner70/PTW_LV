@@ -239,7 +239,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_name=>'Page Header'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>4501440665235496320
-,p_plug_display_sequence=>50
+,p_plug_display_sequence=>40
 ,p_location=>null
 ,p_function_body_language=>'PLSQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -300,7 +300,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_icon_css_classes=>'fa-shield'
 ,p_region_template_options=>'#DEFAULT#:is-collapsed:t-Region--accent15:t-Region--scrollBody'
 ,p_plug_template=>2664334895415463485
-,p_plug_display_sequence=>60
+,p_plug_display_sequence=>50
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<table class="perm-matrix">',
@@ -402,7 +402,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_icon_css_classes=>'fa-user-edit'
 ,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>70
+,p_plug_display_sequence=>60
 ,p_location=>null
 ,p_plug_display_condition_type=>'ITEM_IS_NOT_NULL'
 ,p_plug_display_when_condition=>'P8_SELECTED_USERNAME'
@@ -417,7 +417,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_icon_css_classes=>'fa-key'
 ,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>100
+,p_plug_display_sequence=>90
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<p style="color:#555; margin-top:0;">',
@@ -439,13 +439,14 @@ wwv_flow_imp_page.create_page_plug(
 ,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
 ,p_component_template_options=>'#DEFAULT#'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>110
+,p_plug_display_sequence=>100
 ,p_query_type=>'SQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'SELECT',
 '    au.user_name,',
 '    u.email_address                                        AS email,',
 '    u.mobile_no,',
+'    pt.team_name,',
 '    u.first_name,',
 '    u.last_name,',
 '    u.job_title                                            AS description,',
@@ -480,6 +481,7 @@ wwv_flow_imp_page.create_page_plug(
 '    ON ur.user_id         = u.user_id',
 'LEFT JOIN ptw_pro.ptw_lv_roles               r',
 '    ON r.role_id          = ur.role_id',
+'LEFT JOIN ptw_pro.ptw_lv_teams pt ON pt.team_id = u.team_id',
 'WHERE  au.workspace_name  = (',
 '           SELECT workspace FROM apex_applications',
 '           WHERE  application_id = :APP_ID',
@@ -503,7 +505,7 @@ wwv_flow_imp_page.create_page_plug(
 '    )',
 ')',
 'GROUP  BY',
-'    au.user_name, u.email_address, u.mobile_no,',
+'    au.user_name, u.email_address, pt.team_name,u.mobile_no,',
 '    u.first_name, u.last_name, u.job_title, u.is_active,',
 '    au.account_locked',
 'ORDER  BY au.user_name'))
@@ -671,6 +673,16 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_heading_alignment=>'LEFT'
 ,p_use_as_row_header=>'N'
 );
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(53189603051153120)
+,p_db_column_name=>'TEAM_NAME'
+,p_display_order=>180
+,p_column_identifier=>'S'
+,p_column_label=>'Team Name'
+,p_column_type=>'STRING'
+,p_heading_alignment=>'LEFT'
+,p_use_as_row_header=>'N'
+);
 wwv_flow_imp_page.create_worksheet_rpt(
  p_id=>wwv_flow_imp.id(31598082560718882)
 ,p_application_user=>'APXWS_DEFAULT'
@@ -678,14 +690,14 @@ wwv_flow_imp_page.create_worksheet_rpt(
 ,p_report_alias=>'315981'
 ,p_status=>'PUBLIC'
 ,p_is_default=>'Y'
-,p_report_columns=>'USER_NAME:EMAIL:MOBILE_NO:FIRST_NAME:LAST_NAME:DESCRIPTION:ACCOUNT_STATUS:ACCOUNT_STATUS_ICON:ACTIONS:'
+,p_report_columns=>'USER_NAME:TEAM_NAME:EMAIL:MOBILE_NO:FIRST_NAME:LAST_NAME:DESCRIPTION:ACCOUNT_STATUS:ACCOUNT_STATUS_ICON:ACTIONS:'
 );
 wwv_flow_imp_page.create_report_region(
  p_id=>wwv_flow_imp.id(39963457956997110)
 ,p_name=>'User Role Assignments'
 ,p_title=>'Current Role Assignments'
 ,p_template=>4072358936313175081
-,p_display_sequence=>90
+,p_display_sequence=>80
 ,p_icon_css_classes=>'fa-shield'
 ,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
 ,p_component_template_options=>'#DEFAULT#:t-Report--altRowsDefault:t-Report--rowHighlight'
@@ -815,7 +827,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_name=>'Select a User'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>4501440665235496320
-,p_plug_display_sequence=>80
+,p_plug_display_sequence=>70
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<div style="text-align:center; padding:30px; color:#6c757d;">',
@@ -1195,7 +1207,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'SELECT team_name d, team_id r',
 '             FROM   ptw_pro.ptw_lv_teams',
-'             WHERE  company_id = :effective_company_id  -- same resolution as rest of page',
+'             WHERE  company_id = :P8_EFFECTIVE_COMPANY_ID -- same resolution as rest of page',
 '             AND    is_active = ''Y''',
 '             ORDER  BY team_name'))
 ,p_lov_display_null=>'YES'
@@ -1208,6 +1220,14 @@ wwv_flow_imp_page.create_page_item(
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'page_action_on_selection', 'NONE')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(53189408526153118)
+,p_name=>'P8_EFFECTIVE_COMPANY_ID'
+,p_item_sequence=>30
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
 );
 wwv_flow_imp_page.create_page_validation(
  p_id=>wwv_flow_imp.id(30147927396642748)
@@ -1407,13 +1427,15 @@ wwv_flow_imp_page.create_page_da_action(
 '               u.email_address,',
 '               u.mobile_no,',
 '               u.job_title,',
-'               u.is_active',
+'               u.is_active,',
+'               u.team_id',
 '        INTO   :P8_FIRST_NAME,',
 '               :P8_LAST_NAME,',
 '               :P8_EMAIL,',
 '               :P8_MOBILE_NO,',
 '               :P8_DESCRIPTION,',
-'               :P8_IS_ACTIVE',
+'               :P8_IS_ACTIVE,',
+'               :P8_TEAM_ID',
 '        FROM   ptw_pro.ptw_lv_users u',
 '        WHERE  UPPER(u.username) = l_username;',
 '    EXCEPTION',
@@ -1459,10 +1481,41 @@ wwv_flow_imp_page.create_page_da_action(
 '',
 'END;'))
 ,p_attribute_02=>'P8_SELECTED_USERNAME'
-,p_attribute_03=>'P8_FIRST_NAME,P8_LAST_NAME,P8_EMAIL,P8_MOBILE_NO,P8_DESCRIPTION,P8_IS_ACTIVE,P8_ROLE,P8_ACCOUNT_LOCKED,P8_IS_WORKSPACE_ADMIN'
+,p_attribute_03=>'P8_FIRST_NAME,P8_LAST_NAME,P8_EMAIL,P8_MOBILE_NO,P8_DESCRIPTION,P8_IS_ACTIVE,P8_ROLE,P8_ACCOUNT_LOCKED,P8_IS_WORKSPACE_ADMIN,P8_TEAM_ID'
 ,p_attribute_04=>'N'
 ,p_attribute_05=>'PLSQL'
 ,p_wait_for_result=>'Y'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(53189544258153119)
+,p_process_sequence=>10
+,p_process_point=>'AFTER_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Load Company data'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'    v_override   VARCHAR2(50) := V(''G_OVERRIDE_COMPANY_ID'');',
+'    v_company_id NUMBER;',
+'BEGIN',
+'    IF v_override IS NOT NULL AND TRIM(v_override) IS NOT NULL THEN',
+'        v_company_id := TO_NUMBER(TRIM(v_override));',
+'    ELSE',
+'        BEGIN',
+'            SELECT company_id INTO v_company_id',
+'            FROM   ptw_pro.ptw_lv_users',
+'            WHERE  UPPER(username) = UPPER(SYS_CONTEXT(''APEX$SESSION'', ''APP_USER''))',
+'            AND    is_super_user   = ''N''',
+'            AND    is_active       = ''Y'';',
+'        EXCEPTION',
+'            WHEN NO_DATA_FOUND THEN',
+'                v_company_id := NULL;',
+'        END;',
+'    END IF;',
+'',
+'    :P8_EFFECTIVE_COMPANY_ID := v_company_id;',
+'END;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>53189544258153119
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(31604779831440609)
@@ -1474,7 +1527,6 @@ wwv_flow_imp_page.create_page_process(
 'DECLARE',
 '    l_user_id          NUMBER;',
 '    l_user_name        VARCHAR2(100);',
-'    l_developer_role   VARCHAR2(200);',
 '    l_caller_role      VARCHAR2(50);',
 '    l_admin_role_count NUMBER;',
 '    l_oper_role_count  NUMBER;',
@@ -1542,7 +1594,8 @@ wwv_flow_imp_page.create_page_process(
 '        RETURN;',
 '    END IF;',
 '',
-'    -- Get APEX user_id',
+'    -- Get APEX user_id - read-only, GET_USER_ID is not admin-gated,',
+'    -- only the mutating calls removed below required it',
 '    l_user_id := APEX_UTIL.GET_USER_ID(p_username => l_user_name);',
 '    IF l_user_id IS NULL THEN',
 '        apex_error.add_error(',
@@ -1552,30 +1605,10 @@ wwv_flow_imp_page.create_page_process(
 '        RETURN;',
 '    END IF;',
 '',
-'    -- Preserve developer role',
-'    BEGIN',
-'        l_developer_role := APEX_UTIL.GET_USER_ROLES(p_username => l_user_name);',
-'    EXCEPTION',
-'        WHEN NO_DATA_FOUND THEN l_developer_role := NULL;',
-'    END;',
-'',
-'    -- Update APEX account',
-'    APEX_UTIL.EDIT_USER(',
-'        p_user_id         => l_user_id,',
-'        p_user_name       => l_user_name,',
-'        p_first_name      => :P8_FIRST_NAME,',
-'        p_last_name       => :P8_LAST_NAME,',
-'        p_email_address   => :P8_EMAIL,',
-'        p_developer_roles => l_developer_role,',
-'        p_description     => :P8_DESCRIPTION',
-'    );',
-'',
-'    -- Lock or unlock APEX account',
-'    IF :P8_IS_ACTIVE = ''N'' THEN',
-'        APEX_UTIL.LOCK_ACCOUNT(p_user_name => l_user_name);',
-'    ELSE',
-'        APEX_UTIL.UNLOCK_ACCOUNT(p_user_name => l_user_name);',
-'    END IF;',
+'    -- REMOVED: APEX_UTIL.EDIT_USER and LOCK_ACCOUNT/UNLOCK_ACCOUNT -',
+'    -- ptw_lv_users is authoritative for profile + active status',
+'    -- app-wide; see Post-Authentication process for the login-time',
+'    -- deactivation gate that replaces native account locking.',
 '',
 '    -- Update ptw_lv_users profile',
 '    UPDATE ptw_pro.ptw_lv_users',
@@ -1585,6 +1618,7 @@ wwv_flow_imp_page.create_page_process(
 '           mobile_no      = :P8_MOBILE_NO,',
 '           job_title      = :P8_DESCRIPTION,',
 '           is_active      = :P8_IS_ACTIVE,',
+'           team_id        = :P8_TEAM_ID,',
 '           modified_date  = CURRENT_TIMESTAMP,',
 '           modified_by    = NVL(V(''APP_USER''), USER)',
 '    WHERE  UPPER(username) = l_user_name;',

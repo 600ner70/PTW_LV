@@ -87,7 +87,8 @@ wwv_flow_imp_page.create_report_region(
 ,p_parent_plug_id=>wwv_flow_imp.id(53154704361466116)
 ,p_template=>4072358936313175081
 ,p_display_sequence=>10
-,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_icon_css_classes=>'fa-clipboard-list'
+,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
 ,p_component_template_options=>'#DEFAULT#:t-Report--altRowsDefault:t-Report--rowHighlight'
 ,p_display_point=>'SUB_REGIONS'
 ,p_source_type=>'NATIVE_SQL_REPORT'
@@ -123,11 +124,8 @@ wwv_flow_imp_page.create_report_columns(
 ,p_query_column_id=>1
 ,p_column_alias=>'TYPE_ID'
 ,p_column_display_sequence=>10
-,p_column_heading=>'Type Id'
-,p_column_alignment=>'RIGHT'
-,p_heading_alignment=>'RIGHT'
+,p_hidden_column=>'Y'
 ,p_derived_column=>'N'
-,p_include_in_export=>'Y'
 );
 wwv_flow_imp_page.create_report_columns(
  p_id=>wwv_flow_imp.id(53156099608466129)
@@ -313,6 +311,26 @@ wwv_flow_imp_page.create_page_validation(
 ,p_when_button_pressed=>wwv_flow_imp.id(53155632757466125)
 ,p_associated_item=>wwv_flow_imp.id(53154959043466118)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(53189108372153115)
+,p_process_sequence=>10
+,p_process_point=>'AFTER_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Load data'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'SELECT team_name,',
+'       is_Active,',
+'       created_date',
+'INTO   :P29_TEAM_NAME,',
+'       :P29_IS_ACTIVE,',
+'       :P29_CREATED_DATE',
+'FROM   ptw_pro.ptw_lv_teams',
+'WHERE  team_id = :P29_TEAM_ID;'))
+,p_process_clob_language=>'PLSQL'
+,p_process_when=>'P29_TEAM_ID'
+,p_process_when_type=>'ITEM_IS_NOT_NULL'
+,p_internal_uid=>53189108372153115
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(53156211220466131)

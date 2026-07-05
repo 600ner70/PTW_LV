@@ -17,25 +17,46 @@ wwv_flow_imp_shared.create_authentication(
 ,p_scheme_type=>'NATIVE_APEX_ACCOUNTS'
 ,p_plsql_code=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'BEGIN',
-'    UPDATE ptw_pro.ptw_lv_users',
-'    SET    company_id = NULL',
-'    WHERE  UPPER(username) = UPPER(:APP_USER)',
-'    AND    is_super_user = ''Y''',
-'    AND    company_id IS NOT NULL;',
+'    -- Deny login for deactivated users. Deliberately NOT wrapped to',
+'    -- swallow errors - a security gate should fail closed, not open,',
+'    -- unlike the cleanup block below which intentionally never blocks',
+'    -- login over an unrelated cosmetic failure.',
+'    DECLARE',
+'        l_is_active VARCHAR2(1);',
+'    BEGIN',
+'        SELECT is_active',
+'        INTO   l_is_active',
+'        FROM   ptw_pro.ptw_lv_users',
+'        WHERE  UPPER(username) = UPPER(:APP_USER);',
 '',
-'    COMMIT;',
-'EXCEPTION',
-'    WHEN OTHERS THEN',
-'        -- Never block login over this cleanup - log and',
-'        -- continue. (No dedicated log table exists yet; if',
-'        -- one is added later for app-wide error logging,',
-'        -- write to it here instead of silently swallowing.)',
-'        NULL;',
+'        IF l_is_active = ''N'' THEN',
+'            RAISE_APPLICATION_ERROR(-20001,',
+'                ''This account has been deactivated. Contact your administrator.'');',
+'        END IF;',
+'    EXCEPTION',
+'        WHEN NO_DATA_FOUND THEN',
+'            RAISE_APPLICATION_ERROR(-20002,',
+'                ''No user profile found for this account. Contact your administrator.'');',
+'    END;',
+'',
+'    -- Existing cleanup (unchanged) - stray company_id for super users',
+'    BEGIN',
+'        UPDATE ptw_pro.ptw_lv_users',
+'        SET    company_id = NULL',
+'        WHERE  UPPER(username) = UPPER(:APP_USER)',
+'        AND    is_super_user = ''Y''',
+'        AND    company_id IS NOT NULL;',
+'',
+'        COMMIT;',
+'    EXCEPTION',
+'        WHEN OTHERS THEN',
+'            NULL;',
+'    END;',
 'END;'))
 ,p_invalid_session_type=>'LOGIN'
 ,p_use_secure_cookie_yn=>'N'
 ,p_ras_mode=>0
-,p_version_scn=>47330703342339
+,p_version_scn=>49905620414658
 );
 wwv_flow_imp.component_end;
 end;
