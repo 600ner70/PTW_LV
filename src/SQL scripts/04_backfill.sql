@@ -11,7 +11,7 @@
 
 -- 1. Create your own company (the existing operator/owner of the app)
 INSERT INTO ptw_pro.ptw_lv_companies (company_name, company_code, is_active)
-VALUES ('<<YOUR COMPANY NAME>>', '<<CODE>>', 'Y');
+VALUES ('MWMPRINT', 'MWM', 'Y');
 
 -- Capture the new company_id
 -- (run separately, note the value, e.g. 1)
