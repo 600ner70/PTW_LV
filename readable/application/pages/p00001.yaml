@@ -404,21 +404,92 @@ regions:
   id: 25226512182353105
   identification: 
     name: Page Header
-    type: Static Content
+    type: Dynamic Content
 
   source: 
-    html-code: |
-      <div style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; min-height: 80px;">
-          <div>
-              <h1 style="font-size: 2rem; color: #13294b; margin-bottom: 5px;">
-                  Permit to Work
-              </h1>
-              <p style="color: #666; font-size: 1rem;">
-                  BGIS - Low Voltage Electrical Permit Management
-              </p>
-          </div>
-          <img src="#APP_FILES#BGIS_Logo.jpg" alt="BGIS" style="height: 60px;">
-      </div>
+    language: PL/SQL
+    pl/sql-function-body-returning-a-clob: |
+      DECLARE
+          l_html       CLOB;
+          l_company_id NUMBER;
+          l_logo_url   VARCHAR2(500);
+          l_logo_count NUMBER;
+          l_override   VARCHAR2(50) := V('G_OVERRIDE_COMPANY_ID');
+      BEGIN
+          -- Derive effective company_id for the current user
+          IF l_override IS NOT NULL AND TRIM(l_override) IS NOT NULL THEN
+              BEGIN
+                  l_company_id := TO_NUMBER(TRIM(l_override));
+              EXCEPTION
+                  WHEN OTHERS THEN l_company_id := NULL;
+              END;
+          ELSE
+              -- Normal user: their own company
+              -- Super user with no override: NULL (no logo shown)
+              BEGIN
+                  SELECT company_id
+                  INTO   l_company_id
+                  FROM   ptw_pro.ptw_lv_users
+                  WHERE  UPPER(username) = UPPER(:APP_USER)
+                  AND    is_super_user   = 'N'
+                  AND    is_active       = 'Y';
+              EXCEPTION
+                  WHEN NO_DATA_FOUND THEN l_company_id := NULL;
+              END;
+          END IF;
+      
+          -- Check if a logo file exists for this company
+          -- (graceful fallback - no broken image if file missing)
+      
+          IF l_company_id IS NOT NULL THEN
+              SELECT COUNT(*) INTO l_logo_count
+              FROM   apex_application_static_files
+              WHERE  application_id = :APP_ID
+              AND    file_name      = 'logo_' || l_company_id || '.png';
+      
+              IF l_logo_count > 0 THEN
+                  l_logo_url := V('APP_FILES') || 'logo_' || l_company_id || '.png';
+              END IF;
+          END IF;
+      
+          -- Build header
+          l_html := '<div style="margin-bottom:30px;display:flex;'
+                 || 'justify-content:space-between;align-items:center;'
+                 || 'min-height:80px;">'
+                 || '  <div>'
+                 || '    <h1 style="font-size:2rem;color:#13294b;'
+                 || '               margin-bottom:5px;">'
+                 || '      Permit to Work'
+                 || '    </h1>'
+                 || '    <p style="color:#666;font-size:1rem;">'
+                 || '      Low Voltage Electrical Permit Management'
+                 || '    </p>'
+                 || '  </div>';
+      
+          IF l_logo_url IS NOT NULL THEN
+              l_html := l_html
+                     || '  <div style="width:200px;height:60px;display:flex;'
+                     || 'align-items:center;justify-content:flex-end;">'
+                     || '    <img src="' || l_logo_url || '" '
+                     || '         alt="Company Logo" '
+                     || '         style="max-width:100%;max-height:100%;'
+                     || 'object-fit:contain;" />'
+                     || '  </div>';
+          END IF;
+      
+          l_html := l_html || '</div>';
+      
+          RETURN l_html;
+      
+      EXCEPTION
+          WHEN OTHERS THEN
+              -- Never break Page 1 - fall back to plain header
+              RETURN '<div style="margin-bottom:30px;">'
+                  || '<h1 style="font-size:2rem;color:#13294b;">'
+                  || 'Permit to Work</h1>'
+                  || '<p style="color:#666;">Low Voltage '
+                  || 'Electrical Permit Management</p></div>';
+      END;
 
   layout: 
     sequence: 40
@@ -431,19 +502,30 @@ regions:
     column-span: Automatic
 
   appearance: 
-    template: None
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--removeHeader js-removeLandmark
+    - t-Region--scrollBody
     render-components: Above Content
 
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
   advanced: 
+    region-display-selector: false
     exclude-title-from-translation: false
+
+  server-cache: 
+    caching: Disabled
 
   customization: 
     customizable: Not Customizable By End Users
 
   attributes: 
-    settings: 
-      output-as: HTML
-      expand-shortcuts: false
+    performance: 
+      lazy-loading: false
 
 - # ====== Region: Quick Actions ===============================
   id: 25227447597353114

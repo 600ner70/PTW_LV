@@ -197,7 +197,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(52415835734182122)
 ,p_name=>'P24_CREATED_DATE'
-,p_item_sequence=>60
+,p_item_sequence=>70
 ,p_item_plug_id=>wwv_flow_imp.id(52415430252182118)
 ,p_prompt=>'Date Created'
 ,p_format_mask=>'DD-MON-YYYY HH24:MI'
@@ -215,7 +215,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(52415992923182123)
 ,p_name=>'P24_USER_COUNT'
-,p_item_sequence=>70
+,p_item_sequence=>80
 ,p_item_plug_id=>wwv_flow_imp.id(52415430252182118)
 ,p_prompt=>'Users in this Company'
 ,p_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -278,6 +278,22 @@ wwv_flow_imp_page.create_page_item(
   'format', 'PLAIN',
   'send_on_page_submit', 'Y',
   'show_line_breaks', 'Y')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(52496313590962722)
+,p_name=>'P24_HEADER_TEXT'
+,p_item_sequence=>60
+,p_item_plug_id=>wwv_flow_imp.id(52415430252182118)
+,p_prompt=>'Header Text'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>30
+,p_field_template=>1609121967514267634
+,p_item_template_options=>'#DEFAULT#'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'disabled', 'N',
+  'submit_when_enter_pressed', 'N',
+  'subtype', 'TEXT',
+  'trim_spaces', 'BOTH')).to_clob
 );
 wwv_flow_imp_page.create_page_validation(
  p_id=>wwv_flow_imp.id(52416641408182130)
@@ -395,12 +411,13 @@ wwv_flow_imp_page.create_page_process(
 'ELSE',
 '',
 '    INSERT INTO ptw_pro.ptw_lv_companies',
-'        (company_name, company_code, is_active, permit_prefix)',
+'        (company_name, company_code, is_active, permit_prefix, header_text)',
 '    VALUES (',
 '        :P24_COMPANY_NAME,',
 '        :P24_COMPANY_CODE,',
 '        :P24_IS_ACTIVE,',
-'        :P24_PERMIT_PREFIX',
+'        :P24_PERMIT_PREFIX,',
+'        :P24_HEADER_TEXT',
 '    );',
 '',
 'END IF;',
@@ -423,6 +440,7 @@ wwv_flow_imp_page.create_page_process(
 '           c.company_code,',
 '           c.permit_prefix,',
 '           c.is_active,',
+'           c.header_text,',
 '           TO_CHAR(c.created_date, ''DD-MON-YYYY'') AS created_date,',
 '           (SELECT COUNT(*) FROM ptw_pro.ptw_lv_users u',
 '             WHERE u.company_id = c.company_id)   AS user_count',
@@ -430,6 +448,7 @@ wwv_flow_imp_page.create_page_process(
 '           :P24_COMPANY_CODE,',
 '           :P24_PERMIT_PREFIX_DISPLAY,',
 '           :P24_IS_ACTIVE,',
+'           :P24_HEADER_TEXT,',
 '           :P24_CREATED_DATE,',
 '           :P24_USER_COUNT',
 '    FROM   ptw_pro.ptw_lv_companies c',

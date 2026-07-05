@@ -44,22 +44,13 @@
     mime-type: image/png
     file-character-set: Unicode UTF-8
 
-- # ====== Static Application File: BGIS_Logo.png ==============
+- # ====== Static Application File: logo_2.png =================
   id: 26754729965282193
   identification: 
-    file-name: BGIS_Logo.png
+    file-name: logo_2.png
 
   attributes: 
     mime-type: image/png
-    file-character-set: Unicode UTF-8
-
-- # ====== Static Application File: BGIS_Logo.jpg ==============
-  id: 26758130456415163
-  identification: 
-    file-name: BGIS_Logo.jpg
-
-  attributes: 
-    mime-type: image/jpeg
     file-character-set: Unicode UTF-8
 
 - # ====== Static Application File: geoLocation.js =============
@@ -141,6 +132,33 @@
 
   attributes: 
     mime-type: text/javascript
+    file-character-set: Unicode UTF-8
+
+- # ====== Static Application File: logo_1.png =================
+  id: 52976750063318586
+  identification: 
+    file-name: logo_1.png
+
+  attributes: 
+    mime-type: image/png
+    file-character-set: Unicode UTF-8
+
+- # ====== Static Application File: logo_41.png ================
+  id: 53149208818474772
+  identification: 
+    file-name: logo_41.png
+
+  attributes: 
+    mime-type: image/png
+    file-character-set: Unicode UTF-8
+
+- # ====== Static Application File: logo_21.png ================
+  id: 53149643902476842
+  identification: 
+    file-name: logo_21.png
+
+  attributes: 
+    mime-type: image/png
     file-character-set: Unicode UTF-8
 
 - # ====== Static Application File: offline-nav.js =============

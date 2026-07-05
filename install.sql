@@ -15,8 +15,7 @@ prompt --install
 @@application/shared_components/files/icons_app_icon_192_png.sql
 @@application/shared_components/files/icons_app_icon_256_rounded_png.sql
 @@application/shared_components/files/icons_app_icon_512_png.sql
-@@application/shared_components/files/bgis_logo_png.sql
-@@application/shared_components/files/bgis_logo_jpg.sql
+@@application/shared_components/files/logo_2_png.sql
 @@application/shared_components/files/geolocation_js.sql
 @@application/shared_components/files/geolocation_min_js.sql
 @@application/shared_components/files/offline_storage_js.sql
@@ -26,6 +25,9 @@ prompt --install
 @@application/shared_components/files/offline_nav_min_js.sql
 @@application/shared_components/files/ptw_global_min_css.sql
 @@application/shared_components/files/ptw_utils_min_js.sql
+@@application/shared_components/files/logo_1_png.sql
+@@application/shared_components/files/logo_41_png.sql
+@@application/shared_components/files/logo_21_png.sql
 @@application/shared_components/files/offline_nav_js.sql
 @@application/shared_components/files/offline_nav_min_js_002.sql
 @@application/plugin_settings.sql
