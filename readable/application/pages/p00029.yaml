@@ -1,0 +1,809 @@
+---
+# ====== Page: Edit Team =====================================
+id: 29
+identification: 
+  name: Edit Team
+  alias: EDIT-TEAM
+  title: Edit Team
+
+appearance: 
+  page-mode: Modal Dialog
+  dialog-template: Theme Default
+  template-options: 
+  - '#DEFAULT#'
+
+dialog: 
+  chained: true
+  resizable: true
+
+navigation-menu: 
+  override-user-interface-level: false
+
+navigation: 
+  cursor-focus: Do not focus cursor
+  warn-on-unsaved-changes: true
+
+javascript: 
+  execute-when-page-loads: |
+    (function () {
+        var BINARY_ITEMS = ['P29_IS_ACTIVE'];
+    
+        var BADGES = [
+            { val: 'Y', cls: 'binary-badge-yes', label: '✓' },
+            { val: 'N', cls: 'binary-badge-no',  label: '✗' }
+        ];
+    
+        BINARY_ITEMS.forEach(function (itemName) {
+            var $fc = $('#' + itemName).closest('.t-Form-fieldContainer');
+            if ($fc.length === 0) return;
+    
+            $fc.find('.binary-badge-row').remove();
+    
+            var currentVal = $('input[name="' + itemName + '"]:checked').val() || '';
+    
+            var $row = $('<div class="binary-badge-row"></div>').attr('data-item', itemName);
+    
+            BADGES.forEach(function (b) {
+                $('<span></span>')
+                    .addClass('binary-badge ' + b.cls)
+                    .toggleClass('cm-active', currentVal === b.val)
+                    .attr('data-value', b.val)
+                    .text(b.label)
+                    .appendTo($row);
+            });
+    
+            $fc.find('.t-Form-inputContainer').append($row);
+        });
+    
+        $('.cm-binary-item .apex-item-grid').hide();
+    
+        $(document).off('click.binarybadge24').on('click.binarybadge24', '.binary-badge:not(.binary-readonly)', function () {
+            var $badge   = $(this);
+            var $row     = $badge.closest('.binary-badge-row');
+            var itemName = $row.attr('data-item');
+            var val      = $badge.attr('data-value');
+    
+            $('input[name="' + itemName + '"][value="' + val + '"]')
+                .prop('checked', true).trigger('change');
+    
+            $row.find('.binary-badge').removeClass('cm-active');
+            $badge.addClass('cm-active');
+        });
+    }());
+
+security: 
+  authentication: Page Requires Authentication
+  deep-linking: Application Default
+  page-access-protection: Arguments Must Have Checksum
+  form-auto-complete: Off
+  browser-cache: Application Default
+
+session-management: 
+  rejoin-sessions: Application Default
+
+advanced: 
+  enable-duplicate-page-submissions: Yes - Enable page to be re-posted
+  reload-on-submit: Only for Success
+
+server-cache: 
+  caching: Disabled
+
+regions: 
+- # ====== Region: Edit Team ===================================
+  id: 53154704361466116
+  identification: 
+    name: Edit Team
+    type: Static Content
+
+  layout: 
+    sequence: 30
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--scrollBody
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Buttons =====================================
+  id: 53155495338466123
+  identification: 
+    name: Buttons
+    type: Static Content
+
+  layout: 
+    sequence: 50
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Buttons Container
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Team Permit Types ===========================
+  id: 53155863399466127
+  identification: 
+    name: Team Permit Types
+    title: Team Permit Types
+    type: Classic Report
+
+  source: 
+    location: Local Database
+    type: SQL Query
+    sql-query: |
+      SELECT ct.type_id,
+             pt.type_desc,
+             NVL(tt.is_active, 'INHERIT') AS current_setting
+      FROM   ptw_pro.ptw_lv_company_types ct
+      JOIN   ptw_pro.ptw_types pt ON pt.type_id = ct.type_id
+      LEFT JOIN ptw_pro.ptw_lv_team_types tt
+             ON tt.team_id = :P29_TEAM_ID AND tt.type_id = ct.type_id
+      WHERE  ct.is_active = 'Y'
+      ORDER  BY pt.type_desc
+      
+    page-items-to-submit: 
+    - P29_TEAM_ID
+
+  order-by: 
+    type: None
+
+  layout: 
+    sequence: 10
+    parent-region: Edit Team # 53154704361466116
+    slot: SUB_REGIONS
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--scrollBody
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  server-side-condition: 
+    type: Item is NOT NULL
+    item: P29_TEAM_ID
+
+  server-cache: 
+    caching: Disabled
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    layout: 
+      number-of-rows-type: Static Value
+      number-of-rows: 15
+
+    appearance: 
+      template-type: Theme
+      template: Standard
+      template-options: 
+      - '#DEFAULT#'
+      - t-Report--altRowsDefault
+      - t-Report--rowHighlight
+
+    pagination: 
+      type: Row Ranges X to Y (with next and previous links)
+      display-position: Bottom - Right
+      partial-page-refresh: true
+
+    performance: 
+      lazy-loading: false
+
+    break-formatting: 
+      break-columns: No Break
+
+    advanced: 
+      strip-html: false
+      sort-nulls: Last
+
+    heading: 
+      type: Custom Headings
+
+    download: 
+      csv-export-enabled: false
+
+    printing: 
+      enabled: false
+
+  columns: 
+  - # ====== Column: TYPE_ID =====================================
+    id: 53155985179466128
+    identification: 
+      column-name: TYPE_ID
+      type: Plain Text
+
+    heading: 
+      heading: Type Id
+      alignment: end
+
+    layout: 
+      sequence: 10
+      column-alignment: end
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: false
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: TYPE_DESC ===================================
+    id: 53156099608466129
+    identification: 
+      column-name: TYPE_DESC
+      type: Plain Text
+
+    heading: 
+      heading: Type Desc
+      alignment: start
+
+    layout: 
+      sequence: 20
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: false
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: CURRENT_SETTING =============================
+    id: 53156116063466130
+    identification: 
+      column-name: CURRENT_SETTING
+      type: Plain Text
+
+    heading: 
+      heading: Current Setting
+      alignment: start
+
+    layout: 
+      sequence: 30
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: false
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+page-items: 
+- # ====== Page Item: P29_TEAM_ID ==============================
+  id: 53154838250466117
+  identification: 
+    name: P29_TEAM_ID
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 10
+    region: Edit Team # 53154704361466116
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P29_TEAM_NAME ============================
+  id: 53154959043466118
+  identification: 
+    name: P29_TEAM_NAME
+    type: Text Field
+
+  label: 
+    label: Team Name
+    alignment: Left
+
+  settings: 
+    subtype: Text
+    trim-spaces: Leading and Trailing
+    text-case: NO CHANGE
+    submit-when-enter-pressed: false
+    disabled: false
+
+  layout: 
+    sequence: 20
+    region: Edit Team # 53154704361466116
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    width: 30
+
+  validation: 
+    value-required: true
+    maximum-length: 200
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P29_IS_ACTIVE ============================
+  id: 53155091552466119
+  identification: 
+    name: P29_IS_ACTIVE
+    type: Radio Group
+
+  label: 
+    label: Is Active
+    alignment: Left
+
+  settings: 
+    number-of-columns: 1
+    page-action-on-selection: None
+
+  layout: 
+    sequence: 30
+    region: Edit Team # 53154704361466116
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 3
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    css-classes: 
+    - cm-binary-item
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: Static Values
+    static-values: 'STATIC:Active;Y,Inactive;N'
+    display-extra-values: false
+    display-null-value: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    escape-special-characters: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P29_CREATED_DATE =========================
+  id: 53155139463466120
+  identification: 
+    name: P29_CREATED_DATE
+    type: Display Only
+
+  label: 
+    label: Created Date
+    alignment: Left
+
+  settings: 
+    format: Plain Text
+    based-on: Item Value
+    show-line-breaks: true
+    send-on-page-submit: true
+
+  layout: 
+    sequence: 40
+    region: Edit Team # 53154704361466116
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P29_ENGINEER_COUNT =======================
+  id: 53155268193466121
+  identification: 
+    name: P29_ENGINEER_COUNT
+    type: Display Only
+
+  label: 
+    label: Engineer Count
+    alignment: Left
+
+  settings: 
+    format: Plain Text
+    based-on: Item Value
+    show-line-breaks: true
+    send-on-page-submit: true
+
+  layout: 
+    sequence: 50
+    region: Edit Team # 53154704361466116
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 6
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+  help: 
+    inline-help-text: Number of engineers currently assigned
+
+buttons: 
+- # ====== Button: CANCEL ======================================
+  id: 53155537068466124
+  identification: 
+    button-name: CANCEL
+    label: Cancel
+
+  layout: 
+    sequence: 10
+    region: Buttons # 53155495338466123
+    slot: CLOSE
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text
+    hot: false
+    template-options: 
+    - '#DEFAULT#'
+
+  behavior: 
+    action: Redirect to Page in this Application
+    target: 
+      url: 'f?p=&APP_ID.:27:&SESSION.::&DEBUG.:27::'
+      page: 27 # Team Management
+      clear-cache: 27
+
+    warn-on-unsaved-changes: Do Not Check
+
+- # ====== Button: SAVE ========================================
+  id: 53155632757466125
+  identification: 
+    button-name: SAVE
+    label: Save
+
+  layout: 
+    sequence: 20
+    region: Buttons # 53155495338466123
+    slot: CREATE
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text with Icon
+    hot: true
+    template-options: 
+    - '#DEFAULT#'
+    - t-Button--iconLeft
+    icon: fa-save
+
+  behavior: 
+    action: Submit Page
+    execute-validations: true
+    show-processing: false
+    warn-on-unsaved-changes: Do Not Check
+
+validations: 
+- # ====== Validation: Team name required ======================
+  id: 53156352428466132
+  identification: 
+    name: Team name required
+
+  execution: 
+    sequence: 10
+
+  validation: 
+    type: Item is NOT NULL
+    item: P29_TEAM_NAME
+    always-execute: false
+
+  error: 
+    error-message: |
+      Team name is mandatory.
+      
+    display-location: Inline with Field and in Notification
+    associated-item: P29_TEAM_NAME # 53154959043466118
+
+  server-side-condition: 
+    when-button-pressed: SAVE # 53155632757466125
+
+- # ====== Validation: Team name must be unique ================
+  id: 53156409402466133
+  identification: 
+    name: Team name must be unique
+
+  execution: 
+    sequence: 20
+
+  validation: 
+    type: Function Body (returning Error Text)
+    language: PL/SQL
+    pl/sql-function-body-returning-error-text: |
+      DECLARE
+          v_count NUMBER;
+          v_company_id NUMBER;
+      BEGIN
+          SELECT company_id INTO v_company_id
+          FROM   ptw_pro.ptw_lv_users
+          WHERE  UPPER(username) = UPPER(SYS_CONTEXT('APEX$SESSION', 'APP_USER'))
+          AND    is_super_user = 'N';
+      
+          SELECT COUNT(*) INTO v_count
+          FROM   ptw_pro.ptw_lv_teams
+          WHERE  UPPER(team_name) = UPPER(:P29_TEAM_NAME)
+          AND    company_id = v_company_id
+          AND    (team_id != :P29_TEAM_ID OR :P29_TEAM_ID IS NULL);
+      
+          IF v_count > 0 THEN
+            RETURN 'Company Code Must Be Unique.';
+          END IF;
+      END;
+    always-execute: false
+
+  error: 
+    display-location: Inline with Field and in Notification
+    associated-item: P29_TEAM_NAME # 53154959043466118
+
+  server-side-condition: 
+    when-button-pressed: SAVE # 53155632757466125
+
+processes: 
+- # ====== Process: Save Team ==================================
+  id: 53156211220466131
+  identification: 
+    name: Save Team
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      DECLARE
+          v_company_id NUMBER;
+      BEGIN
+          SELECT company_id
+          INTO   v_company_id
+          FROM   ptw_pro.ptw_lv_users
+          WHERE  UPPER(username) = UPPER(SYS_CONTEXT('APEX$SESSION', 'APP_USER'))
+          AND    is_super_user   = 'N'
+          AND    is_active       = 'Y';
+      
+          IF :P29_TEAM_ID IS NULL THEN
+              INSERT INTO ptw_pro.ptw_lv_teams (company_id, team_name, is_active)
+              VALUES (v_company_id, :P29_TEAM_NAME, :P29_IS_ACTIVE)
+              RETURNING team_id INTO :P29_TEAM_ID;
+          ELSE
+              UPDATE ptw_pro.ptw_lv_teams
+              SET    team_name    = :P29_TEAM_NAME,
+                     is_active    = :P29_IS_ACTIVE,
+                     modified_date = SYSTIMESTAMP,
+                     modified_by   = :APP_USER
+              WHERE  team_id = :P29_TEAM_ID;
+          END IF;
+      EXCEPTION
+          WHEN NO_DATA_FOUND THEN
+              apex_error.add_error(
+                  p_message          => 'Unable to determine your company. Contact an administrator.',
+                  p_display_location => apex_error.c_inline_in_notification);
+      END;
+      
+
+  execution: 
+    sequence: 10
+    point: Processing
+    run-process: Once Per Page Visit (default)
+
+  error: 
+    display-location: Inline in Notification
+
+  server-side-condition: 
+    when-button-pressed: SAVE # 53155632757466125
+
+branches: 
+- # ====== Branch: Return to page 27 ===========================
+  id: 53156502329466134
+  identification: 
+    name: Return to page 27
+
+  execution: 
+    sequence: 10
+    point: After Processing
+
+  behavior: 
+    type: Page or URL (Redirect)
+    target: 
+      url: 'f?p=&APP_ID.:27:&SESSION.::&DEBUG.:27:P27_TEAM_ID:&P29_TEAM_ID.'
+      page: 27 # Team Management
+      clear-cache: 27
+      values: 
+        p27_team_id: '&P29_TEAM_ID.'
+

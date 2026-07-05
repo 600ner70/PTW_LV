@@ -1194,7 +1194,7 @@ regions:
                   APEX_ESCAPE.HTML(r.role_name) ||
                   ' role for this user?'',''DEACTIVATE_ROLE_' ||
                   ur.user_role_id || ''');" ' ||
-                  'class="t-Button t-Button--small t-Button--danger t-Button--noUI" ' ||
+                  'class="t-Button t-Button--small t-Button--danger t-Button--iconLeft" ' ||
                   'title="Deactivate Role">' ||
                   '<span class="fa fa-ban"></span> Deactivate</a>'
               ELSE
@@ -1202,10 +1202,10 @@ regions:
                   APEX_ESCAPE.HTML(r.role_name) ||
                   ' role for this user?'',''REACTIVATE_ROLE_' ||
                   ur.user_role_id || ''');" ' ||
-                  'class="t-Button t-Button--small t-Button--success t-Button--noUI" ' ||
+                  'class="t-Button t-Button--small t-Button--success t-Button--iconLeft" ' ||
                   'title="Reactivate Role">' ||
                   '<span class="fa fa-check"></span> Reactivate</a>'
-          END                                                AS role_action
+          END AS role_action
       FROM   ptw_pro.ptw_lv_user_role_assignments  ur
       JOIN   ptw_pro.ptw_lv_roles                  r
           ON r.role_id = ur.role_id
@@ -1784,7 +1784,7 @@ page-items:
     start-new-row: true
     column: Automatic
     new-column: true
-    column-span: 8
+    column-span: 6
     label-column-span: Page Template Default
 
   appearance: 
@@ -1834,7 +1834,7 @@ page-items:
     separator: ':'
 
   layout: 
-    sequence: 120
+    sequence: 130
     region: Edit User Details # 30144419171642713
     slot: BODY
     alignment: Left
@@ -1909,7 +1909,7 @@ page-items:
     start-new-row: false
     column: Automatic
     new-column: true
-    column-span: 4
+    column-span: 3
     label-column-span: Page Template Default
 
   appearance: 
@@ -1963,7 +1963,7 @@ page-items:
     send-on-page-submit: false
 
   layout: 
-    sequence: 130
+    sequence: 150
     region: Edit User Details # 30144419171642713
     slot: BODY
     alignment: Left
@@ -2275,7 +2275,7 @@ page-items:
     send-on-page-submit: true
 
   layout: 
-    sequence: 110
+    sequence: 120
     region: Edit User Details # 30144419171642713
     slot: BODY
     alignment: Left
@@ -2368,6 +2368,73 @@ page-items:
   session-state: 
     data-type: VARCHAR2
     storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P8_TEAM_ID ===============================
+  id: 53156691206466135
+  identification: 
+    name: P8_TEAM_ID
+    type: Select List
+
+  label: 
+    label: 'Team '
+    alignment: Left
+
+  settings: 
+    page-action-on-selection: None
+
+  multiple-values: 
+    type: No
+
+  layout: 
+    sequence: 110
+    region: Edit User Details # 30144419171642713
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: 3
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    height: 1
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: SQL Query
+    sql-query: |
+      SELECT team_name d, team_id r
+                   FROM   ptw_pro.ptw_lv_teams
+                   WHERE  company_id = :effective_company_id  -- same resolution as rest of page
+                   AND    is_active = 'Y'
+                   ORDER  BY team_name
+    display-extra-values: false
+    display-null-value: true
+    null-display-value: '-- Team Selection --'
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  quick-picks: 
+    show-quick-picks: false
 
   security: 
     session-state-protection: Unrestricted

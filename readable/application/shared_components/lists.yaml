@@ -5,7 +5,7 @@
     name: Navigation Menu
 
   subscription: 
-    version-number: 47330696847795
+    version-number: 49902512481955
 
   source: 
     type: Static Values
@@ -415,6 +415,34 @@
       target: 
         url: 'f?p=&APP_ID.:28:&SESSION.::&DEBUG.::::'
         page: 28 # Set Active Company
+
+    click-counting: 
+      count-clicks: false
+
+    user-defined-attributes: 
+      translatable: false
+
+  - # ====== Entry: Team Administration ==========================
+    id: 53152848466417874
+    label: 
+      label: Team Administration
+
+    icon: 
+      image/icon-css-classes: fa-users-alt
+
+    layout: 
+      sequence: 161
+      parent-entry: Admin # 31589599630638717
+
+    is-current: 
+      type: Pages
+      pages: 
+      - 27
+
+    link: 
+      target: 
+        url: 'f?p=&APP_ID.:27:&APP_SESSION.::&DEBUG.:::'
+        page: 27 # Team Management
 
     click-counting: 
       count-clicks: false

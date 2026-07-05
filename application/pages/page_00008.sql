@@ -706,7 +706,7 @@ wwv_flow_imp_page.create_report_region(
 '            APEX_ESCAPE.HTML(r.role_name) ||',
 '            '' role for this user?'''',''''DEACTIVATE_ROLE_'' ||',
 '            ur.user_role_id || '''''');" '' ||',
-'            ''class="t-Button t-Button--small t-Button--danger t-Button--noUI" '' ||',
+'            ''class="t-Button t-Button--small t-Button--danger t-Button--iconLeft" '' ||',
 '            ''title="Deactivate Role">'' ||',
 '            ''<span class="fa fa-ban"></span> Deactivate</a>''',
 '        ELSE',
@@ -714,10 +714,10 @@ wwv_flow_imp_page.create_report_region(
 '            APEX_ESCAPE.HTML(r.role_name) ||',
 '            '' role for this user?'''',''''REACTIVATE_ROLE_'' ||',
 '            ur.user_role_id || '''''');" '' ||',
-'            ''class="t-Button t-Button--small t-Button--success t-Button--noUI" '' ||',
+'            ''class="t-Button t-Button--small t-Button--success t-Button--iconLeft" '' ||',
 '            ''title="Reactivate Role">'' ||',
 '            ''<span class="fa fa-check"></span> Reactivate</a>''',
-'    END                                                AS role_action',
+'    END AS role_action',
 'FROM   ptw_pro.ptw_lv_user_role_assignments  ur',
 'JOIN   ptw_pro.ptw_lv_roles                  r',
 '    ON r.role_id = ur.role_id',
@@ -983,7 +983,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>30
 ,p_cMaxlength=>200
-,p_colspan=>8
+,p_colspan=>6
 ,p_field_template=>1609121967514267634
 ,p_item_template_options=>'#DEFAULT#'
 ,p_is_persistent=>'N'
@@ -996,7 +996,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(30145261701642721)
 ,p_name=>'P8_ROLE'
-,p_item_sequence=>120
+,p_item_sequence=>130
 ,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
 ,p_prompt=>'Access Role'
 ,p_display_as=>'NATIVE_CHECKBOX'
@@ -1030,7 +1030,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_lov=>'STATIC:Active;Y,Inactive;N'
 ,p_cHeight=>1
 ,p_begin_on_new_line=>'N'
-,p_colspan=>4
+,p_colspan=>3
 ,p_field_template=>1609121967514267634
 ,p_item_template_options=>'#DEFAULT#'
 ,p_is_persistent=>'N'
@@ -1042,7 +1042,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(30145404528642723)
 ,p_name=>'P8_ROLE_DESCRIPTION'
-,p_item_sequence=>130
+,p_item_sequence=>150
 ,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
 ,p_prompt=>'Role Permissions Summary'
 ,p_source=>'<div class="role-desc-box">&P8_ROLE_DESCRIPTION.</div>'''
@@ -1149,7 +1149,7 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(39964665833997122)
 ,p_name=>'P8_INACTIVE_WARNING'
-,p_item_sequence=>110
+,p_item_sequence=>120
 ,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
 ,p_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<div class="account-inactive-warning" id="P8_INACTIVE_WARNING_DIV">',
@@ -1184,6 +1184,30 @@ wwv_flow_imp_page.create_page_item(
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(53156691206466135)
+,p_name=>'P8_TEAM_ID'
+,p_item_sequence=>110
+,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
+,p_prompt=>'Team '
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'SELECT team_name d, team_id r',
+'             FROM   ptw_pro.ptw_lv_teams',
+'             WHERE  company_id = :effective_company_id  -- same resolution as rest of page',
+'             AND    is_active = ''Y''',
+'             ORDER  BY team_name'))
+,p_lov_display_null=>'YES'
+,p_lov_null_text=>'-- Team Selection --'
+,p_cHeight=>1
+,p_begin_on_new_line=>'N'
+,p_colspan=>3
+,p_field_template=>1609121967514267634
+,p_item_template_options=>'#DEFAULT#'
+,p_lov_display_extra=>'NO'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'page_action_on_selection', 'NONE')).to_clob
 );
 wwv_flow_imp_page.create_page_validation(
  p_id=>wwv_flow_imp.id(30147927396642748)
