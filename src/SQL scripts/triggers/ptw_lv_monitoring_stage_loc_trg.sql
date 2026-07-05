@@ -1,4 +1,5 @@
-create or replace TRIGGER ptw_pro.ptw_lv_monitoring_stage_loc_trg
+
+  CREATE OR REPLACE EDITIONABLE TRIGGER "PTW_PRO"."PTW_LV_MONITORING_STAGE_LOC_TRG"
 AFTER INSERT OR UPDATE ON ptw_pro.ptw_lv_monitoring
 FOR EACH ROW
 DECLARE
@@ -44,16 +45,19 @@ BEGIN
             latitude,
             longitude,
             created_date,
-            created_by
+            created_by,
+            company_id
         ) VALUES (
             :NEW.permit_id,
             'MONITORING',
             l_latitude,
             l_longitude,
             SYSDATE,
-            NVL(SYS_CONTEXT('APEX$SESSION', 'APP_USER'), USER)
+            NVL(SYS_CONTEXT('APEX$SESSION', 'APP_USER'), USER),
+            :NEW.company_id
         );
     END IF;
 
 END ptw_lv_monitoring_stage_loc_trg;
 /
+ALTER TRIGGER "PTW_PRO"."PTW_LV_MONITORING_STAGE_LOC_TRG" ENABLE;

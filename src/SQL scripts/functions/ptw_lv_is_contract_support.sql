@@ -1,4 +1,5 @@
-create or replace FUNCTION         ptw_lv_is_contract_support
+
+  CREATE OR REPLACE EDITIONABLE FUNCTION "PTW_PRO"."PTW_LV_IS_CONTRACT_SUPPORT"
     (p_username IN VARCHAR2)
 RETURN VARCHAR2
 IS

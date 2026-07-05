@@ -1,4 +1,841 @@
-create or replace FUNCTION PTW_PRO.generate_ptw_lv_pdf (
+
+
+  CREATE TABLE "PTW_PRO"."PTW_LV_CONTROL_MEASURES" 
+   (	"CONTROL_MEASURES_ID" NUMBER DEFAULT "PTW_PRO"."PTW_LV_CONTROL_MEASURES_SEQ"."NEXTVAL",  
+	"PERMIT_ID" NUMBER NOT NULL ENABLE,  
+	"CM_01_SITE_INDUCTION" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"CM_02_RISK_ASSESSMENT" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"CM_03_COMPETENCE_CHECKED" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"CM_04_HAZARDS_AWARE" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"CM_05_PPE_IDENTIFIED" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"CM_06_SOURCES_ISOLATED" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"CM_07_PROVED_DEAD" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"CM_08_STORED_ENERGY" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"CM_09_LIVE_COVERED" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"CM_10_NO_LIVE_WORK" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"CM_11_FIRST_AID" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"CM_12_BARRIERS" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"CM_13_ACCESS_EGRESS" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"CM_14_INSULATED_MATTING" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"CM_15_CALIBRATION_CURRENT" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"CM_16_DANGER_SIGNS" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"CREATED_DATE" TIMESTAMP (6) DEFAULT CURRENT_TIMESTAMP,  
+	"MODIFIED_DATE" TIMESTAMP (6),  
+	"CM_LATITUDE" NUMBER,  
+	"CM_LONGITUDE" NUMBER,  
+	 PRIMARY KEY ("CONTROL_MEASURES_ID") 
+  USING INDEX  ENABLE, 
+	 CONSTRAINT "FK_PTW_LV_CM_PERMIT" FOREIGN KEY ("PERMIT_ID") 
+	  REFERENCES "PTW_PRO"."PTW_LV_PERMITS" ("PERMIT_ID") ON DELETE CASCADE ENABLE 
+   )  DEFAULT COLLATION "USING_NLS_COMP" ;
+
+  CREATE TABLE "PTW_PRO"."PTW_LV_EQUIPMENT_ISOLATION" 
+   (	"ISOLATION_ID" NUMBER DEFAULT "PTW_PRO"."PTW_LV_EQUIPMENT_ISOLATION_SEQ"."NEXTVAL",  
+	"PERMIT_ID" NUMBER NOT NULL ENABLE,  
+	"ROW_NUMBER" NUMBER(1,0) NOT NULL ENABLE,  
+	"EQUIPMENT_ISOLATED" VARCHAR2(200) COLLATE "USING_NLS_COMP",  
+	"MEANS_OF_ISOLATION" VARCHAR2(200) COLLATE "USING_NLS_COMP",  
+	"SAFETY_LOCK_NO" VARCHAR2(50) COLLATE "USING_NLS_COMP",  
+	"CREATED_DATE" TIMESTAMP (6) DEFAULT CURRENT_TIMESTAMP,  
+	"MODIFIED_DATE" TIMESTAMP (6),  
+	 PRIMARY KEY ("ISOLATION_ID") 
+  USING INDEX  ENABLE, 
+	 CONSTRAINT "FK_PTW_LV_ISO_PERMIT" FOREIGN KEY ("PERMIT_ID") 
+	  REFERENCES "PTW_PRO"."PTW_LV_PERMITS" ("PERMIT_ID") ON DELETE CASCADE ENABLE 
+   )  DEFAULT COLLATION "USING_NLS_COMP" ;
+
+  CREATE TABLE "PTW_PRO"."PTW_LV_MONITORING" 
+   (	"MONITORING_ID" NUMBER DEFAULT ptw_pro.ptw_lv_monitoring_seq.NEXTVAL,  
+	"PERMIT_ID" NUMBER NOT NULL ENABLE,  
+	"CHK_PERMIT_ON_DISPLAY" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"CHK_PERMIT_TIME" VARCHAR2(10) COLLATE "USING_NLS_COMP",  
+	"CHK_ACCESS_EGRESS" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"CHK_ACCESS_TIME" VARCHAR2(10) COLLATE "USING_NLS_COMP",  
+	"CHK_WARNING_SIGNS" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"CHK_WARNING_TIME" VARCHAR2(10) COLLATE "USING_NLS_COMP",  
+	"MS_CHECK1_DETAIL" VARCHAR2(1000) COLLATE "USING_NLS_COMP",  
+	"MS_CHECK1_TIME" VARCHAR2(10) COLLATE "USING_NLS_COMP",  
+	"MS_CHECK1_IN_ORDER" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"MS_CHECK1_COMMENTS" VARCHAR2(1000) COLLATE "USING_NLS_COMP",  
+	"MS_CHECK2_DETAIL" VARCHAR2(1000) COLLATE "USING_NLS_COMP",  
+	"MS_CHECK2_TIME" VARCHAR2(10) COLLATE "USING_NLS_COMP",  
+	"MS_CHECK2_IN_ORDER" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"MS_CHECK2_COMMENTS" VARCHAR2(1000) COLLATE "USING_NLS_COMP",  
+	"MS_CHECK3_DETAIL" VARCHAR2(1000) COLLATE "USING_NLS_COMP",  
+	"MS_CHECK3_TIME" VARCHAR2(10) COLLATE "USING_NLS_COMP",  
+	"MS_CHECK3_IN_ORDER" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"MS_CHECK3_COMMENTS" VARCHAR2(1000) COLLATE "USING_NLS_COMP",  
+	"MONITOR_NAME" VARCHAR2(200) COLLATE "USING_NLS_COMP",  
+	"MONITOR_SIGNATURE" BLOB,  
+	"MONITOR_DATE" DATE,  
+	"MONITOR_LATITUDE" NUMBER,  
+	"MONITOR_LONGITUDE" NUMBER,  
+	"CREATED_DATE" TIMESTAMP (6) DEFAULT CURRENT_TIMESTAMP,  
+	"CREATED_BY" VARCHAR2(100) COLLATE "USING_NLS_COMP",  
+	"MODIFIED_DATE" TIMESTAMP (6),  
+	"MODIFIED_BY" VARCHAR2(100) COLLATE "USING_NLS_COMP",  
+	"PTW_TYPE" VARCHAR2(30) COLLATE "USING_NLS_COMP",  
+	"MONITORING_STATUS" VARCHAR2(20) COLLATE "USING_NLS_COMP",  
+	 PRIMARY KEY ("MONITORING_ID") 
+  USING INDEX  ENABLE, 
+	 CONSTRAINT "FK_PTW_LV_MON_PERMIT" FOREIGN KEY ("PERMIT_ID") 
+	  REFERENCES "PTW_PRO"."PTW_LV_PERMITS" ("PERMIT_ID") ON DELETE CASCADE ENABLE 
+   )  DEFAULT COLLATION "USING_NLS_COMP" ;
+
+  CREATE TABLE "PTW_PRO"."PTW_LV_PERMITS" 
+   (	"PERMIT_ID" NUMBER DEFAULT "PTW_PRO"."PTW_LV_PERMIT_SEQ"."NEXTVAL",  
+	"PERMIT_NUMBER" VARCHAR2(50) COLLATE "USING_NLS_COMP",  
+	"SAFETY_PROGRAMME_REF_NO" VARCHAR2(100) COLLATE "USING_NLS_COMP",  
+	"ISOLATION_DIAGRAM_SERIAL_NO" VARCHAR2(100) COLLATE "USING_NLS_COMP",  
+	"SITE_DETAILS" VARCHAR2(500) COLLATE "USING_NLS_COMP",  
+	"AREA_OF_WORKS" VARCHAR2(500) COLLATE "USING_NLS_COMP",  
+	"WORK_DESCRIPTION" VARCHAR2(2000) COLLATE "USING_NLS_COMP",  
+	"PERSON_IN_CHARGE_NAME" VARCHAR2(200) COLLATE "USING_NLS_COMP",  
+	"SUPERVISING_COMPANY" VARCHAR2(200) COLLATE "USING_NLS_COMP",  
+	"OTHER_PERSONS_COUNT" NUMBER,  
+	"CLIENT_PERMISSION_GRANTED" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"AFFECTS_IT_SYSTEMS" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"IT_PERMISSION_GRANTED" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"PPE_SAFETY_HELMET" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"PPE_ARC_FLASH" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"PPE_SAFETY_FOOTWEAR" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"PPE_HI_VIS" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"PPE_SAFETY_GOGGLES" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"PPE_INSULATING_GLOVES" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"PPE_FALL_RESTRAINT" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"PPE_FALL_ARREST" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"PPE_EAR_DEFENDERS" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"PPE_SAFETY_GLOVES" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"COMMENTS" VARCHAR2(4000) COLLATE "USING_NLS_COMP",  
+	"AUTH_PERSON_NAME" VARCHAR2(200) COLLATE "USING_NLS_COMP",  
+	"AUTH_PERSON_SIGNATURE" BLOB,  
+	"AUTH_PERSON_MOBILE" VARCHAR2(50) COLLATE "USING_NLS_COMP",  
+	"AUTH_DATETIME" DATE,  
+	"AUTH_LATITUDE" NUMBER,  
+	"AUTH_LONGITUDE" NUMBER,  
+	"ACCEPT_PERSON_NAME" VARCHAR2(200) COLLATE "USING_NLS_COMP",  
+	"ACCEPT_PERSON_SIGNATURE" BLOB,  
+	"ACCEPT_PERSON_MOBILE" VARCHAR2(50) COLLATE "USING_NLS_COMP",  
+	"ACCEPT_COMPANY" VARCHAR2(200) COLLATE "USING_NLS_COMP",  
+	"ACCEPT_DATETIME" DATE,  
+	"ACCEPT_LATITUDE" NUMBER,  
+	"ACCEPT_LONGITUDE" NUMBER,  
+	"CLEAR_WORK_COMPLETE" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"CLEAR_AREA_SAFE" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"CLEAR_PERSON_NAME" VARCHAR2(200) COLLATE "USING_NLS_COMP",  
+	"CLEAR_PERSON_SIGNATURE" BLOB,  
+	"CLEAR_PERSON_MOBILE" VARCHAR2(50) COLLATE "USING_NLS_COMP",  
+	"CLEAR_COMPANY" VARCHAR2(200) COLLATE "USING_NLS_COMP",  
+	"CLEAR_DATETIME" DATE,  
+	"CLEAR_LATITUDE" NUMBER,  
+	"CLEAR_LONGITUDE" NUMBER,  
+	"CANCEL_WORK_COMPLETE" VARCHAR2(2) COLLATE "USING_NLS_COMP",  
+	"CANCEL_PERSON_NAME" VARCHAR2(200) COLLATE "USING_NLS_COMP",  
+	"CANCEL_PERSON_SIGNATURE" BLOB,  
+	"CANCEL_DATETIME" DATE,  
+	"CANCEL_LATITUDE" NUMBER,  
+	"CANCEL_LONGITUDE" NUMBER,  
+	"CURRENT_STEP" VARCHAR2(50) COLLATE "USING_NLS_COMP" DEFAULT 'SITE_WORK_DETAILS',  
+	"WORKFLOW_STATUS" VARCHAR2(20) COLLATE "USING_NLS_COMP" DEFAULT 'IN_PROGRESS',  
+	"COMPLETION_DATE" DATE,  
+	"CREATED_DATE" TIMESTAMP (6) DEFAULT CURRENT_TIMESTAMP,  
+	"CREATED_BY" VARCHAR2(100) COLLATE "USING_NLS_COMP",  
+	"MODIFIED_DATE" TIMESTAMP (6),  
+	"MODIFIED_BY" VARCHAR2(100) COLLATE "USING_NLS_COMP",  
+	"SITE_WORK_LATITUDE" NUMBER,  
+	"SITE_WORK_LONGITUDE" NUMBER,  
+	"PPE_LATITUDE" NUMBER,  
+	"PPE_LONGITUDE" NUMBER,  
+	"EQUIP_ISO_LATITUDE" NUMBER,  
+	"EQUIP_ISO_LONGITUDE" NUMBER,  
+	"SUSPENSION_REASON" VARCHAR2(400) COLLATE "USING_NLS_COMP",  
+	"SUSPENDED_DATE" DATE,  
+	"SUSPENDED_BY" VARCHAR2(100) COLLATE "USING_NLS_COMP",  
+	"RESUMED_DATE" DATE,  
+	"RESUMED_BY" VARCHAR2(100) COLLATE "USING_NLS_COMP",  
+	"STARTED_LONGITUDE" NUMBER,  
+	"STARTED_LATITUDE" NUMBER,  
+	"STARTED_DATETIME" DATE,  
+	"ENDED_DATETIME" DATE,  
+	"PTW_TYPE" VARCHAR2(30) COLLATE "USING_NLS_COMP",  
+	 PRIMARY KEY ("PERMIT_ID") 
+  USING INDEX  ENABLE
+   )  DEFAULT COLLATION "USING_NLS_COMP" ;
+
+  CREATE TABLE "PTW_PRO"."PTW_LV_PERMIT_PHOTOS" 
+   (	"PHOTO_ID" NUMBER DEFAULT ptw_pro.ptw_lv_photo_seq.NEXTVAL,  
+	"PERMIT_ID" NUMBER NOT NULL ENABLE,  
+	"PHOTO_DATA" BLOB NOT NULL ENABLE,  
+	"MIME_TYPE" VARCHAR2(100) COLLATE "USING_NLS_COMP" DEFAULT 'image/jpeg',  
+	"FILE_NAME" VARCHAR2(255) COLLATE "USING_NLS_COMP",  
+	"PHOTO_CAPTION" VARCHAR2(500) COLLATE "USING_NLS_COMP",  
+	"PHOTO_LATITUDE" NUMBER,  
+	"PHOTO_LONGITUDE" NUMBER,  
+	"UPLOADED_BY" VARCHAR2(100) COLLATE "USING_NLS_COMP",  
+	"UPLOADED_DATE" TIMESTAMP (6) DEFAULT CURRENT_TIMESTAMP,  
+	 CONSTRAINT "PK_PTW_LV_PERMIT_PHOTOS" PRIMARY KEY ("PHOTO_ID") 
+  USING INDEX  ENABLE, 
+	 CONSTRAINT "FK_PTW_LV_PHOTOS_PERMIT" FOREIGN KEY ("PERMIT_ID") 
+	  REFERENCES "PTW_PRO"."PTW_LV_PERMITS" ("PERMIT_ID") ON DELETE CASCADE ENABLE 
+   )  DEFAULT COLLATION "USING_NLS_COMP" ;
+
+  CREATE TABLE "PTW_PRO"."PTW_LV_ROLES" 
+   (	"ROLE_ID" NUMBER GENERATED ALWAYS AS IDENTITY MINVALUE 1 MAXVALUE 9999999999999999999999999999 INCREMENT BY 1 START WITH 1 CACHE 20 NOORDER  NOCYCLE  NOKEEP  NOSCALE  NOT NULL ENABLE,  
+	"ROLE_NAME" VARCHAR2(50) COLLATE "USING_NLS_COMP" NOT NULL ENABLE,  
+	"ROLE_DESCRIPTION" VARCHAR2(500) COLLATE "USING_NLS_COMP",  
+	"IS_ADMIN_ROLE" VARCHAR2(1) COLLATE "USING_NLS_COMP" DEFAULT 'N' NOT NULL ENABLE,  
+	"DISPLAY_ORDER" NUMBER DEFAULT 99 NOT NULL ENABLE,  
+	"IS_ACTIVE" VARCHAR2(1) COLLATE "USING_NLS_COMP" DEFAULT 'Y' NOT NULL ENABLE,  
+	 CONSTRAINT "CHK_PTW_LV_ROLES_ADMIN" CHECK (is_admin_role IN ('Y', 'N')) ENABLE,  
+	 CONSTRAINT "CHK_PTW_LV_ROLES_ACTIVE" CHECK (is_active IN ('Y', 'N')) ENABLE,  
+	 CONSTRAINT "PK_PTW_LV_ROLES" PRIMARY KEY ("ROLE_ID") 
+  USING INDEX  ENABLE, 
+	 CONSTRAINT "UQ_PTW_LV_ROLES_NAME" UNIQUE ("ROLE_NAME") 
+  USING INDEX  ENABLE
+   )  DEFAULT COLLATION "USING_NLS_COMP" ;
+
+  CREATE TABLE "PTW_PRO"."PTW_LV_USERS" 
+   (	"USER_ID" NUMBER GENERATED ALWAYS AS IDENTITY MINVALUE 1 MAXVALUE 9999999999999999999999999999 INCREMENT BY 1 START WITH 1 CACHE 20 NOORDER  NOCYCLE  NOKEEP  NOSCALE  NOT NULL ENABLE,  
+	"USERNAME" VARCHAR2(100) COLLATE "USING_NLS_COMP" NOT NULL ENABLE,  
+	"FIRST_NAME" VARCHAR2(100) COLLATE "USING_NLS_COMP",  
+	"LAST_NAME" VARCHAR2(100) COLLATE "USING_NLS_COMP",  
+	"EMAIL_ADDRESS" VARCHAR2(200) COLLATE "USING_NLS_COMP",  
+	"MOBILE_NO" VARCHAR2(30) COLLATE "USING_NLS_COMP",  
+	"JOB_TITLE" VARCHAR2(100) COLLATE "USING_NLS_COMP",  
+	"IS_ACTIVE" VARCHAR2(1) COLLATE "USING_NLS_COMP" DEFAULT 'Y' NOT NULL ENABLE,  
+	"CREATED_DATE" TIMESTAMP (6) DEFAULT CURRENT_TIMESTAMP,  
+	"CREATED_BY" VARCHAR2(100) COLLATE "USING_NLS_COMP",  
+	"MODIFIED_DATE" TIMESTAMP (6),  
+	"MODIFIED_BY" VARCHAR2(100) COLLATE "USING_NLS_COMP",  
+	 CONSTRAINT "CHK_PTW_LV_USERS_ACTIVE" CHECK (is_active IN ('Y', 'N')) ENABLE,  
+	 CONSTRAINT "PK_PTW_LV_USERS" PRIMARY KEY ("USER_ID") 
+  USING INDEX  ENABLE, 
+	 CONSTRAINT "UQ_PTW_LV_USERS_USERNAME" UNIQUE ("USERNAME") 
+  USING INDEX  ENABLE
+   )  DEFAULT COLLATION "USING_NLS_COMP" ;
+
+  CREATE TABLE "PTW_PRO"."PTW_LV_USER_ROLES_OLD" 
+   (	"ROLE_ID" NUMBER GENERATED ALWAYS AS IDENTITY MINVALUE 1 MAXVALUE 9999999999999999999999999999 INCREMENT BY 1 START WITH 1 CACHE 20 NOORDER  NOCYCLE  NOKEEP  NOSCALE  NOT NULL ENABLE,  
+	"USERNAME" VARCHAR2(100) COLLATE "USING_NLS_COMP" NOT NULL ENABLE,  
+	"ROLE_NAME" VARCHAR2(50) COLLATE "USING_NLS_COMP" NOT NULL ENABLE,  
+	"APP_ID" NUMBER,  
+	"IS_ACTIVE" VARCHAR2(1) COLLATE "USING_NLS_COMP" DEFAULT 'Y',  
+	"GRANTED_BY" VARCHAR2(100) COLLATE "USING_NLS_COMP",  
+	"GRANTED_DATE" TIMESTAMP (6) DEFAULT CURRENT_TIMESTAMP,  
+	"MODIFIED_DATE" TIMESTAMP (6),  
+	"MOBILE_NO" VARCHAR2(30) COLLATE "USING_NLS_COMP",  
+	"EMAIL_ADDRESS" VARCHAR2(100) COLLATE "USING_NLS_COMP",  
+	"FIRST_NAME" VARCHAR2(100) COLLATE "USING_NLS_COMP",  
+	"LAST_NAME" VARCHAR2(100) COLLATE "USING_NLS_COMP",  
+	"COMPANY_NAME" VARCHAR2(200) COLLATE "USING_NLS_COMP",  
+	 CONSTRAINT "CHK_PTW_LV_ROLE_NAME" CHECK ( 
+        role_name IN (
+            'ADMIN',
+            'ADMIN_CONTRACT_SUPPORT',
+            'AUTHORISER',
+            'ENGINEER',
+            'READONLY'
+        )
+    ) DISABLE, 
+	 PRIMARY KEY ("ROLE_ID") 
+  USING INDEX  ENABLE, 
+	 CONSTRAINT "UQ_PTW_LV_USER_ROLE" UNIQUE ("USERNAME", "ROLE_NAME") 
+  USING INDEX  ENABLE
+   )  DEFAULT COLLATION "USING_NLS_COMP" ;
+
+  CREATE TABLE "PTW_PRO"."PTW_LV_USER_ROLE_ASSIGNMENTS" 
+   (	"USER_ROLE_ID" NUMBER GENERATED ALWAYS AS IDENTITY MINVALUE 1 MAXVALUE 9999999999999999999999999999 INCREMENT BY 1 START WITH 1 CACHE 20 NOORDER  NOCYCLE  NOKEEP  NOSCALE  NOT NULL ENABLE,  
+	"USER_ID" NUMBER NOT NULL ENABLE,  
+	"ROLE_ID" NUMBER NOT NULL ENABLE,  
+	"IS_ACTIVE" VARCHAR2(1) COLLATE "USING_NLS_COMP" DEFAULT 'Y' NOT NULL ENABLE,  
+	"GRANTED_BY" VARCHAR2(100) COLLATE "USING_NLS_COMP",  
+	"GRANTED_DATE" TIMESTAMP (6) DEFAULT CURRENT_TIMESTAMP,  
+	"MODIFIED_DATE" TIMESTAMP (6),  
+	"MODIFIED_BY" VARCHAR2(100) COLLATE "USING_NLS_COMP",  
+	 CONSTRAINT "CHK_PTW_UR_ACTIVE" CHECK (is_active IN ('Y', 'N')) ENABLE,  
+	 CONSTRAINT "PK_PTW_LV_USER_ROLES" PRIMARY KEY ("USER_ROLE_ID") 
+  USING INDEX  ENABLE, 
+	 CONSTRAINT "UQ_PTW_USER_ROLE" UNIQUE ("USER_ID", "ROLE_ID") 
+  USING INDEX  ENABLE, 
+	 CONSTRAINT "FK_PTW_UR_USER" FOREIGN KEY ("USER_ID") 
+	  REFERENCES "PTW_PRO"."PTW_LV_USERS" ("USER_ID") ENABLE,  
+	 CONSTRAINT "FK_PTW_UR_ROLE" FOREIGN KEY ("ROLE_ID") 
+	  REFERENCES "PTW_PRO"."PTW_LV_ROLES" ("ROLE_ID") ENABLE 
+   )  DEFAULT COLLATION "USING_NLS_COMP" ;
+
+  CREATE TABLE "PTW_PRO"."PTW_STAGE_LOCATIONS" 
+   (	"PERMIT_ID" NUMBER,  
+	"PERMIT_STAGE" VARCHAR2(100) COLLATE "USING_NLS_COMP",  
+	"LATITUDE" NUMBER,  
+	"LONGITUDE" NUMBER,  
+	"CREATED_DATE" DATE,  
+	"CREATED_BY" VARCHAR2(100) COLLATE "USING_NLS_COMP" 
+   )  DEFAULT COLLATION "USING_NLS_COMP" ;
+
+  CREATE TABLE "PTW_PRO"."PTW_TYPES" 
+   (	"TYPE_ID" NUMBER DEFAULT "PTW_PRO"."PTW_TYPE_ID_SEQ"."NEXTVAL" NOT NULL ENABLE,  
+	"PTW_TYPE" VARCHAR2(30) COLLATE "USING_NLS_COMP",  
+	"TYPE_DESC" VARCHAR2(400) COLLATE "USING_NLS_COMP" NOT NULL ENABLE,  
+	"CREATED_DATE" DATE NOT NULL ENABLE,  
+	"CREATED_BY" VARCHAR2(30) COLLATE "USING_NLS_COMP",  
+	"AVAILABLE" VARCHAR2(1) COLLATE "USING_NLS_COMP" DEFAULT 'Y' NOT NULL ENABLE,  
+	 CONSTRAINT "PTW_TYPES_PK" PRIMARY KEY ("TYPE_ID") 
+  USING INDEX  ENABLE
+   )  DEFAULT COLLATION "USING_NLS_COMP" ;
+
+  ALTER TABLE "PTW_PRO"."PTW_LV_CONTROL_MEASURES" MODIFY ("PERMIT_ID" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_LV_CONTROL_MEASURES" ADD PRIMARY KEY ("CONTROL_MEASURES_ID")
+  USING INDEX  ENABLE;
+
+
+
+  ALTER TABLE "PTW_PRO"."PTW_LV_EQUIPMENT_ISOLATION" MODIFY ("PERMIT_ID" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_LV_EQUIPMENT_ISOLATION" MODIFY ("ROW_NUMBER" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_LV_EQUIPMENT_ISOLATION" ADD PRIMARY KEY ("ISOLATION_ID")
+  USING INDEX  ENABLE;
+
+
+
+  ALTER TABLE "PTW_PRO"."PTW_LV_MONITORING" MODIFY ("PERMIT_ID" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_LV_MONITORING" ADD PRIMARY KEY ("MONITORING_ID")
+  USING INDEX  ENABLE;
+
+
+
+  ALTER TABLE "PTW_PRO"."PTW_LV_PERMITS" ADD PRIMARY KEY ("PERMIT_ID")
+  USING INDEX  ENABLE;
+
+
+
+  ALTER TABLE "PTW_PRO"."PTW_LV_PERMIT_PHOTOS" MODIFY ("PERMIT_ID" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_LV_PERMIT_PHOTOS" MODIFY ("PHOTO_DATA" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_LV_PERMIT_PHOTOS" ADD CONSTRAINT "PK_PTW_LV_PERMIT_PHOTOS" PRIMARY KEY ("PHOTO_ID")
+  USING INDEX  ENABLE;
+
+
+
+  ALTER TABLE "PTW_PRO"."PTW_LV_ROLES" MODIFY ("ROLE_ID" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_LV_ROLES" MODIFY ("ROLE_NAME" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_LV_ROLES" MODIFY ("IS_ADMIN_ROLE" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_LV_ROLES" MODIFY ("DISPLAY_ORDER" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_LV_ROLES" MODIFY ("IS_ACTIVE" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_LV_ROLES" ADD CONSTRAINT "CHK_PTW_LV_ROLES_ADMIN" CHECK (is_admin_role IN ('Y', 'N')) ENABLE;
+  ALTER TABLE "PTW_PRO"."PTW_LV_ROLES" ADD CONSTRAINT "CHK_PTW_LV_ROLES_ACTIVE" CHECK (is_active IN ('Y', 'N')) ENABLE;
+  ALTER TABLE "PTW_PRO"."PTW_LV_ROLES" ADD CONSTRAINT "PK_PTW_LV_ROLES" PRIMARY KEY ("ROLE_ID")
+  USING INDEX  ENABLE;
+  ALTER TABLE "PTW_PRO"."PTW_LV_ROLES" ADD CONSTRAINT "UQ_PTW_LV_ROLES_NAME" UNIQUE ("ROLE_NAME")
+  USING INDEX  ENABLE;
+
+
+
+  ALTER TABLE "PTW_PRO"."PTW_LV_USERS" MODIFY ("USER_ID" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_LV_USERS" MODIFY ("USERNAME" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_LV_USERS" MODIFY ("IS_ACTIVE" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_LV_USERS" ADD CONSTRAINT "CHK_PTW_LV_USERS_ACTIVE" CHECK (is_active IN ('Y', 'N')) ENABLE;
+  ALTER TABLE "PTW_PRO"."PTW_LV_USERS" ADD CONSTRAINT "PK_PTW_LV_USERS" PRIMARY KEY ("USER_ID")
+  USING INDEX  ENABLE;
+  ALTER TABLE "PTW_PRO"."PTW_LV_USERS" ADD CONSTRAINT "UQ_PTW_LV_USERS_USERNAME" UNIQUE ("USERNAME")
+  USING INDEX  ENABLE;
+
+
+
+  ALTER TABLE "PTW_PRO"."PTW_LV_USER_ROLES_OLD" MODIFY ("ROLE_ID" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_LV_USER_ROLES_OLD" MODIFY ("USERNAME" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_LV_USER_ROLES_OLD" MODIFY ("ROLE_NAME" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_LV_USER_ROLES_OLD" ADD CONSTRAINT "CHK_PTW_LV_ROLE_NAME" CHECK (
+        role_name IN (
+            'ADMIN',
+            'ADMIN_CONTRACT_SUPPORT',
+            'AUTHORISER',
+            'ENGINEER',
+            'READONLY'
+        )
+    ) DISABLE;
+  ALTER TABLE "PTW_PRO"."PTW_LV_USER_ROLES_OLD" ADD PRIMARY KEY ("ROLE_ID")
+  USING INDEX  ENABLE;
+  ALTER TABLE "PTW_PRO"."PTW_LV_USER_ROLES_OLD" ADD CONSTRAINT "UQ_PTW_LV_USER_ROLE" UNIQUE ("USERNAME", "ROLE_NAME")
+  USING INDEX  ENABLE;
+
+
+
+  ALTER TABLE "PTW_PRO"."PTW_LV_USER_ROLE_ASSIGNMENTS" MODIFY ("USER_ROLE_ID" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_LV_USER_ROLE_ASSIGNMENTS" MODIFY ("USER_ID" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_LV_USER_ROLE_ASSIGNMENTS" MODIFY ("ROLE_ID" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_LV_USER_ROLE_ASSIGNMENTS" MODIFY ("IS_ACTIVE" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_LV_USER_ROLE_ASSIGNMENTS" ADD CONSTRAINT "CHK_PTW_UR_ACTIVE" CHECK (is_active IN ('Y', 'N')) ENABLE;
+  ALTER TABLE "PTW_PRO"."PTW_LV_USER_ROLE_ASSIGNMENTS" ADD CONSTRAINT "PK_PTW_LV_USER_ROLES" PRIMARY KEY ("USER_ROLE_ID")
+  USING INDEX  ENABLE;
+  ALTER TABLE "PTW_PRO"."PTW_LV_USER_ROLE_ASSIGNMENTS" ADD CONSTRAINT "UQ_PTW_USER_ROLE" UNIQUE ("USER_ID", "ROLE_ID")
+  USING INDEX  ENABLE;
+
+
+
+  ALTER TABLE "PTW_PRO"."PTW_TYPES" MODIFY ("CREATED_DATE" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_TYPES" MODIFY ("AVAILABLE" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_TYPES" MODIFY ("TYPE_ID" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_TYPES" MODIFY ("TYPE_DESC" NOT NULL ENABLE);
+  ALTER TABLE "PTW_PRO"."PTW_TYPES" ADD CONSTRAINT "PTW_TYPES_PK" PRIMARY KEY ("TYPE_ID")
+  USING INDEX  ENABLE;
+
+
+
+
+
+  CREATE INDEX "PTW_PRO"."IDX_PTW_LV_CM_PERMIT" ON "PTW_PRO"."PTW_LV_CONTROL_MEASURES" ("PERMIT_ID") 
+  ;
+
+  CREATE INDEX "PTW_PRO"."IDX_PTW_LV_ISO_PERMIT" ON "PTW_PRO"."PTW_LV_EQUIPMENT_ISOLATION" ("PERMIT_ID") 
+  ;
+
+  CREATE INDEX "PTW_PRO"."IDX_PTW_LV_MON_PERMIT" ON "PTW_PRO"."PTW_LV_MONITORING" ("PERMIT_ID") 
+  ;
+
+  CREATE INDEX "PTW_PRO"."IDX_PTW_LV_PERM_CREATED" ON "PTW_PRO"."PTW_LV_PERMITS" ("CREATED_DATE" DESC) 
+  ;
+
+  CREATE INDEX "PTW_PRO"."IDX_PTW_LV_PERM_STATUS" ON "PTW_PRO"."PTW_LV_PERMITS" ("WORKFLOW_STATUS") 
+  ;
+
+  CREATE INDEX "PTW_PRO"."IDX_PTW_LV_PHOTOS_PERMIT" ON "PTW_PRO"."PTW_LV_PERMIT_PHOTOS" ("PERMIT_ID") 
+  ;
+
+  CREATE INDEX "PTW_PRO"."IDX_PTW_LV_UR_USERNAME" ON "PTW_PRO"."PTW_LV_USER_ROLES_OLD" ("USERNAME") 
+  ;
+
+  CREATE UNIQUE INDEX "PTW_PRO"."SYS_IL0000149023C00026$$" ON "PTW_PRO"."PTW_LV_PERMITS" 
+  ;
+
+  CREATE UNIQUE INDEX "PTW_PRO"."SYS_IL0000149023C00032$$" ON "PTW_PRO"."PTW_LV_PERMITS" 
+  ;
+
+  CREATE UNIQUE INDEX "PTW_PRO"."SYS_IL0000149023C00041$$" ON "PTW_PRO"."PTW_LV_PERMITS" 
+  ;
+
+  CREATE UNIQUE INDEX "PTW_PRO"."SYS_IL0000149023C00049$$" ON "PTW_PRO"."PTW_LV_PERMITS" 
+  ;
+
+  CREATE UNIQUE INDEX "PTW_PRO"."SYS_IL0000164554C00003$$" ON "PTW_PRO"."PTW_LV_PERMIT_PHOTOS" 
+  ;
+
+  CREATE UNIQUE INDEX "PTW_PRO"."SYS_IL0000166174C00022$$" ON "PTW_PRO"."PTW_LV_MONITORING" 
+  ;
+
+
+   CREATE SEQUENCE  "PTW_PRO"."PTW_LV_CONTROL_MEASURES_SEQ"  MINVALUE 1 MAXVALUE 9999999999999999999999999999 INCREMENT BY 1 START WITH 687 NOCACHE  NOORDER  NOCYCLE  NOKEEP  NOSCALE  GLOBAL ;
+
+   CREATE SEQUENCE  "PTW_PRO"."PTW_LV_EQUIPMENT_ISOLATION_SEQ"  MINVALUE 1 MAXVALUE 9999999999999999999999999999 INCREMENT BY 1 START WITH 426 NOCACHE  NOORDER  NOCYCLE  NOKEEP  NOSCALE  GLOBAL ;
+
+   CREATE SEQUENCE  "PTW_PRO"."PTW_LV_MONITORING_SEQ"  MINVALUE 1 MAXVALUE 9999999999999999999999999999 INCREMENT BY 1 START WITH 73 NOCACHE  NOORDER  NOCYCLE  NOKEEP  NOSCALE  GLOBAL ;
+
+   CREATE SEQUENCE  "PTW_PRO"."PTW_LV_PERMIT_SEQ"  MINVALUE 1 MAXVALUE 9999999999999999999999999999 INCREMENT BY 1 START WITH 217 NOCACHE  NOORDER  NOCYCLE  NOKEEP  NOSCALE  GLOBAL ;
+
+   CREATE SEQUENCE  "PTW_PRO"."PTW_LV_PHOTO_SEQ"  MINVALUE 1 MAXVALUE 9999999999999999999999999999 INCREMENT BY 1 START WITH 188 NOCACHE  NOORDER  NOCYCLE  NOKEEP  NOSCALE  GLOBAL ;
+
+   CREATE SEQUENCE  "PTW_PRO"."PTW_TYPE_ID_SEQ"  MINVALUE 1 MAXVALUE 9999999999999999999999999999 INCREMENT BY 1 START WITH 102 NOCACHE  NOORDER  NOCYCLE  NOKEEP  NOSCALE  GLOBAL ;
+
+
+  CREATE OR REPLACE FORCE EDITIONABLE VIEW "PTW_PRO"."PTW_LV_ANALYTICS_V" ("PERMIT_ID", "PERMIT_NUMBER", "WORKFLOW_STATUS", "STATUS_DISPLAY", "STATUS_COLOUR", "COMPANY", "PERSON_IN_CHARGE", "SITE_DETAILS", "AREA_OF_WORKS", "WORK_DESCRIPTION", "CREATED_BY", "AUTH_PERSON_NAME", "CREATED_DATE_ONLY", "CREATED_DATE", "STARTED_DATETIME", "ENDED_DATETIME", "AUTH_DATETIME", "CLEAR_DATETIME", "CANCEL_DATETIME", "HAS_CLEARANCE", "HAS_CANCELLATION", "HAS_PHOTOS", "PTW_TYPE", "GROUP_DAILY", "GROUP_WEEKLY", "GROUP_MONTHLY") DEFAULT COLLATION "USING_NLS_COMP"  AS 
+  SELECT
+    p.permit_id,
+    p.permit_number,
+    p.workflow_status,
+    CASE p.workflow_status
+        WHEN 'STARTED'     THEN 'Live'
+        WHEN 'IN_PROGRESS' THEN 'In Progress'
+        WHEN 'AUTHORISED'  THEN 'Authorised'
+        WHEN 'COMPLETED'   THEN 'Completed'
+        WHEN 'LAPSED'      THEN 'Lapsed'
+        WHEN 'SUSPENDED'   THEN 'Suspended'
+        WHEN 'CANCELLED'   THEN 'Cancelled'
+        ELSE p.workflow_status
+    END AS status_display,
+    CASE p.workflow_status
+        WHEN 'STARTED'     THEN '#28a745'
+        WHEN 'IN_PROGRESS' THEN '#17a2b8'
+        WHEN 'AUTHORISED'  THEN '#6c757d'
+        WHEN 'COMPLETED'   THEN '#6f42c1'
+        WHEN 'LAPSED'      THEN '#6c757d'
+        WHEN 'SUSPENDED'   THEN '#fd7e14'
+        WHEN 'CANCELLED'   THEN '#dc3545'
+        ELSE '#6c757d'
+    END AS status_colour,
+    NVL(p.supervising_company,   'Unknown') AS company,
+    NVL(p.person_in_charge_name, 'Unknown') AS person_in_charge,
+    NVL(p.site_details,          'Unknown') AS site_details,
+    p.area_of_works,
+    p.work_description,
+    p.created_by,
+    p.auth_person_name,
+    TRUNC(p.created_date)                   AS created_date_only,
+    p.created_date,
+    p.started_datetime,
+    p.ended_datetime,
+    p.auth_datetime,
+    p.clear_datetime,
+    p.cancel_datetime,
+    -- Has additional data flags (used in IR columns)
+    CASE WHEN p.clear_datetime  IS NOT NULL THEN 'Y' ELSE 'N' END AS has_clearance,
+    CASE WHEN p.cancel_datetime IS NOT NULL THEN 'Y' ELSE 'N' END AS has_cancellation,
+    CASE WHEN p.cancel_work_complete = 'N'  THEN 'Y' ELSE 'N' END AS has_photos,
+    p.ptw_type,
+    -- Pre-calculated grouping columns for line chart
+    TRUNC(p.created_date, 'DD') AS group_daily,
+    TRUNC(p.created_date, 'IW') AS group_weekly,
+    TRUNC(p.created_date, 'MM') AS group_monthly
+FROM ptw_pro.ptw_lv_permits p;
+
+  CREATE OR REPLACE FORCE EDITIONABLE VIEW "PTW_PRO"."PTW_LV_USER_ROLES_V" ("ROLE_ID", "USERNAME", "ROLE_NAME", "IS_ACTIVE", "USER_ACTIVE", "ROLE_ACTIVE", "FIRST_NAME", "LAST_NAME", "EMAIL_ADDRESS", "MOBILE_NO", "JOB_TITLE", "GRANTED_BY", "GRANTED_DATE", "MODIFIED_DATE", "USER_ID", "ROLE_REF_ID", "IS_ADMIN_ROLE", "ROLE_DESCRIPTION", "DISPLAY_ORDER") DEFAULT COLLATION "USING_NLS_COMP"  AS 
+  SELECT
+    ur.user_role_id                                         AS role_id,
+    u.username,
+    r.role_name,
+    CASE
+        WHEN u.is_active = 'Y' AND ur.is_active = 'Y' THEN 'Y'
+        ELSE 'N'
+    END                                                     AS is_active,
+    u.is_active                                             AS user_active,
+    ur.is_active                                            AS role_active,
+    u.first_name,
+    u.last_name,
+    u.email_address,
+    u.mobile_no,
+    u.job_title,
+    ur.granted_by,
+    ur.granted_date,
+    ur.modified_date,
+    u.user_id,
+    r.role_id                                               AS role_ref_id,
+    r.is_admin_role,
+    r.role_description,
+    r.display_order
+FROM   ptw_pro.ptw_lv_user_role_assignments  ur
+JOIN   ptw_pro.ptw_lv_users                  u   ON u.user_id = ur.user_id
+JOIN   ptw_pro.ptw_lv_roles                  r   ON r.role_id = ur.role_id;
+
+
+  CREATE OR REPLACE EDITIONABLE TRIGGER "PTW_PRO"."PTW_LV_CONTROL_MEASURES_STAGE_LOC_TRG" 
+AFTER INSERT OR UPDATE ON ptw_pro.ptw_lv_control_measures
+FOR EACH ROW
+DECLARE
+    v_changed BOOLEAN := FALSE;
+BEGIN
+    IF INSERTING THEN
+       v_changed := TRUE;
+    END IF;
+       --
+    IF NVL(:NEW.cm_01_site_induction,'NULL') != NVL(:OLD.cm_01_site_induction,'NULL') THEN v_changed := TRUE; END IF;
+    IF NVL(:NEW.cm_02_risk_assessment,'NULL') != NVL(:OLD.cm_02_risk_assessment,'NULL') THEN v_changed := TRUE; END IF;
+    IF NVL(:NEW.cm_03_competence_checked,'NULL') != NVL(:OLD.cm_03_competence_checked,'NULL') THEN v_changed := TRUE; END IF;
+    IF NVL(:NEW.cm_04_hazards_aware,'NULL') != NVL(:OLD.cm_04_hazards_aware,'NULL') THEN v_changed := TRUE; END IF;
+    IF NVL(:NEW.cm_05_ppe_identified,'NULL') != NVL(:OLD.cm_05_ppe_identified,'NULL') THEN v_changed := TRUE; END IF;
+    IF NVL(:NEW.cm_06_sources_isolated,'NULL') != NVL(:OLD.cm_06_sources_isolated,'NULL') THEN v_changed := TRUE; END IF;
+    IF NVL(:NEW.cm_07_proved_dead,'NULL') != NVL(:OLD.cm_07_proved_dead,'NULL') THEN v_changed := TRUE; END IF;
+    IF NVL(:NEW.cm_08_stored_energy,'NULL') != NVL(:OLD.cm_08_stored_energy,'NULL') THEN v_changed := TRUE; END IF;
+    IF NVL(:NEW.cm_09_live_covered,'NULL') != NVL(:OLD.cm_09_live_covered,'NULL') THEN v_changed := TRUE; END IF;
+    IF NVL(:NEW.cm_10_no_live_work,'NULL') != NVL(:OLD.cm_10_no_live_work,'NULL') THEN v_changed := TRUE; END IF;
+    IF NVL(:NEW.cm_11_first_aid,'NULL') != NVL(:OLD.cm_11_first_aid,'NULL') THEN v_changed := TRUE; END IF;
+    IF NVL(:NEW.cm_12_barriers,'NULL') != NVL(:OLD.cm_12_barriers,'NULL') THEN v_changed := TRUE; END IF;
+    IF NVL(:NEW.cm_13_access_egress,'NULL') != NVL(:OLD.cm_13_access_egress,'NULL') THEN v_changed := TRUE; END IF;
+    IF NVL(:NEW.cm_14_insulated_matting,'NULL') != NVL(:OLD.cm_14_insulated_matting,'NULL') THEN v_changed := TRUE; END IF;
+    IF NVL(:NEW.cm_15_calibration_current,'NULL') != NVL(:OLD.cm_15_calibration_current,'NULL') THEN v_changed := TRUE; END IF;
+    IF NVL(:NEW.cm_16_danger_signs,'NULL') != NVL(:OLD.cm_16_danger_signs,'NULL') THEN v_changed := TRUE; END IF;
+
+    IF v_changed THEN
+        INSERT INTO ptw_pro.ptw_stage_locations (
+            permit_id,
+            permit_stage,
+            latitude,
+            longitude,
+            created_date,
+            created_by
+        ) VALUES (
+            :NEW.permit_id,
+            'CONTROL_MEASURES',
+            :NEW.cm_latitude,
+            :NEW.cm_longitude,
+            SYSDATE,
+            NVL(SYS_CONTEXT('APEX$SESSION', 'APP_USER'), USER)
+        );
+    END IF;
+END ptw_lv_control_measures_stage_loc_trg;
+/
+ALTER TRIGGER "PTW_PRO"."PTW_LV_CONTROL_MEASURES_STAGE_LOC_TRG" ENABLE;
+
+  CREATE OR REPLACE EDITIONABLE TRIGGER "PTW_PRO"."PTW_LV_MONITORING_STAGE_LOC_TRG" 
+AFTER INSERT OR UPDATE ON ptw_pro.ptw_lv_monitoring
+FOR EACH ROW
+DECLARE
+    v_changed   BOOLEAN := FALSE;
+    l_latitude  NUMBER;
+    l_longitude NUMBER;
+BEGIN
+    IF INSERTING THEN
+        v_changed   := TRUE;
+        l_latitude  := :NEW.monitor_latitude;
+        l_longitude := :NEW.monitor_longitude;
+    END IF;
+
+    IF NVL(:NEW.monitor_name,'NULL') != NVL(:OLD.monitor_name,'NULL') THEN
+        v_changed   := TRUE;
+        l_latitude  := :NEW.monitor_latitude;
+        l_longitude := :NEW.monitor_longitude;
+    END IF;
+
+    IF NVL(:NEW.monitoring_status,'NULL') != NVL(:OLD.monitoring_status,'NULL') THEN
+        v_changed   := TRUE;
+        l_latitude  := :NEW.monitor_latitude;
+        l_longitude := :NEW.monitor_longitude;
+    END IF;
+
+    IF (:NEW.monitor_signature IS NOT NULL AND :OLD.monitor_signature IS NOT NULL) THEN
+        IF DBMS_LOB.COMPARE(:NEW.monitor_signature, :OLD.monitor_signature) != 0 THEN
+            v_changed   := TRUE;
+            l_latitude  := :NEW.monitor_latitude;
+            l_longitude := :NEW.monitor_longitude;
+        END IF;
+    ELSIF (:NEW.monitor_signature IS NULL  AND :OLD.monitor_signature IS NOT NULL) OR
+          (:NEW.monitor_signature IS NOT NULL AND :OLD.monitor_signature IS NULL) THEN
+        v_changed   := TRUE;
+        l_latitude  := :NEW.monitor_latitude;
+        l_longitude := :NEW.monitor_longitude;
+    END IF;
+
+    IF v_changed THEN
+        INSERT INTO ptw_pro.ptw_stage_locations (
+            permit_id,
+            permit_stage,
+            latitude,
+            longitude,
+            created_date,
+            created_by
+        ) VALUES (
+            :NEW.permit_id,
+            'MONITORING',
+            l_latitude,
+            l_longitude,
+            SYSDATE,
+            NVL(SYS_CONTEXT('APEX$SESSION', 'APP_USER'), USER)
+        );
+    END IF;
+
+END ptw_lv_monitoring_stage_loc_trg;
+/
+ALTER TRIGGER "PTW_PRO"."PTW_LV_MONITORING_STAGE_LOC_TRG" ENABLE;
+
+  CREATE OR REPLACE EDITIONABLE TRIGGER "PTW_PRO"."PTW_LV_PERMITS_STAGE_LOC_TRG" 
+AFTER INSERT OR UPDATE ON ptw_pro.ptw_lv_permits
+FOR EACH ROW
+DECLARE
+    v_changed BOOLEAN := FALSE;
+    l_latitude NUMBER;
+    l_longitude NUMBER;
+BEGIN
+    IF INSERTING THEN
+       v_changed := TRUE;
+    END IF;
+    --
+    IF NVL(:NEW.safety_programme_ref_no,'NULL') != NVL(:OLD.safety_programme_ref_no,'NULL') THEN 
+      v_changed := TRUE; 
+      l_latitude := :NEW.site_work_latitude;
+      l_longitude := :NEW.site_work_longitude;
+    END IF;
+    IF NVL(:NEW.isolation_diagram_serial_no,'NULL') != NVL(:OLD.isolation_diagram_serial_no,'NULL') THEN
+      v_changed := TRUE; 
+      l_latitude := :NEW.site_work_latitude;
+      l_longitude := :NEW.site_work_longitude;
+    END IF;
+    IF NVL(:NEW.site_details,'NULL') != NVL(:OLD.site_details,'NULL') THEN
+      v_changed := TRUE; 
+      l_latitude := :NEW.site_work_latitude;
+      l_longitude := :NEW.site_work_longitude;
+    END IF;
+    IF NVL(:NEW.work_description,'NULL') !=  NVL(:OLD.work_description,'NULL') THEN
+      v_changed := TRUE; 
+      l_latitude := :NEW.site_work_latitude;
+      l_longitude := :NEW.site_work_longitude;
+    END IF;
+    IF NVL(:NEW.person_in_charge_name,'NULL') != NVL(:OLD.person_in_charge_name,'NULL') THEN
+      v_changed := TRUE; 
+      l_latitude := :NEW.site_work_latitude;
+      l_longitude := :NEW.site_work_longitude;
+    END IF;
+    IF NVL(:NEW.supervising_company,'NULL') != NVL(:OLD.supervising_company,'NULL') THEN
+      v_changed := TRUE; 
+      l_latitude := :NEW.site_work_latitude;
+      l_longitude := :NEW.site_work_longitude;
+    END IF;
+    IF NVL(:NEW.other_persons_count,-999999) != NVL(:OLD.other_persons_count,-999999) THEN
+      v_changed := TRUE; 
+      l_latitude := :NEW.site_work_latitude;
+      l_longitude := :NEW.site_work_longitude;
+    END IF;
+    IF NVL(:NEW.client_permission_granted,'NULL') != NVL(:OLD.client_permission_granted,'NULL') THEN
+      v_changed := TRUE; 
+      l_latitude := :NEW.site_work_latitude;
+      l_longitude := :NEW.site_work_longitude;
+    END IF;
+    IF NVL(:NEW.affects_it_systems,'NULL') != NVL(:OLD.affects_it_systems,'NULL') THEN
+      v_changed := TRUE; 
+      l_latitude := :NEW.site_work_latitude;
+      l_longitude := :NEW.site_work_longitude;
+    END IF;
+    IF NVL(:NEW.it_permission_granted,'NULL') != NVL(:OLD.it_permission_granted,'NULL') THEN
+      v_changed := TRUE; 
+      l_latitude := :NEW.site_work_latitude;
+      l_longitude := :NEW.site_work_longitude;
+    END IF;
+    IF NVL(:NEW.ppe_safety_helmet,'NULL') != NVL(:OLD.ppe_safety_helmet,'NULL') THEN
+      v_changed := TRUE; 
+      l_latitude := :NEW.ppe_latitude;
+      l_longitude := :NEW.ppe_longitude;
+    END IF;
+    IF NVL(:NEW.ppe_arc_flash,'NULL') != NVL(:OLD.ppe_arc_flash,'NULL') THEN
+      v_changed := TRUE; 
+      l_latitude := :NEW.ppe_latitude;
+      l_longitude := :NEW.ppe_longitude;
+    END IF;
+    IF NVL(:NEW.ppe_safety_footwear,'NULL') != NVL(:OLD.ppe_safety_footwear,'NULL') THEN
+      v_changed := TRUE; 
+      l_latitude := :NEW.ppe_latitude;
+      l_longitude := :NEW.ppe_longitude;
+    END IF;
+    IF NVL(:NEW.ppe_hi_vis,'NULL') != NVL(:OLD.ppe_hi_vis,'NULL') THEN
+      v_changed := TRUE; 
+      l_latitude := :NEW.ppe_latitude;
+      l_longitude := :NEW.ppe_longitude;
+    END IF;
+    IF NVL(:NEW.ppe_safety_goggles,'NULL') != NVL(:OLD.ppe_safety_goggles,'NULL') THEN
+      v_changed := TRUE; 
+      l_latitude := :NEW.ppe_latitude;
+      l_longitude := :NEW.ppe_longitude;
+    END IF;
+    IF NVL(:NEW.ppe_insulating_gloves,'NULL') != NVL(:OLD.ppe_insulating_gloves,'NULL') THEN
+      v_changed := TRUE; 
+      l_latitude := :NEW.ppe_latitude;
+      l_longitude := :NEW.ppe_longitude;
+    END IF;
+    IF NVL(:NEW.ppe_fall_restraint,'NULL') != NVL(:OLD.ppe_fall_restraint,'NULL') THEN
+      v_changed := TRUE; 
+      l_latitude := :NEW.ppe_latitude;
+      l_longitude := :NEW.ppe_longitude;
+    END IF;
+    IF NVL(:NEW.ppe_fall_arrest,'NULL') != NVL(:OLD.ppe_fall_arrest,'NULL') THEN
+      v_changed := TRUE; 
+      l_latitude := :NEW.ppe_latitude;
+      l_longitude := :NEW.ppe_longitude;
+    END IF;
+    IF NVL(:NEW.ppe_ear_defenders,'NULL') != NVL(:OLD.ppe_ear_defenders,'NULL') THEN 
+      v_changed := TRUE; 
+      l_latitude := :NEW.ppe_latitude;
+      l_longitude := :NEW.ppe_longitude;
+    END IF;
+    IF NVL(:NEW.ppe_safety_gloves,'NULL') != NVL(:OLD.ppe_safety_gloves,'NULL') THEN
+      v_changed := TRUE; 
+      l_latitude := :NEW.ppe_latitude;
+      l_longitude := :NEW.ppe_longitude;
+    END IF;
+    --
+    IF (:NEW.accept_person_signature IS NOT NULL AND :OLD.accept_person_signature IS NOT NULL) THEN
+        IF DBMS_LOB.COMPARE(:NEW.accept_person_signature, :OLD.accept_person_signature) != 0 THEN 
+          v_changed := TRUE; 
+          l_latitude := :NEW.accept_latitude;
+          l_longitude := :NEW.accept_longitude;
+        END IF;
+    ELSIF (:NEW.accept_person_signature IS NULL AND :OLD.accept_person_signature IS NOT NULL) OR
+          (:NEW.accept_person_signature IS NOT NULL AND :OLD.accept_person_signature IS NULL) THEN
+          v_changed := TRUE;
+          l_latitude := :NEW.accept_latitude;
+          l_longitude := :NEW.accept_longitude;
+    END IF;
+    IF (:NEW.auth_person_signature IS NOT NULL AND :OLD.auth_person_signature IS NOT NULL) THEN
+        IF DBMS_LOB.COMPARE(:NEW.auth_person_signature, :OLD.auth_person_signature) != 0 THEN 
+          v_changed := TRUE; 
+          l_latitude := :NEW.auth_latitude;
+          l_longitude := :NEW.auth_longitude;
+        END IF;
+    ELSIF (:NEW.auth_person_signature IS NULL AND :OLD.auth_person_signature IS NOT NULL) OR
+          (:NEW.auth_person_signature IS NOT NULL AND :OLD.auth_person_signature IS NULL) THEN
+          v_changed := TRUE;
+          l_latitude := :NEW.auth_latitude;
+          l_longitude := :NEW.auth_longitude;
+    END IF;
+    IF (NVL(:NEW.auth_datetime, DATE '1900-01-01') != NVL(:OLD.auth_datetime, DATE '1900-01-01')) THEN
+          v_changed := TRUE;
+          l_latitude := :NEW.auth_latitude;
+          l_longitude := :NEW.auth_longitude;
+    END IF;
+    IF :NEW.current_step = 'LIVE' AND (NVL(:NEW.started_datetime, DATE '1900-01-01') != NVL(:OLD.started_datetime, DATE '1900-01-01'))THEN
+          v_changed := TRUE;
+          l_latitude := :NEW.started_latitude;
+          l_longitude := :NEW.started_longitude;
+    END IF;
+    -- Equipment Isolation: catch step transition (NEXT_STEP button)
+    IF NVL(:NEW.current_step,'NULL') != NVL(:OLD.current_step,'NULL')
+       AND :NEW.current_step = 'EQUIP_ISOLATION' THEN
+        v_changed   := TRUE;
+        l_latitude  := :NEW.equip_iso_latitude;
+        l_longitude := :NEW.equip_iso_longitude;
+    END IF;
+    
+    -- Equipment Isolation: catch SAVE_DRAFT within the same step
+    IF :NEW.current_step = 'EQUIP_ISOLATION'
+       AND NVL(:NEW.equip_iso_latitude, -999999) != NVL(:OLD.equip_iso_latitude, -999999) THEN
+        v_changed   := TRUE;
+        l_latitude  := :NEW.equip_iso_latitude;
+        l_longitude := :NEW.equip_iso_longitude;
+    END IF;
+    -- Clearance: catch step transition (most reliable signal)
+    IF NVL(:NEW.current_step,'NULL') != NVL(:OLD.current_step,'NULL')
+       AND :NEW.current_step = 'CLEARANCE' THEN
+        v_changed   := TRUE;
+        l_latitude  := :NEW.clear_latitude;
+        l_longitude := :NEW.clear_longitude;
+    END IF;
+
+    -- Cancelled: catch step transition
+    IF NVL(:NEW.current_step,'NULL') != NVL(:OLD.current_step,'NULL')
+       AND :NEW.current_step = 'CANCELLED' THEN
+        v_changed   := TRUE;
+        l_latitude  := :NEW.cancel_latitude;
+        l_longitude := :NEW.cancel_longitude;
+    END IF;
+    IF v_changed THEN
+        INSERT INTO ptw_pro.ptw_stage_locations (
+            permit_id,
+            permit_stage,
+            latitude,
+            longitude,
+            created_date,
+            created_by
+        ) VALUES (
+            :NEW.permit_id,
+            :NEW.current_step,
+            l_latitude,
+            l_longitude,
+            SYSDATE,
+            NVL(SYS_CONTEXT('APEX$SESSION', 'APP_USER'), USER)
+        );
+    END IF;
+
+END ptw_lv_permits_stage_loc_trg;
+/
+ALTER TRIGGER "PTW_PRO"."PTW_LV_PERMITS_STAGE_LOC_TRG" ENABLE;
+
+  CREATE OR REPLACE EDITIONABLE TRIGGER "PTW_PRO"."TRG_PTW_LV_PERMIT_NUMBER" 
+    BEFORE INSERT ON ptw_lv_permits
+    FOR EACH ROW
+BEGIN
+    IF :NEW.permit_number IS NULL THEN
+        :NEW.permit_number := 'PTW-LV/' ||
+                              TO_CHAR(SYSDATE, 'YYYY') || '/' ||
+                              LPAD(:NEW.permit_id, 5, '0');
+    END IF;
+END;
+/
+ALTER TRIGGER "PTW_PRO"."TRG_PTW_LV_PERMIT_NUMBER" ENABLE;
+
+
+  CREATE OR REPLACE EDITIONABLE FUNCTION "PTW_PRO"."GENERATE_PTW_LV_PDF" (
     p_permit_id       IN NUMBER,
     p_include_history IN VARCHAR2 DEFAULT 'N'
 ) RETURN CLOB
@@ -9,10 +846,6 @@ IS
     v_html       CLOB;
     v_mon_count  NUMBER := 0;
     v_mon_num    NUMBER := 0;
-    v_auth_person_fullname VARCHAR2(200);
-    v_logo_blob  BLOB;
-    v_logo_mime  VARCHAR2(100) := 'image/png';
-    v_logo_b64   CLOB;
 
     CURSOR c_isolation IS
         SELECT *
@@ -145,11 +978,6 @@ IS
 -- MAIN BODY
 -- ============================================================
 BEGIN
-    -- Initialise v_html as a true temporary CLOB in the LOB segment
-    -- rather than PGA memory. Prevents ORA-06502 when the CLOB grows
-    -- large (base64 logo + full permit HTML). Must be first statement.
-    DBMS_LOB.CREATETEMPORARY(v_html, TRUE, DBMS_LOB.CALL);
-
     IF p_permit_id IS NULL THEN
         RETURN '<div class="ptw-lv-report-container">'
             || '<h2 style="color:red;">No Permit Selected</h2></div>';
@@ -165,27 +993,6 @@ BEGIN
                 || '<h2 style="color:red;">Permit Not Found</h2>'
                 || '<p>Permit ID: ' || p_permit_id || '</p></div>';
     END;
-    
-    BEGIN
-        SELECT file_content
-        INTO   v_logo_blob
-        FROM   apex_application_static_files
-        WHERE  application_id = (
-                SELECT application_id
-                FROM   apex_applications
-                WHERE  alias = 'PTW-PRO'
-            )
-        AND    file_name = 'logo_' || v_permit.company_id || '.png';
-    
-        v_logo_b64 := apex_web_service.blob2clobbase64(v_logo_blob);
-        v_logo_b64 := REPLACE(REPLACE(v_logo_b64, CHR(10), ''), CHR(13), '');
-    EXCEPTION
-        WHEN NO_DATA_FOUND THEN
-            -- No logo for this company - render PDF without logo
-            v_logo_b64 := NULL;
-        WHEN OTHERS THEN
-            v_logo_b64 := NULL;
-    END;
 
     BEGIN
         SELECT * INTO v_cm
@@ -198,21 +1005,6 @@ BEGIN
     SELECT COUNT(*) INTO v_mon_count
     FROM   ptw_pro.ptw_lv_monitoring
     WHERE  permit_id = p_permit_id;
-    
-    BEGIN
-        SELECT first_name || ' ' || last_name
-        INTO   v_auth_person_fullname
-        FROM   ptw_pro.ptw_lv_users
-        WHERE  UPPER(username) = UPPER(v_permit.auth_person_name);
-    EXCEPTION
-        WHEN NO_DATA_FOUND THEN
-            -- Username no longer exists (user deleted/renamed) -
-            -- fall back to the stored username so the PDF still
-            -- renders rather than showing blank.
-            v_auth_person_fullname := v_permit.auth_person_name;
-        WHEN OTHERS THEN
-            v_auth_person_fullname := v_permit.auth_person_name;
-    END;
 
     -- ============================================================
     -- HTML DOCUMENT + CSS
@@ -313,7 +1105,7 @@ BEGIN
         padding: 6px 12px; font-size: 7pt; color: #888; text-align: center;
     }
 
-    /* ── Permit History section ─────────────────────────────── */
+    /* ── Permit History section ─────────────────────────────── */    
     .history-section {
         border: 1px solid #c0c0c0;
         border-top: none;
@@ -364,25 +1156,14 @@ BEGIN
     -- ============================================================
     v_html := v_html || '
     <div class="ptw-lv-header">
-        <div style="display:flex;justify-content:space-between;
-                    align-items:center;margin-bottom:8px;">
-            <h1 style="margin:0;">Permit to Work &mdash; LV Electrical</h1>';
-    
-    IF v_logo_b64 IS NOT NULL THEN
-        v_html := v_html || '<img src="data:image/png;base64,';
-        DBMS_LOB.APPEND(v_html, v_logo_b64);
-        v_html := v_html || '" style="max-height:40px;margin-left:20px;" alt="Company Logo" />';
-    END IF;
-    
-    v_html := v_html || '
-        </div>
+        <h1>Permit to Work &mdash; LV Electrical</h1>
         <div class="header-refs">
-            <div>Safety Programme Reference No.:<br><strong>'
-        || safe_val(v_permit.safety_programme_ref_no) || '</strong></div>
-            <div>Isolation &amp; Earthing Diagram Serial No.:<br><strong>'
-        || safe_val(v_permit.isolation_diagram_serial_no) || '</strong></div>
-            <div>Permit to Work No.:<br><strong>'
-        || safe_val(v_permit.permit_number) || '</strong></div>
+            <div>Safety Programme Reference No.:<br>
+                <strong>' || safe_val(v_permit.safety_programme_ref_no) || '</strong></div>
+            <div>Isolation &amp; Earthing Diagram Serial No.:<br>
+                <strong>' || safe_val(v_permit.isolation_diagram_serial_no) || '</strong></div>
+            <div>Permit to Work No.:<br>
+                <strong>' || safe_val(v_permit.permit_number) || '</strong></div>
         </div>
     </div>';
 
@@ -589,13 +1370,13 @@ BEGIN
             <tbody>';
 
     FOR iso IN c_isolation LOOP
-        DBMS_LOB.APPEND(v_html, TO_CLOB('
+        v_html := v_html || '
                 <tr>
                     <td style="text-align:center;font-weight:700;">' || iso.row_number         || '</td>
                     <td>'                                                                        || safe_val(iso.equipment_isolated) || '</td>
                     <td>'                                                                        || safe_val(iso.means_of_isolation)  || '</td>
                     <td>'                                                                        || safe_val(iso.safety_lock_no)      || '</td>
-                </tr>'));
+                </tr>';
     END LOOP;
 
     -- Fill any unused isolation rows up to 4
@@ -606,11 +1387,11 @@ BEGIN
         FROM   ptw_pro.ptw_lv_equipment_isolation
         WHERE  permit_id = p_permit_id
     ) LOOP
-        DBMS_LOB.APPEND(v_html, TO_CLOB('
+        v_html := v_html || '
                 <tr>
                     <td style="text-align:center;font-weight:700;">' || i.rn || '</td>
                     <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
-                </tr>'));
+                </tr>';
     END LOOP;
 
     v_html := v_html || '
@@ -632,7 +1413,7 @@ BEGIN
         </div>
         <div class="ptw-lv-row">
             <div class="ptw-lv-label">Authorised Person:</div>
-            <div class="ptw-lv-value">' || safe_val(v_auth_person_fullname)   || '</div>
+            <div class="ptw-lv-value">' || safe_val(v_permit.auth_person_name)   || '</div>
         </div>
         <div class="ptw-lv-row">
             <div class="ptw-lv-label">Mobile Tel No.:</div>
@@ -1101,4 +1882,73 @@ EXCEPTION
             || '<pre>' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE || '</pre>'
             || '</body></html>';
 END generate_ptw_lv_pdf;
+/
+
+  CREATE OR REPLACE EDITIONABLE FUNCTION "PTW_PRO"."PTW_LV_IS_CONTRACT_SUPPORT" 
+    (p_username IN VARCHAR2)
+RETURN VARCHAR2
+IS
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*)
+    INTO   v_count
+    FROM   ptw_pro.ptw_lv_user_roles_v        -- view handles both active flags
+    WHERE  UPPER(username) = UPPER(p_username)
+    AND    role_name       = 'ADMIN_CONTRACT_SUPPORT'
+    AND    is_active       = 'Y';              -- combined effective flag from view
+
+    RETURN CASE WHEN v_count > 0 THEN 'Y' ELSE 'N' END;
+EXCEPTION
+    WHEN OTHERS THEN RETURN 'N';
+END ptw_lv_is_contract_support;
+/
+
+  CREATE OR REPLACE EDITIONABLE FUNCTION "PTW_PRO"."PTW_LV_PERMIT_VISIBLE" (
+    p_permit_id        IN ptw_pro.ptw_lv_permits.permit_id%TYPE,
+    p_created_by       IN ptw_pro.ptw_lv_permits.created_by%TYPE,
+    p_auth_person_name IN ptw_pro.ptw_lv_permits.auth_person_name%TYPE,
+    p_username         IN VARCHAR2
+) RETURN VARCHAR2 -- 'Y' or 'N'
+IS
+    v_is_admin      NUMBER;
+    v_is_engineer   NUMBER;
+    v_is_authoriser NUMBER;
+BEGIN
+    SELECT 
+        SUM(CASE WHEN role_name IN ('ADMIN','ADMIN_USER_SUPPORT',
+                                    'ADMIN_CONTRACT_SUPPORT','READONLY') 
+                 THEN 1 ELSE 0 END),
+        SUM(CASE WHEN role_name = 'ENGINEER'   THEN 1 ELSE 0 END),
+        SUM(CASE WHEN role_name = 'AUTHORISER' THEN 1 ELSE 0 END)
+    INTO v_is_admin, v_is_engineer, v_is_authoriser
+    FROM ptw_pro.ptw_lv_user_roles_v
+    WHERE UPPER(username) = UPPER(p_username)
+    AND   is_active = 'Y';
+
+    -- Admin-class: see all
+    IF v_is_admin > 0 THEN RETURN 'Y'; END IF;
+
+    -- Engineer only: own created
+    IF v_is_engineer > 0 AND v_is_authoriser = 0 THEN
+        RETURN CASE WHEN UPPER(p_created_by) = UPPER(p_username) 
+                    THEN 'Y' ELSE 'N' END;
+    END IF;
+
+    -- Authoriser only: own authorised
+    IF v_is_authoriser > 0 AND v_is_engineer = 0 THEN
+        RETURN CASE WHEN UPPER(p_auth_person_name) = UPPER(p_username) 
+                    THEN 'Y' ELSE 'N' END;
+    END IF;
+
+    -- Engineer + Authoriser: created OR authorised
+    IF v_is_engineer > 0 AND v_is_authoriser > 0 THEN
+        RETURN CASE WHEN UPPER(p_created_by)        = UPPER(p_username)
+                      OR UPPER(p_auth_person_name)  = UPPER(p_username)
+                    THEN 'Y' ELSE 'N' END;
+    END IF;
+
+    RETURN 'N';
+EXCEPTION
+    WHEN OTHERS THEN RETURN 'N';
+END ptw_lv_permit_visible;
 /
