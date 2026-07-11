@@ -96,9 +96,9 @@ unistr('        { val: ''Y'', cls: ''binary-badge-yes'', label: ''\2713'' },'),
 unistr('        { val: ''N'', cls: ''binary-badge-no'',  label: ''\2717'' }'),
 '    ];',
 '',
-'    // Page 2 is editable when status is IN_PROGRESS or DRAFT',
+'    // Page 2 is editable when status is DRAFT',
 '    var status    = apex.item(''P2_WORKFLOW_STATUS'').getValue();',
-'    var isReadOnly = (apex.item(''P2_WORKFLOW_STATUS'').getValue() !== ''IN_PROGRESS'');',
+'    var isReadOnly = (apex.item(''P2_WORKFLOW_STATUS'').getValue() !== ''DRAFT'');',
 '',
 '    BINARY_ITEMS.forEach(function (itemName) {',
 '',
@@ -345,7 +345,7 @@ unistr('/* \2500\2500 Required asterisk on each item \2500\2500 */'),
 ,p_protection_level=>'C'
 ,p_read_only_when_type=>'VAL_OF_ITEM_IN_COND_NOT_EQ_COND2'
 ,p_read_only_when=>'P2_WORKFLOW_STATUS'
-,p_read_only_when2=>'IN_PROGRESS'
+,p_read_only_when2=>'DRAFT'
 ,p_page_component_map=>'16'
 );
 wwv_flow_imp_page.create_page_plug(
@@ -914,7 +914,7 @@ wwv_flow_imp_page.create_page_process(
 '    v_permit_id NUMBER;',
 '    v_permit_number VARCHAR2(50);',
 'BEGIN',
-'  IF :P2_WORKFLOW_STATUS = ''IN_PROGRESS'' THEN',
+'  IF :P2_WORKFLOW_STATUS = ''DRAFT'' THEN',
 '    IF :P2_PERMIT_ID IS NULL THEN',
 '        -- INSERT NEW PERMIT',
 '        INSERT INTO ptw_pro.ptw_lv_permits (',
@@ -947,7 +947,7 @@ wwv_flow_imp_page.create_page_process(
 '            :P2_AFFECTS_IT_SYSTEMS,',
 '            :P2_IT_PERMISSION_GRANTED,',
 '            ''SITE_WORK_DETAILS'',',
-'            ''IN_PROGRESS'',',
+'            ''DRAFT'',',
 '            :APP_LATITUDE,',
 '            :APP_LONGITUDE,',
 '            NVL(V(''APP_USER''), USER)',
@@ -957,7 +957,7 @@ wwv_flow_imp_page.create_page_process(
 '        :P2_PERMIT_ID := v_permit_id;',
 '        :P2_PERMIT_NUMBER := v_permit_number;',
 '        :P2_CURRENT_STEP := ''SITE_WORK_DETAILS'';',
-'        :P2_WORKFLOW_STATUS := ''IN_PROGRESS'';',
+'        :P2_WORKFLOW_STATUS := ''DRAFT'';',
 '',
 '        apex_application.g_print_success_message :=',
 '            ''Permit '' || v_permit_number || '' created successfully.'';',
@@ -1067,7 +1067,7 @@ wwv_flow_imp_page.create_page_process(
 'EXCEPTION',
 '    WHEN NO_DATA_FOUND THEN',
 '        :P2_PERMIT_ID := NULL;',
-'        :P2_WORKFLOW_STATUS := ''IN_PROGRESS'';',
+'        :P2_WORKFLOW_STATUS := ''DRAFT'';',
 '        apex_error.add_error(',
 '            p_message => ''Permit not found.'',',
 '            p_display_location => apex_error.c_inline_in_notification',
@@ -1185,7 +1185,7 @@ wwv_flow_imp_page.create_page_process(
 '                l_json.get_string(''P2_AFFECTS_IT_SYSTEMS''),',
 '                l_json.get_string(''P2_IT_PERMISSION_GRANTED''),',
 '                ''SITE_WORK_DETAILS'',',
-'                ''IN_PROGRESS'',',
+'                ''DRAFT'',',
 '                l_json.get_number(''APP_LATITUDE''),',
 '                l_json.get_number(''APP_LONGITUDE''),',
 '                NVL(V(''APP_USER''), USER),',

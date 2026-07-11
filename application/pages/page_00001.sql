@@ -509,7 +509,7 @@ wwv_flow_imp_page.create_page_plug(
 '    p.started_datetime,',
 '    p.ended_datetime,',
 '    CASE p.workflow_status',
-'        WHEN ''IN_PROGRESS'' THEN ''In Progress''',
+'        WHEN ''DRAFT''       THEN ''Draft''',
 '        WHEN ''SUSPENDED''   THEN ''Suspended''',
 '        WHEN ''COMPLETED''   THEN ''Completed''',
 '        WHEN ''CANCELLED''   THEN ''Cancelled''',
@@ -1560,7 +1560,7 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_template_id=>2082829544945815391
 ,p_button_is_hot=>'Y'
 ,p_button_image_alt=>'Create New Permit'
-,p_button_redirect_url=>'f?p=&APP_ID.:14:&SESSION.::&DEBUG.:14:P14_PERMIT_ID,P14_WORKFLOW_STATUS:&P1_PERMIT_ID.,IN_PROGRESS'
+,p_button_redirect_url=>'f?p=&APP_ID.:14:&SESSION.::&DEBUG.:14:P14_PERMIT_ID,P14_WORKFLOW_STATUS:&P1_PERMIT_ID.,DRAFT'
 ,p_button_css_classes=>'t-Button--large t-Button--stretch ptw-action-btn'
 ,p_icon_css_classes=>'fa-plus-circle'
 ,p_grid_new_row=>'Y'

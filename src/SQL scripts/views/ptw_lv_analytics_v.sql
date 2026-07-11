@@ -6,7 +6,7 @@
     p.workflow_status,
     CASE p.workflow_status
         WHEN 'STARTED'     THEN 'Live'
-        WHEN 'IN_PROGRESS' THEN 'In Progress'
+        WHEN 'DRAFT'       THEN 'Draft'
         WHEN 'AUTHORISED'  THEN 'Authorised'
         WHEN 'COMPLETED'   THEN 'Completed'
         WHEN 'LAPSED'      THEN 'Lapsed'
@@ -16,7 +16,7 @@
     END AS status_display,
     CASE p.workflow_status
         WHEN 'STARTED'     THEN '#28a745'
-        WHEN 'IN_PROGRESS' THEN '#17a2b8'
+        WHEN 'DRAFT'       THEN '#17a2b8'
         WHEN 'AUTHORISED'  THEN '#6c757d'
         WHEN 'COMPLETED'   THEN '#6f42c1'
         WHEN 'LAPSED'      THEN '#6c757d'

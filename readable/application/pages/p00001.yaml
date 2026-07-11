@@ -590,7 +590,7 @@ regions:
           p.started_datetime,
           p.ended_datetime,
           CASE p.workflow_status
-              WHEN 'IN_PROGRESS' THEN 'In Progress'
+              WHEN 'DRAFT'       THEN 'Draft'
               WHEN 'SUSPENDED'   THEN 'Suspended'
               WHEN 'COMPLETED'   THEN 'Completed'
               WHEN 'CANCELLED'   THEN 'Cancelled'
@@ -2520,12 +2520,12 @@ buttons:
   behavior: 
     action: Redirect to Page in this Application
     target: 
-      url: 'f?p=&APP_ID.:14:&SESSION.::&DEBUG.:14:P14_PERMIT_ID,P14_WORKFLOW_STATUS:&P1_PERMIT_ID.,IN_PROGRESS'
+      url: 'f?p=&APP_ID.:14:&SESSION.::&DEBUG.:14:P14_PERMIT_ID,P14_WORKFLOW_STATUS:&P1_PERMIT_ID.,DRAFT'
       page: 14 # Create PTW
       clear-cache: 14
       values: 
         p14_permit_id: '&P1_PERMIT_ID.'
-        p14_workflow_status: IN_PROGRESS
+        p14_workflow_status: DRAFT
 
     warn-on-unsaved-changes: Do Not Check
 

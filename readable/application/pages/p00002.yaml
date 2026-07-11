@@ -100,9 +100,9 @@ javascript:
             { val: 'N', cls: 'binary-badge-no',  label: '✗' }
         ];
     
-        // Page 2 is editable when status is IN_PROGRESS or DRAFT
+        // Page 2 is editable when status is DRAFT
         var status    = apex.item('P2_WORKFLOW_STATUS').getValue();
-        var isReadOnly = (apex.item('P2_WORKFLOW_STATUS').getValue() !== 'IN_PROGRESS');
+        var isReadOnly = (apex.item('P2_WORKFLOW_STATUS').getValue() !== 'DRAFT');
     
         BINARY_ITEMS.forEach(function (itemName) {
     
@@ -351,7 +351,7 @@ css:
 read-only: 
   type: Item != Value
   item: P2_WORKFLOW_STATUS
-  value: IN_PROGRESS
+  value: DRAFT
 
 security: 
   authentication: Page Requires Authentication
@@ -1829,7 +1829,7 @@ processes:
       EXCEPTION
           WHEN NO_DATA_FOUND THEN
               :P2_PERMIT_ID := NULL;
-              :P2_WORKFLOW_STATUS := 'IN_PROGRESS';
+              :P2_WORKFLOW_STATUS := 'DRAFT';
               apex_error.add_error(
                   p_message => 'Permit not found.',
                   p_display_location => apex_error.c_inline_in_notification
@@ -1865,7 +1865,7 @@ processes:
           v_permit_id NUMBER;
           v_permit_number VARCHAR2(50);
       BEGIN
-        IF :P2_WORKFLOW_STATUS = 'IN_PROGRESS' THEN
+        IF :P2_WORKFLOW_STATUS = 'DRAFT' THEN
           IF :P2_PERMIT_ID IS NULL THEN
               -- INSERT NEW PERMIT
               INSERT INTO ptw_pro.ptw_lv_permits (
@@ -1898,7 +1898,7 @@ processes:
                   :P2_AFFECTS_IT_SYSTEMS,
                   :P2_IT_PERMISSION_GRANTED,
                   'SITE_WORK_DETAILS',
-                  'IN_PROGRESS',
+                  'DRAFT',
                   :APP_LATITUDE,
                   :APP_LONGITUDE,
                   NVL(V('APP_USER'), USER)
@@ -1908,7 +1908,7 @@ processes:
               :P2_PERMIT_ID := v_permit_id;
               :P2_PERMIT_NUMBER := v_permit_number;
               :P2_CURRENT_STEP := 'SITE_WORK_DETAILS';
-              :P2_WORKFLOW_STATUS := 'IN_PROGRESS';
+              :P2_WORKFLOW_STATUS := 'DRAFT';
       
               apex_application.g_print_success_message :=
                   'Permit ' || v_permit_number || ' created successfully.';
@@ -2038,7 +2038,7 @@ processes:
                       l_json.get_string('P2_AFFECTS_IT_SYSTEMS'),
                       l_json.get_string('P2_IT_PERMISSION_GRANTED'),
                       'SITE_WORK_DETAILS',
-                      'IN_PROGRESS',
+                      'DRAFT',
                       l_json.get_number('APP_LATITUDE'),
                       l_json.get_number('APP_LONGITUDE'),
                       NVL(V('APP_USER'), USER),

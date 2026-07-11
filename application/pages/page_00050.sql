@@ -30,9 +30,9 @@ wwv_flow_imp_page.create_page(
 '.ptw-badge--authorised { background: #6c757d; color: #ffffff; }',
 '.ptw-badge--completed  { background: #6f42c1; color: #ffffff; }',
 '.ptw-badge--lapsed     { background: #6c757d; color: #ffffff; }',
-'.ptw-badge--suspended { background:  #fd7e14; color: #ffffff; }',
+'.ptw-badge--suspended  { background:  #fd7e14; color: #ffffff; }',
 '.ptw-badge--cancelled  { background: #dc3545; color: #ffffff; }',
-'.ptw-badge--inprogress { background: #17a2b8; color: #ffffff; }',
+'.ptw-badge--draft      { background: #17a2b8; color: #ffffff; }',
 '',
 unistr('/* Permit number link \2014 match page 1 teal */'),
 '.t-Card-title a {',
@@ -81,7 +81,7 @@ wwv_flow_imp_page.create_page_plug(
 '        WHEN ''LAPSED''      THEN ''ptw-badge--lapsed''',
 '        WHEN ''SUSPENDED''   THEN ''ptw-badge--suspended''',
 '        WHEN ''CANCELLED''   THEN ''ptw-badge--cancelled''',
-'        WHEN ''IN_PROGRESS'' THEN ''ptw-badge--inprogress''',
+'        WHEN ''DRAFT''       THEN ''ptw-badge--draft''',
 '        ELSE ''ptw-badge--lapsed''',
 '    END || ''">'' ||',
 '    CASE p.workflow_status',
@@ -91,7 +91,7 @@ wwv_flow_imp_page.create_page_plug(
 '        WHEN ''LAPSED''      THEN ''Lapsed''',
 '        WHEN ''SUSPENDED''   THEN ''Suspended''',
 '        WHEN ''CANCELLED''   THEN ''Cancelled''',
-'        WHEN ''IN_PROGRESS'' THEN ''In Progress''',
+'        WHEN ''DRAFT''       THEN ''Draft''',
 '        ELSE p.workflow_status',
 '    END || ''</span>'' AS status_badge_html,',
 '    apex_page.get_url(',
@@ -248,8 +248,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_source=>'WORKFLOW_STATUS'
 ,p_source_type=>'FACET_COLUMN'
 ,p_display_as=>'NATIVE_CHECKBOX'
-,p_lov=>'STATIC:Live;STARTED,Authorised;AUTHORISED,Completed;COMPLETED,Lapsed;LAPSED,In Progress;IN_PROGRESS,Suspended;SUSPENDED,Cancelled;CANCELLED'
-,p_fc_show_label=>true
+,p_lov=>'STATIC:Live;STARTED,Authorised;AUTHORISED,Completed;COMPLETED,Lapsed;LAPSED,Draft;DRAFT,Suspended;SUSPENDED,Cancelled;CANCELLED'
 ,p_fc_collapsible=>false
 ,p_fc_compute_counts=>true
 ,p_fc_show_counts=>true

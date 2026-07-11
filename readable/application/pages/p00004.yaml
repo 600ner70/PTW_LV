@@ -189,7 +189,7 @@ javascript:
         // Determine editability once before building gallery
         var statusEl   = document.getElementById('ptw-workflow-status');
         var isEditable = statusEl && 
-                         statusEl.getAttribute('data-status') === 'IN_PROGRESS';
+                         statusEl.getAttribute('data-status') === 'DRAFT';
     
         apex.server.process('GET_PERMIT_PHOTOS', { x01: permitId }, {
             success: function(data) {
@@ -233,7 +233,7 @@ javascript:
                           + apex.util.escapeHTML(p.uploadedBy) + '</span>';
                     html += '</div>';
     
-                    // Delete only available when permit is IN_PROGRESS
+                    // Delete only available when permit is DRAFT
                     if (isEditable) {
                         html += '<button type="button" '
                               + 'class="t-Button t-Button--danger t-Button--slim t-Button--stretch ptw-delete-photo" '
@@ -284,7 +284,7 @@ javascript:
         var statusEl = document.getElementById('ptw-workflow-status');
         var status   = statusEl ? statusEl.getAttribute('data-status') : '';
     
-        if (status !== 'IN_PROGRESS') {
+        if (status !== 'DRAFT') {
             // Hide all upload controls — permit is read-only
             var fileInput   = document.getElementById('ptw-file-input');
             var cameraInput = document.getElementById('ptw-camera-input');
@@ -638,7 +638,7 @@ css:
 read-only: 
   type: Item != Value
   item: P4_WORKFLOW_STATUS
-  value: IN_PROGRESS
+  value: DRAFT
 
 security: 
   authentication: Page Requires Authentication
@@ -940,7 +940,7 @@ regions:
   id: 40556697430170648
   identification: 
     name: Permit Photos
-    title: Permit Files
+    title: Files & Photos
     type: Static Content
 
   source: 
@@ -2585,7 +2585,7 @@ processes:
           END save_isolation_row;
       
       BEGIN
-        IF :P4_WORKFLOW_STATUS = 'IN_PROGRESS' THEN
+        IF :P4_WORKFLOW_STATUS = 'DRAFT' THEN
           -- Save each isolation row
           save_isolation_row(:P4_ISO_1_ID, :P4_PERMIT_ID, 1, :P4_ISO_1_EQUIPMENT, :P4_ISO_1_MEANS, :P4_ISO_1_LOCK_NO);
           save_isolation_row(:P4_ISO_2_ID, :P4_PERMIT_ID, 2, :P4_ISO_2_EQUIPMENT, :P4_ISO_2_MEANS, :P4_ISO_2_LOCK_NO);
@@ -2753,15 +2753,16 @@ processes:
           INSERT INTO ptw_pro.ptw_lv_permit_photos (
               permit_id, photo_data, mime_type, file_name,
               photo_caption, photo_latitude, photo_longitude,
-              uploaded_by, uploaded_date
+              uploaded_by, uploaded_date, source_page_id          -- ADDED
           ) VALUES (
               l_permit_id, l_blob,
-              NVL(l_mime_type, 'application/octet-stream'),    -- CHANGED
-              NVL(l_file_name, 'attachment'),                   -- CHANGED
+              NVL(l_mime_type, 'application/octet-stream'),
+              NVL(l_file_name, 'attachment'),
               NULLIF(TRIM(l_caption), ''),
               l_latitude, l_longitude,
               NVL(V('APP_USER'), USER),
-              CURRENT_TIMESTAMP
+              CURRENT_TIMESTAMP,
+              :APP_PAGE_ID                                        -- ADDED
           );
       
           COMMIT;
@@ -2811,7 +2812,8 @@ processes:
                      TO_CHAR(uploaded_date, 'DD-Mon-YYYY HH24:MI') AS uploaded_date,
                      uploaded_by
               FROM   ptw_pro.ptw_lv_permit_photos
-              WHERE  permit_id = l_permit_id
+              WHERE  permit_id      = l_permit_id
+              AND    source_page_id = :APP_PAGE_ID                    -- ADDED
               ORDER  BY uploaded_date DESC
           ) LOOP
               apex_json.open_object;

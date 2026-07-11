@@ -220,7 +220,7 @@ css:
 read-only: 
   type: Item != Value
   item: P5_WORKFLOW_STATUS
-  value: IN_PROGRESS
+  value: DRAFT
 
 security: 
   authentication: Page Requires Authentication
@@ -1563,7 +1563,7 @@ page-items:
   server-side-condition: 
     type: Item = Value
     item: P5_WORKFLOW_STATUS
-    value: IN_PROGRESS
+    value: DRAFT
 
   security: 
     session-state-protection: Unrestricted
@@ -1617,7 +1617,7 @@ page-items:
   server-side-condition: 
     type: Item != Value
     item: P5_WORKFLOW_STATUS
-    value: IN_PROGRESS
+    value: DRAFT
 
   security: 
     session-state-protection: Unrestricted
@@ -1769,7 +1769,7 @@ buttons:
   server-side-condition: 
     type: Item = Value
     item: P5_WORKFLOW_STATUS
-    value: IN_PROGRESS
+    value: DRAFT
 
 dynamic-actions: 
 - # ====== Dynamic Action: Save Signatures =====================
@@ -1831,7 +1831,7 @@ dynamic-actions:
         // If read-only, disable canvases after pads have initialised
         setTimeout(function() {
             var status = apex.item('P5_WORKFLOW_STATUS').getValue();
-            if (status !== 'IN_PROGRESS' && status !== '') {
+            if (status !== 'DRAFT' && status !== '') {
                 ['authSignaturePad', 'acceptSignaturePad'].forEach(function(id) {
                     var canvas = document.getElementById(id);
                     if (canvas) {
@@ -1956,10 +1956,10 @@ dynamic-actions:
       stop-execution-on-error: true
       wait-for-result: true
 
-- # ====== Dynamic Action: Set Page Read-Only when not IN_PROGRE
+- # ====== Dynamic Action: Set Page Read-Only when not DRAFT ===
   id: 37954230775176003
   identification: 
-    name: Set Page Read-Only when not IN_PROGRESS
+    name: Set Page Read-Only when not DRAFT
 
   execution: 
     sequence: 70
@@ -2005,7 +2005,7 @@ dynamic-actions:
 
     execution: 
       sequence: 10
-      event: Set Page Read-Only when not IN_PROGRESS # 37954230775176003
+      event: Set Page Read-Only when not DRAFT # 37954230775176003
       fire-when-event-result-is: True
       fire-on-initialization: false
 
@@ -2323,7 +2323,7 @@ processes:
           WHEN NO_DATA_FOUND THEN
               :P5_ACCEPT_DATETIME := TO_CHAR(SYSDATE, 'DD-MON-YYYY HH24:MI');
               :P5_AUTH_DATETIME := TO_CHAR(SYSDATE, 'DD-MON-YYYY HH24:MI');
-              :P5_WORKFLOW_STATUS := 'IN_PROGRESS';
+              :P5_WORKFLOW_STATUS := 'DRAFT';
       END;
       
       IF :P5_ACCEPT_COMPANY IS NULL AND :P5_ACCEPT_PERSON_NAME IS NULL THEN
@@ -2451,7 +2451,7 @@ processes:
   server-side-condition: 
     type: Item = Value
     item: P5_WORKFLOW_STATUS
-    value: IN_PROGRESS
+    value: DRAFT
 
 branches: 
 - # ====== Branch: Refresh page after submit ===================

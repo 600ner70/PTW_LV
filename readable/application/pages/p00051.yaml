@@ -139,7 +139,7 @@ css:
     .ptw-badge--lapsed     { background: #6c757d; color: #fff; }
     .ptw-badge--suspended  { background: #fd7e14; color: #fff; }
     .ptw-badge--cancelled  { background: #dc3545; color: #fff; }
-    .ptw-badge--inprogress { background: #17a2b8; color: #fff; }
+    .ptw-badge--draft      { background: #17a2b8; color: #fff; }
     
     #p51_active_facets { margin-bottom: 8px; }
     
@@ -200,7 +200,7 @@ regions:
               WHEN 'LAPSED'      THEN 'ptw-badge--lapsed'
               WHEN 'SUSPENDED'   THEN 'ptw-badge--suspended'
               WHEN 'CANCELLED'   THEN 'ptw-badge--cancelled'
-              WHEN 'IN_PROGRESS' THEN 'ptw-badge--inprogress'
+              WHEN 'DRAFT'       THEN 'ptw-badge--draft'
               ELSE                    'ptw-badge--lapsed'
           END || '">' || p.status_display || '</span>'        AS status_badge_html,
           apex_page.get_url(

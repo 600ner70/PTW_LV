@@ -33,9 +33,9 @@ css:
     .ptw-badge--authorised { background: #6c757d; color: #ffffff; }
     .ptw-badge--completed  { background: #6f42c1; color: #ffffff; }
     .ptw-badge--lapsed     { background: #6c757d; color: #ffffff; }
-    .ptw-badge--suspended { background:  #fd7e14; color: #ffffff; }
+    .ptw-badge--suspended  { background:  #fd7e14; color: #ffffff; }
     .ptw-badge--cancelled  { background: #dc3545; color: #ffffff; }
-    .ptw-badge--inprogress { background: #17a2b8; color: #ffffff; }
+    .ptw-badge--draft      { background: #17a2b8; color: #ffffff; }
     
     /* Permit number link — match page 1 teal */
     .t-Card-title a {
@@ -100,7 +100,7 @@ regions:
               WHEN 'LAPSED'      THEN 'ptw-badge--lapsed'
               WHEN 'SUSPENDED'   THEN 'ptw-badge--suspended'
               WHEN 'CANCELLED'   THEN 'ptw-badge--cancelled'
-              WHEN 'IN_PROGRESS' THEN 'ptw-badge--inprogress'
+              WHEN 'DRAFT'       THEN 'ptw-badge--draft'
               ELSE 'ptw-badge--lapsed'
           END || '">' ||
           CASE p.workflow_status
@@ -110,7 +110,7 @@ regions:
               WHEN 'LAPSED'      THEN 'Lapsed'
               WHEN 'SUSPENDED'   THEN 'Suspended'
               WHEN 'CANCELLED'   THEN 'Cancelled'
-              WHEN 'IN_PROGRESS' THEN 'In Progress'
+              WHEN 'DRAFT'       THEN 'Draft'
               ELSE p.workflow_status
           END || '</span>' AS status_badge_html,
           apex_page.get_url(
@@ -377,7 +377,7 @@ regions:
 
     list-of-values: 
       type: Static Values
-      static-values: 'STATIC:Live;STARTED,Authorised;AUTHORISED,Completed;COMPLETED,Lapsed;LAPSED,In Progress;IN_PROGRESS,Suspended;SUSPENDED,Cancelled;CANCELLED'
+      static-values: 'STATIC:Live;STARTED,Authorised;AUTHORISED,Completed;COMPLETED,Lapsed;LAPSED,Draft;DRAFT,Suspended;SUSPENDED,Cancelled;CANCELLED'
       include-null-option: false
 
     list-entries: 
@@ -616,7 +616,7 @@ regions:
 
     list-of-values: 
       type: Static Values
-      static-values: 'STATIC:Live;STARTED,Authorised;AUTHORISED,Completed;COMPLETED,Lapsed;LAPSED,In Progress;IN_PROGRESS,Suspended;SUSPENDED,Cancelled;CANCELLED'
+      static-values: 'STATIC:Live;STARTED,Authorised;AUTHORISED,Completed;COMPLETED,Lapsed;LAPSED,Draft;DRAFT,Suspended;SUSPENDED,Cancelled;CANCELLED'
       include-null-option: false
 
     list-entries: 

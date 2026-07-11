@@ -185,7 +185,7 @@ unistr('// \2500\2500 Gallery \2500\2500\2500\2500\2500\2500\2500\2500\2500\2500
 '    // Determine editability once before building gallery',
 '    var statusEl   = document.getElementById(''ptw-workflow-status'');',
 '    var isEditable = statusEl && ',
-'                     statusEl.getAttribute(''data-status'') === ''IN_PROGRESS'';',
+'                     statusEl.getAttribute(''data-status'') === ''DRAFT'';',
 '',
 '    apex.server.process(''GET_PERMIT_PHOTOS'', { x01: permitId }, {',
 '        success: function(data) {',
@@ -229,7 +229,7 @@ unistr('// \2500\2500 Gallery \2500\2500\2500\2500\2500\2500\2500\2500\2500\2500
 '                      + apex.util.escapeHTML(p.uploadedBy) + ''</span>'';',
 '                html += ''</div>'';',
 '',
-'                // Delete only available when permit is IN_PROGRESS',
+'                // Delete only available when permit is DRAFT',
 '                if (isEditable) {',
 '                    html += ''<button type="button" ''',
 '                          + ''class="t-Button t-Button--danger t-Button--slim t-Button--stretch ptw-delete-photo" ''',
@@ -280,7 +280,7 @@ unistr('    // \2500\2500 Show/hide upload controls based on workflow status \25
 '    var statusEl = document.getElementById(''ptw-workflow-status'');',
 '    var status   = statusEl ? statusEl.getAttribute(''data-status'') : '''';',
 '',
-'    if (status !== ''IN_PROGRESS'') {',
+'    if (status !== ''DRAFT'') {',
 unistr('        // Hide all upload controls \2014 permit is read-only'),
 '        var fileInput   = document.getElementById(''ptw-file-input'');',
 '        var cameraInput = document.getElementById(''ptw-camera-input'');',
@@ -632,7 +632,7 @@ unistr('/* \2500\2500 Lightbox \2500\2500\2500\2500\2500\2500\2500\2500\2500\250
 ,p_protection_level=>'C'
 ,p_read_only_when_type=>'VAL_OF_ITEM_IN_COND_NOT_EQ_COND2'
 ,p_read_only_when=>'P4_WORKFLOW_STATUS'
-,p_read_only_when2=>'IN_PROGRESS'
+,p_read_only_when2=>'DRAFT'
 ,p_page_component_map=>'16'
 );
 wwv_flow_imp_page.create_page_plug(
@@ -734,7 +734,7 @@ wwv_flow_imp_page.create_page_plug(
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(40556697430170648)
 ,p_plug_name=>'Permit Photos'
-,p_title=>'Permit Files'
+,p_title=>'Files & Photos'
 ,p_parent_plug_id=>wwv_flow_imp.id(27019604951886547)
 ,p_icon_css_classes=>'fa-camera'
 ,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
@@ -1404,7 +1404,7 @@ wwv_flow_imp_page.create_page_process(
 '    END save_isolation_row;',
 '',
 'BEGIN',
-'  IF :P4_WORKFLOW_STATUS = ''IN_PROGRESS'' THEN',
+'  IF :P4_WORKFLOW_STATUS = ''DRAFT'' THEN',
 '    -- Save each isolation row',
 '    save_isolation_row(:P4_ISO_1_ID, :P4_PERMIT_ID, 1, :P4_ISO_1_EQUIPMENT, :P4_ISO_1_MEANS, :P4_ISO_1_LOCK_NO);',
 '    save_isolation_row(:P4_ISO_2_ID, :P4_PERMIT_ID, 2, :P4_ISO_2_EQUIPMENT, :P4_ISO_2_MEANS, :P4_ISO_2_LOCK_NO);',
@@ -1610,15 +1610,16 @@ wwv_flow_imp_page.create_page_process(
 '    INSERT INTO ptw_pro.ptw_lv_permit_photos (',
 '        permit_id, photo_data, mime_type, file_name,',
 '        photo_caption, photo_latitude, photo_longitude,',
-'        uploaded_by, uploaded_date',
+'        uploaded_by, uploaded_date, source_page_id          -- ADDED',
 '    ) VALUES (',
 '        l_permit_id, l_blob,',
-'        NVL(l_mime_type, ''application/octet-stream''),    -- CHANGED',
-'        NVL(l_file_name, ''attachment''),                   -- CHANGED',
+'        NVL(l_mime_type, ''application/octet-stream''),',
+'        NVL(l_file_name, ''attachment''),',
 '        NULLIF(TRIM(l_caption), ''''),',
 '        l_latitude, l_longitude,',
 '        NVL(V(''APP_USER''), USER),',
-'        CURRENT_TIMESTAMP',
+'        CURRENT_TIMESTAMP,',
+'        :APP_PAGE_ID                                        -- ADDED',
 '    );',
 '',
 '    COMMIT;',
@@ -1661,7 +1662,8 @@ wwv_flow_imp_page.create_page_process(
 '               TO_CHAR(uploaded_date, ''DD-Mon-YYYY HH24:MI'') AS uploaded_date,',
 '               uploaded_by',
 '        FROM   ptw_pro.ptw_lv_permit_photos',
-'        WHERE  permit_id = l_permit_id',
+'        WHERE  permit_id      = l_permit_id',
+'        AND    source_page_id = :APP_PAGE_ID                    -- ADDED',
 '        ORDER  BY uploaded_date DESC',
 '    ) LOOP',
 '        apex_json.open_object;',

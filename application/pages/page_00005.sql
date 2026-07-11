@@ -214,7 +214,7 @@ wwv_flow_imp_page.create_page(
 ,p_protection_level=>'C'
 ,p_read_only_when_type=>'VAL_OF_ITEM_IN_COND_NOT_EQ_COND2'
 ,p_read_only_when=>'P5_WORKFLOW_STATUS'
-,p_read_only_when2=>'IN_PROGRESS'
+,p_read_only_when2=>'DRAFT'
 ,p_page_component_map=>'25'
 );
 wwv_flow_imp_page.create_page_plug(
@@ -495,7 +495,7 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_position=>'NEXT'
 ,p_warn_on_unsaved_changes=>null
 ,p_button_condition=>'P5_WORKFLOW_STATUS'
-,p_button_condition2=>'IN_PROGRESS'
+,p_button_condition2=>'DRAFT'
 ,p_button_condition_type=>'VAL_OF_ITEM_IN_COND_EQ_COND2'
 ,p_icon_css_classes=>'fa-clipboard-check'
 );
@@ -759,19 +759,31 @@ wwv_flow_imp_page.create_page_item(
 ,p_display_as=>'NATIVE_SELECT_LIST'
 ,p_named_lov=>'PTW_AUTHORISED_PERSONS'
 ,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'SELECT u.first_name || '' '' || u.last_name || '' ('' || u.role_name || '')'' AS display_value,',
-'       u.role_id                                                        AS return_value,',
-'       mobile_no',
-'FROM   ptw_pro.ptw_lv_user_roles u',
+'SELECT DISTINCT',
+'    u.first_name || '' '' || u.last_name     AS display_value,',
+'    u.username                             AS return_value,',
+'    u.mobile_no',
+'FROM   ptw_pro.ptw_lv_user_roles_v  u',
 'WHERE  u.role_name IN (''ADMIN'', ''AUTHORISER'')',
+'AND    u.username <> ''PTW_PRO''',
 'AND    u.is_active = ''Y''',
-'ORDER BY u.last_name, u.first_name;'))
+'AND    u.company_id = (',
+'    CASE',
+'        WHEN V(''G_OVERRIDE_COMPANY_ID'') IS NULL',
+'          OR V(''G_OVERRIDE_COMPANY_ID'') = ''''',
+'        THEN (SELECT company_id',
+'              FROM   ptw_pro.ptw_lv_users',
+'              WHERE  UPPER(username) = UPPER(:APP_USER))',
+'        ELSE TO_NUMBER(V(''G_OVERRIDE_COMPANY_ID''))',
+'    END',
+')',
+'ORDER BY display_value'))
 ,p_lov_display_null=>'YES'
 ,p_lov_null_text=>'-- Select Authorising Person --'
 ,p_cHeight=>1
 ,p_colspan=>6
 ,p_display_when=>'P5_WORKFLOW_STATUS'
-,p_display_when2=>'IN_PROGRESS'
+,p_display_when2=>'DRAFT'
 ,p_display_when_type=>'VAL_OF_ITEM_IN_COND_EQ_COND2'
 ,p_field_template=>1609121967514267634
 ,p_item_template_options=>'#DEFAULT#'
@@ -788,7 +800,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_display_as=>'NATIVE_DISPLAY_ONLY'
 ,p_begin_on_new_line=>'N'
 ,p_display_when=>'P5_WORKFLOW_STATUS'
-,p_display_when2=>'IN_PROGRESS'
+,p_display_when2=>'DRAFT'
 ,p_display_when_type=>'VAL_OF_ITEM_IN_COND_NOT_EQ_COND2'
 ,p_field_template=>1609121967514267634
 ,p_item_template_options=>'#DEFAULT#'
@@ -908,7 +920,7 @@ wwv_flow_imp_page.create_page_da_action(
 '// If read-only, disable canvases after pads have initialised',
 'setTimeout(function() {',
 '    var status = apex.item(''P5_WORKFLOW_STATUS'').getValue();',
-'    if (status !== ''IN_PROGRESS'' && status !== '''') {',
+'    if (status !== ''DRAFT'' && status !== '''') {',
 '        [''authSignaturePad'', ''acceptSignaturePad''].forEach(function(id) {',
 '            var canvas = document.getElementById(id);',
 '            if (canvas) {',
@@ -1025,7 +1037,7 @@ wwv_flow_imp_page.create_page_da_action(
 );
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(37954230775176003)
-,p_name=>'Set Page Read-Only when not IN_PROGRESS'
+,p_name=>'Set Page Read-Only when not DRAFT'
 ,p_event_sequence=>70
 ,p_bind_type=>'bind'
 ,p_bind_event_type=>'ready'
@@ -1218,7 +1230,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 ,p_process_when=>'P5_WORKFLOW_STATUS'
 ,p_process_when_type=>'VAL_OF_ITEM_IN_COND_EQ_COND2'
-,p_process_when2=>'IN_PROGRESS'
+,p_process_when2=>'DRAFT'
 ,p_internal_uid=>27356922514033440
 );
 wwv_flow_imp_page.create_page_process(
@@ -1272,7 +1284,7 @@ wwv_flow_imp_page.create_page_process(
 '    WHEN NO_DATA_FOUND THEN',
 '        :P5_ACCEPT_DATETIME := TO_CHAR(SYSDATE, ''DD-MON-YYYY HH24:MI'');',
 '        :P5_AUTH_DATETIME := TO_CHAR(SYSDATE, ''DD-MON-YYYY HH24:MI'');',
-'        :P5_WORKFLOW_STATUS := ''IN_PROGRESS'';',
+'        :P5_WORKFLOW_STATUS := ''DRAFT'';',
 'END;',
 '',
 'IF :P5_ACCEPT_COMPANY IS NULL AND :P5_ACCEPT_PERSON_NAME IS NULL THEN',

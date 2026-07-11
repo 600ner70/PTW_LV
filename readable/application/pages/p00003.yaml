@@ -114,7 +114,7 @@ javascript:
             { val: 'NA', cls: 'cm-badge-na',  label: 'N/A' }
         ];
     
-        var isReadOnly = (apex.item('P3_WORKFLOW_STATUS').getValue() !== 'IN_PROGRESS');
+        var isReadOnly = (apex.item('P3_WORKFLOW_STATUS').getValue() !== 'DRAFT');
     
         // -------------------------------------------------------
         // CM TRISTATE BADGES
@@ -320,7 +320,7 @@ css:
 read-only: 
   type: Item != Value
   item: P3_WORKFLOW_STATUS
-  value: IN_PROGRESS
+  value: DRAFT
 
 security: 
   authentication: Page Requires Authentication
@@ -2677,7 +2677,7 @@ processes:
     language: PL/SQL
     pl/sql-code: |
       BEGIN
-        IF :P3_WORKFLOW_STATUS = 'IN_PROGRESS' THEN
+        IF :P3_WORKFLOW_STATUS = 'DRAFT' THEN
           -- PART 1: Save PPE to ptw_lv_permits (always UPDATE, record already exists)
           UPDATE ptw_pro.ptw_lv_permits
           SET    ppe_safety_helmet       = :P3_PPE_SAFETY_HELMET,

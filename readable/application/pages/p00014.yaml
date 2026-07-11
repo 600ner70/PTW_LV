@@ -625,10 +625,10 @@ branches:
   behavior: 
     type: Page or URL (Redirect)
     target: 
-      url: 'f?p=&APP_ID.:2:&SESSION.::&DEBUG.:2:P2_PERMIT_ID,P2_WORKFLOW_STATUS:&P14_PERMIT_ID.,IN_PROGRESS'
+      url: 'f?p=&APP_ID.:2:&SESSION.::&DEBUG.:2:P2_PERMIT_ID,P2_WORKFLOW_STATUS:&P14_PERMIT_ID.,DRAFT'
       page: 2 # Site & Work Details
       clear-cache: 2
       values: 
         p2_permit_id: '&P14_PERMIT_ID.'
-        p2_workflow_status: IN_PROGRESS
+        p2_workflow_status: DRAFT
 

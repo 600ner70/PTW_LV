@@ -110,7 +110,7 @@ unistr('        { val: ''N'',  cls: ''cm-badge-no'',  label: ''\2717'' },'),
 '        { val: ''NA'', cls: ''cm-badge-na'',  label: ''N/A'' }',
 '    ];',
 '',
-'    var isReadOnly = (apex.item(''P3_WORKFLOW_STATUS'').getValue() !== ''IN_PROGRESS'');',
+'    var isReadOnly = (apex.item(''P3_WORKFLOW_STATUS'').getValue() !== ''DRAFT'');',
 '',
 '    // -------------------------------------------------------',
 '    // CM TRISTATE BADGES',
@@ -314,7 +314,7 @@ unistr('    // PPE delegated click \2014 edit mode only'),
 ,p_protection_level=>'C'
 ,p_read_only_when_type=>'VAL_OF_ITEM_IN_COND_NOT_EQ_COND2'
 ,p_read_only_when=>'P3_WORKFLOW_STATUS'
-,p_read_only_when2=>'IN_PROGRESS'
+,p_read_only_when2=>'DRAFT'
 ,p_page_component_map=>'16'
 );
 wwv_flow_imp_page.create_page_plug(
@@ -1078,7 +1078,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Save Control Measures and PPE Data'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'BEGIN',
-'  IF :P3_WORKFLOW_STATUS = ''IN_PROGRESS'' THEN',
+'  IF :P3_WORKFLOW_STATUS = ''DRAFT'' THEN',
 '    -- PART 1: Save PPE to ptw_lv_permits (always UPDATE, record already exists)',
 '    UPDATE ptw_pro.ptw_lv_permits',
 '    SET    ppe_safety_helmet       = :P3_PPE_SAFETY_HELMET,',
