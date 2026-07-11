@@ -362,17 +362,18 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_name=>'Super User check'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'BEGIN',
-'        SELECT CASE WHEN is_super_user = ''Y''',
-'                    THEN TO_NUMBER(V(''G_OVERRIDE_COMPANY_ID''))',
-'                    ELSE company_id',
-'               END',
-'        INTO   :P29_COMPANY_ID',
-'        FROM   ptw_pro.ptw_lv_users',
-'        WHERE  UPPER(username) = UPPER(:APP_USER)',
-'        AND    is_active = ''Y'';',
+'    SELECT CASE',
+'               WHEN is_super_user = ''Y'' AND (V(''G_OVERRIDE_COMPANY_ID'') IS NULL OR V(''G_OVERRIDE_COMPANY_ID'') = '''')',
+'                   THEN NULL',
+'               WHEN is_super_user = ''Y''',
+'                   THEN TO_NUMBER(V(''G_OVERRIDE_COMPANY_ID''))',
+'               ELSE company_id',
+'           END',
+'    INTO :P29_COMPANY_ID',
+'    FROM ptw_pro.ptw_lv_users',
+'    WHERE UPPER(username) = UPPER(:APP_USER) AND is_active = ''Y'';',
 'EXCEPTION',
 '    WHEN NO_DATA_FOUND THEN :P29_COMPANY_ID := NULL;',
-'    WHEN OTHERS        THEN :P29_COMPANY_ID := NULL;',
 'END;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_process_when=>'P29_TEAM_ID'
