@@ -1008,7 +1008,7 @@ wwv_flow_imp_page.create_report_region(
 '',
 '    -- Status display label',
 '    CASE p.workflow_status',
-'        WHEN ''IN_PROGRESS'' THEN ''In Progress''',
+'        WHEN ''DRAFT''       THEN ''Draft''',
 '        WHEN ''SUSPENDED''   THEN ''Suspended''',
 '        WHEN ''COMPLETED''   THEN ''Completed''',
 '        WHEN ''CANCELLED''   THEN ''Cancelled''',
