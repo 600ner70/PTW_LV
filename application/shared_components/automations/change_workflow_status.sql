@@ -35,7 +35,7 @@ wwv_flow_imp_shared.create_automation_action(
 'declare',
 '  l_permit_id ptw_pro.ptw_lv_permits.permit_id%TYPE;',
 'begin',
-'  ptw_pro.ptw_sec_pkg.set_system_context;    -- ADDED: bypass VPD for this trusted housekeeping job',
+'  apex_util.set_session_state(''APP_USER'', ''PTW_PRO'');   -- ADDED',
 '',
 '  FOR rec_permits IN (SELECT permit_id',
 '                      FROM   ptw_pro.ptw_lv_permits',
