@@ -96,7 +96,7 @@ regions:
     type: Static Content
 
   layout: 
-    sequence: 30
+    sequence: 40
     parent-region: No Parent
     slot: BODY
     start-new-layout: false
@@ -595,6 +595,36 @@ page-items:
   help: 
     inline-help-text: Number of engineers currently assigned
 
+- # ====== Page Item: P29_COMPANY_ID ===========================
+  id: 53190083971153124
+  identification: 
+    name: P29_COMPANY_ID
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 30
+    region: No Parent
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
 buttons: 
 - # ====== Button: CANCEL ======================================
   id: 53155537068466124
@@ -695,21 +725,15 @@ validations:
     pl/sql-function-body-returning-error-text: |
       DECLARE
           v_count NUMBER;
-          v_company_id NUMBER;
       BEGIN
-          SELECT company_id INTO v_company_id
-          FROM   ptw_pro.ptw_lv_users
-          WHERE  UPPER(username) = UPPER(SYS_CONTEXT('APEX$SESSION', 'APP_USER'))
-          AND    is_super_user = 'N';
-      
           SELECT COUNT(*) INTO v_count
           FROM   ptw_pro.ptw_lv_teams
           WHERE  UPPER(team_name) = UPPER(:P29_TEAM_NAME)
-          AND    company_id = v_company_id
+          AND    company_id = :P29_COMPANY_ID
           AND    (team_id != :P29_TEAM_ID OR :P29_TEAM_ID IS NULL);
       
           IF v_count > 0 THEN
-            RETURN 'Company Code Must Be Unique.';
+              RETURN 'This Team Name is already in use for this company. Please choose a different name.';
           END IF;
       END;
     always-execute: false
@@ -717,6 +741,34 @@ validations:
   error: 
     display-location: Inline with Field and in Notification
     associated-item: P29_TEAM_NAME # 53154959043466118
+
+  server-side-condition: 
+    when-button-pressed: SAVE # 53155632757466125
+
+- # ====== Validation: Company required for Super User =========
+  id: 53190184013153125
+  identification: 
+    name: Company required for Super User
+
+  execution: 
+    sequence: 30
+
+  validation: 
+    type: Function Body (returning Error Text)
+    language: PL/SQL
+    pl/sql-function-body-returning-error-text: |
+      BEGIN
+          IF :P29_COMPANY_ID IS NULL THEN
+              RETURN 'Unable to determine which company this team belongs to. '
+                  || 'If you are a Super User, please select an Active Company '
+                  || '(Admin > Set Active Company) before creating a team.';
+          END IF;
+          RETURN NULL;
+      END;
+    always-execute: false
+
+  error: 
+    display-location: Inline with Field and in Notification
 
   server-side-condition: 
     when-button-pressed: SAVE # 53155632757466125
@@ -733,35 +785,45 @@ processes:
     location: Local Database
     language: PL/SQL
     pl/sql-code: |
-      DECLARE
-          v_company_id NUMBER;
       BEGIN
-          SELECT company_id
-          INTO   v_company_id
-          FROM   ptw_pro.ptw_lv_users
-          WHERE  UPPER(username) = UPPER(SYS_CONTEXT('APEX$SESSION', 'APP_USER'))
-          AND    is_super_user   = 'N'
-          AND    is_active       = 'Y';
-      
           IF :P29_TEAM_ID IS NULL THEN
+      
+              -- CREATE: company_id comes from P29_COMPANY_ID, resolved earlier by
+              -- "Determine Effective Company" and guaranteed NOT NULL by the
+              -- "Company Required for Super User" validation before we ever get here.
               INSERT INTO ptw_pro.ptw_lv_teams (company_id, team_name, is_active)
-              VALUES (v_company_id, :P29_TEAM_NAME, :P29_IS_ACTIVE)
+              VALUES (:P29_COMPANY_ID, :P29_TEAM_NAME, :P29_IS_ACTIVE)
               RETURNING team_id INTO :P29_TEAM_ID;
+      
           ELSE
+      
+              -- UPDATE: company_id is intentionally NOT in the SET list.
+              -- A team's company is fixed at creation; this form has no control
+              -- to reassign it, and the VPD policy's update_check would reject
+              -- a cross-company UPDATE attempt anyway.
               UPDATE ptw_pro.ptw_lv_teams
-              SET    team_name    = :P29_TEAM_NAME,
-                     is_active    = :P29_IS_ACTIVE,
+              SET    team_name     = :P29_TEAM_NAME,
+                     is_active     = :P29_IS_ACTIVE,
                      modified_date = SYSTIMESTAMP,
                      modified_by   = :APP_USER
               WHERE  team_id = :P29_TEAM_ID;
+      
           END IF;
+      
       EXCEPTION
-          WHEN NO_DATA_FOUND THEN
+          WHEN DUP_VAL_ON_INDEX THEN
+              -- Belt-and-braces: UQ_PTW_LV_TEAMS (company_id, team_name) catches
+              -- any race condition the app-level uniqueness validation missed
+              -- (e.g. two concurrent saves). Same friendly message either way.
               apex_error.add_error(
-                  p_message          => 'Unable to determine your company. Contact an administrator.',
+                  p_message          => 'This Team Name is already in use for this company. Please choose a different name.',
+                  p_display_location => apex_error.c_inline_in_notification);
+      
+          WHEN OTHERS THEN
+              apex_error.add_error(
+                  p_message          => 'Unable to save team: ' || SQLERRM,
                   p_display_location => apex_error.c_inline_in_notification);
       END;
-      
 
   execution: 
     sequence: 10
@@ -787,9 +849,11 @@ processes:
     pl/sql-code: |
       SELECT team_name,
              is_Active,
+             company_id,
              created_date
       INTO   :P29_TEAM_NAME,
              :P29_IS_ACTIVE,
+             :P29_COMPANY_ID,
              :P29_CREATED_DATE
       FROM   ptw_pro.ptw_lv_teams
       WHERE  team_id = :P29_TEAM_ID;
@@ -801,6 +865,40 @@ processes:
 
   server-side-condition: 
     type: Item is NOT NULL
+    item: P29_TEAM_ID
+
+- # ====== Process: Super User check ===========================
+  id: 53189921635153123
+  identification: 
+    name: Super User check
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      BEGIN
+              SELECT CASE WHEN is_super_user = 'Y'
+                          THEN TO_NUMBER(V('G_OVERRIDE_COMPANY_ID'))
+                          ELSE company_id
+                     END
+              INTO   :P29_COMPANY_ID
+              FROM   ptw_pro.ptw_lv_users
+              WHERE  UPPER(username) = UPPER(:APP_USER)
+              AND    is_active = 'Y';
+      EXCEPTION
+          WHEN NO_DATA_FOUND THEN :P29_COMPANY_ID := NULL;
+          WHEN OTHERS        THEN :P29_COMPANY_ID := NULL;
+      END;
+
+  execution: 
+    sequence: 20
+    point: After Header
+    run-process: Once Per Page Visit (default)
+
+  server-side-condition: 
+    type: Item is NULL
     item: P29_TEAM_ID
 
 branches: 

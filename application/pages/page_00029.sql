@@ -74,7 +74,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_name=>'Edit Team'
 ,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>30
+,p_plug_display_sequence=>40
 ,p_location=>null
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
@@ -269,6 +269,14 @@ wwv_flow_imp_page.create_page_item(
   'send_on_page_submit', 'Y',
   'show_line_breaks', 'Y')).to_clob
 );
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(53190083971153124)
+,p_name=>'P29_COMPANY_ID'
+,p_item_sequence=>30
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+);
 wwv_flow_imp_page.create_page_validation(
  p_id=>wwv_flow_imp.id(53156352428466132)
 ,p_validation_name=>'Team name required'
@@ -289,27 +297,39 @@ wwv_flow_imp_page.create_page_validation(
 ,p_validation=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'DECLARE',
 '    v_count NUMBER;',
-'    v_company_id NUMBER;',
 'BEGIN',
-'    SELECT company_id INTO v_company_id',
-'    FROM   ptw_pro.ptw_lv_users',
-'    WHERE  UPPER(username) = UPPER(SYS_CONTEXT(''APEX$SESSION'', ''APP_USER''))',
-'    AND    is_super_user = ''N'';',
-'',
 '    SELECT COUNT(*) INTO v_count',
 '    FROM   ptw_pro.ptw_lv_teams',
 '    WHERE  UPPER(team_name) = UPPER(:P29_TEAM_NAME)',
-'    AND    company_id = v_company_id',
+'    AND    company_id = :P29_COMPANY_ID',
 '    AND    (team_id != :P29_TEAM_ID OR :P29_TEAM_ID IS NULL);',
 '',
 '    IF v_count > 0 THEN',
-'      RETURN ''Company Code Must Be Unique.'';',
+'        RETURN ''This Team Name is already in use for this company. Please choose a different name.'';',
 '    END IF;',
 'END;'))
 ,p_validation2=>'PLSQL'
 ,p_validation_type=>'FUNC_BODY_RETURNING_ERR_TEXT'
 ,p_when_button_pressed=>wwv_flow_imp.id(53155632757466125)
 ,p_associated_item=>wwv_flow_imp.id(53154959043466118)
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+);
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(53190184013153125)
+,p_validation_name=>'Company required for Super User'
+,p_validation_sequence=>30
+,p_validation=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'BEGIN',
+'    IF :P29_COMPANY_ID IS NULL THEN',
+'        RETURN ''Unable to determine which company this team belongs to. ''',
+'            || ''If you are a Super User, please select an Active Company ''',
+'            || ''(Admin > Set Active Company) before creating a team.'';',
+'    END IF;',
+'    RETURN NULL;',
+'END;'))
+,p_validation2=>'PLSQL'
+,p_validation_type=>'FUNC_BODY_RETURNING_ERR_TEXT'
+,p_when_button_pressed=>wwv_flow_imp.id(53155632757466125)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_process(
@@ -321,9 +341,11 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'SELECT team_name,',
 '       is_Active,',
+'       company_id,',
 '       created_date',
 'INTO   :P29_TEAM_NAME,',
 '       :P29_IS_ACTIVE,',
+'       :P29_COMPANY_ID,',
 '       :P29_CREATED_DATE',
 'FROM   ptw_pro.ptw_lv_teams',
 'WHERE  team_id = :P29_TEAM_ID;'))
@@ -333,41 +355,76 @@ wwv_flow_imp_page.create_page_process(
 ,p_internal_uid=>53189108372153115
 );
 wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(53189921635153123)
+,p_process_sequence=>20
+,p_process_point=>'AFTER_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Super User check'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'BEGIN',
+'        SELECT CASE WHEN is_super_user = ''Y''',
+'                    THEN TO_NUMBER(V(''G_OVERRIDE_COMPANY_ID''))',
+'                    ELSE company_id',
+'               END',
+'        INTO   :P29_COMPANY_ID',
+'        FROM   ptw_pro.ptw_lv_users',
+'        WHERE  UPPER(username) = UPPER(:APP_USER)',
+'        AND    is_active = ''Y'';',
+'EXCEPTION',
+'    WHEN NO_DATA_FOUND THEN :P29_COMPANY_ID := NULL;',
+'    WHEN OTHERS        THEN :P29_COMPANY_ID := NULL;',
+'END;'))
+,p_process_clob_language=>'PLSQL'
+,p_process_when=>'P29_TEAM_ID'
+,p_process_when_type=>'ITEM_IS_NULL'
+,p_internal_uid=>53189921635153123
+);
+wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(53156211220466131)
 ,p_process_sequence=>10
 ,p_process_point=>'AFTER_SUBMIT'
 ,p_process_type=>'NATIVE_PLSQL'
 ,p_process_name=>'Save Team'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'DECLARE',
-'    v_company_id NUMBER;',
 'BEGIN',
-'    SELECT company_id',
-'    INTO   v_company_id',
-'    FROM   ptw_pro.ptw_lv_users',
-'    WHERE  UPPER(username) = UPPER(SYS_CONTEXT(''APEX$SESSION'', ''APP_USER''))',
-'    AND    is_super_user   = ''N''',
-'    AND    is_active       = ''Y'';',
-'',
 '    IF :P29_TEAM_ID IS NULL THEN',
+'',
+'        -- CREATE: company_id comes from P29_COMPANY_ID, resolved earlier by',
+'        -- "Determine Effective Company" and guaranteed NOT NULL by the',
+'        -- "Company Required for Super User" validation before we ever get here.',
 '        INSERT INTO ptw_pro.ptw_lv_teams (company_id, team_name, is_active)',
-'        VALUES (v_company_id, :P29_TEAM_NAME, :P29_IS_ACTIVE)',
+'        VALUES (:P29_COMPANY_ID, :P29_TEAM_NAME, :P29_IS_ACTIVE)',
 '        RETURNING team_id INTO :P29_TEAM_ID;',
+'',
 '    ELSE',
+'',
+'        -- UPDATE: company_id is intentionally NOT in the SET list.',
+'        -- A team''s company is fixed at creation; this form has no control',
+'        -- to reassign it, and the VPD policy''s update_check would reject',
+'        -- a cross-company UPDATE attempt anyway.',
 '        UPDATE ptw_pro.ptw_lv_teams',
-'        SET    team_name    = :P29_TEAM_NAME,',
-'               is_active    = :P29_IS_ACTIVE,',
+'        SET    team_name     = :P29_TEAM_NAME,',
+'               is_active     = :P29_IS_ACTIVE,',
 '               modified_date = SYSTIMESTAMP,',
 '               modified_by   = :APP_USER',
 '        WHERE  team_id = :P29_TEAM_ID;',
+'',
 '    END IF;',
+'',
 'EXCEPTION',
-'    WHEN NO_DATA_FOUND THEN',
+'    WHEN DUP_VAL_ON_INDEX THEN',
+'        -- Belt-and-braces: UQ_PTW_LV_TEAMS (company_id, team_name) catches',
+'        -- any race condition the app-level uniqueness validation missed',
+'        -- (e.g. two concurrent saves). Same friendly message either way.',
 '        apex_error.add_error(',
-'            p_message          => ''Unable to determine your company. Contact an administrator.'',',
+'            p_message          => ''This Team Name is already in use for this company. Please choose a different name.'',',
 '            p_display_location => apex_error.c_inline_in_notification);',
-'END;',
-''))
+'',
+'    WHEN OTHERS THEN',
+'        apex_error.add_error(',
+'            p_message          => ''Unable to save team: '' || SQLERRM,',
+'            p_display_location => apex_error.c_inline_in_notification);',
+'END;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 ,p_process_when_button_id=>wwv_flow_imp.id(53155632757466125)

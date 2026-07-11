@@ -984,7 +984,6 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(27018457939886535)
 ,p_name=>'P4_ISO_1_EQUIPMENT'
-,p_is_required=>true
 ,p_item_sequence=>10
 ,p_item_plug_id=>wwv_flow_imp.id(27018342698886534)
 ,p_prompt=>'Equipment Isolated (Row 1)'
@@ -1003,7 +1002,6 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(27018568710886536)
 ,p_name=>'P4_ISO_1_MEANS'
-,p_is_required=>true
 ,p_item_sequence=>20
 ,p_item_plug_id=>wwv_flow_imp.id(27018342698886534)
 ,p_prompt=>'Means of Isolation (Row 1)'
@@ -1023,7 +1021,6 @@ wwv_flow_imp_page.create_page_item(
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(27018618101886537)
 ,p_name=>'P4_ISO_1_LOCK_NO'
-,p_is_required=>true
 ,p_item_sequence=>30
 ,p_item_plug_id=>wwv_flow_imp.id(27018342698886534)
 ,p_prompt=>'Safety Lock No. (Row 1)'
@@ -1213,13 +1210,15 @@ wwv_flow_imp_page.create_page_item(
 ,p_name=>'P4_COMMENTS'
 ,p_item_sequence=>10
 ,p_item_plug_id=>wwv_flow_imp.id(27019604951886547)
-,p_prompt=>'Comments and references to associated safety documentation, including risk assessments, method statements and other permits. '
+,p_prompt=>'Comments'
 ,p_display_as=>'NATIVE_TEXTAREA'
 ,p_cSize=>30
 ,p_cMaxlength=>4000
 ,p_cHeight=>5
-,p_field_template=>1609121967514267634
-,p_item_template_options=>'#DEFAULT#'
+,p_colspan=>12
+,p_field_template=>3031561666792084173
+,p_item_template_options=>'#DEFAULT#:t-Form-fieldContainer--stretchInputs'
+,p_help_text=>'Comments and references to associated safety documentation, including risk assessments, method statements and other permits. '
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'auto_height', 'N',
   'character_counter', 'N',
@@ -1259,6 +1258,39 @@ wwv_flow_imp_page.create_page_validation(
 ,p_validation=>'P4_PERMIT_ID'
 ,p_validation_type=>'ITEM_NOT_NULL'
 ,p_error_message=>'Permit ID is required.'
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+);
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(53190227182153126)
+,p_validation_name=>'Record 1 equipment desc required'
+,p_validation_sequence=>20
+,p_validation=>'P4_ISO_1_EQUIPMENT'
+,p_validation_type=>'ITEM_NOT_NULL'
+,p_error_message=>'At least one isolation record is required.'
+,p_when_button_pressed=>wwv_flow_imp.id(27353109498033402)
+,p_associated_item=>wwv_flow_imp.id(27018457939886535)
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+);
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(53190315878153127)
+,p_validation_name=>'Record 1 means of isolation required'
+,p_validation_sequence=>30
+,p_validation=>'P4_ISO_1_MEANS'
+,p_validation_type=>'ITEM_NOT_NULL'
+,p_error_message=>'At least one isolation record is required.'
+,p_when_button_pressed=>wwv_flow_imp.id(27353109498033402)
+,p_associated_item=>wwv_flow_imp.id(27018568710886536)
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+);
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(53190425232153128)
+,p_validation_name=>'Record 1 lock no is required'
+,p_validation_sequence=>40
+,p_validation=>'P4_ISO_1_LOCK_NO'
+,p_validation_type=>'ITEM_NOT_NULL'
+,p_error_message=>'At least one isolation record is required.'
+,p_when_button_pressed=>wwv_flow_imp.id(27353109498033402)
+,p_associated_item=>wwv_flow_imp.id(27018618101886537)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 );
 wwv_flow_imp_page.create_page_da_event(

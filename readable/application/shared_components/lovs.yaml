@@ -99,7 +99,7 @@
     name: PTW_AUTHORISED_PERSONS
 
   subscription: 
-    version-number: 47332139550510
+    version-number: 49919734007516
 
   source: 
     location: Local Database
@@ -114,9 +114,14 @@
       AND    u.username <> 'PTW_PRO'
       AND    u.is_active = 'Y'
       AND    u.company_id = (
-          SELECT company_id
-          FROM   ptw_pro.ptw_lv_users
-          WHERE  UPPER(username) = UPPER(:APP_USER)
+          CASE
+              WHEN V('G_OVERRIDE_COMPANY_ID') IS NULL
+                OR V('G_OVERRIDE_COMPANY_ID') = ''
+              THEN (SELECT company_id
+                    FROM   ptw_pro.ptw_lv_users
+                    WHERE  UPPER(username) = UPPER(:APP_USER))
+              ELSE TO_NUMBER(V('G_OVERRIDE_COMPANY_ID'))
+          END
       )
       ORDER BY display_value
 

@@ -24,9 +24,14 @@ wwv_flow_imp_shared.create_list_of_values(
 'AND    u.username <> ''PTW_PRO''',
 'AND    u.is_active = ''Y''',
 'AND    u.company_id = (',
-'    SELECT company_id',
-'    FROM   ptw_pro.ptw_lv_users',
-'    WHERE  UPPER(username) = UPPER(:APP_USER)',
+'    CASE',
+'        WHEN V(''G_OVERRIDE_COMPANY_ID'') IS NULL',
+'          OR V(''G_OVERRIDE_COMPANY_ID'') = ''''',
+'        THEN (SELECT company_id',
+'              FROM   ptw_pro.ptw_lv_users',
+'              WHERE  UPPER(username) = UPPER(:APP_USER))',
+'        ELSE TO_NUMBER(V(''G_OVERRIDE_COMPANY_ID''))',
+'    END',
 ')',
 'ORDER BY display_value'))
 ,p_source_type=>'SQL'
@@ -35,7 +40,7 @@ wwv_flow_imp_shared.create_list_of_values(
 ,p_display_column_name=>'DISPLAY_VALUE'
 ,p_group_sort_direction=>'ASC'
 ,p_default_sort_direction=>'ASC'
-,p_version_scn=>47332139550510
+,p_version_scn=>49919734007516
 );
 wwv_flow_imp.component_end;
 end;

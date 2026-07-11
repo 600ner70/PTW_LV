@@ -1380,7 +1380,7 @@ page-items:
     width: 30
 
   validation: 
-    value-required: true
+    value-required: false
     maximum-length: 200
 
   advanced: 
@@ -1437,7 +1437,7 @@ page-items:
     width: 30
 
   validation: 
-    value-required: true
+    value-required: false
     maximum-length: 200
 
   advanced: 
@@ -1494,7 +1494,7 @@ page-items:
     width: 30
 
   validation: 
-    value-required: true
+    value-required: false
     maximum-length: 50
 
   advanced: 
@@ -2035,7 +2035,7 @@ page-items:
     type: Textarea
 
   label: 
-    label: 'Comments and references to associated safety documentation, including risk assessments, method statements and other permits. '
+    label: Comments
     alignment: Left
 
   settings: 
@@ -2053,13 +2053,14 @@ page-items:
     start-new-row: true
     column: Automatic
     new-column: true
-    column-span: Automatic
+    column-span: 12
     label-column-span: Page Template Default
 
   appearance: 
-    template: Optional - Floating
+    template: Optional - Above
     template-options: 
     - '#DEFAULT#'
+    - t-Form-fieldContainer--stretchInputs
     width: 30
     height: 5
 
@@ -2085,6 +2086,9 @@ page-items:
     session-state-protection: Unrestricted
     store-value-encrypted-in-session-state: true
     restricted-characters: All characters can be saved.
+
+  help: 
+    help-text: 'Comments and references to associated safety documentation, including risk assessments, method statements and other permits. '
 
 - # ====== Page Item: P4_IS_CHANGED ============================
   id: 30143438995642703
@@ -2394,6 +2398,69 @@ validations:
   error: 
     error-message: Permit ID is required.
     display-location: Inline with Field and in Notification
+
+- # ====== Validation: Record 1 equipment desc required ========
+  id: 53190227182153126
+  identification: 
+    name: Record 1 equipment desc required
+
+  execution: 
+    sequence: 20
+
+  validation: 
+    type: Item is NOT NULL
+    item: P4_ISO_1_EQUIPMENT
+    always-execute: false
+
+  error: 
+    error-message: At least one isolation record is required.
+    display-location: Inline with Field and in Notification
+    associated-item: P4_ISO_1_EQUIPMENT # 27018457939886535
+
+  server-side-condition: 
+    when-button-pressed: NEXT_STEP # 27353109498033402
+
+- # ====== Validation: Record 1 means of isolation required ====
+  id: 53190315878153127
+  identification: 
+    name: Record 1 means of isolation required
+
+  execution: 
+    sequence: 30
+
+  validation: 
+    type: Item is NOT NULL
+    item: P4_ISO_1_MEANS
+    always-execute: false
+
+  error: 
+    error-message: At least one isolation record is required.
+    display-location: Inline with Field and in Notification
+    associated-item: P4_ISO_1_MEANS # 27018568710886536
+
+  server-side-condition: 
+    when-button-pressed: NEXT_STEP # 27353109498033402
+
+- # ====== Validation: Record 1 lock no is required ============
+  id: 53190425232153128
+  identification: 
+    name: Record 1 lock no is required
+
+  execution: 
+    sequence: 40
+
+  validation: 
+    type: Item is NOT NULL
+    item: P4_ISO_1_LOCK_NO
+    always-execute: false
+
+  error: 
+    error-message: At least one isolation record is required.
+    display-location: Inline with Field and in Notification
+    associated-item: P4_ISO_1_LOCK_NO # 27018618101886537
+
+  server-side-condition: 
+    when-button-pressed: NEXT_STEP # 27353109498033402
 
 processes: 
 - # ====== Process: Load Equipment Isolation Data ==============
