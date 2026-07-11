@@ -28,19 +28,17 @@
         declare
           l_permit_id ptw_pro.ptw_lv_permits.permit_id%TYPE;
         begin
+          ptw_pro.ptw_sec_pkg.set_system_context;    -- ADDED: bypass VPD for this trusted housekeeping job
+        
           FOR rec_permits IN (SELECT permit_id
                               FROM   ptw_pro.ptw_lv_permits
                               WHERE  workflow_status = 'STARTED'
                               AND    ended_datetime < SYSDATE) LOOP
-            --
             UPDATE ptw_pro.ptw_lv_permits
             SET    workflow_status = 'LAPSED'
             WHERE  permit_id = rec_permits.permit_id;
-            --
           END LOOP;
-          --
           COMMIT;
-          --
         end;
 
     execution: 
