@@ -103,11 +103,5 @@ EXCEPTION
             'Access denied: unable to verify user company.');
 END check_user_in_company;
 
-PROCEDURE set_system_context IS
-BEGIN
-    DBMS_SESSION.SET_CONTEXT('PTW_SEC_CTX', 'IS_SUPER_USER', 'Y');
-    DBMS_SESSION.SET_CONTEXT('PTW_SEC_CTX', 'COMPANY_ID', NULL);
-END set_system_context;
-
 END ptw_sec_pkg;
 /

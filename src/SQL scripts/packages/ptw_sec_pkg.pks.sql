@@ -17,8 +17,5 @@
     -- before acting on a user_id passed via page item.
     PROCEDURE check_user_in_company(p_username IN VARCHAR2);
 
-    PROCEDURE set_system_context;
-
-
 END ptw_sec_pkg;
 /
