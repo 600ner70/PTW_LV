@@ -32,21 +32,21 @@ wwv_flow_imp_shared.create_automation_action(
 ,p_execution_sequence=>10
 ,p_action_type=>'NATIVE_PLSQL'
 ,p_action_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'declare',
-'  l_permit_id ptw_pro.ptw_lv_permits.permit_id%TYPE;',
-'begin',
-'  apex_util.set_session_state(''APP_USER'', ''PTW_PRO'');   -- ADDED',
+'DECLARE',
+'BEGIN',
+'  apex_session.create_session(',
+'    p_app_id   => 105,',
+'    p_page_id  => 0,',
+'    p_username => ''SYSTEM_AUTOMATION''',
+'  );',
 '',
-'  FOR rec_permits IN (SELECT permit_id',
-'                      FROM   ptw_pro.ptw_lv_permits',
-'                      WHERE  workflow_status = ''STARTED''',
-'                      AND    ended_datetime < SYSDATE) LOOP',
-'    UPDATE ptw_pro.ptw_lv_permits',
-'    SET    workflow_status = ''LAPSED''',
-'    WHERE  permit_id = rec_permits.permit_id;',
-'  END LOOP;',
+'  UPDATE ptw_pro.ptw_lv_permits',
+'  SET    workflow_status = ''LAPSED''',
+'  WHERE  workflow_status = ''STARTED''',
+'  AND    ended_datetime < SYSDATE;',
+'',
 '  COMMIT;',
-'end;'))
+'END;'))
 ,p_action_clob_language=>'PLSQL'
 ,p_location=>'LOCAL'
 ,p_error_message=>'Error with permit clear-up job. Please contact support.'
