@@ -26,7 +26,7 @@
     END AS status_colour,
     NVL(p.supervising_company,   'Unknown') AS company,
     NVL(p.person_in_charge_name, 'Unknown') AS person_in_charge,
-    NVL(p.site_details,          'Unknown') AS site_details,
+    NVL(COALESCE(s.site_name, p.site_details),          'Unknown') AS site_details,
     p.area_of_works,
     p.work_description,
     p.created_by,
@@ -47,4 +47,5 @@
     TRUNC(p.created_date, 'DD') AS group_daily,
     TRUNC(p.created_date, 'IW') AS group_weekly,
     TRUNC(p.created_date, 'MM') AS group_monthly
-FROM ptw_pro.ptw_lv_permits p;
+FROM ptw_pro.ptw_lv_permits p
+LEFT JOIN ptw_pro.ptw_lv_sites s ON s.site_id = p.site_id;

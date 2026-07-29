@@ -14,6 +14,7 @@ IS
     v_logo_blob  BLOB;
     v_logo_mime  VARCHAR2(100) := 'image/png';
     v_logo_b64   CLOB;
+    v_site_name  VARCHAR2(500);
 
     CURSOR c_isolation IS
         SELECT *
@@ -215,6 +216,17 @@ BEGIN
             v_auth_person_fullname := v_permit.auth_person_name;
     END;
 
+    BEGIN
+        SELECT site_name 
+        INTO   v_site_name
+        FROM   ptw_pro.ptw_lv_sites 
+        WHERE  site_id IN (SELECT site_id FROM ptw_pro.ptw_lv_permits 
+                           WHERE  permit_id = v_permit.permit_id);
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+          v_site_name := v_permit.site_details;
+    END;
+
     -- ============================================================
     -- HTML DOCUMENT + CSS
     -- ============================================================
@@ -395,7 +407,7 @@ BEGIN
         <div class="ptw-lv-section-title">Site &amp; Work Details</div>
         <div class="ptw-lv-row">
             <div class="ptw-lv-label">Site details and area of works:</div>
-            <div class="ptw-lv-value">' || safe_val(v_permit.site_details) || '</div>
+            <div class="ptw-lv-value">' || safe_val(v_site_name||' - '||v_permit.area_of_works) || '</div>
         </div>
         <div class="ptw-lv-row">
             <div class="ptw-lv-label">Description of work activity:</div>
@@ -744,6 +756,33 @@ BEGIN
     -- ============================================================
     -- CANCELLATION
     -- ============================================================
+    DECLARE
+        r ptw_pro.ptw_lv_cancellation_reason_v%ROWTYPE;
+    BEGIN
+        SELECT * INTO r FROM ptw_pro.ptw_lv_cancellation_reason_v WHERE permit_id = v_permit.permit_id;
+
+        IF r.is_concern_cancellation = 'Y' THEN
+            v_html := v_html || '
+            <div class="ptw-lv-section">
+                <div class="ptw-lv-section-title">Reason for Cancellation</div>
+                <div class="ptw-lv-row"><div class="ptw-lv-label">Check failed:</div>
+                    <div class="ptw-lv-value">' || safe_val(r.check_label) || '</div></div>
+                <div class="ptw-lv-row"><div class="ptw-lv-label">Concern raised:</div>
+                    <div class="ptw-lv-value">' || safe_val(r.concern_description) || '</div></div>
+                <div class="ptw-lv-row"><div class="ptw-lv-label">Action taken:</div>
+                    <div class="ptw-lv-value">' || safe_val(r.actions_taken) || '</div></div>
+                <div class="ptw-lv-row"><div class="ptw-lv-label">Reported by:</div>
+                    <div class="ptw-lv-value">' || safe_val(r.concern_person_name) || '</div></div>
+                <div class="ptw-lv-row"><div class="ptw-lv-label">Date &amp; Time:</div>
+                    <div class="ptw-lv-value">' || fmt_datetime(r.concern_datetime) || '</div></div>
+                <div class="ptw-lv-row"><div class="ptw-lv-label">Signature:</div>
+                    <div class="ptw-lv-value"><div class="signature-box">'
+                    || get_signature_img(r.concern_signature) || '</div></div></div>
+            </div>';
+        END IF;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN NULL;
+    END;
     v_html := v_html || '
     <div class="ptw-lv-section">
         <div class="ptw-lv-section-title">Cancellation of this Permit to Work</div>

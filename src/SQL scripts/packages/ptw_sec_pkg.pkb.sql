@@ -57,51 +57,81 @@
     END company_policy;
 
 
-PROCEDURE check_user_in_company(p_username IN VARCHAR2) IS
-    v_target_company NUMBER;
-    v_caller_company NUMBER;
-    v_caller_super   VARCHAR2(1);
-    v_override       VARCHAR2(50);
-BEGIN
-    -- Workspace admins always allowed
-    IF APEX_UTIL.CURRENT_USER_IN_GROUP('Administrators') THEN
-        RETURN;
-    END IF;
-
-    SELECT company_id, is_super_user
-    INTO   v_caller_company, v_caller_super
-    FROM   ptw_pro.ptw_lv_users
-    WHERE  UPPER(username) = UPPER(SYS_CONTEXT('APEX$SESSION', 'APP_USER'));
-
-    IF v_caller_super = 'Y' THEN
-        v_override := V('G_OVERRIDE_COMPANY_ID');
-        IF v_override IS NULL OR v_override = '' THEN
-            RETURN; -- super user, no override: unrestricted
+    PROCEDURE check_user_in_company(p_username IN VARCHAR2) IS
+        v_target_company NUMBER;
+        v_caller_company NUMBER;
+        v_caller_super   VARCHAR2(1);
+        v_override       VARCHAR2(50);
+    BEGIN
+        -- Workspace admins always allowed
+        IF APEX_UTIL.CURRENT_USER_IN_GROUP('Administrators') THEN
+            RETURN;
         END IF;
-        v_caller_company := TO_NUMBER(v_override);
-    END IF;
 
-    SELECT company_id
-    INTO   v_target_company
-    FROM   ptw_pro.ptw_lv_users
-    WHERE  UPPER(username) = UPPER(p_username);
+        SELECT company_id, is_super_user
+        INTO   v_caller_company, v_caller_super
+        FROM   ptw_pro.ptw_lv_users
+        WHERE  UPPER(username) = UPPER(SYS_CONTEXT('APEX$SESSION', 'APP_USER'));
 
-    IF v_target_company IS NULL OR v_target_company != v_caller_company THEN
-        RAISE_APPLICATION_ERROR(-20002,
-            'Access denied: this user does not belong to your company.');
-    END IF;
-
-EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-        RAISE_APPLICATION_ERROR(-20002,
-            'Access denied: user not found or not permitted.');
-    WHEN OTHERS THEN
-        IF SQLCODE = -20002 THEN
-            RAISE;
+        IF v_caller_super = 'Y' THEN
+            v_override := V('G_OVERRIDE_COMPANY_ID');
+            IF v_override IS NULL OR v_override = '' THEN
+                RETURN; -- super user, no override: unrestricted
+            END IF;
+            v_caller_company := TO_NUMBER(v_override);
         END IF;
-        RAISE_APPLICATION_ERROR(-20002,
-            'Access denied: unable to verify user company.');
-END check_user_in_company;
+
+        SELECT company_id
+        INTO   v_target_company
+        FROM   ptw_pro.ptw_lv_users
+        WHERE  UPPER(username) = UPPER(p_username);
+
+        IF v_target_company IS NULL OR v_target_company != v_caller_company THEN
+            RAISE_APPLICATION_ERROR(-20002,
+                'Access denied: this user does not belong to your company.');
+        END IF;
+
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20002,
+                'Access denied: user not found or not permitted.');
+        WHEN OTHERS THEN
+            IF SQLCODE = -20002 THEN
+                RAISE;
+            END IF;
+            RAISE_APPLICATION_ERROR(-20002,
+                'Access denied: unable to verify user company.');
+    END check_user_in_company;
+
+    FUNCTION get_effective_company_id
+    RETURN NUMBER
+    IS
+        v_app_user      VARCHAR2(255);
+        v_company_id    ptw_pro.ptw_lv_users.company_id%TYPE;
+        v_is_super_user ptw_pro.ptw_lv_users.is_super_user%TYPE;
+        v_override      VARCHAR2(50);
+    BEGIN
+        v_app_user := SYS_CONTEXT('APEX$SESSION', 'APP_USER');
+
+        SELECT company_id, is_super_user
+        INTO   v_company_id, v_is_super_user
+        FROM   ptw_pro.ptw_lv_users
+        WHERE  UPPER(username) = UPPER(v_app_user)
+        AND    is_active = 'Y';
+
+        IF v_is_super_user = 'Y' THEN
+            v_override := V('G_OVERRIDE_COMPANY_ID');
+            IF v_override IS NULL OR v_override = '' THEN
+                RETURN NULL;  -- caller decides how to handle "no company selected"
+            END IF;
+            RETURN TO_NUMBER(v_override);
+        ELSE
+            RETURN v_company_id;
+        END IF;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RETURN NULL;
+    END;
 
 END ptw_sec_pkg;
 /
