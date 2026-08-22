@@ -1,0 +1,653 @@
+list access-control (
+    name: Access Control
+    config {
+        buildOption: @feature-access-control
+    }
+
+    entry access-control (
+        label: Access Control
+        icon {
+            imageIconCssClasses: fa-key
+        }
+        layout {
+            sequence: 20
+        }
+        link {
+            target: {
+                page: 20020
+            }
+        }
+        userDefinedAttributes {
+            1: Change access control settings and disable access control
+        }
+    )
+
+    entry users (
+        label: Users
+        icon {
+            imageIconCssClasses: fa-users
+        }
+        layout {
+            sequence: 10
+        }
+        link {
+            target: {
+                page: 20021
+                action: resetPagination
+            }
+        }
+        userDefinedAttributes {
+            1: Set level of access for authenticated users of this application
+        }
+    )
+
+)
+
+list activity-reports (
+    name: Activity Reports
+    config {
+        buildOption: @feature-activity-reporting
+    }
+
+    entry application-error-log (
+        label: Application Error Log
+        icon {
+            imageIconCssClasses: fa-exclamation
+        }
+        layout {
+            sequence: 30
+        }
+        link {
+            target: {
+                page: 20032
+                clearCache: 20032
+            }
+        }
+        userDefinedAttributes {
+            1: Report of errors logged by this application
+        }
+    )
+
+    entry automations-log (
+        label: Automations Log
+        icon {
+            imageIconCssClasses: fa-gears
+        }
+        layout {
+            sequence: 60
+        }
+        link {
+            target: {
+                page: 20035
+                clearCache: 20035
+                action: resetRegions
+            }
+        }
+        userDefinedAttributes {
+            1: Report of automation executions and messages logged by this application
+        }
+        serverSideCondition {
+            type: rowsReturned
+            sqlQuery:
+                ```sql
+                select 1
+                from apex_appl_automations a, apex_automation_log l
+                where a.automation_id = l.automation_id
+                and l.application_id = :APP_ID
+                ```
+        }
+    )
+
+    entry dashboard (
+        label: Dashboard
+        icon {
+            imageIconCssClasses: fa-area-chart
+        }
+        layout {
+            sequence: 10
+        }
+        link {
+            target: {
+                page: 20030
+                clearCache: 20030
+            }
+        }
+        userDefinedAttributes {
+            1: View application activity metrics
+        }
+    )
+
+    entry page-performance (
+        label: Page Performance
+        icon {
+            imageIconCssClasses: fa-file-chart
+        }
+        layout {
+            sequence: 40
+        }
+        link {
+            target: {
+                page: 20033
+                clearCache: 20033
+            }
+        }
+        userDefinedAttributes {
+            1: Report of activity and performance by application page
+        }
+    )
+
+    entry page-views (
+        label: Page Views
+        icon {
+            imageIconCssClasses: fa-file-search
+        }
+        layout {
+            sequence: 50
+        }
+        link {
+            target: {
+                page: 20034
+                clearCache: 20034
+                action: resetRegions
+            }
+        }
+        userDefinedAttributes {
+            1: Report of each page view by user including date of access and elapsed time
+        }
+    )
+
+    entry top-users (
+        label: Top Users
+        icon {
+            imageIconCssClasses: fa-user-chart
+        }
+        layout {
+            sequence: 20
+        }
+        link {
+            target: {
+                page: 20031
+                clearCache: 20031
+            }
+        }
+        userDefinedAttributes {
+            1: Report of page views aggregated by user
+        }
+    )
+
+)
+
+list navigation-bar (
+    name: Navigation Bar
+
+    entry app-user (
+        label: &APP_USER.
+        icon {
+            imageIconCssClasses: fa-user
+        }
+        layout {
+            sequence: 10
+        }
+        link {
+            target: {
+                type: url
+                url: #
+            }
+        }
+        userDefinedAttributes {
+            2: has-username
+        }
+    )
+
+    entry install-app (
+        label: Install App
+        icon {
+            imageIconCssClasses: fa-cloud-download
+        }
+        layout {
+            sequence: 1
+        }
+        isCurrent {
+            type: never
+        }
+        link {
+            target: {
+                type: url
+                url: #action$a-pwa-install
+            }
+        }
+        userDefinedAttributes {
+            2: a-pwaInstall
+        }
+    )
+
+    entry list_item (
+        label: ---
+        layout {
+            sequence: 20
+            parentEntry: @app-user
+        }
+        link {
+            target: {
+                type: url
+                url: separator
+            }
+        }
+        serverSideCondition {
+            type: userIsAuthenticated
+        }
+    )
+
+    entry settings (
+        label: Settings
+        icon {
+            imageIconCssClasses: fa-gear
+        }
+        layout {
+            sequence: 1
+            parentEntry: @app-user
+        }
+        link {
+            target: {
+                page: 20000
+            }
+        }
+        config {
+            buildOption: @feature-user-settings
+        }
+    )
+
+    entry sign-out (
+        label: Sign Out
+        icon {
+            imageIconCssClasses: fa-sign-out
+        }
+        layout {
+            sequence: 30
+            parentEntry: @app-user
+        }
+        link {
+            target: {
+                type: url
+                url: &LOGOUT_URL.
+            }
+        }
+        serverSideCondition {
+            type: userIsAuthenticated
+        }
+    )
+
+)
+
+list navigation-menu (
+    name: Navigation Menu
+
+    entry admin (
+        label: Admin
+        icon {
+            imageIconCssClasses: fa-wrench
+        }
+        layout {
+            sequence: 60
+        }
+        security {
+            authorizationScheme: @administration-rights
+        }
+    )
+
+    entry authorisation-acceptance (
+        label: Authorisation & Acceptance
+        icon {
+            imageIconCssClasses: fa-file-o
+        }
+        layout {
+            sequence: 50
+        }
+        isCurrent {
+            type: pages
+            pages: 5
+        }
+        link {
+            target: {
+                page: 5
+                clearCache: 5
+            }
+        }
+        security {
+            authorizationScheme: @administration-rights
+        }
+    )
+
+    entry companies (
+        label: Companies
+        icon {
+            imageIconCssClasses: fa-industry
+        }
+        layout {
+            sequence: 111
+            parentEntry: @super-user-admin
+        }
+        isCurrent {
+            type: pages
+            pages: 21
+        }
+        link {
+            target: {
+                page: 21
+            }
+        }
+        security {
+            authorizationScheme: @super-user-rights
+        }
+    )
+
+    entry control-measures-ppe (
+        label: Control Measures & PPE
+        icon {
+            imageIconCssClasses: fa-file-o
+        }
+        layout {
+            sequence: 30
+        }
+        isCurrent {
+            type: pages
+            pages: 3
+        }
+        link {
+            target: {
+                page: 3
+                clearCache: 3
+            }
+        }
+        security {
+            authorizationScheme: @administration-rights
+        }
+    )
+
+    entry equipment-isolation (
+        label: Equipment Isolation
+        icon {
+            imageIconCssClasses: fa-file-o
+        }
+        layout {
+            sequence: 40
+        }
+        isCurrent {
+            type: pages
+            pages: 4
+        }
+        link {
+            target: {
+                page: 4
+                clearCache: 4
+            }
+        }
+        security {
+            authorizationScheme: @administration-rights
+        }
+    )
+
+    entry home (
+        label: Home
+        icon {
+            imageIconCssClasses: fa-home
+        }
+        layout {
+            sequence: 10
+        }
+        link {
+            target: {
+                page: 1
+                clearCache: [
+                    2
+                    3
+                    4
+                    5
+                    6
+                    7
+                ]
+            }
+        }
+    )
+
+    entry master-permit-types (
+        label: Master Permit Types
+        icon {
+            imageIconCssClasses: fa-keyboard-o
+        }
+        layout {
+            sequence: 131
+            parentEntry: @super-user-admin
+        }
+        isCurrent {
+            type: pages
+            pages: 22
+        }
+        link {
+            target: {
+                page: 22
+            }
+        }
+    )
+
+    entry permit-analytics (
+        label: Permit Analytics
+        icon {
+            imageIconCssClasses: fa-pie-chart
+        }
+        layout {
+            sequence: 101
+            parentEntry: @reports
+        }
+        isCurrent {
+            type: pages
+            pages: 51
+        }
+        link {
+            target: {
+                page: 51
+            }
+        }
+    )
+
+    entry permit-search (
+        label: Permit Search
+        icon {
+            imageIconCssClasses: fa-area-chart
+        }
+        layout {
+            sequence: 91
+            parentEntry: @reports
+        }
+        isCurrent {
+            type: pages
+            pages: 50
+        }
+        link {
+            target: {
+                page: 50
+            }
+        }
+    )
+
+    entry permit-types (
+        label: Permit Types
+        icon {
+            imageIconCssClasses: fa-keyboard-o
+        }
+        layout {
+            sequence: 141
+            parentEntry: @admin
+        }
+        isCurrent {
+            type: pages
+            pages: 23
+        }
+        link {
+            target: {
+                page: 23
+            }
+        }
+    )
+
+    entry reports (
+        label: Reports
+        icon {
+            imageIconCssClasses: fa-table-search
+        }
+        layout {
+            sequence: 90
+        }
+        security {
+            authorizationScheme: @administration-rights
+        }
+    )
+
+    entry set-active-company (
+        label: Set Active Company
+        icon {
+            imageIconCssClasses: fa-eye
+        }
+        layout {
+            sequence: 151
+            parentEntry: @super-user-admin
+        }
+        isCurrent {
+            type: pages
+            pages: 28
+        }
+        link {
+            target: {
+                page: 28
+            }
+        }
+    )
+
+    entry site-management (
+        label: Site Management
+        icon {
+            imageIconCssClasses: fa-industry
+        }
+        layout {
+            sequence: 171
+            parentEntry: @admin
+        }
+        isCurrent {
+            type: pages
+            pages: 31
+        }
+        link {
+            target: {
+                page: 31
+            }
+        }
+    )
+
+    entry site-work-details (
+        label: Site & Work Details
+        icon {
+            imageIconCssClasses: fa-file-o
+        }
+        layout {
+            sequence: 20
+        }
+        isCurrent {
+            type: pages
+            pages: 2
+        }
+        link {
+            target: {
+                page: 2
+                clearCache: 2
+            }
+        }
+        security {
+            authorizationScheme: @administration-rights
+        }
+    )
+
+    entry super-user-admin (
+        label: Super User Admin
+        icon {
+            imageIconCssClasses: fa-gear
+        }
+        layout {
+            sequence: 121
+        }
+        security {
+            authorizationScheme: @super-user-rights
+        }
+    )
+
+    entry team-administration (
+        label: Team Administration
+        icon {
+            imageIconCssClasses: fa-users-alt
+        }
+        layout {
+            sequence: 161
+            parentEntry: @admin
+        }
+        isCurrent {
+            type: pages
+            pages: 27
+        }
+        link {
+            target: {
+                page: 27
+            }
+        }
+    )
+
+    entry user-maintenance (
+        label: User Maintenance
+        icon {
+            imageIconCssClasses: fa-user-wrench
+        }
+        layout {
+            sequence: 70
+            parentEntry: @admin
+        }
+        link {
+            target: {
+                page: 8
+                clearCache: 8
+            }
+        }
+        security {
+            authorizationScheme: @administration-rights
+        }
+    )
+
+)
+
+list user-settings (
+    name: User Settings
+    config {
+        buildOption: @feature-user-settings
+    }
+
+    entry push-notifications (
+        label: Push Notifications
+        icon {
+            imageIconCssClasses: fa-bell-o
+        }
+        layout {
+            sequence: 10
+        }
+        link {
+            target: {
+                page: 20010
+            }
+        }
+        userDefinedAttributes {
+            1: Configure whether you want to receive push notifications on this device.
+            2: <span class="a-pwaPush--state"></span>
+        }
+        config {
+            buildOption: @feature-push-notifications
+        }
+    )
+
+)
+

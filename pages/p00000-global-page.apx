@@ -1,0 +1,30 @@
+page 0 (
+    name: Global Page
+    appearance {
+        templateOptions: #DEFAULT#
+    }
+
+    pageItem P0_LATITUDE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+    )
+
+    pageItem P0_LONGITUDE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+    )
+
+)
+

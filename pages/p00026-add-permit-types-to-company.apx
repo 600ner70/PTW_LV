@@ -1,0 +1,216 @@
+page 26 (
+    name: Add Permit Types to Company
+    alias: ADD-PERMIT-TYPES-TO-COMPANY
+    title: Add Permit Types to Company
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @/modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: @administration-rights
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region available-permit-types (
+        name: Available Permit Types
+        title: Available Permit Types
+        type: classicReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT apex_item.checkbox(1, t.type_id) AS select_type,
+                       t.ptw_type,
+                       t.type_desc
+                FROM   ptw_pro.ptw_types t
+                WHERE  t.available = 'Y'
+                AND    t.type_id NOT IN (
+                         SELECT ct.type_id FROM ptw_pro.ptw_lv_company_types ct
+                       )
+                ORDER  BY t.ptw_type
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+        componentAppearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Report--altRowsDefault
+                t-Report--rowHighlight
+            ]
+        }
+        pagination {
+            type: nextAndPreviousLinks
+        }
+        messages {
+            whenNoDataFound: Your company already has access to all available permit types.
+        }
+
+        column PTW_TYPE (
+            reportColumnQueryId: 2
+            derivedColumn: N
+            heading {
+                heading: Type Code
+            }
+            layout {
+                sequence: 20
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+        column SELECT_TYPE (
+            reportColumnQueryId: 1
+            derivedColumn: N
+            layout {
+                sequence: 10
+            }
+            sorting {
+                sortable: false
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column TYPE_DESC (
+            reportColumnQueryId: 3
+            derivedColumn: N
+            heading {
+                heading: Description
+            }
+            layout {
+                sequence: 30
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+    )
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 40
+            slot: contentBody
+        }
+        appearance {
+            template: @/buttons-container
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancel
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 23
+                clearCache: 23
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        advanced {
+            htmlDomId: BTN_CANCEL_P26
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Save
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        advanced {
+            htmlDomId: BTN_SAVE_P26
+        }
+    )
+
+    process add-selected-permit-types (
+        name: Add Selected Permit Types
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    v_company_id NUMBER;
+                BEGIN
+                    SELECT company_id
+                    INTO   v_company_id
+                    FROM   ptw_pro.ptw_lv_users
+                    WHERE  UPPER(username) = UPPER(SYS_CONTEXT('APEX$SESSION', 'APP_USER'));
+                 
+                    FOR i IN 1 .. apex_application.g_f01.count LOOP
+                        INSERT INTO ptw_pro.ptw_lv_company_types (company_id, type_id, is_active)
+                        VALUES (v_company_id, apex_application.g_f01(i), 'Y');
+                    END LOOP;
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 52463784902584434
+        }
+        serverSideCondition {
+            whenButtonPressed: @save
+        }
+    )
+
+    branch (
+        name: Back to page 23
+        execution {
+            sequence: 10
+        }
+        behavior {
+            target: {
+                page: 23
+                clearCache: 23
+                successMessage: false
+            }
+        }
+    )
+
+)
+

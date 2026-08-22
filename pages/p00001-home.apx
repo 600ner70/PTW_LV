@@ -1,0 +1,2343 @@
+page 1 (
+    name: Dashboard
+    alias: HOME
+    title: PTW_PRO
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        fileUrls: #APP_FILES#offline-storage#MIN#.js
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            // Update connection status UI
+            function updateConnectionUI() {
+                const statusDiv = document.getElementById('connection-status');
+                const statusIcon = document.getElementById('status-icon');
+                const statusText = document.getElementById('status-text');
+                
+                if (navigator.onLine) {
+                    statusDiv.style.backgroundColor = '#d4edda';
+                    statusIcon.innerHTML = '✓';
+                    statusText.innerHTML = 'Connected';
+                } else {
+                    statusDiv.style.backgroundColor = '#fff3cd';
+                    statusIcon.innerHTML = '⚠';
+                    statusText.innerHTML = 'Offline Mode';
+                }
+            }
+            
+            // Initial update
+            updateConnectionUI();
+            
+            // Listen for connection changes
+            window.addEventListener('online', updateConnectionUI);
+            window.addEventListener('offline', updateConnectionUI);
+            
+            function ptwDeletePermit(permitId, permitNumber) {
+                if (!navigator.onLine) {
+                    apex.message.showErrors([{
+                        type: 'error',
+                        message: 'You are currently offline. Please reconnect to delete a permit.'
+                    }]);
+                    return;
+                }
+                apex.message.confirm('Delete permit ' + permitNumber + '?', function(ok) {
+                    if (ok) {
+                        apex.page.submit({ request: 'DELETE_PERMIT_' + permitId });
+                    }
+                });
+            }
+            
+            function ptwSuspendPermit(permitId, permitNumber) {
+                if (!navigator.onLine) {
+                    apex.message.showErrors([{
+                        type: 'error',
+                        message: 'You are currently offline. Please reconnect to suspend a permit.'
+                    }]);
+                    return;
+                }
+                $('<div id="ptwSuspendDialog">' +
+                    '<label style="display:block;font-weight:600;font-size:13px;margin-bottom:8px;color:#333;">' +
+                      'Suspension Reason <span style="color:#C0392B">*</span>' +
+                    '</label>' +
+                    '<input type="text" id="ptwSuspendReason" class="apex-item-text" ' +
+                      'placeholder="e.g. General alarm, scope change, awaiting parts" />' +
+                  '</div>')
+                      .appendTo('body')
+                      .dialog({
+                          title: 'Suspend Permit \u2013 ' + permitNumber,
+                          modal:  true,
+                          width:  500,
+                          dialogClass: 'ptw-apex-dialog',
+                          buttons: [
+                              {
+                                  text:  'Suspend Permit',
+                                  'class': 't-Button t-Button--hot',
+                                  click: function() {
+                                      var reason = $('#ptwSuspendReason').val();
+                                      if (!reason || reason.trim() === '') {
+                                          apex.message.alert('A suspension reason is required.');
+                                          return;
+                                      }
+                                      apex.item('P1_SELECTED_PERMIT_ID').setValue(permitId);
+                                      apex.item('P1_SUSPEND_REASON').setValue(reason.trim());
+                                      $(this).dialog('close');
+                                      apex.submit({ request: 'SUSPEND_PERMIT_' + permitId });
+                                  }
+                              },
+                              {
+                                  text:  'Cancel',
+                                  'class': 't-Button',
+                                  click: function() { $(this).dialog('close'); }
+                              }
+                          ],
+                          close: function() { $(this).dialog('destroy').remove(); }
+                      });
+            }
+            
+            function ptwResumePermit(permitId, permitNumber) {
+                if (!navigator.onLine) {
+                    apex.message.showErrors([{
+                        type: 'error',
+                        message: 'You are currently offline. Please reconnect to resume a permit.'
+                    }]);
+                    return;
+                }
+                $('<div id="ptwResumeDialog">' +
+                    '<p style="margin:0;font-size:14px;color:#333;">Are you sure you want to resume permit ' +
+                    '<strong>' + permitNumber + '</strong>?</p>' +
+                  '</div>')
+                  .appendTo('body')
+                  .dialog({
+                      title:       'Resume Permit \u2013 ' + permitNumber,
+                      modal:       true,
+                      width:       420,
+                      dialogClass: 'ptw-apex-dialog',
+                      buttons: [
+                          {
+                              text:  'Resume Permit',
+                              'class': 't-Button t-Button--hot',
+                              click: function() {
+                                  $(this).dialog('close');
+                                  apex.submit({ request: 'RESUME_PERMIT_' + permitId });
+                              }
+                          },
+                          {
+                              text:  'Cancel',
+                              'class': 't-Button',
+                              click: function() { $(this).dialog('close'); }
+                              }
+                          ],
+                      close: function() { $(this).dialog('destroy').remove(); }
+                  });
+            }
+            
+            
+            ```
+        executeWhenPageLoads:
+            ```javascript-browser
+            // Initialize offline storage
+            OfflineStorage.initDB();
+            ConnectionManager.init();
+            
+            // Get location
+            initGeolocation();
+            
+            var isReadOnly = (status !== 'STARTED');
+            
+            ```
+    }
+    css {
+        inline:
+            ```css
+            .quick-actions {
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+            
+            .quick-actions .t-Button {
+                flex: 1;
+                min-width: 200px;
+            }
+            
+            /* Dialog wrapper */
+            .ptw-apex-dialog.ui-dialog {
+                border: none;
+                border-radius: 6px;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+                overflow: hidden;
+                padding: 0;
+            }
+            
+            /* Title bar — matches app nav colour */
+            .ptw-apex-dialog.ui-dialog .ui-dialog-titlebar {
+                background: #344B5C;
+                color: #fff;
+                padding: 14px 20px;
+                border-bottom: 3px solid #4A9FD4;
+                font-size: 15px;
+                font-weight: 600;
+                letter-spacing: 0.3px;
+            }
+            .ptw-apex-dialog.ui-dialog .ui-dialog-title       { color: #fff; }
+            .ptw-apex-dialog.ui-dialog .ui-dialog-titlebar-close {
+                color: #fff;
+                opacity: 0.7;
+                top: 50%;
+                transform: translateY(-50%);
+            }
+            .ptw-apex-dialog.ui-dialog .ui-dialog-titlebar-close:hover { opacity: 1; }
+            
+            /* Body */
+            .ptw-apex-dialog.ui-dialog .ui-dialog-content {
+                padding: 24px 24px 16px 24px;
+                background: #fff;
+            }
+            
+            .ptw-apex-dialog #ptwSuspendReason {
+                display: block !important;
+                width: 100% !important;
+                height: 44px !important;
+                font-size: 14px !important;
+                box-sizing: border-box !important;
+                margin: 0 !important;
+            }
+            
+            /* Button footer */
+            .ptw-apex-dialog.ui-dialog .ui-dialog-buttonpane {
+                padding: 12px 24px 16px 24px;
+                border-top: 1px solid #e8e8e8;
+                background: #f7f8f9;
+                margin: 0;
+            }
+            .ptw-apex-dialog.ui-dialog .ui-dialog-buttonpane .ui-dialog-buttonset {
+                display: flex;
+                flex-direction: row-reverse;
+                gap: 10px;
+            }
+            
+            .ptw-action-btn {
+                border: 2px solid rgba(255, 255, 255, 0.35) !important;
+                margin-bottom: 8px !important;
+            }
+            
+            .ptw-action-btn--monitor {
+                background-color: #1a6cb5 !important;
+                color: #fff !important;
+                border-color: #1a6cb5 !important;
+            }
+            
+            /* Purple action button — view completed clearance */
+            .t-Button--purple {
+                --a-button-background-color: #6f42c1;
+                --a-button-border-color: #6f42c1;
+                --a-button-text-color: #ffffff;
+                background-color: #6f42c1 !important;
+                border-color: #6f42c1 !important;
+                color: #ffffff !important;
+                opacity: 1 !important;
+            }
+            
+            /* Purple badge for COMPLETED permits */
+            .t-Badge--purple {
+                --a-badge-background: #6f42c1;
+                --a-badge-text: #ffffff;
+                --a-badge-border: #6f42c1;
+                background-color: #6f42c1 !important;
+                color: #ffffff !important;
+                border-color: #6f42c1 !important;
+            }
+            
+            @media (max-width: 767px) {
+                .ptw-desktop-only { display: none !important; }
+            }
+            @media (min-width: 768px) {
+                .ptw-mobile-only  { display: none !important; }
+            }
+            
+            /* Card container — matches Redwood region surface */
+            .ptw-permit-card {
+                border-radius: 8px;
+                border: 1px solid var(--ut-component-border-color, #e0e0e0);
+                background: var(--ut-component-background-color);
+                margin-bottom: 0.75rem;
+                overflow: hidden;
+                box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            }
+            
+            /* Status left-border — reuse same palette as dashboard-card */
+            .ptw-card-green { border-left: 5px solid var(--ut-palette-success, #3ea055); }
+            .ptw-card-amber { border-left: 5px solid var(--ut-palette-warning, #f0ad4e); }
+            .ptw-card-red   { border-left: 5px solid var(--ut-palette-danger,  #c0392b); }
+            .ptw-card-none  { border-left: 5px solid var(--ut-component-border-color, #e0e0e0); }
+            
+            /* Header row — permit number + badge */
+            .ptw-card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.75rem 1rem 0.5rem 1rem;
+                border-bottom: 1px solid var(--ut-component-border-color, #e0e0e0);
+                background: var(--ut-region-header-background-color,
+                                var(--ut-component-background-color));
+            }
+            
+            .ptw-card-permit-number {
+                font-size: 0.9375rem;
+                font-weight: 700;
+                color: #003366; /* matches .workflow-step.active and dashboard h1 */
+            }
+            
+            /* Body — site, PIC, dates */
+            .ptw-card-body {
+                padding: 0.6rem 1rem;
+                font-size: 0.875rem;
+                color: var(--ut-component-font-color, inherit);
+                line-height: 1.7;
+            }
+            
+            .ptw-card-label {
+                font-weight: 600;
+                color: var(--ut-palette-neutral-600, #595959); /* matches .stat-label */
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 0.03em;
+            }
+            
+            /* Action bar — reuses existing ptw-action-btns pattern */
+            .ptw-card-actions {
+                display: flex;
+                gap: 0.4rem;
+                padding: 0.6rem 1rem 0.75rem 1rem;
+                border-top: 1px solid var(--ut-component-border-color, #e0e0e0);
+                background: var(--ut-component-background-color);
+                flex-wrap: wrap;
+            }
+            
+            /* Touch targets — 44px min per WCAG */
+            .ptw-card-actions a,
+            .ptw-card-actions button {
+                min-width: 44px;
+                min-height: 44px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 6px;
+                font-size: 1.1rem;
+            }
+            
+            #recentPermitsMobile .t-Region-header {
+                display: flex;
+                align-items: center;
+            }
+            
+            #recentPermitsMobile .t-Region-headerItems--buttons {
+                margin-left: auto;
+            }
+            
+            /* Suspend/Resume dialog button styling */
+            .ptw-apex-dialog.ui-dialog .ui-dialog-buttonpane button.t-Button--hot {
+                background-color: #E0182D !important;
+                border-color: #E0182D !important;
+                color: #ffffff !important;
+                font-weight: 600 !important;
+                opacity: 1 !important;
+            }
+            
+            .ptw-apex-dialog.ui-dialog .ui-dialog-buttonpane button.t-Button--hot:hover {
+                background-color: #c0151f !important;
+                border-color: #c0151f !important;
+            }
+            
+            .ptw-apex-dialog.ui-dialog .ui-dialog-buttonpane button.t-Button {
+                background-color: #f0f0f0 !important;
+                border-color: #d0d0d0 !important;
+                color: #333 !important;
+                font-weight: 500 !important;
+                opacity: 1 !important;
+            }
+            
+            .ptw-apex-dialog.ui-dialog .ui-dialog-buttonpane button.t-Button:hover {
+                background-color: #e0e0e0 !important;
+            }
+            
+            .admin-page-header {
+                background: linear-gradient(135deg, #003366 0%, #005599 100%);
+                color: white;
+                padding: 25px 30px;
+                border-radius: 8px;
+                margin-bottom: 25px;
+            }
+            .admin-page-header h1 { margin: 0 0 5px 0; font-size: 1.75rem; font-weight: 700; }
+            .admin-page-header p  { margin: 0; opacity: 0.85; font-size: 0.95rem; }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region page-header (
+        name: Page Header
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    l_html       CLOB;
+                    l_company_id NUMBER;
+                    l_logo_url   VARCHAR2(500);
+                    l_logo_count NUMBER;
+                    l_override   VARCHAR2(50) := V('G_OVERRIDE_COMPANY_ID');
+                BEGIN
+                    -- Derive effective company_id for the current user
+                    IF l_override IS NOT NULL AND TRIM(l_override) IS NOT NULL THEN
+                        BEGIN
+                            l_company_id := TO_NUMBER(TRIM(l_override));
+                        EXCEPTION
+                            WHEN OTHERS THEN l_company_id := NULL;
+                        END;
+                    ELSE
+                        -- Normal user: their own company
+                        -- Super user with no override: NULL (no logo shown)
+                        BEGIN
+                            SELECT company_id
+                            INTO   l_company_id
+                            FROM   ptw_pro.ptw_lv_users
+                            WHERE  UPPER(username) = UPPER(:APP_USER)
+                            AND    is_super_user   = 'N'
+                            AND    is_active       = 'Y';
+                        EXCEPTION
+                            WHEN NO_DATA_FOUND THEN l_company_id := NULL;
+                        END;
+                    END IF;
+                
+                    -- Check if a logo file exists for this company
+                    -- (graceful fallback - no broken image if file missing)
+                
+                    IF l_company_id IS NOT NULL THEN
+                        SELECT COUNT(*) INTO l_logo_count
+                        FROM   apex_application_static_files
+                        WHERE  application_id = :APP_ID
+                        AND    file_name      = 'logo_' || l_company_id || '.png';
+                
+                        IF l_logo_count > 0 THEN
+                            l_logo_url := V('APP_FILES') || 'logo_' || l_company_id || '.png';
+                        END IF;
+                    END IF;
+                
+                    -- Build header
+                    l_html := '<div style="margin-bottom:30px;display:flex;'
+                           || 'justify-content:space-between;align-items:center;'
+                           || 'min-height:80px;">'
+                           || '  <div>'
+                           || '    <h1 style="font-size:2rem;color:#13294b;'
+                           || '               margin-bottom:5px;">'
+                           || '      Permit to Work'
+                           || '    </h1>'
+                           || '    <p style="color:#666;font-size:1rem;">'
+                           || '      Low Voltage Electrical Permit Management'
+                           || '    </p>'
+                           || '  </div>';
+                
+                    IF l_logo_url IS NOT NULL THEN
+                        l_html := l_html
+                               || '  <div style="width:200px;height:60px;display:flex;'
+                               || 'align-items:center;justify-content:flex-end;">'
+                               || '    <img src="' || l_logo_url || '" '
+                               || '         alt="Company Logo" '
+                               || '         style="max-width:100%;max-height:100%;'
+                               || 'object-fit:contain;" />'
+                               || '  </div>';
+                    END IF;
+                
+                    l_html := l_html || '</div>';
+                
+                    RETURN l_html;
+                
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        -- Never break Page 1 - fall back to plain header
+                        RETURN '<div style="margin-bottom:30px;">'
+                            || '<h1 style="font-size:2rem;color:#13294b;">'
+                            || 'Permit to Work</h1>'
+                            || '<p style="color:#666;">Low Voltage '
+                            || 'Electrical Permit Management</p></div>';
+                END;
+                ```
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region quick-actions (
+        name: Quick Actions
+        title: Quick Actions
+        type: staticContent
+        layout {
+            sequence: 60
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+            icon: fa-bolt
+        }
+    )
+
+    region recent-permits (
+        name: Recent Permits
+        title: Recent Permits
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT
+                    p.permit_id,
+                    p.permit_number,
+                    COALESCE(s.site_name, p.site_details) AS site_details,
+                    p.area_of_works,
+                    p.supervising_company||' - '||p.person_in_charge_name as person_in_charge,
+                    p.current_step,
+                    p.workflow_status,
+                    p.created_date,
+                    p.started_datetime,
+                    p.ended_datetime,
+                    CASE p.workflow_status
+                        WHEN 'DRAFT'       THEN 'Draft'
+                        WHEN 'SUSPENDED'   THEN 'Suspended'
+                        WHEN 'COMPLETED'   THEN 'Completed'
+                        WHEN 'CANCELLED'   THEN 'Cancelled'
+                        WHEN 'AUTHORISED'  THEN 'Authorised'
+                        WHEN 'LAPSED'      THEN 'Lapsed'
+                        WHEN 'STARTED'     THEN 'Live'
+                        ELSE p.workflow_status
+                    END AS status_display,
+                    CASE p.current_step
+                        WHEN 'SITE_WORK_DETAILS' THEN 'Step 1: Site and Work Details'
+                        WHEN 'CONTROL_MEASURES'  THEN 'Step 2: Control Measures'
+                        WHEN 'EQUIP_ISOLATION'   THEN 'Step 3: Equipment Isolation'
+                        WHEN 'AUTHORISATION'     THEN 'Step 4: Authorisation'
+                        WHEN 'CLEARANCE'         THEN 'Step 5: Clearance'
+                        ELSE p.current_step
+                    END AS step_display,
+                    CASE p.workflow_status
+                        WHEN 'COMPLETED'  THEN 'class="t-Badge t-Badge--purple t-Badge--lg"'
+                        WHEN 'SUSPENDED'  THEN 'class="t-Badge t-Badge--danger t-Badge--lg"'
+                        WHEN 'CANCELLED'  THEN  'class="t-Badge t-Badge--danger t-Badge--lg"'
+                        WHEN 'AUTHORISED' THEN 'class="t-Badge t-Badge--warning t-Badge--lg"'
+                        WHEN 'STARTED'    THEN 'class="t-Badge t-Badge--success t-Badge--lg"'
+                        WHEN 'LAPSED'     THEN 'class="t-Badge t-Badge--normal t-Badge--lg"'
+                        ELSE                   'class="t-Badge t-Badge--info t-Badge--lg"'
+                    END AS status_badge,
+                    '<div class="ptw-action-btns">' ||
+                    CASE
+                        WHEN p.workflow_status NOT IN ('STARTED','AUTHORISED','COMPLETED') AND :APP_IS_ADMIN = 'Y'
+                        THEN '<a href="#" 
+                             class="t-Button t-Button--noLabel t-Button--icon t-Button--danger ptw-action-btn" 
+                             title="Delete Permit"
+                             onclick="ptwDeletePermit(' || p.permit_id || ', ''' || p.permit_number || '''); return false;">
+                             <span class="t-Icon fa fa-trash-o" aria-hidden="true"></span>
+                          </a>'
+                    END ||
+                    CASE p.workflow_status
+                        WHEN 'STARTED' THEN
+                          CASE WHEN :APP_IS_ENGINEER = 'Y' THEN
+                            '<a href="javascript:ptwSuspendPermit(' || p.permit_id || ',''' || p.permit_number || ''');"
+                                class="t-Button t-Button--noLabel t-Button--icon t-Button--warning ptw-action-btn"
+                                title="Suspend Permit">
+                                <span class="t-icon fa fa-pause-circle" aria-hidden="true"></span>
+                             </a>'
+                          END
+                        WHEN 'SUSPENDED' THEN
+                          CASE WHEN :APP_IS_ENGINEER = 'Y' THEN
+                            '<a href="javascript:ptwResumePermit(' || p.permit_id || ',''' || p.permit_number || ''');"
+                                class="t-Button t-Button--noLabel t-Button--icon t-Button--success ptw-action-btn"
+                                title="Resume Permit">
+                                <span class="t-icon fa fa-play-circle" aria-hidden="true"></span>
+                             </a>'
+                          END
+                    END ||
+                    CASE
+                        WHEN p.workflow_status = 'STARTED' AND :APP_IS_ENGINEER = 'Y'
+                        THEN '<a href="' || apex_page.get_url(
+                                                p_page   => 15,
+                                                p_items  => 'P15_PERMIT_ID,P15_PTW_TYPE,P15_PERMIT_NUMBER',
+                                                p_values => p.permit_id || ',' || p.ptw_type || ',' || p.permit_number,
+                                                p_clear_cache => 15
+                                            ) || '"
+                                 class="t-Button t-Button--noLabel t-Button--icon t-Button--info ptw-action-btn ptw-action-btn--monitor"
+                                 title="Monitoring">
+                                 <span class="t-Icon fa fa-dial-gauge-chart" aria-hidden="true"></span>
+                              </a>'
+                        WHEN p.workflow_status = 'COMPLETED' AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y')
+                        THEN '<a href="' || apex_page.get_url(
+                                                p_page   => 15,
+                                                p_items  => 'P15_PERMIT_ID,P15_PTW_TYPE,P15_PERMIT_NUMBER',
+                                                p_values => p.permit_id || ',' || p.ptw_type || ',' || p.permit_number,
+                                                p_clear_cache => 15
+                                            ) || '"
+                                 class="t-Button t-Button--noLabel t-Button--icon t-Button--purple ptw-action-btn ptw-action-btn--monitor"
+                                 title="View Monitoring">
+                                 <span class="t-Icon fa fa-dial-gauge-chart" aria-hidden="true"></span>
+                              </a>'
+                    END ||
+                    CASE
+                        WHEN p.workflow_status = 'STARTED' 
+                        AND  SYSDATE < p.ended_datetime
+                        AND  EXISTS (
+                                 SELECT 1 
+                                 FROM   ptw_pro.ptw_lv_monitoring m
+                                 WHERE  m.permit_id = p.permit_id
+                                 AND    m.monitoring_status = 'COMPLETED'
+                             )
+                        THEN '<a href="' || apex_page.get_url(
+                                                p_page   => 16,
+                                                p_items  => 'P16_PERMIT_ID,P16_PERMIT_NUMBER,P16_WORKFLOW_STATUS',
+                                                p_values => p.permit_id || ',' || p.permit_number || ',STARTED',
+                                                p_clear_cache => 16
+                                            ) || '"
+                                 class="t-Button t-Button--noLabel t-Button--icon t-Button--success ptw-action-btn"
+                                 title="Clear Permit">
+                                 <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>
+                              </a>'
+                        WHEN p.workflow_status = 'COMPLETED'
+                            AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y')
+                        THEN '<a href="' || apex_page.get_url(
+                                            p_page   => 16,
+                                            p_items  => 'P16_PERMIT_ID,P16_PERMIT_NUMBER,P16_WORKFLOW_STATUS',
+                                            p_values => p.permit_id || ',' || p.permit_number || ',COMPLETED',
+                                            p_clear_cache => 16
+                                        ) || '"
+                             class="t-Button t-Button--noLabel t-Button--icon t-Button--purple ptw-action-btn"
+                             title="View Clearance">
+                             <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>
+                          </a>'
+                    END ||
+                    CASE
+                        WHEN p.workflow_status = 'CANCELLED'
+                         AND EXISTS (
+                                 SELECT 1
+                                 FROM   ptw_pro.ptw_lv_monitoring_concerns mc
+                                 JOIN   ptw_pro.ptw_lv_monitoring m ON m.monitoring_id = mc.monitoring_id
+                                 WHERE  m.permit_id           = p.permit_id
+                                 AND    mc.happy_to_continue  = 'N'
+                                 AND    mc.concern_signature IS NOT NULL
+                             )
+                        THEN '<a href="' || apex_page.get_url(
+                                                p_page   => 30,
+                                                p_items  => 'P30_MONITORING_ID,P30_CHECK_NUMBER,P30_PERMIT_ID,P30_PERMIT_NUMBER',
+                                                p_values => (SELECT mc.monitoring_id
+                                                             FROM   ptw_pro.ptw_lv_monitoring_concerns mc
+                                                             JOIN   ptw_pro.ptw_lv_monitoring m ON m.monitoring_id = mc.monitoring_id
+                                                             WHERE  m.permit_id = p.permit_id
+                                                             AND    mc.happy_to_continue = 'N'
+                                                             AND    mc.concern_signature IS NOT NULL
+                                                             FETCH FIRST 1 ROW ONLY)
+                                                        || ',' ||
+                                                        (SELECT mc.check_number
+                                                             FROM   ptw_pro.ptw_lv_monitoring_concerns mc
+                                                             JOIN   ptw_pro.ptw_lv_monitoring m ON m.monitoring_id = mc.monitoring_id
+                                                             WHERE  m.permit_id = p.permit_id
+                                                             AND    mc.happy_to_continue = 'N'
+                                                             AND    mc.concern_signature IS NOT NULL
+                                                             FETCH FIRST 1 ROW ONLY)
+                                                        || ',' || p.permit_id || ',' || p.permit_number,
+                                                p_clear_cache => 30
+                                            ) || '"
+                                 class="t-Button t-Button--noLabel t-Button--icon t-Button--danger ptw-action-btn"
+                                 title="View Cancellation (Concern)">
+                                 <span class="t-Icon fa fa-ban" aria-hidden="true"></span>
+                              </a>'
+                        WHEN p.workflow_status IN ('AUTHORISED', 'STARTED', 'SUSPENDED','CANCELLED')
+                        THEN '<a href="' || apex_page.get_url(
+                                                p_page   => 17,
+                                                p_items  => 'P17_PERMIT_ID,P17_PERMIT_NUMBER',
+                                                p_values => p.permit_id || ',' || p.permit_number,
+                                                p_clear_cache => 17
+                                            ) || '"
+                                 class="t-Button t-Button--noLabel t-Button--icon t-Button--danger ptw-action-btn"
+                                 title="Cancel Permit">
+                                 <span class="t-Icon fa fa-ban" aria-hidden="true"></span>
+                              </a>'
+                    END ||
+                    '<a href="' || apex_page.get_url(
+                                    p_page   => 300,
+                                    p_items  => 'P300_PERMIT_ID,P300_RETURN_PAGE',
+                                    p_values => p.permit_id || ',1'
+                                ) || '"
+                         class="t-Button t-Button--noLabel t-Button--icon t-Button--normal ptw-action-btn"
+                         title="PDF">
+                         <span class="t-Icon fa fa-file-pdf-o" aria-hidden="true"></span>
+                     </a>' ||
+                      CASE WHEN :APP_IS_ADMIN = 'Y' THEN
+                        '<a href="' || apex_page.get_url(
+                                       p_page   => 6,
+                                       p_items  => 'P6_PERMIT_ID',
+                                       p_values => p.permit_id
+                                   ) || '"
+                          class="t-Button t-Button--noLabel t-Button--icon t-Button--normal ptw-action-btn"
+                          title="Permit History">
+                          <span class="t-Icon fa fa-book" aria-hidden="true"></span>
+                        </a>' END ||
+                    '</div>' AS actions,
+                    p.ptw_type,
+                    CASE
+                        WHEN p.workflow_status = 'STARTED' AND (p.ended_datetime - SYSDATE) * 24 > 2
+                            THEN '<span class="t-Badge t-Badge--success t-Badge--lg">'
+                                 || FLOOR((p.ended_datetime - SYSDATE) * 24) || 'h '
+                                 || MOD(FLOOR((p.ended_datetime - SYSDATE) * 1440), 60) || 'm remaining</span>'
+                        WHEN p.workflow_status = 'STARTED' AND (p.ended_datetime - SYSDATE) * 24 > 1
+                            THEN '<span class="t-Badge t-Badge--warning t-Badge--lg">'
+                                 || FLOOR((p.ended_datetime - SYSDATE) * 24) || 'h '
+                                 || MOD(FLOOR((p.ended_datetime - SYSDATE) * 1440), 60) || 'm remaining</span>'
+                        WHEN p.workflow_status = 'STARTED' AND (p.ended_datetime - SYSDATE) * 24 <= 1
+                            THEN '<span class="t-Badge t-Badge--danger t-Badge--lg">'
+                                 || FLOOR((p.ended_datetime - SYSDATE) * 1440) || 'm remaining</span>'
+                    END AS time_remaining
+                FROM ptw_pro.ptw_lv_permits p
+                LEFT JOIN ptw_pro.ptw_lv_sites s ON s.site_id = p.site_id
+                WHERE
+                    EXISTS (
+                        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v
+                        WHERE  UPPER(username) = UPPER(V('APP_USER'))
+                        AND    role_name IN ('ADMIN', 'ADMIN_USER_SUPPORT')
+                        AND    is_active = 'Y'
+                    )
+                OR (
+                    EXISTS (
+                        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v
+                        WHERE  UPPER(username) = UPPER(V('APP_USER'))
+                        AND    role_name IN ('ADMIN_CONTRACT_SUPPORT', 'READONLY')
+                        AND    is_active = 'Y'
+                    )
+                )
+                OR (
+                    EXISTS (
+                        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v
+                        WHERE  UPPER(username) = UPPER(V('APP_USER'))
+                        AND    role_name = 'ENGINEER'
+                        AND    is_active = 'Y'
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v
+                        WHERE  UPPER(username) = UPPER(V('APP_USER'))
+                        AND    role_name = 'AUTHORISER'
+                        AND    is_active = 'Y'
+                    )
+                    AND UPPER(p.created_by) = UPPER(V('APP_USER'))
+                )
+                OR (
+                    EXISTS (
+                        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v
+                        WHERE  UPPER(username) = UPPER(V('APP_USER'))
+                        AND    role_name = 'AUTHORISER'
+                        AND    is_active = 'Y'
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v
+                        WHERE  UPPER(username) = UPPER(V('APP_USER'))
+                        AND    role_name = 'ENGINEER'
+                        AND    is_active = 'Y'
+                    )
+                    AND UPPER(p.auth_person_name) = UPPER(V('APP_USER'))
+                )
+                OR (
+                    EXISTS (
+                        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v
+                        WHERE  UPPER(username) = UPPER(V('APP_USER'))
+                        AND    role_name = 'ENGINEER'
+                        AND    is_active = 'Y'
+                    )
+                    AND EXISTS (
+                        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v
+                        WHERE  UPPER(username) = UPPER(V('APP_USER'))
+                        AND    role_name = 'AUTHORISER'
+                        AND    is_active = 'Y'
+                    )
+                    AND (
+                        UPPER(p.created_by)          = UPPER(V('APP_USER'))
+                        OR EXISTS (
+                            SELECT 1 FROM ptw_pro.ptw_signatures sig
+                            WHERE  sig.permit_id = p.permit_id
+                            AND    sig.stage     = 'AUTH'
+                            AND    UPPER(sig.person_name) = UPPER(V('APP_USER'))
+                            )
+                    )
+                )
+                ORDER BY p.created_date DESC
+                ```
+        }
+        layout {
+            sequence: 70
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+            cssClasses: ptw-desktop-only
+            icon: fa-list
+        }
+        advanced {
+            htmlDomId: permits-ir
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        searchBar {
+            finderDropDown: false
+            reportsSelectList: false
+        }
+        actionsMenu {
+            includeActionsMenu: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 25227729512353117
+        }
+
+        column ACTIONS (
+            type: plainText
+            heading {
+                heading: Actions
+            }
+            layout {
+                sequence: 230
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: W
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column AREA_OF_WORKS (
+            type: plainText
+            heading {
+                heading: Area Of Works
+            }
+            layout {
+                sequence: 250
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AC
+            }
+        )
+
+        column CREATED_DATE (
+            type: plainText
+            heading {
+                heading: Created Date
+            }
+            layout {
+                sequence: 80
+            }
+            appearance {
+                formatMask: DD-MON-YYYY HH24:MI
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column CURRENT_STEP (
+            type: plainText
+            heading {
+                heading: Current Step
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column ENDED_DATETIME (
+            type: plainText
+            heading {
+                heading: End Date
+            }
+            layout {
+                sequence: 190
+            }
+            appearance {
+                formatMask: DD-MON-YYYY HH24:MI
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: R
+            }
+        )
+
+        column PERMIT_ID (
+            type: hidden
+            heading {
+                heading: Permit Id
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column PERMIT_NUMBER (
+            type: link
+            heading {
+                heading: Permit Number
+            }
+            layout {
+                sequence: 20
+            }
+            link {
+                target: {
+                    page: 2
+                    items: {
+                        P2_PERMIT_ID: #PERMIT_ID#
+                    }
+                }
+                linkText: #PERMIT_NUMBER#
+                linkAttributes: #STATUS_BADGE#
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+            enableUsersTo {
+                hide: false
+            }
+        )
+
+        column PERSON_IN_CHARGE (
+            type: plainText
+            heading {
+                heading: Person In Charge
+            }
+            layout {
+                sequence: 200
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: S
+            }
+        )
+
+        column PTW_TYPE (
+            type: plainText
+            heading {
+                heading: Permit Type
+            }
+            layout {
+                sequence: 220
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: U
+            }
+        )
+
+        column SITE_DETAILS (
+            type: plainText
+            heading {
+                heading: Site
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column STARTED_DATETIME (
+            type: plainText
+            heading {
+                heading: Start Date
+            }
+            layout {
+                sequence: 180
+            }
+            appearance {
+                formatMask: DD-MON-YYYY HH24:MI
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: Q
+            }
+        )
+
+        column STATUS_BADGE (
+            type: plainText
+            heading {
+                heading: Status Badge
+            }
+            layout {
+                sequence: 140
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: N
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column STATUS_DISPLAY (
+            type: plainText
+            heading {
+                heading: Status Display
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column STEP_DISPLAY (
+            type: plainText
+            heading {
+                heading: Step Display
+            }
+            layout {
+                sequence: 110
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column TIME_REMAINING (
+            type: plainText
+            heading {
+                heading: Time Remaining
+            }
+            layout {
+                sequence: 240
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AB
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column WORKFLOW_STATUS (
+            type: plainText
+            heading {
+                heading: Status
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: G
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        savedReport 267534 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 15
+            }
+
+            displayColumn ACTIONS (
+                sequence: 6
+            )
+
+            displayColumn PERMIT_NUMBER (
+                sequence: 1
+            )
+
+            displayColumn PERSON_IN_CHARGE (
+                sequence: 5
+            )
+
+            displayColumn SITE_DETAILS (
+                sequence: 4
+            )
+
+            displayColumn TIME_REMAINING (
+                sequence: 3
+            )
+
+            displayColumn WORKFLOW_STATUS (
+                sequence: 2
+            )
+
+        )
+
+    )
+
+    region recent-permits-mobile (
+        name: Recent Permits (Mobile)
+        title: Recent Permits
+        type: classicReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT
+                    p.permit_id,
+                    p.permit_number,
+                    p.ptw_type,
+                    COALESCE(s.site_name, p.site_details) AS site_details,
+                    p.supervising_company || ' - ' || p.person_in_charge_name AS person_in_charge,
+                    p.workflow_status,
+                    TO_CHAR(p.started_datetime, 'DD-MON-YYYY HH24:MI') AS started_datetime,
+                    TO_CHAR(p.ended_datetime,   'DD-MON-YYYY HH24:MI') AS ended_datetime,
+                    apex_page.get_url(
+                        p_page   => 2,
+                        p_items  => 'P2_PERMIT_ID',
+                        p_values => p.permit_id
+                    ) AS permit_link,
+                    -- Status display label
+                    CASE p.workflow_status
+                        WHEN 'DRAFT'       THEN 'Draft'
+                        WHEN 'SUSPENDED'   THEN 'Suspended'
+                        WHEN 'COMPLETED'   THEN 'Completed'
+                        WHEN 'CANCELLED'   THEN 'Cancelled'
+                        WHEN 'AUTHORISED'  THEN 'Authorised'
+                        WHEN 'LAPSED'      THEN 'Lapsed'
+                        WHEN 'STARTED'     THEN 'Live'
+                        ELSE p.workflow_status
+                    END AS status_display,
+                
+                    -- Badge class (matches IR exactly including purple for COMPLETED)
+                    CASE p.workflow_status
+                        WHEN 'COMPLETED'  THEN 't-Badge--purple'
+                        WHEN 'SUSPENDED'  THEN 't-Badge--danger'
+                        WHEN 'AUTHORISED' THEN 't-Badge--warning'
+                        WHEN 'STARTED'    THEN 't-Badge--success'
+                        WHEN 'LAPSED'     THEN 't-Badge--normal'
+                        ELSE 't-Badge--info'
+                    END AS badge_class,
+                
+                    -- Left-border colour class
+                    CASE
+                        WHEN p.workflow_status = 'STARTED' AND (p.ended_datetime - SYSDATE) * 24 > 2
+                            THEN 'ptw-card-green'
+                        WHEN p.workflow_status = 'STARTED' AND (p.ended_datetime - SYSDATE) * 24 > 1
+                            THEN 'ptw-card-amber'
+                        WHEN p.workflow_status = 'STARTED' AND (p.ended_datetime - SYSDATE) * 24 <= 1
+                            THEN 'ptw-card-red'
+                        ELSE 'ptw-card-none'
+                    END AS card_color_class,
+                
+                    -- Time remaining badge (matches IR)
+                    CASE
+                        WHEN p.workflow_status = 'STARTED' AND (p.ended_datetime - SYSDATE) * 24 > 2
+                            THEN '<span class="t-Badge t-Badge--success t-Badge--lg">'
+                                 || FLOOR((p.ended_datetime - SYSDATE) * 24) || 'h '
+                                 || MOD(FLOOR((p.ended_datetime - SYSDATE) * 1440), 60) || 'm remaining</span>'
+                        WHEN p.workflow_status = 'STARTED' AND (p.ended_datetime - SYSDATE) * 24 > 1
+                            THEN '<span class="t-Badge t-Badge--warning t-Badge--lg">'
+                                 || FLOOR((p.ended_datetime - SYSDATE) * 24) || 'h '
+                                 || MOD(FLOOR((p.ended_datetime - SYSDATE) * 1440), 60) || 'm remaining</span>'
+                        WHEN p.workflow_status = 'STARTED' AND (p.ended_datetime - SYSDATE) * 24 <= 1
+                            THEN '<span class="t-Badge t-Badge--danger t-Badge--lg">'
+                                 || FLOOR((p.ended_datetime - SYSDATE) * 1440) || 'm remaining</span>'
+                        ELSE NULL
+                    END AS time_remaining,
+                
+                    -- Delete button (admin only, excludes STARTED/AUTHORISED/COMPLETED)
+                    CASE
+                        WHEN p.workflow_status NOT IN ('STARTED', 'AUTHORISED', 'COMPLETED')
+                             AND :APP_IS_ADMIN = 'Y' THEN
+                            '<a href="#"
+                                class="t-Button t-Button--noLabel t-Button--icon t-Button--danger ptw-action-btn"
+                                title="Delete Permit"
+                                onclick="ptwDeletePermit(' || p.permit_id || ', ''' || p.permit_number || '''); return false;">
+                                <span class="t-Icon fa fa-trash-o" aria-hidden="true"></span>
+                             </a>'
+                        ELSE NULL
+                    END AS delete_html,
+                
+                    -- Suspend/Resume button (engineer only)
+                    CASE p.workflow_status
+                        WHEN 'STARTED' THEN
+                            CASE WHEN :APP_IS_ENGINEER = 'Y' THEN
+                                '<a href="javascript:ptwSuspendPermit(' || p.permit_id || ',''' || p.permit_number || ''');"
+                                    class="t-Button t-Button--noLabel t-Button--icon t-Button--warning ptw-action-btn"
+                                    title="Suspend Permit">
+                                    <span class="t-Icon fa fa-pause-circle" aria-hidden="true"></span>
+                                 </a>'
+                            END
+                        WHEN 'SUSPENDED' THEN
+                            CASE WHEN :APP_IS_ENGINEER = 'Y' THEN
+                                '<a href="javascript:ptwResumePermit(' || p.permit_id || ',''' || p.permit_number || ''');"
+                                    class="t-Button t-Button--noLabel t-Button--icon t-Button--success ptw-action-btn"
+                                    title="Resume Permit">
+                                    <span class="t-Icon fa fa-play-circle" aria-hidden="true"></span>
+                                 </a>'
+                            END
+                        ELSE NULL
+                    END AS workflow_action_html,
+                
+                    -- Monitoring button (STARTED + engineer only)
+                    CASE
+                        WHEN p.workflow_status = 'STARTED' AND :APP_IS_ENGINEER = 'Y' THEN
+                            '<a href="' || apex_page.get_url(
+                                                p_page   => 15,
+                                                p_items  => 'P15_PERMIT_ID,P15_PTW_TYPE,P15_PERMIT_NUMBER',
+                                                p_values => p.permit_id || ',' || p.ptw_type || ',' || p.permit_number
+                                            ) || '"
+                                class="t-Button t-Button--noLabel t-Button--icon t-Button--info ptw-action-btn ptw-action-btn--monitor"
+                                title="Monitoring">
+                                <span class="t-Icon fa fa-dial-gauge-chart" aria-hidden="true"></span>
+                             </a>'
+                        WHEN p.workflow_status = 'COMPLETED' AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y') THEN
+                            '<a href="' || apex_page.get_url(
+                                                p_page   => 15,
+                                                p_items  => 'P15_PERMIT_ID,P15_PTW_TYPE,P15_PERMIT_NUMBER',
+                                                p_values => p.permit_id || ',' || p.ptw_type || ',' || p.permit_number
+                                            ) || '"
+                                class="t-Button t-Button--noLabel t-Button--icon t-Button--purple ptw-action-btn ptw-action-btn--monitor"
+                                title="Monitoring">
+                                <span class="t-Icon fa fa-dial-gauge-chart" aria-hidden="true"></span>
+                             </a>'
+                        ELSE NULL
+                    END AS monitoring_html,
+                
+                    -- Clearance button (STARTED = clear, COMPLETED = view — matches IR)
+                    CASE
+                        WHEN p.workflow_status = 'STARTED' 
+                        AND  SYSDATE < p.ended_datetime
+                        AND  EXISTS (
+                                 SELECT 1 
+                                 FROM   ptw_pro.ptw_lv_monitoring m
+                                 WHERE  m.permit_id = p.permit_id
+                                 AND    m.monitoring_status = 'COMPLETED'
+                             )
+                        THEN '<a href="' || apex_page.get_url(
+                                                p_page   => 16,
+                                                p_items  => 'P16_PERMIT_ID,P16_PERMIT_NUMBER,P16_WORKFLOW_STATUS',
+                                                p_values => p.permit_id || ',' || p.permit_number || ',STARTED',
+                                                p_clear_cache => 16
+                                            ) || '"
+                                 class="t-Button t-Button--noLabel t-Button--icon t-Button--success ptw-action-btn"
+                                 title="Clear Permit">
+                                 <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>
+                              </a>'
+                        WHEN p.workflow_status = 'COMPLETED'
+                             AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y') THEN
+                            '<a href="' || apex_page.get_url(
+                                                p_page   => 16,
+                                                p_items  => 'P16_PERMIT_ID,P16_PERMIT_NUMBER,P16_WORKFLOW_STATUS',
+                                                p_values => p.permit_id || ',' || p.permit_number || ',COMPLETED',
+                                                p_clear_cache => 16
+                                            ) || '"
+                                class="t-Button t-Button--noLabel t-Button--icon t-Button--purple ptw-action-btn"
+                                title="View Clearance">
+                                <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>
+                             </a>'
+                        ELSE NULL
+                    END AS clearance_html,
+                    -- Cancel button (AUTHORISED or STARTED permits only)
+                    CASE
+                        WHEN p.workflow_status = 'CANCELLED'
+                         AND EXISTS (
+                                 SELECT 1
+                                 FROM   ptw_pro.ptw_lv_monitoring_concerns mc
+                                 JOIN   ptw_pro.ptw_lv_monitoring m ON m.monitoring_id = mc.monitoring_id
+                                 WHERE  m.permit_id           = p.permit_id
+                                 AND    mc.happy_to_continue  = 'N'
+                                 AND    mc.concern_signature IS NOT NULL
+                             )
+                        THEN '<a href="' || apex_page.get_url(
+                                                p_page   => 30,
+                                                p_items  => 'P30_MONITORING_ID,P30_CHECK_NUMBER,P30_PERMIT_ID,P30_PERMIT_NUMBER',
+                                                p_values => (SELECT mc.monitoring_id
+                                                             FROM   ptw_pro.ptw_lv_monitoring_concerns mc
+                                                             JOIN   ptw_pro.ptw_lv_monitoring m ON m.monitoring_id = mc.monitoring_id
+                                                             WHERE  m.permit_id = p.permit_id
+                                                             AND    mc.happy_to_continue = 'N'
+                                                             AND    mc.concern_signature IS NOT NULL
+                                                             FETCH FIRST 1 ROW ONLY)
+                                                        || ',' ||
+                                                        (SELECT mc.check_number
+                                                             FROM   ptw_pro.ptw_lv_monitoring_concerns mc
+                                                             JOIN   ptw_pro.ptw_lv_monitoring m ON m.monitoring_id = mc.monitoring_id
+                                                             WHERE  m.permit_id = p.permit_id
+                                                             AND    mc.happy_to_continue = 'N'
+                                                             AND    mc.concern_signature IS NOT NULL
+                                                             FETCH FIRST 1 ROW ONLY)
+                                                        || ',' || p.permit_id || ',' || p.permit_number,
+                                                p_clear_cache => 30
+                                            ) || '"
+                                 class="t-Button t-Button--noLabel t-Button--icon t-Button--danger ptw-action-btn"
+                                 title="View Cancellation (Concern)">
+                                 <span class="t-Icon fa fa-ban" aria-hidden="true"></span>
+                              </a>'
+                        WHEN p.workflow_status IN ('AUTHORISED', 'STARTED', 'SUSPENDED','CANCELLED')
+                        THEN '<a href="' || apex_page.get_url(
+                                                p_page   => 17,
+                                                p_items  => 'P17_PERMIT_ID,P17_PERMIT_NUMBER',
+                                                p_values => p.permit_id || ',' || p.permit_number,
+                                                p_clear_cache => 17
+                                            ) || '"
+                                 class="t-Button t-Button--noLabel t-Button--icon t-Button--danger ptw-action-btn"
+                                 title="Cancel Permit">
+                                 <span class="t-Icon fa fa-ban" aria-hidden="true"></span>
+                              </a>'
+                    END AS cancellation_html,
+                
+                    -- PDF button (always shown)
+                    '<a href="' || apex_page.get_url(
+                                    p_page   => 300,
+                                    p_items  => 'P300_PERMIT_ID,P300_RETURN_PAGE',
+                                    p_values => p.permit_id || ',1'
+                                ) || '"
+                        class="t-Button t-Button--noLabel t-Button--icon t-Button--normal ptw-action-btn"
+                        title="PDF">
+                        <span class="t-Icon fa fa-file-pdf-o" aria-hidden="true"></span>
+                     </a>' AS view_pdf_html,
+                
+                    -- History button (admin only — matches IR)
+                    CASE WHEN :APP_IS_ADMIN = 'Y' THEN
+                        '<a href="' || apex_page.get_url(
+                                            p_page   => 6,
+                                            p_items  => 'P6_PERMIT_ID',
+                                            p_values => p.permit_id
+                                        ) || '"
+                            class="t-Button t-Button--noLabel t-Button--icon t-Button--normal ptw-action-btn"
+                            title="Permit History">
+                            <span class="t-Icon fa fa-book" aria-hidden="true"></span>
+                         </a>'
+                    END AS view_history_html
+                
+                FROM ptw_pro.ptw_lv_permits p
+                LEFT JOIN ptw_pro.ptw_lv_sites s ON s.site_id = p.site_id
+                WHERE
+                    EXISTS (
+                        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v
+                        WHERE  UPPER(username) = UPPER(V('APP_USER'))
+                        AND    role_name IN ('ADMIN', 'ADMIN_USER_SUPPORT')
+                        AND    is_active = 'Y'
+                    )
+                OR (
+                    EXISTS (
+                        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v
+                        WHERE  UPPER(username) = UPPER(V('APP_USER'))
+                        AND    role_name IN ('ADMIN_CONTRACT_SUPPORT', 'READONLY')
+                        AND    is_active = 'Y'
+                    )
+                )
+                OR (
+                    EXISTS (
+                        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v
+                        WHERE  UPPER(username) = UPPER(V('APP_USER'))
+                        AND    role_name = 'ENGINEER'
+                        AND    is_active = 'Y'
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v
+                        WHERE  UPPER(username) = UPPER(V('APP_USER'))
+                        AND    role_name = 'AUTHORISER'
+                        AND    is_active = 'Y'
+                    )
+                    AND UPPER(p.created_by) = UPPER(V('APP_USER'))
+                )
+                OR (
+                    EXISTS (
+                        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v
+                        WHERE  UPPER(username) = UPPER(V('APP_USER'))
+                        AND    role_name = 'AUTHORISER'
+                        AND    is_active = 'Y'
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v
+                        WHERE  UPPER(username) = UPPER(V('APP_USER'))
+                        AND    role_name = 'ENGINEER'
+                        AND    is_active = 'Y'
+                    )
+                    AND UPPER(p.auth_person_name) = UPPER(V('APP_USER'))
+                )
+                OR (
+                    EXISTS (
+                        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v
+                        WHERE  UPPER(username) = UPPER(V('APP_USER'))
+                        AND    role_name = 'ENGINEER'
+                        AND    is_active = 'Y'
+                    )
+                    AND EXISTS (
+                        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v
+                        WHERE  UPPER(username) = UPPER(V('APP_USER'))
+                        AND    role_name = 'AUTHORISER'
+                        AND    is_active = 'Y'
+                    )
+                    AND (
+                        UPPER(p.created_by)          = UPPER(V('APP_USER'))
+                        OR EXISTS (
+                            SELECT 1 FROM ptw_pro.ptw_signatures sig
+                            WHERE  sig.permit_id = p.permit_id
+                            AND    sig.stage     = 'AUTH'
+                            AND    UPPER(sig.person_name) = UPPER(V('APP_USER'))
+                            )
+                    )
+                )
+                ORDER BY p.created_date DESC
+                ```
+        }
+        layout {
+            sequence: 80
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            cssClasses: ptw-mobile-only
+            icon: fa-list
+        }
+        advanced {
+            htmlDomId: recentPermitsMobile
+        }
+        componentAppearance {
+            template: @ptw-cards-no-wrapper
+            templateOptions: #DEFAULT#
+        }
+        pagination {
+            type: nextAndPreviousLinks
+        }
+        heading {
+            type: none
+        }
+
+        column BADGE_CLASS (
+            reportColumnQueryId: 11
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 100
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column CANCELLATION_HTML (
+            reportColumnQueryId: 18
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 170
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column CARD_COLOR_CLASS (
+            reportColumnQueryId: 12
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 110
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column CLEARANCE_HTML (
+            reportColumnQueryId: 17
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 160
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column DELETE_HTML (
+            reportColumnQueryId: 14
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 130
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column ENDED_DATETIME (
+            reportColumnQueryId: 8
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 80
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column MONITORING_HTML (
+            reportColumnQueryId: 16
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 150
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column PERMIT_ID (
+            reportColumnQueryId: 1
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 10
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column PERMIT_LINK (
+            reportColumnQueryId: 9
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 200
+            }
+        )
+
+        column PERMIT_NUMBER (
+            reportColumnQueryId: 2
+            derivedColumn: N
+            heading {
+                heading: Permit Number
+            }
+            layout {
+                sequence: 20
+            }
+            columnFormatting {
+                htmlExpression:
+                    ```html
+                    <div class="ptw-permit-card #CARD_COLOR_CLASS#">
+                    
+                      <div class="ptw-card-header">
+                        <span class="ptw-card-permit-number">#PERMIT_NUMBER#</span>
+                        <a href="#PERMIT_LINK#" style="text-decoration: none;">
+                          <span class="t-Badge #BADGE_CLASS# t-Badge--lg">#STATUS_DISPLAY#</span>
+                        </a>
+                      </div>
+                    
+                      <div class="ptw-card-body">
+                        <div>
+                          <strong class="ptw-card-label">Site</strong><br>
+                          #SITE_DETAILS#
+                        </div>
+                        <div>
+                          <strong class="ptw-card-label">Person in Charge</strong><br>
+                          #PERSON_IN_CHARGE#
+                        </div>
+                        <div>#TIME_REMAINING#</div>
+                      </div>
+                    
+                      <div class="ptw-card-actions ptw-action-btns">
+                        #DELETE_HTML#
+                        #WORKFLOW_ACTION_HTML#
+                        #MONITORING_HTML#
+                        #CLEARANCE_HTML#
+                        #CANCELLATION_HTML#
+                        #VIEW_PDF_HTML#
+                        #VIEW_HISTORY_HTML#
+                      </div>
+                    
+                    </div>
+                    ```
+            }
+            sorting {
+                sortable: false
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column PERSON_IN_CHARGE (
+            reportColumnQueryId: 5
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 50
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column PTW_TYPE (
+            reportColumnQueryId: 3
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column SITE_DETAILS (
+            reportColumnQueryId: 4
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 40
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column STARTED_DATETIME (
+            reportColumnQueryId: 7
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 70
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column STATUS_DISPLAY (
+            reportColumnQueryId: 10
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 90
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column TIME_REMAINING (
+            reportColumnQueryId: 13
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 120
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column VIEW_HISTORY_HTML (
+            reportColumnQueryId: 20
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 190
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column VIEW_PDF_HTML (
+            reportColumnQueryId: 19
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 180
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column WORKFLOW_ACTION_HTML (
+            reportColumnQueryId: 15
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 140
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column WORKFLOW_STATUS (
+            reportColumnQueryId: 6
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 60
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+    )
+
+    region syncstatus (
+        name: SyncStatus
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div id="connection-status" style="padding: 10px; margin-bottom: 10px; border-radius: 4px;">
+                    <span id="status-icon"></span>
+                    <span id="status-text"></span>
+                    <!-- <button id="sync-btn" style="margin-left: 10px; display: none;">Sync Now</button> -->
+                </div>
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region viewing-as-super-user (
+        name: Viewing As (Super User)
+        title: Viewing As (Super User)
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    l_html         CLOB;
+                    l_company_name ptw_pro.ptw_lv_companies.company_name%TYPE;
+                    l_override     VARCHAR2(50) := V('G_OVERRIDE_COMPANY_ID');
+                    l_is_super     VARCHAR2(1);
+                BEGIN
+                    BEGIN
+                        SELECT is_super_user
+                        INTO   l_is_super
+                        FROM   ptw_pro.ptw_lv_users
+                        WHERE  UPPER(username) = UPPER(:APP_USER)
+                        AND    is_active = 'Y';
+                    EXCEPTION
+                        WHEN NO_DATA_FOUND THEN l_is_super := 'N';
+                    END;
+                
+                    IF l_is_super != 'Y' OR l_override IS NULL OR l_override = '' THEN
+                        RETURN NULL;
+                    END IF;
+                
+                    BEGIN
+                        SELECT company_name
+                        INTO   l_company_name
+                        FROM   ptw_pro.ptw_lv_companies
+                        WHERE  company_id = TO_NUMBER(l_override);
+                    EXCEPTION
+                        WHEN NO_DATA_FOUND THEN l_company_name := 'Unknown Company';
+                    END;
+                
+                    l_html := '<div class="t-Alert t-Alert--info t-Alert--horizontal t-Alert--defaultIcons">'
+                           || '  <div class="t-Alert-wrap">'
+                           || '    <div class="t-Alert-icon"><span class="t-Icon fa-eye"></span></div>'
+                           || '    <div class="t-Alert-content">'
+                           || '      <div class="t-Alert-header">'
+                           || '        <h2 class="t-Alert-title">Viewing As (Super User): '
+                           ||              apex_escape.html(l_company_name)
+                           || '        </h2>'
+                           || '      </div>'
+                           || '    </div>'
+                           || '    <div class="t-Alert-buttons">'
+                           || '      <button type="button" class="t-Button t-Button--hot t-Button--simple"'
+                           || '              onclick="apex.submit(''CLEAR_OVERRIDE'');">'
+                           || '        Return to Super User View'
+                           || '      </button>'
+                           || '    </div>'
+                           || '  </div>'
+                           || '</div>';
+                
+                    RETURN l_html;
+                
+                EXCEPTION
+                    WHEN OTHERS THEN RETURN NULL;
+                END;
+                ```
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        serverSideCondition {
+            type: rowsReturned
+            sqlQuery:
+                ```sql
+                        SELECT 1
+                        FROM   ptw_pro.ptw_lv_users
+                        WHERE  UPPER(username) = UPPER(:APP_USER)
+                        AND    is_super_user = 'Y'
+                ```
+        }
+    )
+
+    pageItem P1_CLEAR_PERMIT_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 120
+            slot: body
+        }
+    )
+
+    pageItem P1_PERMIT_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 90
+            slot: body
+        }
+    )
+
+    pageItem P1_SELECTED_PERMIT_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 100
+            slot: body
+        }
+    )
+
+    pageItem P1_SUSPEND_REASON (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 110
+            slot: body
+        }
+    )
+
+    button create-new-permit (
+        buttonName: CREATE_NEW_PERMIT
+        label: Create New Permit
+        layout {
+            sequence: 10
+            region: @quick-actions
+            slot: regionBody
+            columnSpan: 6
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: [
+                t-Button--large
+                t-Button--stretch
+                ptw-action-btn
+            ]
+            icon: fa-plus-circle
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 14
+                items: {
+                    P14_PERMIT_ID: &P1_PERMIT_ID.
+                    P14_WORKFLOW_STATUS: DRAFT
+                }
+                clearCache: 14
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        security {
+            authorizationScheme: @can-edit-permits
+        }
+    )
+
+    button download-jobs (
+        buttonName: DOWNLOAD_JOBS
+        label: Download Jobs
+        layout {
+            sequence: 20
+            region: @quick-actions
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 6
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: [
+                t-Button--large
+                t-Button--stretch
+                ptw-action-btn
+            ]
+            icon: fa-cloud-download
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button refresh-mobile-permits (
+        buttonName: REFRESH_MOBILE_PERMITS
+        label: Refresh Permits
+        layout {
+            sequence: 10
+            region: @recent-permits-mobile
+            slot: edit
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button refresh-permits (
+        buttonName: REFRESH_PERMITS
+        label: Refresh Permits
+        layout {
+            sequence: 10
+            region: @recent-permits
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: redirectUrl
+            targetUrl: javascript:apex.region('permits-ir').refresh();
+            executeValidations: false
+            warnOnUnsavedChanges: doNotCheck
+        }
+        advanced {
+            htmlDomId: btn-refresh-permits
+        }
+    )
+
+    dynamicAction refresh-mobile-cards (
+        name: Refresh Mobile Cards
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @refresh-mobile-permits
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @recent-permits-mobile
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process clear-company-override (
+        name: Clear Company Override
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                BEGIN
+                    APEX_UTIL.SET_SESSION_STATE('G_OVERRIDE_COMPANY_ID', NULL);
+                END;
+                ```
+        }
+        execution {
+            sequence: 40
+        }
+        advanced {
+            executionMappingIdentifier: 52494299876962701
+        }
+        serverSideCondition {
+            type: request=Value
+            value: CLEAR_OVERRIDE
+        }
+    )
+
+    process delete-permit (
+        name: Delete Permit
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                -- DECLARE
+                --     v_permit_id NUMBER;
+                -- BEGIN
+                --     -- Extract permit ID from request (format: DELETE_PERMIT_123)
+                --     v_permit_id := TO_NUMBER(REPLACE(:REQUEST, 'DELETE_PERMIT_', ''));
+                
+                --     -- Delete permit (cascades to all related tables)
+                --     DELETE FROM ptw_pro.ptw_lv_permits
+                --     WHERE permit_id = v_permit_id;
+                
+                --     COMMIT;
+                
+                --     apex_application.g_print_success_message := 'Permit deleted successfully.';
+                
+                -- EXCEPTION
+                --     WHEN OTHERS THEN
+                --         ROLLBACK;
+                --         apex_error.add_error(
+                --             p_message => 'Error deleting permit: ' || SQLERRM,
+                --             p_display_location => apex_error.c_inline_in_notification
+                --         );
+                -- END;
+                
+                DECLARE
+                    v_permit_id NUMBER;
+                BEGIN
+                    apex_debug.message('REQUEST value: ' || :REQUEST);
+                    
+                    v_permit_id := TO_NUMBER(REPLACE(:REQUEST, 'DELETE_PERMIT_', ''));
+                    
+                    apex_debug.message('Permit ID to delete: ' || v_permit_id);
+                
+                    DELETE FROM ptw_pro.ptw_lv_permits
+                    WHERE permit_id = v_permit_id;
+                
+                    apex_debug.message('Rows deleted: ' || SQL%ROWCOUNT);
+                
+                    COMMIT;
+                
+                    apex_application.g_print_success_message := 'Permit deleted successfully.';
+                
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        ROLLBACK;
+                        apex_error.add_error(
+                            p_message => 'Error deleting permit: ' || SQLERRM,
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 25229784918353137
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST LIKE 'DELETE_PERMIT_%'
+        }
+    )
+
+    process resume-permit (
+        name: Resume Permit
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    v_permit_id NUMBER;
+                BEGIN
+                    -- Extract permit ID from request (format: RESUME_PERMIT_123)
+                    v_permit_id := TO_NUMBER(REPLACE(:REQUEST, 'RESUME_PERMIT_', ''));
+                
+                    UPDATE ptw_pro.ptw_lv_permits
+                    SET    workflow_status = 'STARTED',
+                           resumed_date    = SYSTIMESTAMP,
+                           resumed_by      = NVL(V('APP_USER'), USER),
+                           modified_date   = SYSTIMESTAMP,
+                           modified_by     = NVL(V('APP_USER'), USER)
+                    WHERE  permit_id       = v_permit_id
+                    AND    workflow_status = 'SUSPENDED';
+                
+                    IF SQL%ROWCOUNT = 0 THEN
+                        apex_error.add_error(
+                            p_message => 'Permit could not be resumed. It may not be in a suspended state.',
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                        RETURN;
+                    END IF;
+                
+                    COMMIT;
+                    apex_application.g_print_success_message := 'Permit resumed successfully.';
+                
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        ROLLBACK;
+                        apex_error.add_error(
+                            p_message => 'Error resuming permit: ' || SQLERRM,
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                END;
+                ```
+        }
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 31606355068440625
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST LIKE 'RESUME_PERMIT%'
+        }
+    )
+
+    process set-location (
+        name: SET_LOCATION
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                BEGIN
+                    :APP_LATITUDE  := apex_application.g_x01;
+                    :APP_LONGITUDE := apex_application.g_x02;
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: ajaxCallback
+        }
+        advanced {
+            executionMappingIdentifier: 33350169044951415
+        }
+    )
+
+    process suspend-permit (
+        name: Suspend Permit
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    v_permit_id NUMBER;
+                BEGIN
+                    -- Extract permit ID from request (format: SUSPEND_PERMIT_123)
+                    v_permit_id := TO_NUMBER(REPLACE(:REQUEST, 'SUSPEND_PERMIT_', ''));
+                
+                    IF :P1_SUSPEND_REASON IS NULL OR TRIM(:P1_SUSPEND_REASON) IS NULL THEN
+                        apex_error.add_error(
+                            p_message => 'A suspension reason is required.',
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                        RETURN;
+                    END IF;
+                
+                    IF :P1_WORKFLOW_STATUS NOT IN ('STARTED','AUTHORISED') THEN
+                        apex_error.add_error(
+                            p_message => 'A permit must STARTED or AUTHORISED to be suspended.',
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                        RETURN;
+                    END IF;
+                
+                    UPDATE ptw_pro.ptw_lv_permits
+                    SET    workflow_status   = 'SUSPENDED',
+                           suspension_reason = TRIM(:P1_SUSPEND_REASON),
+                           suspended_date    = SYSTIMESTAMP,
+                           suspended_by      = NVL(V('APP_USER'), USER),
+                           modified_date     = SYSTIMESTAMP,
+                           modified_by       = NVL(V('APP_USER'), USER)
+                    WHERE  permit_id       = v_permit_id
+                    AND    workflow_status IN ('STARTED','AUTHORISED');
+                
+                    IF SQL%ROWCOUNT = 0 THEN
+                        apex_error.add_error(
+                            p_message => 'Permit could not be suspended. It may already be suspended or completed.',
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                        RETURN;
+                    END IF;
+                
+                    COMMIT;
+                    apex_application.g_print_success_message := 'Started Permit suspended successfully.';
+                
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        ROLLBACK;
+                        apex_error.add_error(
+                            p_message => 'Error suspending permit: ' || SQLERRM,
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                END;
+                ```
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 31606240288440624
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST LIKE 'SUSPEND_PERMIT%'
+        }
+    )
+
+    branch (
+        name: Refresh Dashboard After Delete
+        execution {
+            sequence: 10
+        }
+        behavior {
+            target: {
+                page: 1
+                items: {
+                    P1_PERMIT_ID: &P1_PERMIT_ID.
+                }
+                clearCache: 1
+                successMessage: false
+            }
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: DELETE_PERMIT
+        }
+    )
+
+    branch (
+        name: Reload Dashboard
+        execution {
+            sequence: 20
+        }
+        behavior {
+            target: {
+                page: 1
+                clearCache: 1
+                successMessage: false
+            }
+        }
+        serverSideCondition {
+            type: request=Value
+            value: CLEAR_OVERRIDE
+        }
+    )
+
+)
+

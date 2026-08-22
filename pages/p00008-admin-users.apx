@@ -1,0 +1,2464 @@
+page 8 (
+    name: User Managerment
+    alias: ADMIN-USERS
+    title: User Managerment
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            .admin-page-header {
+                background: linear-gradient(135deg, #003366 0%, #005599 100%);
+                color: white;
+                padding: 25px 30px;
+                border-radius: 8px;
+                margin-bottom: 25px;
+            }
+            .admin-page-header h1 { margin: 0 0 5px 0; font-size: 1.75rem; font-weight: 700; }
+            .admin-page-header p  { margin: 0; opacity: 0.85; font-size: 0.95rem; }
+            
+            .admin-warning-banner {
+                background: #fff3cd;
+                border-left: 4px solid #ffc107;
+                padding: 12px 16px;
+                border-radius: 4px;
+                margin-bottom: 20px;
+                color: #856404;
+                font-weight: 500;
+            }
+            .admin-warning-banner .fa { margin-right: 8px; }
+            
+            .role-badge {
+                display: inline-block;
+                padding: 3px 10px;
+                border-radius: 12px;
+                font-size: 0.72rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                white-space: nowrap;
+            }
+            .role-ADMIN                  { background: #dc3545; color: white; }
+            .role-ADMIN_CONTRACT_SUPPORT { background: #fd7e14; color: white; }
+            .role-AUTHORISER             { background: #6610f2; color: white; }
+            .role-ENGINEER               { background: #007bff; color: white; }
+            .role-READONLY               { background: #6c757d; color: white; }
+            
+            .active-badge {
+                display: inline-block;
+                padding: 3px 10px;
+                border-radius: 12px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                text-transform: uppercase;
+            }
+            .active-Y { background: #d4edda; color: #155724; }
+            .active-N { background: #f8d7da; color: #721c24; }
+            
+            .role-desc-box {
+                background: #e8f4fd;
+                border-left: 3px solid #007bff;
+                padding: 8px 12px;
+                border-radius: 4px;
+                font-size: 0.875rem;
+                color: #004085;
+                margin-top: 5px;
+                min-height: 36px;
+            }
+            
+            .perm-matrix {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 0.82rem;
+                margin-top: 5px;
+            }
+            .perm-matrix th {
+                background: #003366;
+                color: white;
+                padding: 8px 10px;
+                text-align: center;
+                font-weight: 600;
+            }
+            .perm-matrix th:first-child { text-align: left; }
+            .perm-matrix td {
+                padding: 6px 10px;
+                border-bottom: 1px solid #e0e0e0;
+                text-align: center;
+            }
+            .perm-matrix td:first-child { text-align: left; font-weight: 500; }
+            .perm-matrix tr:nth-child(even) { background: #f8f9fa; }
+            .pm-yes  { color: #155724; font-weight: 700; font-size: 1rem; }
+            .pm-no   { color: #adb5bd; font-size: 1rem; }
+            .pm-own  { color: #856404; font-weight: 600; font-size: 0.8rem; }
+            
+            /* New role badge for ADMIN_USER_SUPPORT - pink, distinct from ADMIN red */
+            .role-ADMIN_USER_SUPPORT { background: #e83e8c; color: white; }
+             
+            /* Roles sub-region table - matches existing .cm-checklist pattern */
+            .role-assignments-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 0.85rem;
+                margin-top: 10px;
+            }
+            .role-assignments-table th {
+                background: #003366;   /* matches app primary colour */
+                color: white;
+                padding: 8px 12px;
+                text-align: left;
+                font-weight: 600;
+                font-size: 0.82rem;
+            }
+            .role-assignments-table td {
+                padding: 8px 12px;
+                border-bottom: 1px solid #e0e0e0;
+                vertical-align: middle;
+            }
+            .role-assignments-table tr:nth-child(even) { background: #f8f9fa; }
+            .role-assignments-table tr:hover           { background: #e8f4fd; }
+             
+            /* Checkbox group role selector - consistent with existing form items */
+            .p8-role-group .apex-item-option {
+                display: inline-flex;
+                align-items: center;
+                margin: 4px 12px 4px 0;
+                padding: 6px 12px;
+                border: 1px solid #dee2e6;
+                border-radius: 6px;
+                background: #f8f9fa;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            .p8-role-group .apex-item-option:hover {
+                border-color: #003366;
+                background: #e8f0f8;
+            }
+             
+            /* Account deactivation warning - shown via DA when P8_IS_ACTIVE = N */
+            .account-inactive-warning {
+                background: #f8d7da;
+                border-left: 4px solid #dc3545;   /* matches .active-N colour */
+                padding: 10px 14px;
+                border-radius: 4px;
+                margin-top: 8px;
+                color: #721c24;
+                font-size: 0.85rem;
+                display: none;
+            }
+            .account-inactive-warning.visible { display: block; }
+            
+            .t-Form-inputContainer input.text_field,
+            .t-Form-inputContainer input[type="text"],
+            .t-Form-inputContainer .apex-item-text {
+                line-height: 1.5;
+                padding-bottom: 4px;
+            }
+            
+            /* Modern role checkbox cards */
+            .p8-role-group .apex-item-option {
+                display: inline-flex;
+                align-items: flex-start;
+                margin: 6px;
+                padding: 10px 14px;
+                border: 2px solid #dee2e6;
+                border-radius: 8px;
+                background: #f8f9fa;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                min-width: 280px;
+                vertical-align: top;
+            }
+            
+            .p8-role-group .apex-item-option:hover {
+                border-color: #003366;
+                background: #e8f0f8;
+                box-shadow: 0 2px 6px rgba(0,51,102,0.15);
+            }
+            
+            .p8-role-group .apex-item-option input[type="checkbox"] {
+                margin-right: 10px;
+                margin-top: 3px;
+                width: 16px;
+                height: 16px;
+                accent-color: #003366;
+                flex-shrink: 0;
+                cursor: pointer;
+            }
+            
+            .p8-role-group .apex-item-option label {
+                cursor: pointer;
+                font-size: 0.82rem;
+                line-height: 1.4;
+                color: #333;
+                font-weight: 400;
+            }
+            
+            /* Highlight selected role cards */
+            .p8-role-group .apex-item-option:has(input:checked) {
+                border-color: #003366;
+                background: #e8f0f8;
+                box-shadow: 0 2px 8px rgba(0,51,102,0.2);
+            }
+            
+            .p8-role-group .apex-item-option:has(input:checked) label {
+                color: #003366;
+                font-weight: 600;
+            }
+            
+            /* Role permissions summary box */
+            .role-desc-box {
+                background: #e8f4fd;
+                border-left: 3px solid #003366;
+                padding: 10px 14px;
+                border-radius: 4px;
+                font-size: 0.875rem;
+                color: #004085;
+                margin-top: 5px;
+                min-height: 36px;
+                line-height: 1.6;
+            }
+            
+            ```
+    }
+    security {
+        authorizationScheme: @administration-rights
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region current-users-report (
+        name: Current Users Report
+        title: Current Application Users
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT
+                    au.user_name,
+                    u.email_address                                        AS email,
+                    u.mobile_no,
+                    pt.team_name,
+                    u.first_name,
+                    u.last_name,
+                    u.job_title                                            AS description,
+                    CASE u.is_active
+                        WHEN 'Y' THEN 'Active'
+                        ELSE 'Deactivated'
+                    END                                                    AS account_status,
+                    CASE au.account_locked
+                      WHEN 'Yes' THEN
+                        '<span class="fa fa-lock fa-lg" style="color:#dc3545;" title="Account locked"></span>'
+                      ELSE
+                        '<span class="fa fa-unlock fa-lg" style="color:#28a745;" title="Account unlocked"></span>'
+                    END  AS account_status_icon,
+                    -- Aggregate all active roles for this user
+                    LISTAGG(
+                        CASE ur.is_active
+                            WHEN 'Y' THEN r.role_name
+                            ELSE r.role_name || ' (inactive)'
+                        END, ', '
+                    ) WITHIN GROUP (ORDER BY r.display_order)              AS roles,
+                    -- Edit URL
+                    APEX_UTIL.PREPARE_URL(
+                        'f?p=' || :APP_ID || ':8:' || :APP_SESSION ||
+                        '::NO::P8_SELECTED_USERNAME:' ||
+                        APEX_ESCAPE.HTML(au.user_name)
+                    )                                                      AS edit_url,
+                    ''                                                     AS actions
+                FROM   apex_workspace_apex_users             au
+                LEFT JOIN ptw_pro.ptw_lv_users               u
+                    ON UPPER(u.username)  = UPPER(au.user_name)
+                LEFT JOIN ptw_pro.ptw_lv_user_role_assignments ur
+                    ON ur.user_id         = u.user_id
+                LEFT JOIN ptw_pro.ptw_lv_roles               r
+                    ON r.role_id          = ur.role_id
+                LEFT JOIN ptw_pro.ptw_lv_teams pt ON pt.team_id = u.team_id
+                WHERE  au.workspace_name  = (
+                           SELECT workspace FROM apex_applications
+                           WHERE  application_id = :APP_ID
+                       )
+                AND    u.is_active IS NOT NULL
+                AND (
+                    -- Super user, no override: see everyone (unrestricted)
+                    (
+                        EXISTS (SELECT 1 FROM ptw_pro.ptw_lv_users su
+                                 WHERE UPPER(su.username) = UPPER(:APP_USER)
+                                 AND   su.is_super_user = 'Y' AND su.is_active = 'Y')
+                        AND (V('G_OVERRIDE_COMPANY_ID') IS NULL OR V('G_OVERRIDE_COMPANY_ID') = '')
+                    )
+                    OR
+                    -- Everyone else (normal users, or super users WITH an
+                    -- override): see only your "effective company"
+                    u.company_id = NVL(
+                        TO_NUMBER(V('G_OVERRIDE_COMPANY_ID')),
+                        (SELECT company_id FROM ptw_pro.ptw_lv_users
+                          WHERE UPPER(username) = UPPER(:APP_USER))
+                    )
+                )
+                GROUP  BY
+                    au.user_name, u.email_address, pt.team_name,u.mobile_no,
+                    u.first_name, u.last_name, u.job_title, u.is_active,
+                    au.account_locked
+                ORDER  BY au.user_name
+                ```
+        }
+        layout {
+            sequence: 100
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-list-alt
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        actionsMenu {
+            includeActionsMenu: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 30146472761642733
+        }
+
+        column ACCOUNT_STATUS (
+            type: plainText
+            heading {
+                heading: Account Status
+            }
+            layout {
+                sequence: 70
+            }
+            columnFormatting {
+                htmlExpression: <span class="active-badge active-#ACCOUNT_STATUS#">#ACCOUNT_STATUS#</span>
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column ACCOUNT_STATUS_ICON (
+            type: plainText
+            heading {
+                heading: Account Locked?
+            }
+            layout {
+                sequence: 170
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: R
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column ACTIONS (
+            type: plainText
+            heading {
+                heading: Actions
+            }
+            layout {
+                sequence: 140
+            }
+            columnFormatting {
+                htmlExpression:
+                    ```html
+                    <a href="#EDIT_URL#"
+                       class="t-Button t-Button--small t-Button--icon t-Button--noUI"
+                       title="Edit User"
+                       onclick="apex.page.cancelWarnOnUnsavedChanges();
+                                apex.navigation.redirect(this.href); return false;">
+                        <span class="fa fa-edit"></span>
+                    </a>
+                    ```
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: M
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column DESCRIPTION (
+            type: plainText
+            heading {
+                heading: Job Title
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column EDIT_URL (
+            type: hidden
+            heading {
+                heading: Edit Url
+            }
+            layout {
+                sequence: 150
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column EMAIL (
+            type: plainText
+            heading {
+                heading: Email Address
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column FIRST_NAME (
+            type: plainText
+            heading {
+                heading: First Name
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column LAST_NAME (
+            type: plainText
+            heading {
+                heading: Last Name
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column MOBILE_NO (
+            type: plainText
+            heading {
+                heading: Mobile No
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        column ROLES (
+            type: plainText
+            heading {
+                heading: Roles
+            }
+            layout {
+                sequence: 160
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column TEAM_NAME (
+            type: plainText
+            heading {
+                heading: Team Name
+            }
+            layout {
+                sequence: 180
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: S
+            }
+        )
+
+        column USER_NAME (
+            type: plainText
+            heading {
+                heading: Username
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        savedReport 315981 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn ACCOUNT_STATUS (
+                sequence: 8
+            )
+
+            displayColumn ACCOUNT_STATUS_ICON (
+                sequence: 9
+            )
+
+            displayColumn ACTIONS (
+                sequence: 10
+            )
+
+            displayColumn DESCRIPTION (
+                sequence: 7
+            )
+
+            displayColumn EMAIL (
+                sequence: 3
+            )
+
+            displayColumn FIRST_NAME (
+                sequence: 5
+            )
+
+            displayColumn LAST_NAME (
+                sequence: 6
+            )
+
+            displayColumn MOBILE_NO (
+                sequence: 4
+            )
+
+            displayColumn TEAM_NAME (
+                sequence: 2
+            )
+
+            displayColumn USER_NAME (
+                sequence: 1
+            )
+
+        )
+
+    )
+
+    region edit-user-details (
+        name: Edit User Details
+        title: Edit User Details
+        type: staticContent
+        layout {
+            sequence: 60
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-user-edit
+        }
+        advanced {
+            htmlDomId: R_EDIT_USER
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P8_SELECTED_USERNAME
+        }
+    )
+
+    region page-header (
+        name: Page Header
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    l_is_admin  VARCHAR2(1) := 'N';
+                    l_html      CLOB;
+                BEGIN
+                    BEGIN
+                        SELECT CASE is_admin WHEN 'Yes' THEN 'Y' ELSE 'N' END
+                        INTO   l_is_admin
+                        FROM   apex_workspace_apex_users
+                        WHERE  UPPER(user_name)  = UPPER(V('APP_USER'))
+                        AND    workspace_name    = (
+                                   SELECT workspace FROM apex_applications
+                                   WHERE  application_id = :APP_ID
+                               );
+                    EXCEPTION
+                        WHEN NO_DATA_FOUND THEN l_is_admin := 'N';
+                    END;
+                
+                    l_html := '<div class="admin-page-header">'
+                           || '  <div style="display:flex; justify-content:space-between; align-items:center;">'
+                           || '    <div>'
+                           || '      <h1><span class="fa fa-users-cog" style="margin-right:10px;"></span>User Management</h1>'
+                           || '      <p>Edit user profiles, manage role assignments and account status. '
+                           || '         New users must be created directly in the APEX Workspace by a system administrator.</p>'
+                           || '    </div>';
+                
+                    IF l_is_admin = 'Y' THEN
+                        l_html := l_html
+                               || '<div style="flex-shrink:0; margin-left:20px;">'
+                               || '  <span style="background:#dc3545; color:white;'
+                               || '             display:inline-flex; align-items:center;'
+                               || '             padding:6px 16px; border-radius:20px;'
+                               || '             font-size:0.78rem; font-weight:700;'
+                               || '             letter-spacing:0.5px; text-transform:uppercase;'
+                               || '             box-shadow:0 2px 4px rgba(0,0,0,0.3);'
+                               || '             white-space:nowrap;">'
+                               || '  <span class="fa fa-shield" style="margin-right:8px; font-size:0.9rem;"></span>'
+                               || '  Workspace Administrator'
+                               || '</span>'
+                               || '</div>';
+                    END IF;
+                
+                    l_html := l_html
+                           || '  </div>'
+                           || '</div>';
+                
+                    RETURN l_html;
+                END;
+                ```
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region reset-password (
+        name: Reset Password
+        title: Reset User Password
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <p style="color:#555; margin-top:0;">
+                    To reset a password for an existing user, enter their exact username
+                    and a new temporary password below. Advise the user to change their
+                    password on first login. This does not affect the user&rsquo;s role or
+                    account status.
+                </p>
+                
+                ```
+        }
+        layout {
+            sequence: 90
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-key
+        }
+    )
+
+    region role-permissions-matrix (
+        name: Role Permissions Matrix
+        title: Role Permissions Reference
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <table class="perm-matrix">
+                    <thead>
+                        <tr>
+                            <th style="width:30%;">Permission</th>
+                            <th>Admin</th>
+                            <th>User Support</th>
+                            <th>Contract Support</th>
+                            <th>Authoriser</th>
+                            <th>Engineer</th>
+                            <th>Read Only</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>View Dashboard</td>
+                            <td class="pm-yes">&#10003; All</td>
+                            <td class="pm-yes">&#10003; All</td>
+                            <td class="pm-yes">&#10003; All</td>
+                            <td class="pm-yes">&#10003; All</td>
+                            <td class="pm-own">Own Only</td>
+                            <td class="pm-yes">&#10003; All</td>
+                        </tr>
+                        <tr>
+                            <td>Export / Download Reports</td>
+                            <td class="pm-yes">&#10003;</td>
+                            <td class="pm-no">&#10007;</td>
+                            <td class="pm-yes">&#10003;</td>
+                            <td class="pm-yes">&#10003;</td>
+                            <td class="pm-no">&#10007;</td>
+                            <td class="pm-no">&#10007;</td>
+                        </tr>
+                        <tr>
+                            <td>Delete Permits</td>
+                            <td class="pm-yes">&#10003;</td>
+                            <td class="pm-no">&#10007;</td>
+                            <td class="pm-yes">&#10003;</td>
+                            <td class="pm-no">&#10007;</td>
+                            <td class="pm-no">&#10007;</td>
+                            <td class="pm-no">&#10007;</td>
+                        </tr>
+                        <tr>
+                            <td>Create New Permit</td>
+                            <td class="pm-yes">&#10003;</td>
+                            <td class="pm-no">&#10007;</td>
+                            <td class="pm-no">&#10007;</td>
+                            <td class="pm-yes">&#10003;</td>
+                            <td class="pm-yes">&#10003;</td>
+                            <td class="pm-no">&#10007;</td>
+                        </tr>
+                        <tr>
+                            <td>Edit Permit (Pages 2-4, 6)</td>
+                            <td class="pm-yes">&#10003; All</td>
+                            <td class="pm-no">&#10007;</td>
+                            <td class="pm-no">View Only</td>
+                            <td class="pm-yes">&#10003; All</td>
+                            <td class="pm-own">Own Only</td>
+                            <td class="pm-no">&#10007;</td>
+                        </tr>
+                        <tr>
+                            <td>Authorise Permit (Page 5)</td>
+                            <td class="pm-yes">&#10003;</td>
+                            <td class="pm-no">&#10007;</td>
+                            <td class="pm-no">&#10007;</td>
+                            <td class="pm-yes">&#10003;</td>
+                            <td class="pm-no">&#10007;</td>
+                            <td class="pm-no">&#10007;</td>
+                        </tr>
+                        <tr>
+                            <td>Generate PDF</td>
+                            <td class="pm-yes">&#10003;</td>
+                            <td class="pm-no">&#10007;</td>
+                            <td class="pm-yes">&#10003;</td>
+                            <td class="pm-yes">&#10003;</td>
+                            <td class="pm-yes">&#10003;</td>
+                            <td class="pm-no">&#10007;</td>
+                        </tr>
+                        <tr>
+                            <td>User Management</td>
+                            <td class="pm-yes">&#10003;</td>
+                            <td class="pm-yes">&#10003;</td>
+                            <td class="pm-no">&#10007;</td>
+                            <td class="pm-no">&#10007;</td>
+                            <td class="pm-no">&#10007;</td>
+                            <td class="pm-no">&#10007;</td>
+                        </tr>
+                    </tbody>
+                </table>
+                ```
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @/collapsible
+            templateOptions: [
+                #DEFAULT#
+                is-collapsed
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-shield
+        }
+    )
+
+    region select-a-user (
+        name: Select a User
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div style="text-align:center; padding:30px; color:#6c757d;">
+                         <span class="fa fa-users" style="font-size:2rem; display:block;
+                               margin-bottom:10px; color:#dee2e6;"></span>
+                         Select a user from the <strong>Current Application Users</strong>
+                         report below to view and edit their details.
+                </div>
+                ```
+        }
+        layout {
+            sequence: 70
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P8_SELECTED_USERNAME
+        }
+    )
+
+    region user-role-assignments (
+        name: User Role Assignments
+        title: Current Role Assignments
+        type: classicReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT
+                    r.role_name,
+                    r.role_description,
+                    ur.is_active                                       AS role_active,
+                    TO_CHAR(ur.granted_date, 'DD-MON-YYYY HH24:MI')   AS granted_date,
+                    ur.granted_by,
+                    ur.user_role_id,
+                    -- Toggle button HTML
+                    CASE ur.is_active
+                        WHEN 'Y' THEN
+                            '<a href="javascript:apex.confirm(''Deactivate ' ||
+                            APEX_ESCAPE.HTML(r.role_name) ||
+                            ' role for this user?'',''DEACTIVATE_ROLE_' ||
+                            ur.user_role_id || ''');" ' ||
+                            'class="t-Button t-Button--small t-Button--danger t-Button--iconLeft" ' ||
+                            'title="Deactivate Role">' ||
+                            '<span class="fa fa-ban"></span> Deactivate</a>'
+                        ELSE
+                            '<a href="javascript:apex.confirm(''Reactivate ' ||
+                            APEX_ESCAPE.HTML(r.role_name) ||
+                            ' role for this user?'',''REACTIVATE_ROLE_' ||
+                            ur.user_role_id || ''');" ' ||
+                            'class="t-Button t-Button--small t-Button--success t-Button--iconLeft" ' ||
+                            'title="Reactivate Role">' ||
+                            '<span class="fa fa-check"></span> Reactivate</a>'
+                    END AS role_action
+                FROM   ptw_pro.ptw_lv_user_role_assignments  ur
+                JOIN   ptw_pro.ptw_lv_roles                  r
+                    ON r.role_id = ur.role_id
+                JOIN   ptw_pro.ptw_lv_users                  u
+                    ON u.user_id = ur.user_id
+                WHERE  UPPER(u.username) = UPPER(:P8_SELECTED_USERNAME)
+                ORDER  BY r.display_order, ur.is_active DESC
+                ```
+            pageItemsToSubmit: P8_SELECTED_USERNAME
+        }
+        layout {
+            sequence: 80
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-shield
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P8_SELECTED_USERNAME
+        }
+        componentAppearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Report--altRowsDefault
+                t-Report--rowHighlight
+            ]
+        }
+        pagination {
+            type: nextAndPreviousLinks
+        }
+
+        column GRANTED_BY (
+            reportColumnQueryId: 5
+            derivedColumn: N
+            heading {
+                heading: Granted By
+            }
+            layout {
+                sequence: 50
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+        column GRANTED_DATE (
+            reportColumnQueryId: 4
+            derivedColumn: N
+            heading {
+                heading: Granted Date
+            }
+            layout {
+                sequence: 40
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+        column ROLE_ACTION (
+            reportColumnQueryId: 7
+            derivedColumn: N
+            heading {
+                heading: Action
+            }
+            layout {
+                sequence: 70
+            }
+            sorting {
+                sortable: false
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column ROLE_ACTIVE (
+            reportColumnQueryId: 3
+            derivedColumn: N
+            heading {
+                heading: Active
+            }
+            layout {
+                sequence: 30
+            }
+            columnFormatting {
+                htmlExpression: <span class="active-badge active-#ROLE_ACTIVE#">#ROLE_ACTIVE#</span>
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+        column ROLE_DESCRIPTION (
+            reportColumnQueryId: 2
+            derivedColumn: N
+            heading {
+                heading: Description
+            }
+            layout {
+                sequence: 20
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+        column ROLE_NAME (
+            reportColumnQueryId: 1
+            derivedColumn: N
+            heading {
+                heading: Role
+            }
+            layout {
+                sequence: 10
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+        column USER_ROLE_ID (
+            reportColumnQueryId: 6
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 60
+            }
+        )
+
+    )
+
+    pageItem P8_ACCOUNT_LOCKED (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 20
+            region: @edit-user-details
+            slot: regionBody
+        }
+    )
+
+    pageItem P8_CONFIRM_NEW_PASSWORD (
+        type: password
+        label {
+            label: Confirm New Password
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @reset-password
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 100
+        }
+    )
+
+    pageItem P8_DESCRIPTION (
+        type: textField
+        label {
+            label: Description / Job Title
+            alignment: left
+        }
+        layout {
+            sequence: 90
+            region: @edit-user-details
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: e.g. Electrical Engineer
+        }
+        validation {
+            maxLength: 200
+        }
+        source {
+            used: always
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P8_EDIT_USER_HEADER (
+        type: displayOnly
+        label {
+            alignment: left
+        }
+        settings {
+            format: html
+        }
+        layout {
+            sequence: 40
+            region: @edit-user-details
+            slot: regionBody
+            alignment: left
+            columnSpan: 12
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+        }
+        source {
+            type: staticValue
+            staticValue:
+                ```
+                <div class="edit-user-header">
+                         <span class="fa fa-user"></span>
+                         Editing user: &P8_SELECTED_USERNAME.
+                       </div>
+                ```
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P8_EFFECTIVE_COMPANY_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+    )
+
+    pageItem P8_EMAIL (
+        type: textField
+        label {
+            label: Email Address
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            region: @edit-user-details
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 200
+        }
+        source {
+            used: always
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P8_FIRST_NAME (
+        type: textField
+        label {
+            label: First Name
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @edit-user-details
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 100
+        }
+        source {
+            used: always
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P8_INACTIVE_WARNING (
+        type: displayOnly
+        label {
+            alignment: left
+        }
+        settings {
+            format: html
+        }
+        layout {
+            sequence: 120
+            region: @edit-user-details
+            slot: regionBody
+            alignment: left
+            columnSpan: 12
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+        }
+        source {
+            type: staticValue
+            staticValue:
+                ```
+                <div class="account-inactive-warning" id="P8_INACTIVE_WARNING_DIV">
+                         <span class="fa fa-exclamation-triangle"></span>
+                         <strong>Warning:</strong> Setting this account to Inactive will
+                         lock the APEX login AND deactivate ALL role assignments.
+                         Roles must be manually re-enabled after reactivation.
+                       </div>
+                ```
+        }
+    )
+
+    pageItem P8_IS_ACTIVE (
+        type: selectList
+        label {
+            label: Account Status
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Active;Y,Inactive;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 100
+            region: @edit-user-details
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 3
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        source {
+            used: always
+        }
+        sessionState {
+            storage: request
+        }
+        help {
+            helpText: Setting to Inactive locks the APEX account AND deactivates ALL role assignments. Roles must be manually re-enabled after reactivation.
+        }
+    )
+
+    pageItem P8_IS_WORKSPACE_ADMIN (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            region: @edit-user-details
+            slot: regionBody
+        }
+    )
+
+    pageItem P8_LAST_NAME (
+        type: textField
+        label {
+            label: Last Name
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @edit-user-details
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 100
+        }
+        source {
+            used: always
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P8_MOBILE_NO (
+        type: textField
+        label {
+            label: Mobile No
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @edit-user-details
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            used: always
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P8_NEW_PASSWORD (
+        type: password
+        label {
+            label: New Password
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @reset-password
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 100
+        }
+    )
+
+    pageItem P8_RESET_USERNAME (
+        type: textField
+        label {
+            label: Username to Reset
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @reset-password
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: Enter exact username...
+        }
+        validation {
+            maxLength: 100
+        }
+    )
+
+    pageItem P8_ROLE (
+        type: checkboxGroup
+        label {
+            label: Access Role
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT
+                       r.role_name   || ' - ' || r.role_description  AS display_value,
+                       r.role_name                                    AS return_value
+                FROM   ptw_pro.ptw_lv_roles r
+                WHERE  r.is_active = 'Y'
+                AND    -- ADMIN role not visible because you can't assign it to anyone
+                       r.role_name != 'ADMIN'
+                ORDER BY r.display_order
+                ```
+            displayExtraValues: false
+        }
+        layout {
+            sequence: 130
+            region: @edit-user-details
+            slot: regionBody
+            alignment: left
+            columnSpan: 12
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            cssClasses: p8-role-group
+        }
+    )
+
+    pageItem P8_ROLE_DESCRIPTION (
+        type: displayOnly
+        label {
+            label: Role Permissions Summary
+            alignment: left
+        }
+        settings {
+            format: html
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 150
+            region: @edit-user-details
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+        }
+        source {
+            type: staticValue
+            staticValue: <div class="role-desc-box">&P8_ROLE_DESCRIPTION.</div>'
+        }
+        security {
+            sessionStateProtection: restricted
+        }
+    )
+
+    pageItem P8_SELECTED_USERNAME (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 10
+            region: @edit-user-details
+            slot: regionBody
+        }
+    )
+
+    pageItem P8_TEAM_ID (
+        type: selectList
+        label {
+            label: "Team "
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT team_name d, team_id r
+                             FROM   ptw_pro.ptw_lv_teams
+                             WHERE  company_id = :P8_EFFECTIVE_COMPANY_ID -- same resolution as rest of page
+                             AND    is_active = 'Y'
+                             ORDER  BY team_name
+                ```
+            displayExtraValues: false
+            nullDisplayValue: -- Team Selection --
+        }
+        layout {
+            sequence: 110
+            region: @edit-user-details
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 3
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancel
+        layout {
+            sequence: 20
+            region: @edit-user-details
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectUrl
+            targetUrl: f?p=&APP_ID.:8:&SESSION.::&DEBUG.:8::
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button reset-password (
+        buttonName: RESET_PASSWORD
+        label: Reset Password
+        layout {
+            sequence: 40
+            region: @reset-password
+            slot: regionBody
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-key
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button unlock-account (
+        buttonName: UNLOCK_ACCOUNT
+        label: Unlock Account
+        layout {
+            sequence: 10
+            region: @edit-user-details
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-unlock
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        advanced {
+            htmlDomId: B_UNLOCK_ACCOUNT
+        }
+        serverSideCondition {
+            type: item=value
+            item: P8_ACCOUNT_LOCKED
+            value: Yes
+        }
+    )
+
+    button update-user (
+        buttonName: UPDATE_USER
+        label: Save Changes
+        layout {
+            sequence: 20
+            region: @edit-user-details
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        advanced {
+            htmlDomId: B_UPDATE_USER
+        }
+    )
+
+    dynamicAction populate-role-description-when-role-changes (
+        name: Populate Role Description when Role changes
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P8_ROLE
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var selectedRoles = ($v('P8_ROLE') || '').split(':').filter(Boolean);
+                    var desc = {
+                        'ADMIN'                 : 'Full administrator. All actions, all pages, user management.',
+                        'ADMIN_USER_SUPPORT'    : 'User support admin. Edit users, reset passwords, manage roles. Cannot create users.',
+                        'ADMIN_CONTRACT_SUPPORT': 'Admin support. Full dashboard/reports, export, delete. Permit pages read-only.',
+                        'AUTHORISER'            : 'Create, edit and authorise all permits. Export reports.',
+                        'ENGINEER'              : 'Create and edit own permits only. Generate PDF. No export or delete.',
+                        'READONLY'              : 'View permits and reports only.'
+                    };
+                    if (selectedRoles.length === 0) {
+                        $s('P8_ROLE_DESCRIPTION',
+                           '<em style="color:#6c757d;">Select one or more roles to see permissions.</em>');
+                    } else {
+                        var summary = selectedRoles.map(function(r) {
+                            return '<strong>' + r + '</strong>: ' + (desc[r] || r);
+                        }).join('<br>');
+                        $s('P8_ROLE_DESCRIPTION', summary);
+                    }
+                    ```
+            }
+            affectedElements {
+                selectionType: items
+                items: [
+                    P8_ROLE
+                    P8_ROLE_DESCRIPTION
+                ]
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction show-account-deactivation-warning (
+        name: Show account deactivation warning
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P8_IS_ACTIVE
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    if ($v('P8_IS_ACTIVE') === 'N') {
+                        $('#P8_INACTIVE_WARNING_DIV').addClass('visible');
+                    } else {
+                        $('#P8_INACTIVE_WARNING_DIV').removeClass('visible');
+                    }
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction when-the-page-loads-and-reloads (
+        name: When the page loads and reloads
+        execution {
+            sequence: 30
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P8_SELECTED_USERNAME
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                        l_username VARCHAR2(100);
+                    BEGIN
+                        l_username := UPPER(:P8_SELECTED_USERNAME);
+                    
+                        BEGIN
+                            ptw_pro.ptw_sec_pkg.check_user_in_company(l_username);
+                        EXCEPTION
+                            WHEN OTHERS THEN
+                                apex_error.add_error(
+                                    p_message          => 'Access denied: this user does not belong to your company.',
+                                    p_display_location => apex_error.c_inline_in_notification
+                                );
+                                RETURN;
+                        END;
+                    
+                        -- Verify user exists in APEX
+                        DECLARE
+                            l_count NUMBER;
+                        BEGIN
+                            SELECT COUNT(*) INTO l_count
+                            FROM   apex_workspace_apex_users
+                            WHERE  UPPER(user_name)  = l_username
+                            AND    workspace_name    = (
+                                       SELECT workspace FROM apex_applications
+                                       WHERE  application_id = :APP_ID
+                                   );
+                            IF l_count = 0 THEN
+                                apex_error.add_error(
+                                    p_message          => 'User not found: ' || :P8_SELECTED_USERNAME,
+                                    p_display_location => apex_error.c_inline_in_notification
+                                );
+                                RETURN;
+                            END IF;
+                    
+                            SELECT au.account_locked
+                            INTO   :P8_ACCOUNT_LOCKED
+                            FROM   apex_workspace_apex_users au
+                            WHERE  UPPER(au.user_name) = l_username
+                            AND    au.workspace_name   = (SELECT workspace 
+                                                          FROM   apex_applications
+                                                          WHERE  application_id = :APP_ID);
+                        END;
+                    
+                        -- Load profile from ptw_lv_users (primary source)
+                        BEGIN
+                            SELECT u.first_name,
+                                   u.last_name,
+                                   u.email_address,
+                                   u.mobile_no,
+                                   u.job_title,
+                                   u.is_active,
+                                   u.team_id
+                            INTO   :P8_FIRST_NAME,
+                                   :P8_LAST_NAME,
+                                   :P8_EMAIL,
+                                   :P8_MOBILE_NO,
+                                   :P8_DESCRIPTION,
+                                   :P8_IS_ACTIVE,
+                                   :P8_TEAM_ID
+                            FROM   ptw_pro.ptw_lv_users u
+                            WHERE  UPPER(u.username) = l_username;
+                        EXCEPTION
+                            WHEN NO_DATA_FOUND THEN
+                                -- No profile row yet - fall back to APEX account data
+                                BEGIN
+                                    SELECT au.email,
+                                           au.first_name,
+                                           au.last_name,
+                                           au.description
+                                    INTO   :P8_EMAIL,
+                                           :P8_FIRST_NAME,
+                                           :P8_LAST_NAME,
+                                           :P8_DESCRIPTION
+                                    FROM   apex_workspace_apex_users au
+                                    WHERE  UPPER(au.user_name) = l_username
+                                    AND    au.workspace_name   = (
+                                               SELECT workspace FROM apex_applications
+                                               WHERE  application_id = :APP_ID
+                                           );
+                                EXCEPTION
+                                    WHEN NO_DATA_FOUND THEN NULL;
+                                END;
+                                :P8_IS_ACTIVE := 'Y';
+                        END;
+                    
+                        -- Load active role assignments as colon-delimited string
+                        BEGIN
+                            SELECT LISTAGG(r.role_name, ':')
+                                       WITHIN GROUP (ORDER BY r.display_order)
+                            INTO   :P8_ROLE
+                            FROM   ptw_pro.ptw_lv_user_role_assignments  ur
+                            JOIN   ptw_pro.ptw_lv_roles                  r
+                                ON r.role_id  = ur.role_id
+                            JOIN   ptw_pro.ptw_lv_users                  u
+                                ON u.user_id  = ur.user_id
+                            WHERE  UPPER(u.username) = l_username
+                            AND    ur.is_active      = 'Y';
+                        EXCEPTION
+                            WHEN NO_DATA_FOUND THEN
+                                :P8_ROLE := NULL;
+                        END;
+                    
+                    END;
+                    ```
+                itemsToSubmit: P8_SELECTED_USERNAME
+                itemsToReturn: [
+                    P8_FIRST_NAME
+                    P8_LAST_NAME
+                    P8_EMAIL
+                    P8_MOBILE_NO
+                    P8_DESCRIPTION
+                    P8_IS_ACTIVE
+                    P8_ROLE
+                    P8_ACCOUNT_LOCKED
+                    P8_IS_WORKSPACE_ADMIN
+                    P8_TEAM_ID
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    validation password-complexity (
+        name: Password Complexity
+        execution {
+            sequence: 90
+        }
+        validation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    v_pwd VARCHAR2(100);
+                BEGIN
+                    v_pwd := CASE WHEN :REQUEST = 'CREATE_USER' THEN :P8_PASSWORD
+                                  ELSE :P8_NEW_PASSWORD END;
+                    IF v_pwd IS NULL THEN RETURN NULL; END IF;
+                    IF LENGTH(v_pwd) < 8 THEN
+                        RETURN 'Password must be at least 8 characters.';
+                    END IF;
+                    IF REGEXP_INSTR(v_pwd,'[0-9]') = 0 THEN
+                        RETURN 'Password must contain at least one number.';
+                    END IF;
+                    IF REGEXP_INSTR(v_pwd,'[A-Z]') = 0 THEN
+                        RETURN 'Password must contain at least one uppercase letter.';
+                    END IF;
+                    RETURN NULL;
+                END;
+                ```
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'RESET_PASSWORD'
+        }
+    )
+
+    validation reset-username-required (
+        name: Reset Username Required
+        execution {
+            sequence: 70
+        }
+        validation {
+            type: itemIsNotNull
+            item: P8_RESET_USERNAME
+        }
+        error {
+            errorMessage: Please enter the username to reset.
+            associatedItem: @P8_RESET_USERNAME
+        }
+        serverSideCondition {
+            type: request=Value
+            value: RESET_PASSWORD
+        }
+    )
+
+    validation role-required (
+        name: Role Required
+        execution {
+            sequence: 30
+        }
+        validation {
+            plsqlExpression:
+                ```plsql
+                :P8_ROLE IS NOT NULL 
+                OR :P8_IS_WORKSPACE_ADMIN = 'Y'
+                ```
+        }
+        error {
+            errorMessage: Please select an access role for this user.
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'UPDATE_USER'
+        }
+    )
+
+    validation username-required (
+        name: Username Required
+        execution {
+            sequence: 10
+        }
+        validation {
+            type: itemIsNotNull
+            item: P8_USERNAME
+        }
+        error {
+            errorMessage: Username is required.
+        }
+        serverSideCondition {
+            type: request=Value
+            value: CREATE_USER
+        }
+    )
+
+    process clear-password-fields-after-submit (
+        name: Clear Password Fields After Submit
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                BEGIN
+                    :P8_PASSWORD             := NULL;
+                    :P8_CONFIRM_PASSWORD     := NULL;
+                    :P8_NEW_PASSWORD         := NULL;
+                    :P8_CONFIRM_NEW_PASSWORD := NULL;
+                END;
+                ```
+        }
+        execution {
+            sequence: 60
+        }
+        advanced {
+            executionMappingIdentifier: 31605021950440612
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST IN ('CREATE_USER', 'RESET_PASSWORD')
+        }
+    )
+
+    process deactivate-user-role (
+        name: Deactivate User Role
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    l_user_role_id NUMBER;
+                    l_username     VARCHAR2(100);
+                BEGIN
+                    l_user_role_id := TO_NUMBER(
+                                          REPLACE(:REQUEST, 'DEACTIVATE_ROLE_', '')
+                                      );
+                
+                    SELECT u.username
+                    INTO   l_username
+                    FROM   ptw_pro.ptw_lv_user_role_assignments ur
+                    JOIN   ptw_pro.ptw_lv_users u ON u.user_id = ur.user_id
+                    WHERE  ur.user_role_id = l_user_role_id;
+                 
+                    ptw_pro.ptw_sec_pkg.check_user_in_company(l_username);
+                 
+                    UPDATE ptw_pro.ptw_lv_user_role_assignments
+                    SET    is_active     = 'N',
+                           modified_date = CURRENT_TIMESTAMP,
+                           modified_by   = NVL(V('APP_USER'), USER)
+                    WHERE  user_role_id  = l_user_role_id;
+                 
+                    COMMIT;
+                    apex_application.g_print_success_message := 'Role deactivated successfully.';
+                 
+                EXCEPTION
+                    WHEN NO_DATA_FOUND THEN
+                        apex_error.add_error(
+                            p_message          => 'Role assignment not found.',
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                    WHEN OTHERS THEN
+                        ROLLBACK;
+                        apex_error.add_error(
+                            p_message          => 'Error deactivating role: ' || SQLERRM,
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                END;
+                ```
+        }
+        execution {
+            sequence: 40
+        }
+        advanced {
+            executionMappingIdentifier: 31604947175440611
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST LIKE 'DEACTIVATE_ROLE_%'
+        }
+    )
+
+    process load-company-data (
+        name: Load Company data
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    v_override   VARCHAR2(50) := V('G_OVERRIDE_COMPANY_ID');
+                    v_company_id NUMBER;
+                BEGIN
+                    IF v_override IS NOT NULL AND TRIM(v_override) IS NOT NULL THEN
+                        v_company_id := TO_NUMBER(TRIM(v_override));
+                    ELSE
+                        BEGIN
+                            SELECT company_id INTO v_company_id
+                            FROM   ptw_pro.ptw_lv_users
+                            WHERE  UPPER(username) = UPPER(SYS_CONTEXT('APEX$SESSION', 'APP_USER'))
+                            AND    is_super_user   = 'N'
+                            AND    is_active       = 'Y';
+                        EXCEPTION
+                            WHEN NO_DATA_FOUND THEN
+                                v_company_id := NULL;
+                        END;
+                    END IF;
+                
+                    :P8_EFFECTIVE_COMPANY_ID := v_company_id;
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: afterHeader
+        }
+        advanced {
+            executionMappingIdentifier: 53189544258153119
+        }
+    )
+
+    process reactivate-user-role (
+        name: Reactivate User Role
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    l_user_role_id NUMBER;
+                    l_username     VARCHAR2(100);
+                BEGIN
+                    l_user_role_id := TO_NUMBER(
+                                          REPLACE(:REQUEST, 'REACTIVATE_ROLE_', '')
+                                      );
+                
+                    SELECT u.username
+                    INTO   l_username
+                    FROM   ptw_pro.ptw_lv_user_role_assignments ur
+                    JOIN   ptw_pro.ptw_lv_users u ON u.user_id = ur.user_id
+                    WHERE  ur.user_role_id = l_user_role_id;
+                 
+                    ptw_pro.ptw_sec_pkg.check_user_in_company(l_username);
+                 
+                    UPDATE ptw_pro.ptw_lv_user_role_assignments
+                    SET    is_active     = 'N',
+                           modified_date = CURRENT_TIMESTAMP,
+                           modified_by   = NVL(V('APP_USER'), USER)
+                    WHERE  user_role_id  = l_user_role_id;
+                 
+                    COMMIT;
+                    apex_application.g_print_success_message := 'Role reactivated successfully.';
+                 
+                EXCEPTION
+                    WHEN NO_DATA_FOUND THEN
+                        apex_error.add_error(
+                            p_message          => 'Role assignment not found.',
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                    WHEN OTHERS THEN
+                        ROLLBACK;
+                        apex_error.add_error(
+                            p_message          => 'Error reactivating role: ' || SQLERRM,
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                END;
+                ```
+        }
+        execution {
+            sequence: 45
+        }
+        advanced {
+            executionMappingIdentifier: 39964238595997118
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST LIKE 'REACTIVATE_ROLE_%'
+        }
+    )
+
+    process reset-user-password (
+        name: Reset User Password
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                -- Minimal approach: only need user_id to call EDIT_USER for password reset.
+                -- Password-only update - developer roles preserved via GET_USER_ROLES.
+                DECLARE
+                    l_user_id        NUMBER;
+                    l_user_name      VARCHAR2(100);
+                    l_developer_role VARCHAR2(200);
+                BEGIN
+                    -- Step 1: Verify user exists in this workspace and get username
+                    BEGIN
+                        SELECT user_name
+                        INTO   l_user_name
+                        FROM   apex_workspace_apex_users
+                        WHERE  UPPER(user_name) = UPPER(:P8_RESET_USERNAME);
+                    EXCEPTION
+                        WHEN NO_DATA_FOUND THEN
+                            apex_error.add_error(
+                                p_message          => 'User not found: ' || :P8_RESET_USERNAME ||
+                                                      '. Please verify the username.',
+                                p_display_location => apex_error.c_inline_in_notification
+                            );
+                            RETURN;
+                    END;
+                
+                    ptw_pro.ptw_sec_pkg.check_user_in_company(l_user_name);
+                
+                    -- Step 1b: Get the numeric user_id needed by EDIT_USER
+                    l_user_id := APEX_UTIL.GET_USER_ID(p_username => l_user_name);
+                
+                    IF l_user_id IS NULL THEN
+                        apex_error.add_error(
+                            p_message          => 'Could not resolve user ID for: ' || :P8_RESET_USERNAME,
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                        RETURN;
+                    END IF;
+                
+                    -- Step 2: Preserve existing developer role.
+                    -- Wrapped in exception handler as GET_USER_ROLES raises NO_DATA_FOUND
+                    -- for end users who have no developer/admin roles assigned.
+                    BEGIN
+                        l_developer_role := APEX_UTIL.GET_USER_ROLES(p_username => l_user_name);
+                    EXCEPTION
+                        WHEN NO_DATA_FOUND THEN
+                            l_developer_role := NULL;
+                    END;
+                
+                    -- Step 3: Update password only
+                    APEX_UTIL.EDIT_USER(
+                        p_user_id         => l_user_id,
+                        p_user_name       => l_user_name,
+                        p_web_password    => :P8_NEW_PASSWORD,
+                        p_new_password    => :P8_NEW_PASSWORD,
+                        p_developer_roles => l_developer_role
+                    );
+                
+                    COMMIT;
+                
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        ROLLBACK;
+                        apex_error.add_error(
+                            p_message          => 'Error resetting password: ' || SQLERRM,
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                        RAISE;
+                END;
+                ```
+        }
+        execution {
+            sequence: 30
+        }
+        successMessage {
+            successMessage: Password reset successfully for &P8_RESET_USERNAME.
+        }
+        advanced {
+            executionMappingIdentifier: 31604889274440610
+        }
+        serverSideCondition {
+            type: request=Value
+            value: RESET_PASSWORD
+        }
+    )
+
+    process unlock-user-account (
+        name: Unlock User Account
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    l_username VARCHAR2(100);
+                BEGIN
+                    l_username := UPPER(:P8_SELECTED_USERNAME);
+                
+                    IF l_username IS NULL THEN
+                        apex_error.add_error(
+                            p_message          => 'No user selected.',
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                        RETURN;
+                    END IF;
+                
+                    ptw_pro.ptw_sec_pkg.check_user_in_company(l_username);
+                
+                    -- Unlock APEX account
+                    APEX_UTIL.UNLOCK_ACCOUNT(p_user_name => l_username);
+                
+                    -- Reactivate ptw_lv_users profile record
+                    UPDATE ptw_pro.ptw_lv_users
+                    SET    is_active     = 'Y',
+                           modified_date = CURRENT_TIMESTAMP,
+                           modified_by   = NVL(V('APP_USER'), USER)
+                    WHERE  UPPER(username) = l_username;
+                
+                    COMMIT;
+                    apex_application.g_print_success_message :=
+                        'Account for ' || l_username || ' has been unlocked successfully.';
+                
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        ROLLBACK;
+                        apex_error.add_error(
+                            p_message          => 'Error unlocking account: ' || SQLERRM,
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                END;
+                
+                ```
+        }
+        execution {
+            sequence: 70
+        }
+        advanced {
+            executionMappingIdentifier: 39965532747997131
+        }
+        serverSideCondition {
+            whenButtonPressed: @unlock-account
+        }
+    )
+
+    process update-existing-apex-user (
+        name: Update Existing APEX User
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    l_user_id          NUMBER;
+                    l_user_name        VARCHAR2(100);
+                    l_caller_role      VARCHAR2(50);
+                    l_admin_role_count NUMBER;
+                    l_oper_role_count  NUMBER;
+                BEGIN
+                    IF :P8_SELECTED_USERNAME IS NULL THEN
+                        apex_error.add_error(
+                            p_message          => 'No user selected.',
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                        RETURN;
+                    END IF;
+                
+                    ptw_pro.ptw_sec_pkg.check_user_in_company(:P8_SELECTED_USERNAME);
+                
+                    l_user_name := UPPER(:P8_SELECTED_USERNAME);
+                
+                    -- Get caller's highest role for restriction checks
+                    BEGIN
+                        SELECT role_name
+                        INTO   l_caller_role
+                        FROM   ptw_pro.ptw_lv_user_roles_v
+                        WHERE  UPPER(username) = UPPER(V('APP_USER'))
+                        AND    is_active       = 'Y'
+                        AND    ROWNUM          = 1;
+                    EXCEPTION
+                        WHEN NO_DATA_FOUND THEN l_caller_role := NULL;
+                    END;
+                
+                    -- ADMIN_USER_SUPPORT cannot assign ADMIN role
+                    IF l_caller_role = 'ADMIN_USER_SUPPORT'
+                    AND INSTR(':' || :P8_ROLE || ':', ':ADMIN:') > 0 THEN
+                        apex_error.add_error(
+                            p_message          => 'You do not have permission to assign the Administrator role.',
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                        RETURN;
+                    END IF;
+                
+                    -- Cannot edit own account
+                    IF UPPER(l_user_name) = UPPER(V('APP_USER')) AND :P8_IS_WORKSPACE_ADMIN != 'Y' THEN
+                        apex_error.add_error(
+                            p_message          => 'You cannot edit your own account.',
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                        RETURN;
+                    END IF;
+                
+                    -- Validate: admin roles cannot be combined with operational roles
+                    SELECT COUNT(*) INTO l_admin_role_count
+                    FROM   TABLE(apex_string.split(:P8_ROLE, ':'))
+                    WHERE  TRIM(column_value) IN ('ADMIN', 'ADMIN_USER_SUPPORT');
+                
+                    SELECT COUNT(*) INTO l_oper_role_count
+                    FROM   TABLE(apex_string.split(:P8_ROLE, ':'))
+                    WHERE  TRIM(column_value) IN (
+                               'AUTHORISER', 'ENGINEER',
+                               'ADMIN_CONTRACT_SUPPORT', 'READONLY'
+                           );
+                
+                    IF l_admin_role_count > 0 AND l_oper_role_count > 0 THEN
+                        apex_error.add_error(
+                            p_message          => 'Administrator roles cannot be combined with operational roles.',
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                        RETURN;
+                    END IF;
+                
+                    -- Get APEX user_id - read-only, GET_USER_ID is not admin-gated,
+                    -- only the mutating calls removed below required it
+                    l_user_id := APEX_UTIL.GET_USER_ID(p_username => l_user_name);
+                    IF l_user_id IS NULL THEN
+                        apex_error.add_error(
+                            p_message          => 'Could not resolve user ID for: ' || l_user_name,
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                        RETURN;
+                    END IF;
+                
+                    -- REMOVED: APEX_UTIL.EDIT_USER and LOCK_ACCOUNT/UNLOCK_ACCOUNT -
+                    -- ptw_lv_users is authoritative for profile + active status
+                    -- app-wide; see Post-Authentication process for the login-time
+                    -- deactivation gate that replaces native account locking.
+                
+                    -- Update ptw_lv_users profile
+                    UPDATE ptw_pro.ptw_lv_users
+                    SET    first_name     = :P8_FIRST_NAME,
+                           last_name      = :P8_LAST_NAME,
+                           email_address  = :P8_EMAIL,
+                           mobile_no      = :P8_MOBILE_NO,
+                           job_title      = :P8_DESCRIPTION,
+                           is_active      = :P8_IS_ACTIVE,
+                           team_id        = :P8_TEAM_ID,
+                           modified_date  = CURRENT_TIMESTAMP,
+                           modified_by    = NVL(V('APP_USER'), USER)
+                    WHERE  UPPER(username) = l_user_name;
+                
+                    -- If account deactivated: deactivate ALL role assignments
+                    IF :P8_IS_ACTIVE = 'N' THEN
+                        UPDATE ptw_pro.ptw_lv_user_role_assignments ur
+                        SET    ur.is_active     = 'N',
+                               ur.modified_date = CURRENT_TIMESTAMP,
+                               ur.modified_by   = NVL(V('APP_USER'), USER)
+                        WHERE  ur.user_id = (
+                                   SELECT user_id FROM ptw_pro.ptw_lv_users
+                                   WHERE  UPPER(username) = l_user_name
+                               );
+                    ELSE
+                        -- Account active: sync role assignments from checkbox group
+                        -- Step 1: Deactivate roles NOT in the selected set
+                        UPDATE ptw_pro.ptw_lv_user_role_assignments ur
+                        SET    ur.is_active     = 'N',
+                               ur.modified_date = CURRENT_TIMESTAMP,
+                               ur.modified_by   = NVL(V('APP_USER'), USER)
+                        WHERE  ur.user_id = (
+                                   SELECT user_id FROM ptw_pro.ptw_lv_users
+                                   WHERE  UPPER(username) = l_user_name
+                               )
+                        AND    ur.role_id NOT IN (
+                                   SELECT r.role_id
+                                   FROM   ptw_pro.ptw_lv_roles r
+                                   JOIN   TABLE(apex_string.split(:P8_ROLE, ':')) s
+                                       ON r.role_name = TRIM(s.column_value)
+                               );
+                
+                        -- Step 2: Insert or reactivate roles in the selected set
+                        FOR r IN (
+                            SELECT TRIM(column_value) AS role_name
+                            FROM   TABLE(apex_string.split(:P8_ROLE, ':'))
+                            WHERE  TRIM(column_value) IS NOT NULL
+                        ) LOOP
+                            MERGE INTO ptw_pro.ptw_lv_user_role_assignments ur
+                            USING (
+                                SELECT u.user_id, rl.role_id
+                                FROM   ptw_pro.ptw_lv_users  u
+                                CROSS JOIN ptw_pro.ptw_lv_roles rl
+                                WHERE  UPPER(u.username) = l_user_name
+                                AND    rl.role_name      = r.role_name
+                            ) src
+                            ON (ur.user_id = src.user_id AND ur.role_id = src.role_id)
+                            WHEN MATCHED THEN
+                                UPDATE SET ur.is_active     = 'Y',
+                                           ur.modified_date = CURRENT_TIMESTAMP,
+                                           ur.modified_by   = NVL(V('APP_USER'), USER)
+                            WHEN NOT MATCHED THEN
+                                INSERT (user_id, role_id, is_active, granted_by, granted_date)
+                                VALUES (src.user_id, src.role_id, 'Y',
+                                        NVL(V('APP_USER'), USER), CURRENT_TIMESTAMP);
+                        END LOOP;
+                    END IF;
+                
+                    COMMIT;
+                
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        ROLLBACK;
+                        apex_error.add_error(
+                            p_message          => 'Error updating user: ' || SQLERRM,
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                        RAISE;
+                END;
+                ```
+        }
+        execution {
+            sequence: 20
+        }
+        successMessage {
+            successMessage: User &P8_USERNAME. updated successfully.
+        }
+        advanced {
+            executionMappingIdentifier: 31604779831440609
+        }
+        serverSideCondition {
+            type: request=Value
+            value: UPDATE_USER
+        }
+    )
+
+    branch (
+        name: Refresh after Update
+        execution {
+            sequence: 20
+        }
+        behavior {
+            target: {
+                page: 8
+                items: {
+                    P8_SELECTED_USERNAME: &P8_SELECTED_USERNAME.
+                }
+                clearCache: 8
+                successMessage: false
+            }
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression:
+                ```plsql
+                :REQUEST = 'RESET_PASSWORD'
+                OR :REQUEST = 'UNLOCK_ACCOUNT'
+                OR :REQUEST LIKE 'DEACTIVATE_ROLE_%'
+                OR :REQUEST LIKE 'REACTIVATE_ROLE_%'
+                OR :REQUEST = 'UPDATE_USER'
+                ```
+        }
+    )
+
+)
+

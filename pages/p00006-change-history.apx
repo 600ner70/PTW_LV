@@ -1,0 +1,316 @@
+page 6 (
+    name: Permit History
+    alias: CHANGE-HISTORY
+    title: Permit History
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @/modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region cancellation-notice (
+        name: Cancellation Notice
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    r      ptw_pro.ptw_lv_cancellation_reason_v%ROWTYPE;
+                    v_html CLOB;
+                BEGIN
+                    SELECT * INTO r FROM ptw_pro.ptw_lv_cancellation_reason_v WHERE permit_id = :P6_PERMIT_ID;
+                
+                    IF r.is_concern_cancellation = 'Y' THEN
+                        v_html := '<div class="ptw-cancel-banner ptw-cancel-banner--concern">'
+                            || '<strong>This permit was cancelled following a monitoring concern.</strong><br>'
+                            || 'Check failed: ' || r.check_label || '<br>'
+                            || 'Concern: ' || r.concern_description || '<br>'
+                            || 'Action taken: ' || r.actions_taken || '<br>'
+                            || 'Reported by ' || r.concern_person_name
+                            || ' on ' || TO_CHAR(r.concern_datetime, 'DD-Mon-YYYY HH24:MI')
+                            || '</div>';
+                    ELSE
+                        v_html := '<div class="ptw-cancel-banner">'
+                            || '<strong>This permit was cancelled.</strong><br>'
+                            || 'Cancelled by ' || r.cancel_person_name
+                            || ' on ' || TO_CHAR(r.cancel_datetime, 'DD-Mon-YYYY HH24:MI')
+                            || '</div>';
+                    END IF;
+                
+                    RETURN v_html;
+                EXCEPTION
+                    WHEN NO_DATA_FOUND THEN
+                        RETURN NULL;
+                END;
+                ```
+            pageItemsToSubmit: P6_PERMIT_ID
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+        appearance {
+            template: @/alert
+            templateOptions: [
+                #DEFAULT#
+                t-Alert--colorBG
+                t-Alert--horizontal
+                t-Alert--defaultIcons
+                t-Alert--danger
+            ]
+        }
+        serverSideCondition {
+            type: rowsReturned
+            sqlQuery: SELECT 1 FROM ptw_pro.ptw_lv_cancellation_reason_v WHERE permit_id = :P6_PERMIT_ID
+        }
+    )
+
+    region permit-history (
+        name: Permit History
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                WITH max_row AS 
+                  (
+                    SELECT MAX(created_date) max_date,
+                           permit_id,
+                           permit_stage
+                    FROM   ptw_pro.ptw_stage_locations
+                    GROUP BY permit_id,
+                             permit_stage
+                  )
+                select sl.PERMIT_ID,
+                       CASE sl.PERMIT_STAGE
+                        WHEN 'SITE_WORK_DETAILS' THEN 'Step 1: Site and Work Details'
+                        WHEN 'CONTROL_MEASURES'  THEN 'Step 2: Control Measures'
+                        WHEN 'EQUIP_ISOLATION'   THEN 'Step 3: Equipment Isolation'
+                        WHEN 'AUTHORISATION'     THEN 'Step 4: Authorisation'
+                        WHEN 'LIVE'              THEN 'Step 5: Live'
+                        WHEN 'MONITORING'        THEN 'Step 6: Monitoring'
+                        WHEN 'CLEARANCE'         THEN 'Step 7: Clearance'
+                        WHEN 'CANCELLED'         THEN 'Cancelled'
+                       ELSE sl.PERMIT_STAGE
+                       END as step_display,
+                       sl.LATITUDE,
+                       sl.LONGITUDE,
+                       TO_CHAR(sl.CREATED_DATE, 'DD-MON-YYYY HH24:MI') AS CREATED_DATE,
+                       sl.CREATED_BY,
+                       sl.PERMIT_STAGE
+                from   ptw_pro.ptw_stage_locations sl
+                join   max_row mr on mr.permit_id = sl.permit_id
+                  and mr.permit_stage = sl.permit_stage
+                  and mr.max_date = sl.created_date 
+                where  sl.PERMIT_ID = :P6_PERMIT_ID
+                order by sl.created_date DESC
+                ```
+            pageItemsToSubmit: P6_PERMIT_ID
+        }
+        layout {
+            sequence: 20
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-history
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        searchBar {
+            reportsSelectList: false
+        }
+        actionsMenu {
+            includeActionsMenu: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 58090849057005131
+        }
+
+        column CREATED_BY (
+            type: plainText
+            heading {
+                heading: Created By
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column CREATED_DATE (
+            type: plainText
+            heading {
+                heading: Created Date
+            }
+            layout {
+                sequence: 90
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column LATITUDE (
+            type: plainText
+            heading {
+                heading: Latitude
+                alignment: end
+            }
+            layout {
+                sequence: 30
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column LONGITUDE (
+            type: plainText
+            heading {
+                heading: Longitude
+                alignment: end
+            }
+            layout {
+                sequence: 40
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column PERMIT_ID (
+            type: link
+            heading {
+                heading: &nbsp;
+                alignment: center
+            }
+            layout {
+                sequence: 10
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 7
+                    items: {
+                        P7_PERMIT_ID: #PERMIT_ID#
+                        P7_CURRENT_STAGE: #PERMIT_STAGE#
+                        P7_CREATED_DATE: #CREATED_DATE#
+                    }
+                    clearCache: 7
+                }
+                linkText: <span class="fa fa-globe" title="Map"></span>
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column PERMIT_STAGE (
+            type: plainText
+            heading {
+                heading: Permit Stage
+            }
+            layout {
+                sequence: 80
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column STEP_DISPLAY (
+            type: plainText
+            heading {
+                heading: Step Display
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        savedReport 283634 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CREATED_BY (
+                sequence: 2
+            )
+
+            displayColumn CREATED_DATE (
+                sequence: 3
+            )
+
+            displayColumn PERMIT_ID (
+                sequence: 4
+            )
+
+            displayColumn STEP_DISPLAY (
+                sequence: 1
+            )
+
+        )
+
+    )
+
+    pageItem P6_PERMIT_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+    )
+
+)
+

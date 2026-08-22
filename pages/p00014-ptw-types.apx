@@ -1,0 +1,417 @@
+page 14 (
+    name: Create PTW
+    alias: PTW-TYPES
+    title: Create PTW
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @/modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 60
+            slot: contentBody
+        }
+        appearance {
+            template: @/buttons-container
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region ptw-available-types (
+        name: PTW available types
+        title: PTW available types
+        type: staticContent
+        layout {
+            sequence: 50
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-file-cabinet
+        }
+    )
+
+    pageItem P14_COMPANY_ID (
+        type: selectList
+        label {
+            label: Create permit for company
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT company_name d,
+                       company_id   r
+                FROM   ptw_pro.ptw_lv_companies
+                WHERE  is_active = 'Y'
+                ORDER  BY company_name
+                ```
+            displayExtraValues: false
+            nullDisplayValue: -- Select --
+        }
+        layout {
+            sequence: 10
+            region: @ptw-available-types
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        source {
+            type: expression
+            plsqlExpression: V('G_OVERRIDE_COMPANY_ID')
+        }
+        serverSideCondition {
+            type: rowsReturned
+            sqlQuery:
+                ```sql
+                SELECT 1 
+                FROM ptw_pro.ptw_lv_users
+                WHERE UPPER(username) = UPPER(:APP_USER)
+                AND   is_super_user = 'Y'
+                AND   is_active = 'Y'
+                ```
+        }
+    )
+
+    pageItem P14_PERMIT_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+    )
+
+    pageItem P14_PTW_TYPES (
+        type: selectList
+        label {
+            label: Available types
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT t.type_desc d,
+                       t.ptw_type  r
+                FROM   ptw_pro.ptw_types t
+                WHERE  t.available = 'Y'
+                AND (
+                        t.type_id IN (
+                            SELECT et.type_id
+                            FROM   ptw_pro.ptw_lv_effective_types_v et
+                            WHERE  UPPER(et.username) = UPPER(v('APP_USER'))
+                            AND    et.is_active = 'Y'
+                        )
+                     OR
+                        (
+                            :P14_COMPANY_ID IS NOT NULL
+                        AND t.type_id IN (
+                                SELECT ct.type_id
+                                FROM   ptw_pro.ptw_lv_company_types ct
+                                WHERE  ct.company_id = :P14_COMPANY_ID
+                                AND    ct.is_active = 'Y'
+                            )
+                        )
+                    )
+                ORDER BY t.type_desc
+                ```
+            displayExtraValues: false
+            nullDisplayValue: - Select -
+        }
+        cascadingLov {
+            parentItems: P14_COMPANY_ID
+            itemsToSubmit: P14_COMPANY_ID
+        }
+        layout {
+            sequence: 20
+            region: @ptw-available-types
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+    )
+
+    pageItem P14_WORKFLOW_STATUS (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: contentBody
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancel
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        advanced {
+            htmlDomId: P14_CANCEL_BTN
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Go
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-play-circle-o
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        advanced {
+            htmlDomId: P14_CREATE_BTN
+        }
+    )
+
+    dynamicAction refresh-ptw-types-on-company-change (
+        name: Refresh PTW Types on Company Change
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P14_COMPANY_ID
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode: NULL;
+                itemsToSubmit: P14_COMPANY_ID
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P14_PTW_TYPES
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    validation company-required-for-super-user (
+        name: Company required for Super User
+        execution {
+            sequence: 20
+        }
+        validation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    l_count NUMBER;
+                BEGIN
+                    SELECT COUNT(*)
+                    INTO   l_count
+                    FROM   ptw_pro.ptw_lv_users
+                    WHERE  UPPER(username) = UPPER(:APP_USER)
+                    AND    is_super_user = 'Y'
+                    AND    is_active = 'Y';
+                
+                    IF l_count > 0 AND :P14_COMPANY_ID IS NULL THEN
+                      RETURN 'Super User - Please select a company before continuing.';
+                    END IF;
+                END;
+                ```
+        }
+        error {
+            associatedItem: @P14_COMPANY_ID
+        }
+        serverSideCondition {
+            whenButtonPressed: @create
+        }
+    )
+
+    validation is-an-available-ptw (
+        name: Is an available PTW?
+        execution {
+            sequence: 30
+        }
+        validation {
+            language: sql
+            sqlExpression:
+                ```sql
+                EXISTS (
+                    SELECT 1 FROM ptw_pro.ptw_types t
+                    WHERE  t.ptw_type = :P14_PTW_TYPES
+                    AND    t.available = 'Y'
+                    AND (
+                        t.type_id IN (
+                            SELECT et.type_id FROM ptw_pro.ptw_lv_effective_types_v et
+                            WHERE  UPPER(et.username) = UPPER(V('APP_USER'))
+                            AND    et.is_active = 'Y'
+                        )
+                        OR (
+                            :P14_COMPANY_ID IS NOT NULL
+                            AND t.type_id IN (
+                                SELECT ct.type_id FROM ptw_pro.ptw_lv_company_types ct
+                                WHERE  ct.company_id = :P14_COMPANY_ID
+                                AND    ct.is_active = 'Y'
+                            )
+                        )
+                    )
+                )
+                ```
+            alwaysExecute: true
+        }
+        error {
+            errorMessage: PTW type is not currently available for this customer.
+        }
+        serverSideCondition {
+            type: request=Value
+            value: CREATE
+        }
+    )
+
+    validation ptw-type-required (
+        name: PTW type required
+        execution {
+            sequence: 10
+        }
+        validation {
+            type: itemIsNotNull
+            item: P14_PTW_TYPES
+        }
+        error {
+            errorMessage: Please select a PTW type before continuing.
+            associatedItem: @P14_PTW_TYPES
+        }
+        serverSideCondition {
+            whenButtonPressed: @create
+        }
+    )
+
+    process back-to-dashboard (
+        name: Back to Dashboard
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 40554413173170626
+        }
+        serverSideCondition {
+            whenButtonPressed: @cancel
+        }
+    )
+
+    process set-company-override (
+        name: Set Company Override
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                  l_count NUMBER;
+                BEGIN
+                    SELECT COUNT(*)
+                    INTO   l_count
+                    FROM   ptw_pro.ptw_lv_users
+                    WHERE  UPPER(username) = UPPER(:APP_USER)
+                    AND    is_super_user = 'Y'
+                    AND    is_active = 'Y';
+                    
+                    IF l_count > 0 THEN
+                        APEX_UTIL.SET_SESSION_STATE('G_OVERRIDE_COMPANY_ID', :P14_COMPANY_ID);
+                    END IF;
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 52465285312584449
+        }
+        serverSideCondition {
+            whenButtonPressed: @create
+        }
+    )
+
+    branch (
+        name: Go to create a PTW
+        execution {
+            sequence: 10
+        }
+        behavior {
+            target: {
+                page: 2
+                items: {
+                    P2_PERMIT_ID: &P14_PERMIT_ID.
+                    P2_WORKFLOW_STATUS: DRAFT
+                    P2_PTW_TYPE: &P14_PTW_TYPES.
+                }
+                clearCache: 2
+                successMessage: false
+            }
+        }
+    )
+
+)
+

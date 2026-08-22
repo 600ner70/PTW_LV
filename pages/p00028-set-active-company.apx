@@ -1,0 +1,287 @@
+page 28 (
+    name: Set Active Company
+    alias: SET-ACTIVE-COMPANY
+    title: Set Active Company
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            .admin-page-header {
+                background: linear-gradient(135deg, #003366 0%, #005599 100%);
+                color: white;
+                padding: 25px 30px;
+                border-radius: 8px;
+                margin-bottom: 25px;
+            }
+            .admin-page-header h1 { margin: 0 0 5px 0; font-size: 1.75rem; font-weight: 700; }
+            .admin-page-header p  { margin: 0; opacity: 0.85; font-size: 0.95rem; }
+            ```
+    }
+    security {
+        authorizationScheme: @super-user-rights
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region active-company (
+        name: Active Company
+        title: Active Company
+        type: staticContent
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-building
+        }
+    )
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @/buttons-container
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region page-header (
+        name: Page Header
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    l_html CLOB;
+                BEGIN
+                    l_html := '<div class="admin-page-header">'
+                           || '  <h1>Set Active Company</h1>'
+                           || '  <p>Choose a company to view and manage as. This applies across '
+                           || '     the whole application (dashboard, permit types, user '
+                           || '     maintenance, and creating permits) until you clear it or '
+                           || '     log out and back in.</p>'
+                           || '</div>';
+                    RETURN l_html;
+                END;
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    pageItem P28_COMPANY_ID (
+        type: selectList
+        label {
+            label: Active Company
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT company_name d,
+                       company_id   r
+                FROM   ptw_pro.ptw_lv_companies
+                WHERE  is_active = 'Y'
+                ORDER  BY company_name;
+                ```
+            nullDisplayValue: -- View All Companies (no restriction) --
+        }
+        layout {
+            sequence: 10
+            region: @active-company
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        source {
+            type: expression
+            plsqlExpression: V('G_OVERRIDE_COMPANY_ID')
+            used: always
+        }
+    )
+
+    pageItem P28_CURRENT_STATUS (
+        type: displayOnly
+        label {
+            label: Currently
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @active-company
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+        }
+        source {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                        v_override  VARCHAR2(50)  := V('G_OVERRIDE_COMPANY_ID');
+                        v_name      VARCHAR2(200);
+                    BEGIN
+                        IF v_override IS NULL OR v_override = '' THEN
+                            RETURN 'Viewing ALL companies (no restriction).';
+                        END IF;
+                
+                        BEGIN
+                            SELECT company_name
+                            INTO   v_name
+                            FROM   ptw_pro.ptw_lv_companies
+                            WHERE  company_id = TO_NUMBER(v_override);
+                        EXCEPTION
+                            WHEN NO_DATA_FOUND THEN
+                                v_name := 'Unknown company (ID: ' || v_override || ')';
+                        END;
+                
+                        RETURN 'Viewing as: ' || v_name;
+                    END;
+                ```
+            used: always
+        }
+    )
+
+    button clear (
+        buttonName: CLEAR
+        label: View All Companies
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        advanced {
+            htmlDomId: BTN_CLEAR_P28
+        }
+    )
+
+    button set (
+        buttonName: SET
+        label: Set Active Company
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        advanced {
+            htmlDomId: BTN_SET_P28
+        }
+    )
+
+    process apply-active-company (
+        name: Apply Active Company
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                BEGIN
+                    APEX_UTIL.SET_SESSION_STATE('G_OVERRIDE_COMPANY_ID', :P28_COMPANY_ID);
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        successMessage {
+            successMessage: Set new Active Company.
+        }
+        advanced {
+            executionMappingIdentifier: 52495491439962713
+        }
+        serverSideCondition {
+            whenButtonPressed: @set
+        }
+    )
+
+    process clear-active-company (
+        name: Clear Active Company
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                BEGIN
+                    APEX_UTIL.SET_SESSION_STATE('G_OVERRIDE_COMPANY_ID', NULL);
+                END;
+                ```
+        }
+        execution {
+            sequence: 20
+        }
+        successMessage {
+            successMessage: Cleared Company.
+        }
+        advanced {
+            executionMappingIdentifier: 52495536478962714
+        }
+        serverSideCondition {
+            whenButtonPressed: @clear
+        }
+    )
+
+    branch (
+        name: Reload Page 28
+        execution {
+            sequence: 10
+        }
+        behavior {
+            target: {
+                page: 28
+                clearCache: 28
+                successMessage: false
+            }
+        }
+    )
+
+)
+

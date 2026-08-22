@@ -1,0 +1,70 @@
+theme universal-theme-2 (
+    name: Universal Theme
+    themeNumber: 101
+    baseTheme: ut-24.2
+    style {
+        currentThemeStyle: @vita-slate-copy
+    }
+    javaScript {
+        fileUrls: [
+            #APEX_FILES#libraries/apex/#MIN_DIRECTORY#widget.stickyWidget#MIN#.js?v=#APEX_VERSION#
+            #THEME_FILES#js/theme42#MIN#.js?v=#APEX_VERSION#
+        ]
+    }
+    css {
+        fileUrls: #THEME_FILES#css/Core#MIN#.css?v=#APEX_VERSION#
+    }
+    componentDefaults {
+        page: @/standard
+        navigationBarList: @/navigation-bar
+        navigationMenuListPosition: side
+        navigationMenuListTop: @/top-navigation-menu
+        navigationMenuListSide: @/side-navigation-menu
+        loginPage: @/login
+        errorPage: @/login
+        printerFriendlyPage: @/standard
+        breadcrumb: @/breadcrumb
+        button: @/text
+        defaultLabel: @/optional-floating
+        optionalLabel: @/optional-floating
+        requiredLabel: @/required-floating
+        list: @/links-list
+        region: @/standard
+        classicReport: @/standard
+    }
+    regionDefaults {
+        breadcrumbs: @/title-bar
+        charts: @/standard
+        forms: @/standard
+        lists: @/standard
+        reports: @/standard
+        wizards: @/standard
+        interactiveReports: @/interactive-report
+    }
+    dialogDefaults {
+        dialogContentRegion: @/blank-with-attributes
+        dialogButtonRegion: @/buttons-container
+        dialogPage: @/modal-dialog
+    }
+    icons {
+        library: fontApex
+    }
+    advanced {
+        filePrefix: #APEX_FILES#themes/theme_42/24.2/
+        identifier: UNIVERSAL_THEME
+    }
+
+    style vita-slate-copy (
+        name: Vita - Slate (copy_1)
+        themeRollerAttributes {
+            inputParameterFileUrls: #THEME_FILES#less/theme/Vita-Slate.less
+            outputCssFileUrl: #THEME_DB_FILES#24124499684701170.css
+            jsonConfig: "{\"classes\":[],\"vars\":{\"@g_Accent-OG\":\"#a19898\",\"@g_Focus\":\"#37628a\",\"@g_Nav_Style\":\"light\",\"@g_Nav-BG\":\"#a19898\",\"@g_Nav-FG\":\"#242424\",\"@g_Nav-Active-BG\":\"#beb6b6\",\"@g_Nav-Active-FG\":\"#000000\"},\"customCSS\":\"\",\"useCustomLess\":\"N\"}"
+        }
+        advanced {
+            endUserCanPick: true
+        }
+    )
+
+)
+

@@ -1,0 +1,1892 @@
+page 10 (
+    name: LV Monitoring
+    alias: LV-MONITORING
+    title: Low Voltage Monitoring
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        fileUrls: #APP_FILES#offline-storage#MIN#.js
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            let monitorSignaturePad;
+            
+            function initSignaturePads() {
+                setTimeout(function() {
+                    initPad('monitorSignaturePad', 'P10_MONITOR_SIGNATURE_HIDDEN', function(pad) {
+                        monitorSignaturePad = pad;
+            
+                        // Override canvas size to be larger than the default
+                        var canvas = document.getElementById('monitorSignaturePad');
+                        var regionBody = canvas.closest('.t-Region-body') ||
+                                         canvas.closest('.t-ContentBody') ||
+                                         canvas.parentElement;
+                        var newWidth  = regionBody ? regionBody.offsetWidth - 24 : 400;
+                        var newHeight = window.innerWidth < 768 ? 150 : 200;
+            
+                        canvas.width  = newWidth;
+                        canvas.height = newHeight;
+                        canvas.setAttribute('style',
+                            'width:'  + newWidth  + 'px !important;' +
+                            'height:' + newHeight + 'px !important;' +
+                            'border: 1px dashed var(--ut-component-border-color, #ccc);' +
+                            'border-radius: 4px;' +
+                            'touch-action: none;' +
+                            'cursor: crosshair;' +
+                            'display: block;'
+                        );
+            
+                        var existingDataUrl = apex.item('P10_MONITOR_SIGNATURE_DATA_URL').getValue();
+                        var workflowStatus  = apex.item('P10_WORKFLOW_STATUS').getValue();
+            
+                        setCanvasBackground(canvas);
+            
+                        if (existingDataUrl) {
+                            loadSignature(pad, canvas, existingDataUrl);
+                            lockCanvas(canvas);
+                            var clearBtn = document.querySelector('.signature-controls button');
+                            if (clearBtn) clearBtn.style.display = 'none';
+                        } else if (workflowStatus !== 'STARTED') {
+                            lockCanvas(canvas);
+                            var clearBtn = document.querySelector('.signature-controls button');
+                            if (clearBtn) clearBtn.style.display = 'none';
+                        }
+                    });
+                }, 200);
+            }
+            
+            function setCanvasBackground(canvas) {
+                if (!canvas) return;
+                var ctx = canvas.getContext('2d');
+                ctx.save();
+                ctx.globalCompositeOperation = 'destination-over';
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.restore();
+            }
+            
+            function lockCanvas(canvas) {
+                if (!canvas) return;
+                canvas.style.pointerEvents  = 'none';
+                canvas.style.opacity        = '0.85';
+                canvas.style.cursor         = 'not-allowed';
+                canvas.style.backgroundColor = '#ffffff';
+                canvas.title                = 'Signature is locked';
+            }
+            
+            function clearMonitorSignature() {
+                if (monitorSignaturePad) monitorSignaturePad.clear();
+                apex.item('P10_MONITOR_SIGNATURE_HIDDEN').setValue('');
+                // Re-apply white background after clear
+                var canvas = document.getElementById('monitorSignaturePad');
+                setCanvasBackground(canvas);
+            }
+            ```
+        executeWhenPageLoads:
+            ```javascript-browser
+            initSignaturePads();
+            // Re-display existing signature if record already has one saved.
+            // P10_MONITOR_SIGNATURE_DATA_URL is populated by the Before Header
+            // process (BLOB → base64 data URL). Mirrors Page 5 loadSignature() call.
+            loadSignature('monitorSignaturePad', 'P10_MONITOR_SIGNATURE_DATA_URL');
+            
+            (function () {
+            
+                var TRISTATE_ITEMS = [
+                    'P10_CHK_PERMIT_ON_DISPLAY',
+                    'P10_CHK_ACCESS_EGRESS',
+                    'P10_CHK_WARNING_SIGNS'
+                ];
+            
+                var BINARY_ITEMS = [
+                    'P10_MS_CHECK1_IN_ORDER',
+                    'P10_MS_CHECK2_IN_ORDER',
+                    'P10_MS_CHECK3_IN_ORDER'
+                ];
+            
+                var TRISTATE_BADGES = [
+                    { val: 'Y',  cls: 'cm-badge-yes', label: '✓' },
+                    { val: 'N',  cls: 'cm-badge-no',  label: '✗' },
+                    { val: 'NA', cls: 'cm-badge-na',  label: 'N/A' }
+                ];
+            
+                var BINARY_BADGES = [
+                    { val: 'Y', cls: 'cm-badge-yes', label: '✓' },
+                    { val: 'N', cls: 'cm-badge-no',  label: '✗' }
+                ];
+            
+                // Read-only when not STARTED, OR when viewing an existing monitoring record
+                var isReadOnly = (apex.item('P10_WORKFLOW_STATUS').getValue() !== 'STARTED') ||
+                                 (apex.item('P10_MONITORING_ID').getValue() !== '' && 
+                                  apex.item('P10_MONITORING_STATUS').getValue() === 'COMPLETED');
+            
+                function buildBadgeRow(itemName, badges) {
+                    // apex.item().getValue() works in both edit and read-only mode
+                    var currentVal = apex.item(itemName).getValue() || '';
+            
+                    var $row = $('<div class="cm-badge-row"></div>').attr('data-item', itemName);
+            
+                    badges.forEach(function (b) {
+                        $('<span></span>')
+                            .addClass('cm-badge ' + b.cls)
+                            .toggleClass('cm-active', currentVal === b.val)
+                            .toggleClass('cm-badge-readonly', isReadOnly)
+                            .attr('data-value', b.val)
+                            .text(b.label)
+                            .appendTo($row);
+                    });
+            
+                    return $row;
+                }
+            
+                // Build tristate badges
+                TRISTATE_ITEMS.forEach(function (itemName) {
+                    var $fc = $('#' + itemName).closest('.t-Form-fieldContainer');
+                    if ($fc.length === 0) return;
+                    $fc.find('.cm-badge-row').remove();
+                    $fc.find('.t-Form-inputContainer').append(
+                        buildBadgeRow(itemName, TRISTATE_BADGES)
+                    );
+                });
+            
+                // Build binary badges
+                BINARY_ITEMS.forEach(function (itemName) {
+                    var $fc = $('#' + itemName).closest('.t-Form-fieldContainer');
+                    if ($fc.length === 0) return;
+                    $fc.find('.cm-badge-row').remove();
+                    $fc.find('.t-Form-inputContainer').append(
+                        buildBadgeRow(itemName, BINARY_BADGES)
+                    );
+                });
+            
+                // Hide native radio grids
+                $('.cm-tristate-item .apex-item-grid').hide();
+                $('.cm-binary-item .apex-item-radio').hide();
+            
+                // Delegated click — edit mode only
+                $(document).off('click.p10badges').on('click.p10badges', '.cm-badge:not(.cm-badge-readonly)', function () {
+                    var $badge   = $(this);
+                    var $row     = $badge.closest('.cm-badge-row');
+                    var itemName = $row.attr('data-item');
+                    var val      = $badge.attr('data-value');
+            
+                    $('input[name="' + itemName + '"][value="' + val + '"]')
+                        .prop('checked', true).trigger('change');
+            
+                    $row.find('.cm-badge').removeClass('cm-active');
+                    $badge.addClass('cm-active');
+                });
+            
+            }());
+            ```
+    }
+    css {
+        inline:
+            ```css
+            .monitoring-section-title {
+                font-size: 1.1rem;
+                font-weight: 600;
+                color: #003366;
+                margin-bottom: 0.75rem;
+                padding-bottom: 0.4rem;
+                border-bottom: 2px solid #003366;
+            }
+            
+            .monitoring-instruction {
+                font-size: 0.875rem;
+                color: #555;
+                font-style: italic;
+                margin-bottom: 1rem;
+                padding: 0.75rem 1rem;
+                background: #f0f4fa;
+                border-left: 4px solid #003366;
+                border-radius: 4px;
+            }
+            
+            .monitoring-checks-grid {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 0.9rem;
+                margin-bottom: 1.5rem;
+            }
+            
+            .monitoring-checks-grid th {
+                background: #003366;
+                color: #fff;
+                padding: 8px 12px;
+                text-align: center;
+                font-weight: 600;
+                border: 1px solid #002244;
+            }
+            
+            .monitoring-checks-grid td {
+                padding: 8px 12px;
+                border: 1px solid #dde;
+                vertical-align: middle;
+            }
+            
+            .monitoring-checks-grid tr:nth-child(even) td {
+                background: #f7f9fc;
+            }
+            
+            .method-check-box {
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                padding: 1rem;
+                margin-bottom: 1rem;
+                background: #fff;
+            }
+            
+            .method-check-box h4 {
+                margin: 0 0 0.75rem 0;
+                font-size: 0.95rem;
+                font-weight: 600;
+                color: #003366;
+            }
+            
+            .col-a-header {
+                background: #e8f0fb;
+                padding: 0.5rem;
+                border-radius: 4px;
+                font-weight: 600;
+                font-size: 0.8rem;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                margin-bottom: 0.5rem;
+            }
+            
+            .col-b-header {
+                background: #fef8e7;
+                padding: 0.5rem;
+                border-radius: 4px;
+                font-weight: 600;
+                font-size: 0.8rem;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                margin-bottom: 0.5rem;
+            }
+            
+            .geo-info {
+                font-size: 0.72rem;
+                color: #999;
+                margin-top: 4px;
+            }
+            
+            ```
+    }
+    readOnly {
+        type: expression
+        plsqlExpression: :P10_MONITORING_ID IS NOT NULL AND :P10_MONITORING_STATUS = 'COMPLETED'
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 260
+            slot: body
+        }
+        appearance {
+            template: @/buttons-container
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region method-statement-checks (
+        name: Method Statement Checks
+        title: Checks Against Work Processes &amp; Method Statement
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <p class="monitoring-instruction">
+                    Checks against work processes and method statement - considering the work involved under this Sanction, on<br>
+                    reading the method detailed below an element you wish to check for compliance (note: the minimum is one<br>
+                    check per task carried out under each Sanction, but more are recommended dependent on activity complexity)
+                </p>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; font-weight:600;
+                            font-size:0.8rem; text-transform:uppercase; margin-bottom:0.5rem;">
+                    <div class="col-a-header">&#x1F4CB; Column A &mdash; Detail the item or part of the method statement you decide to check</div>
+                    <div class="col-b-header">&#x2705; Column B &mdash; All works carried out correctly, or non-conforming details</div>
+                </div>
+                ```
+        }
+        layout {
+            sequence: 120
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-tasks
+        }
+    )
+
+    region permit-badge (
+        name: Permit Badge
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div style="margin-bottom: 20px;">
+                    <span class="apex-badge" style="background-color: #3ea055; color: white; padding: 6px 16px; border-radius: 20px; font-weight: 600;">
+                        Permit: &P10_PERMIT_NUMBER.
+                    </span>
+                </div>
+                ```
+        }
+        layout {
+            sequence: 100
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region sign-off (
+        name: Sign-off
+        title: Monitoring Sign-Off
+        type: staticContent
+        layout {
+            sequence: 250
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-user-circle
+        }
+    )
+
+    region signature-canvas (
+        name: Signature Canvas
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                
+                <div class="signature-pad-container">
+                    <canvas id="monitorSignaturePad" class="signature-pad"></canvas>
+                    <div class="signature-controls">
+                        <button type="button" onclick="clearMonitorSignature()">Clear</button>
+                    </div>
+                </div>
+                ```
+        }
+        layout {
+            sequence: 40
+            parentRegion: @sign-off
+            slot: regionBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region site-monitoring-checks (
+        name: Site Monitoring Checks
+        title: Site Monitoring Checks
+        type: staticContent
+        layout {
+            sequence: 110
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-check-circle
+        }
+    )
+
+    pageItem P10_CHK_ACCESS_EGRESS (
+        type: radioGroup
+        label {
+            label: Is Access / Egress clear?
+            alignment: left
+        }
+        settings {
+            noOfCols: 3
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes;Y,No;N,N/A;NA
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 30
+            region: @site-monitoring-checks
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            cssClasses: cm-tristate-item
+        }
+    )
+
+    pageItem P10_CHK_ACCESS_TIME (
+        type: textField
+        label {
+            label: Time of check
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @site-monitoring-checks
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 3
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            formatMask: HH:MM
+            width: 30
+            valuePlaceholder: HH:MM
+        }
+        validation {
+            maxLength: 5
+        }
+    )
+
+    pageItem P10_CHK_PERMIT_ON_DISPLAY (
+        type: radioGroup
+        label {
+            label: Is Permit on display?
+            alignment: left
+        }
+        settings {
+            noOfCols: 3
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes;Y,No;N,N/A;NA
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 10
+            region: @site-monitoring-checks
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            cssClasses: cm-tristate-item
+        }
+    )
+
+    pageItem P10_CHK_PERMIT_TIME (
+        type: textField
+        label {
+            label: Time of Check
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @site-monitoring-checks
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 3
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            formatMask: HH:MI
+            width: 30
+            valuePlaceholder: HH:MM
+        }
+        validation {
+            maxLength: 5
+        }
+    )
+
+    pageItem P10_CHK_WARNING_SIGNS (
+        type: radioGroup
+        label {
+            label: Are warning signs in place?
+            alignment: left
+        }
+        settings {
+            noOfCols: 3
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes;Y,No;N,N/A;NA
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 50
+            region: @site-monitoring-checks
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            cssClasses: cm-tristate-item
+        }
+    )
+
+    pageItem P10_CHK_WARNING_TIME (
+        type: textField
+        label {
+            label: Time of check
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @site-monitoring-checks
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 3
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            formatMask: HH:MM
+            width: 30
+            valuePlaceholder: HH:MM
+        }
+        validation {
+            maxLength: 5
+        }
+    )
+
+    pageItem P10_MONITORING_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+    )
+
+    pageItem P10_MONITORING_STATUS (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 90
+            slot: body
+        }
+    )
+
+    pageItem P10_MONITOR_DATE (
+        type: textField
+        label {
+            label: Date
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @sign-off
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            formatMask: DD-MON-YYYY
+            width: 30
+            valuePlaceholder: DD-MON-YYYY
+        }
+        validation {
+            valueRequired: true
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: SELECT TO_CHAR(SYSDATE,'DD-MON-YYYY') FROM DUAL
+        }
+    )
+
+    pageItem P10_MONITOR_NAME (
+        type: textField
+        label {
+            label: Monitoring carried out by (Name)
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @sign-off
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+            maxLength: 200
+        }
+    )
+
+    pageItem P10_MONITOR_SIGNATURE_DATA_URL (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 60
+            slot: body
+        }
+    )
+
+    pageItem P10_MONITOR_SIGNATURE_HIDDEN (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            region: @sign-off
+            slot: regionBody
+        }
+    )
+
+    pageItem P10_MS_CHECK1_COMMENTS (
+        type: textarea
+        label {
+            label: Comments
+            alignment: left
+        }
+        layout {
+            sequence: 160
+            slot: body
+            alignment: left
+            startNewRow: false
+            column: 7
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 2
+        }
+        validation {
+            maxLength: 1000
+        }
+    )
+
+    pageItem P10_MS_CHECK1_DETAIL (
+        type: textarea
+        label {
+            label: Check 1) Detail of check made
+            alignment: left
+        }
+        layout {
+            sequence: 130
+            slot: body
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 4
+        }
+        validation {
+            maxLength: 1000
+        }
+    )
+
+    pageItem P10_MS_CHECK1_IN_ORDER (
+        type: radioGroup
+        label {
+            label: All in order?
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes - All in Order;Y,No - Non-Conforming;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 140
+            slot: body
+            alignment: left
+            startNewRow: false
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            cssClasses: cm-binary-item
+        }
+    )
+
+    pageItem P10_MS_CHECK1_TIME (
+        type: textField
+        label {
+            label: Enter time of check
+            alignment: left
+        }
+        layout {
+            sequence: 150
+            slot: body
+            alignment: left
+            columnSpan: 3
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: HH:MM
+        }
+        validation {
+            maxLength: 5
+        }
+    )
+
+    pageItem P10_MS_CHECK2_COMMENTS (
+        type: textarea
+        label {
+            label: Comments
+            alignment: left
+        }
+        layout {
+            sequence: 200
+            slot: body
+            alignment: left
+            startNewRow: false
+            column: 7
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 2
+        }
+    )
+
+    pageItem P10_MS_CHECK2_DETAIL (
+        type: textarea
+        label {
+            label: Check 2) Detail of check made
+            alignment: left
+        }
+        layout {
+            sequence: 170
+            slot: body
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 4
+        }
+        validation {
+            maxLength: 1000
+        }
+    )
+
+    pageItem P10_MS_CHECK2_IN_ORDER (
+        type: radioGroup
+        label {
+            label: All in order?
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes - All in Order;Y,No - Non-Conforming;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 180
+            slot: body
+            alignment: left
+            startNewRow: false
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            cssClasses: cm-binary-item
+        }
+    )
+
+    pageItem P10_MS_CHECK2_TIME (
+        type: textField
+        label {
+            label: Enter time of check
+            alignment: left
+        }
+        layout {
+            sequence: 190
+            slot: body
+            alignment: left
+            columnSpan: 3
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: HH:MM
+        }
+        validation {
+            maxLength: 5
+        }
+    )
+
+    pageItem P10_MS_CHECK3_COMMENTS (
+        type: textarea
+        label {
+            label: Comments
+            alignment: left
+        }
+        layout {
+            sequence: 240
+            slot: body
+            alignment: left
+            startNewRow: false
+            column: 7
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 2
+        }
+    )
+
+    pageItem P10_MS_CHECK3_DETAIL (
+        type: textarea
+        label {
+            label: Check 3) Detail of check made
+            alignment: left
+        }
+        layout {
+            sequence: 210
+            slot: body
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 4
+        }
+        validation {
+            maxLength: 1000
+        }
+    )
+
+    pageItem P10_MS_CHECK3_IN_ORDER (
+        type: radioGroup
+        label {
+            label: All in order?
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes - All in Order;Y,No - Non-Conforming;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 220
+            slot: body
+            alignment: left
+            startNewRow: false
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            cssClasses: cm-binary-item
+        }
+    )
+
+    pageItem P10_MS_CHECK3_TIME (
+        type: textField
+        label {
+            label: Enter time of check
+            alignment: left
+        }
+        layout {
+            sequence: 230
+            slot: body
+            alignment: left
+            columnSpan: 3
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: HH:MM
+        }
+        validation {
+            maxLength: 5
+        }
+    )
+
+    pageItem P10_PERMIT_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+    )
+
+    pageItem P10_PERMIT_NUMBER (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 70
+            slot: body
+        }
+    )
+
+    pageItem P10_WORKFLOW_STATUS (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 80
+            slot: body
+        }
+    )
+
+    button back (
+        buttonName: BACK
+        label: Back
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 1
+                clearCache: 1
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        advanced {
+            htmlDomId: BTN_BACK_P10
+        }
+    )
+
+    button save-draft (
+        buttonName: SAVE_DRAFT
+        label: Save Draft
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+            executeValidations: false
+        }
+        advanced {
+            htmlDomId: BTN_SAVE_DRAFT_P10
+        }
+        serverSideCondition {
+            type: item=value
+            item: P10_MONITORING_STATUS
+            value: IN_PROGRESS
+        }
+    )
+
+    button save-monitoring (
+        buttonName: SAVE_MONITORING
+        label: Save Monitoring
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        advanced {
+            htmlDomId: BTN_SAVE_MONITORING_P10
+        }
+        serverSideCondition {
+            type: item=value
+            item: P10_MONITORING_STATUS
+            value: IN_PROGRESS
+        }
+    )
+
+    dynamicAction check-1-not-in-order (
+        name: Check 1 not in Order
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P10_MS_CHECK1_IN_ORDER
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var checkValue = apex.item('P10_MS_CHECK1_IN_ORDER').getValue();
+                    
+                    if (checkValue === 'N') {
+                        apex.server.process('GET_CONCERN_DIALOG_URL', {
+                            x01: apex.item('P10_PERMIT_ID').getValue(),
+                            x02: apex.item('P10_PERMIT_NUMBER').getValue(),
+                            x03: apex.item('P10_MONITORING_ID').getValue(),
+                            x04: '1'
+                        }, {
+                            success: function (data) {
+                                apex.item('P10_MONITORING_ID').setValue(data.monitoringId, null, true);
+                    
+                                apex.navigation.dialog(
+                                    data.url,
+                                    {
+                                        title: 'Concern - Check 1 Not In Order',
+                                        height: '650',
+                                        width: '550',
+                                        modal: true
+                                    },
+                                    '',
+                                    $('#P10_MS_CHECK1_IN_ORDER')
+                                );
+                            }
+                        });
+                    } else if (checkValue === 'Y') {
+                        apex.server.process('CHECK_CONCERN_EXISTS', {
+                            x01: apex.item('P10_MONITORING_ID').getValue(),
+                            x02: '1'
+                        }, {
+                            dataType: 'text',
+                            success: function (data) {
+                                if (data === 'Y') {
+                                    apex.message.confirm(
+                                        'This will delete the concern information already added for this check. Is this OK?',
+                                        function (okPressed) {
+                                            if (okPressed) {
+                                                apex.server.process('DELETE_MONITORING_CONCERN', {
+                                                    x01: apex.item('P10_MONITORING_ID').getValue(),
+                                                    x02: '1'
+                                                }, {
+                                                    success: function () {
+                                                        apex.message.showPageSuccess('Concern information removed.');
+                                                    }
+                                                });
+                                            } else {
+                                                apex.item('P10_MS_CHECK1_IN_ORDER').setValue('N');
+                                            }
+                                        }
+                                    );
+                                }
+                            }
+                        });
+                    }
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction check-2-not-in-order (
+        name: Check 2 not in Order
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: items
+            items: P10_MS_CHECK2_IN_ORDER
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var checkValue = apex.item('P10_MS_CHECK2_IN_ORDER').getValue();
+                    
+                    if (checkValue === 'N') {
+                        apex.server.process('GET_CONCERN_DIALOG_URL', {
+                            x01: apex.item('P10_PERMIT_ID').getValue(),
+                            x02: apex.item('P10_PERMIT_NUMBER').getValue(),
+                            x03: apex.item('P10_MONITORING_ID').getValue(),
+                            x04: '2'
+                        }, {
+                            success: function (data) {
+                                apex.item('P10_MONITORING_ID').setValue(data.monitoringId, null, true);
+                    
+                                apex.navigation.dialog(
+                                    data.url,
+                                    {
+                                        title: 'Concern - Check 2 Not In Order',
+                                        height: '650',
+                                        width: '550',
+                                        modal: true
+                                    },
+                                    '',
+                                    $('#P10_MS_CHECK2_IN_ORDER')
+                                );
+                            }
+                        });
+                    } else if (checkValue === 'Y') {
+                        apex.server.process('CHECK_CONCERN_EXISTS', {
+                            x01: apex.item('P10_MONITORING_ID').getValue(),
+                            x02: '2'
+                        }, {
+                            dataType: 'text',
+                            success: function (data) {
+                                if (data === 'Y') {
+                                    apex.message.confirm(
+                                        'This will delete the concern information already added for this check. Is this OK?',
+                                        function (okPressed) {
+                                            if (okPressed) {
+                                                apex.server.process('DELETE_MONITORING_CONCERN', {
+                                                    x01: apex.item('P10_MONITORING_ID').getValue(),
+                                                    x02: '1'
+                                                }, {
+                                                    success: function () {
+                                                        apex.message.showPageSuccess('Concern information removed.');
+                                                    }
+                                                });
+                                            } else {
+                                                apex.item('P10_MS_CHECK2_IN_ORDER').setValue('N');
+                                            }
+                                        }
+                                    );
+                                }
+                            }
+                        });
+                    }
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction check-3-not-in-order (
+        name: Check 3 not in Order
+        execution {
+            sequence: 50
+        }
+        when {
+            selectionType: items
+            items: P10_MS_CHECK3_IN_ORDER
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var checkValue = apex.item('P10_MS_CHECK3_IN_ORDER').getValue();
+                    
+                    if (checkValue === 'N') {
+                        apex.server.process('GET_CONCERN_DIALOG_URL', {
+                            x01: apex.item('P10_PERMIT_ID').getValue(),
+                            x02: apex.item('P10_PERMIT_NUMBER').getValue(),
+                            x03: apex.item('P10_MONITORING_ID').getValue(),
+                            x04: '3'
+                        }, {
+                            success: function (data) {
+                                apex.item('P10_MONITORING_ID').setValue(data.monitoringId, null, true);
+                    
+                                apex.navigation.dialog(
+                                    data.url,
+                                    {
+                                        title: 'Concern - Check 3 Not In Order',
+                                        height: '650',
+                                        width: '550',
+                                        modal: true
+                                    },
+                                    '',
+                                    $('#P10_MS_CHECK3_IN_ORDER')
+                                );
+                            }
+                        });
+                    } else if (checkValue === 'Y') {
+                        apex.server.process('CHECK_CONCERN_EXISTS', {
+                            x01: apex.item('P10_MONITORING_ID').getValue(),
+                            x02: '3'
+                        }, {
+                            dataType: 'text',
+                            success: function (data) {
+                                if (data === 'Y') {
+                                    apex.message.confirm(
+                                        'This will delete the concern information already added for this check. Is this OK?',
+                                        function (okPressed) {
+                                            if (okPressed) {
+                                                apex.server.process('DELETE_MONITORING_CONCERN', {
+                                                    x01: apex.item('P10_MONITORING_ID').getValue(),
+                                                    x02: '1'
+                                                }, {
+                                                    success: function () {
+                                                        apex.message.showPageSuccess('Concern information removed.');
+                                                    }
+                                                });
+                                            } else {
+                                                apex.item('P10_MS_CHECK3_IN_ORDER').setValue('N');
+                                            }
+                                        }
+                                    );
+                                }
+                            }
+                        });
+                    }
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction click-save-draft (
+        name: Click Save Draft
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @save-draft
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: captureLocationThenSubmit('SAVE_DRAFT');
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction click-save-monitoring (
+        name: Click Save Monitoring
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @save-monitoring
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    saveSignatures();
+                    captureLocationThenSubmit('SAVE_MONITORING');
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction set-time-fields-to-native-time-input (
+        name: Set Time Fields to Native Time Input
+        execution {
+            sequence: 60
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    apex.jQuery("#P10_CHK_PERMIT_TIME, #P10_CHK_ACCESS_TIME, #P10_CHK_WARNING_TIME, #P10_MS_CHECK1_TIME, #P10_MS_CHECK2_TIME")
+                        .attr("type", "time");
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    validation at-least-one-method-statement-check (
+        name: At Least One Method Statement Check
+        execution {
+            sequence: 40
+        }
+        validation {
+            plsqlExpression: :P10_MS_CHECK1_DETAIL IS NOT NULL
+        }
+        error {
+            errorMessage: At least one method statement compliance check (Check 1) is required.
+            associatedItem: @P10_MS_CHECK1_DETAIL
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'SAVE_MONITORING'
+        }
+    )
+
+    validation at-least-one-site-check-answered (
+        name: At Least One Site Check Answered
+        execution {
+            sequence: 30
+        }
+        validation {
+            plsqlExpression:
+                ```plsql
+                :P10_CHK_PERMIT_ON_DISPLAY IS NOT NULL
+                OR :P10_CHK_ACCESS_EGRESS  IS NOT NULL
+                OR :P10_CHK_WARNING_SIGNS  IS NOT NULL
+                ```
+        }
+        error {
+            errorMessage: Please complete at least one site monitoring check.
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'SAVE_MONITORING'
+        }
+    )
+
+    validation check-in-order (
+        name: Check in order
+        execution {
+            sequence: 50
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    l_unresolved NUMBER;
+                BEGIN
+                    SELECT COUNT(*)
+                    INTO   l_unresolved
+                    FROM   (SELECT 1 AS check_number FROM dual WHERE :P10_MS_CHECK1_IN_ORDER = 'N'
+                            UNION ALL
+                            SELECT 2 FROM dual WHERE :P10_MS_CHECK2_IN_ORDER = 'N'
+                            UNION ALL
+                            SELECT 3 FROM dual WHERE :P10_MS_CHECK3_IN_ORDER = 'N') failing
+                    WHERE NOT EXISTS (
+                        SELECT 1
+                        FROM   ptw_pro.ptw_lv_monitoring_concerns mc
+                        WHERE  mc.monitoring_id     = :P10_MONITORING_ID
+                        AND    mc.check_number      = failing.check_number
+                        AND    mc.happy_to_continue IS NOT NULL
+                        AND    mc.concern_signature IS NOT NULL
+                    );
+                
+                    RETURN l_unresolved = 0;
+                END;
+                ```
+        }
+        error {
+            errorMessage: One or more checks marked 'not in order' still need their concern signed off before this monitoring visit can be completed.
+        }
+        serverSideCondition {
+            whenButtonPressed: @save-monitoring
+        }
+    )
+
+    validation monitor-date-required (
+        name: Monitor Date Required
+        execution {
+            sequence: 20
+        }
+        validation {
+            type: itemIsNotNull
+            item: P10_MONITOR_DATE
+        }
+        error {
+            errorMessage: Date is required.
+            associatedItem: @P10_MONITOR_DATE
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'SAVE_MONITORING'
+        }
+    )
+
+    validation monitor-name-required (
+        name: Monitor Name Required
+        execution {
+            sequence: 10
+        }
+        validation {
+            type: itemIsNotNull
+            item: P10_MONITOR_NAME
+        }
+        error {
+            errorMessage: Monitoring carried out by (Name) is required.
+            associatedItem: @P10_MONITOR_NAME
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'SAVE_MONITORING'
+        }
+    )
+
+    process check-concern-exists (
+        name: CHECK_CONCERN_EXISTS
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    l_count NUMBER;
+                BEGIN
+                    -- A concern "exists" if ANY field has been filled in, in any
+                    -- order (description, actions taken, decision, OR a photo
+                    -- attached with nothing else yet typed) - a draft counts,
+                    -- it doesn't need to be complete to be worth confirming before
+                    -- deleting.
+                    SELECT COUNT(*)
+                    INTO   l_count
+                    FROM   ptw_pro.ptw_lv_monitoring_concerns mc
+                    WHERE  mc.monitoring_id = TO_NUMBER(apex_application.g_x01)
+                    AND    mc.check_number  = TO_NUMBER(apex_application.g_x02)
+                    AND    (mc.concern_description IS NOT NULL
+                            OR mc.actions_taken     IS NOT NULL
+                            OR mc.happy_to_continue IS NOT NULL
+                            OR EXISTS (
+                                 SELECT 1
+                                 FROM   ptw_pro.ptw_lv_permit_photos p
+                                 WHERE  p.concern_id = mc.concern_id
+                               ));
+                
+                    htp.prn(CASE WHEN l_count > 0 THEN 'Y' ELSE 'N' END);
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: ajaxCallback
+        }
+        advanced {
+            executionMappingIdentifier: 8747926801520322
+        }
+    )
+
+    process delete-monitoring-concern (
+        name: DELETE_MONITORING_CONCERN
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                BEGIN
+                    DELETE FROM ptw_pro.ptw_lv_monitoring_concerns
+                    WHERE  monitoring_id = TO_NUMBER(apex_application.g_x01)
+                    AND    check_number  = TO_NUMBER(apex_application.g_x02);
+                
+                    COMMIT;
+                END;
+                ```
+        }
+        execution {
+            sequence: 20
+            point: ajaxCallback
+        }
+        advanced {
+            executionMappingIdentifier: 8875288520853301
+        }
+    )
+
+    process get-concern-dialog-url (
+        name: GET_CONCERN_DIALOG_URL
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    l_permit_id     NUMBER := TO_NUMBER(apex_application.g_x01);
+                    l_monitoring_id NUMBER;
+                    l_url           VARCHAR2(4000);
+                BEGIN
+                    BEGIN
+                        l_monitoring_id := TO_NUMBER(apex_application.g_x03);
+                    EXCEPTION
+                        WHEN OTHERS THEN l_monitoring_id := NULL;
+                    END;
+                
+                    IF l_monitoring_id IS NULL THEN
+                        INSERT INTO ptw_pro.ptw_lv_monitoring (permit_id)
+                        VALUES (l_permit_id)
+                        RETURNING monitoring_id INTO l_monitoring_id;
+                        COMMIT;
+                    END IF;
+                
+                    l_url := apex_page.get_url(
+                        p_page        => 30,
+                        p_clear_cache => '30',
+                        p_items       => 'P30_PERMIT_ID,P30_PERMIT_NUMBER,P30_MONITORING_ID,P30_CHECK_NUMBER',
+                        p_values      => apex_application.g_x01 || ',' ||
+                                         apex_application.g_x02 || ',' ||
+                                         l_monitoring_id || ',' ||
+                                         apex_application.g_x04,
+                        p_plain_url   => TRUE
+                    );
+                
+                    apex_json.open_object;
+                    apex_json.write('url', l_url);
+                    apex_json.write('monitoringId', l_monitoring_id);
+                    apex_json.close_object;
+                END;
+                ```
+        }
+        execution {
+            sequence: 30
+            point: ajaxCallback
+        }
+        advanced {
+            executionMappingIdentifier: 8875897489853307
+        }
+    )
+
+    process load-monitoring-data (
+        name: Load Monitoring Data
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    v_mon    ptw_pro.ptw_lv_monitoring%ROWTYPE;
+                    v_clob   CLOB;
+                BEGIN
+                    -- Always load permit number and workflow status
+                    SELECT permit_number, workflow_status
+                    INTO   :P10_PERMIT_NUMBER, :P10_WORKFLOW_STATUS
+                    FROM   ptw_pro.ptw_lv_permits
+                    WHERE  permit_id = :P10_PERMIT_ID;
+                
+                    -- Only load monitoring data if editing an existing record
+                    IF :P10_MONITORING_ID IS NOT NULL THEN
+                        SELECT *
+                        INTO   v_mon
+                        FROM   ptw_pro.ptw_lv_monitoring
+                        WHERE  monitoring_id = :P10_MONITORING_ID
+                        AND    permit_id     = :P10_PERMIT_ID;
+                
+                        FOR chk IN (
+                            SELECT check_seq, detail, check_time, in_order, comments
+                            FROM   ptw_pro.ptw_monitoring_checks
+                            WHERE  monitoring_id = :P10_MONITORING_ID
+                            ORDER  BY check_seq
+                        ) LOOP
+                            CASE chk.check_seq
+                                WHEN 1 THEN
+                                    :P10_MS_CHECK1_DETAIL   := chk.detail;
+                                    :P10_MS_CHECK1_TIME     := chk.check_time;
+                                    :P10_MS_CHECK1_IN_ORDER := chk.in_order;
+                                    :P10_MS_CHECK1_COMMENTS := chk.comments;
+                                WHEN 2 THEN
+                                    :P10_MS_CHECK2_DETAIL   := chk.detail;
+                                    :P10_MS_CHECK2_TIME     := chk.check_time;
+                                    :P10_MS_CHECK2_IN_ORDER := chk.in_order;
+                                    :P10_MS_CHECK2_COMMENTS := chk.comments;
+                                WHEN 3 THEN
+                                    :P10_MS_CHECK3_DETAIL   := chk.detail;
+                                    :P10_MS_CHECK3_TIME     := chk.check_time;
+                                    :P10_MS_CHECK3_IN_ORDER := chk.in_order;
+                                    :P10_MS_CHECK3_COMMENTS := chk.comments;
+                            END CASE;
+                        END LOOP;
+                        :P10_MONITOR_NAME          := v_mon.monitor_name;
+                        :P10_MONITORING_STATUS     := v_mon.monitoring_status;
+                        :P10_MONITOR_DATE          := TO_CHAR(v_mon.monitor_date, 'DD-MON-YYYY');
+                
+                        IF v_mon.monitor_signature IS NOT NULL
+                           AND DBMS_LOB.GETLENGTH(v_mon.monitor_signature) > 0
+                        THEN
+                            v_clob := apex_web_service.blob2clobbase64(v_mon.monitor_signature);
+                            v_clob := REPLACE(REPLACE(v_clob, CHR(13), ''), CHR(10), '');
+                            :P10_MONITOR_SIGNATURE_DATA_URL :=
+                                'data:image/png;base64,' || DBMS_LOB.SUBSTR(v_clob, 32000, 1);
+                        END IF;
+                
+                    ELSE
+                        -- New record — set defaults only
+                        :P10_MONITOR_DATE               := TO_CHAR(SYSDATE, 'DD-MON-YYYY');
+                        :P10_MONITOR_SIGNATURE_DATA_URL := NULL;
+                        :P10_MONITORING_STATUS := 'IN_PROGRESS';
+                    END IF;
+                
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        apex_error.add_error(
+                            p_message          => 'Error loading monitoring data: ' || SQLERRM,
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 40759823698498348
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P10_PERMIT_ID
+        }
+    )
+
+    process save-monitoring-data (
+        name: Save Monitoring Data
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    v_sig     BLOB    := NULL;
+                    v_raw     VARCHAR2(32767);
+                    v_base64  VARCHAR2(32767);
+                    v_pos     NUMBER;
+                BEGIN
+                    -- -----------------------------------------------
+                    -- Convert base64 signature to BLOB (if provided)
+                    -- Same pattern as Pages 2-5.
+                    -- -----------------------------------------------
+                    v_raw := :P10_MONITOR_SIGNATURE_HIDDEN;
+                    IF v_raw IS NOT NULL AND LENGTH(v_raw) > 22 THEN
+                        v_pos    := INSTR(v_raw, ',');
+                        v_base64 := SUBSTR(v_raw, v_pos + 1);
+                        v_sig    := apex_web_service.clobbase642blob(TO_CLOB(v_base64));
+                    END IF;
+                
+                    -- -----------------------------------------------
+                    -- UPSERT monitoring record
+                    -- Location sourced from Application Items
+                    -- :APP_LATITUDE / :APP_LONGITUDE — populated by
+                    -- captureLocationThenSubmit() before page submit.
+                    -- -----------------------------------------------
+                    IF :P10_MONITORING_ID IS NOT NULL THEN
+                
+                        -- Check 1 always saved, even if blank (matches original "always shown")
+                        ptw_pro.ptw_monitoring_pkg.save_check(
+                            p_monitoring_id => :P10_MONITORING_ID,
+                            p_check_seq     => 1,
+                            p_detail        => :P10_MS_CHECK1_DETAIL,
+                            p_check_time    => :P10_MS_CHECK1_TIME,
+                            p_in_order      => :P10_MS_CHECK1_IN_ORDER,
+                            p_comments      => :P10_MS_CHECK1_COMMENTS
+                        );
+                
+                        IF :P10_MS_CHECK2_DETAIL IS NOT NULL THEN
+                            ptw_pro.ptw_monitoring_pkg.save_check(
+                                p_monitoring_id => :P10_MONITORING_ID,
+                                p_check_seq     => 2,
+                                p_detail        => :P10_MS_CHECK2_DETAIL,
+                                p_check_time    => :P10_MS_CHECK2_TIME,
+                                p_in_order      => :P10_MS_CHECK2_IN_ORDER,
+                                p_comments      => :P10_MS_CHECK2_COMMENTS
+                            );
+                        END IF;
+                
+                        IF :P10_MS_CHECK3_DETAIL IS NOT NULL THEN
+                            ptw_pro.ptw_monitoring_pkg.save_check(
+                                p_monitoring_id => :P10_MONITORING_ID,
+                                p_check_seq     => 3,
+                                p_detail        => :P10_MS_CHECK3_DETAIL,
+                                p_check_time    => :P10_MS_CHECK3_TIME,
+                                p_in_order      => :P10_MS_CHECK3_IN_ORDER,
+                                p_comments      => :P10_MS_CHECK3_COMMENTS
+                            );
+                        END IF;
+                        -- UPDATE
+                        UPDATE ptw_pro.ptw_lv_monitoring
+                        SET
+                            chk_permit_on_display  = :P10_CHK_PERMIT_ON_DISPLAY,
+                            chk_permit_time        = :P10_CHK_PERMIT_TIME,
+                            chk_access_egress      = :P10_CHK_ACCESS_EGRESS,
+                            chk_access_time        = :P10_CHK_ACCESS_TIME,
+                            chk_warning_signs      = :P10_CHK_WARNING_SIGNS,
+                            chk_warning_time       = :P10_CHK_WARNING_TIME,
+                            monitor_name           = :P10_MONITOR_NAME,
+                            monitor_date           = TO_DATE(:P10_MONITOR_DATE, 'DD-MON-YYYY'),
+                            monitor_latitude       = :APP_LATITUDE,
+                            monitor_longitude      = :APP_LONGITUDE,
+                            monitor_signature      = CASE WHEN v_sig IS NOT NULL THEN v_sig
+                                                          ELSE monitor_signature END,
+                            monitoring_status      = CASE WHEN :REQUEST = 'SAVE_DRAFT' THEN
+                                                         'IN_PROGRESS'
+                                                     ELSE 
+                                                         'COMPLETED'
+                                                     END,
+                            modified_date          = CURRENT_TIMESTAMP,
+                            modified_by            = NVL(V('APP_USER'), USER)
+                        WHERE monitoring_id = :P10_MONITORING_ID;
+                    ELSE
+                        -- INSERT
+                        INSERT INTO ptw_pro.ptw_lv_monitoring (
+                            permit_id,
+                            chk_permit_on_display,  chk_permit_time,
+                            chk_access_egress,      chk_access_time,
+                            chk_warning_signs,      chk_warning_time,
+                            monitor_name,           monitor_date,
+                            monitor_latitude,       monitor_longitude,
+                            monitor_signature,      monitoring_status,
+                            created_date,           created_by
+                        ) VALUES (
+                            :P10_PERMIT_ID,
+                            :P10_CHK_PERMIT_ON_DISPLAY,  :P10_CHK_PERMIT_TIME,
+                            :P10_CHK_ACCESS_EGRESS,      :P10_CHK_ACCESS_TIME,
+                            :P10_CHK_WARNING_SIGNS,      :P10_CHK_WARNING_TIME,
+                            :P10_MONITOR_NAME,           
+                            TO_DATE(:P10_MONITOR_DATE, 'DD-MON-YYYY'),
+                            :APP_LATITUDE,               :APP_LONGITUDE,
+                            v_sig,
+                            CASE WHEN :REQUEST = 'SAVE_DRAFT' THEN
+                                'IN_PROGRESS'
+                            ELSE 
+                                'COMPLETED'
+                            END,
+                            CURRENT_TIMESTAMP,           NVL(V('APP_USER'), USER)
+                        )
+                        RETURNING monitoring_id INTO :P10_MONITORING_ID;
+                    END IF;
+                
+                    apex_application.g_print_success_message :=
+                        'Monitoring data saved successfully at ' ||
+                        TO_CHAR(SYSDATE, 'DD-MON-YYYY HH24:MI') || '.';
+                
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        apex_error.add_error(
+                            p_message          => 'Error saving monitoring data: ' || SQLERRM,
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        advanced {
+            executionMappingIdentifier: 40759936491498349
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST IN ('SAVE_DRAFT','SAVE_MONITORING')
+        }
+    )
+
+    branch (
+        name: Back to report - SAVE MONITORING
+        execution {
+            sequence: 20
+        }
+        behavior {
+            target: {
+                page: 1
+                clearCache: 1
+                successMessage: false
+            }
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST IN ('SAVE_DRAFT','SAVE_MONITORING')
+        }
+    )
+
+)
+

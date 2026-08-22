@@ -1,0 +1,1723 @@
+page 2 (
+    name: Site & Work Details
+    alias: SITE-WORK-DETAILS
+    title: Site & Work Details
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        fileUrls: #APP_FILES#offline-storage#MIN#.js
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            // Update connection status UI
+            function updateConnectionUI() {
+                const statusDiv = document.getElementById('connection-status');
+                const statusIcon = document.getElementById('status-icon');
+                const statusText = document.getElementById('status-text');
+                
+                if (navigator.onLine) {
+                    statusDiv.style.backgroundColor = '#d4edda';
+                    statusIcon.innerHTML = '✓';
+                    statusText.innerHTML = 'Connected';
+                } else {
+                    statusDiv.style.backgroundColor = '#fff3cd';
+                    statusIcon.innerHTML = '⚠';
+                    statusText.innerHTML = 'Offline Mode';
+                }
+            }
+            
+            // Initial update
+            updateConnectionUI();
+            
+            // Listen for connection changes
+            window.addEventListener('online', updateConnectionUI);
+            window.addEventListener('offline', updateConnectionUI);
+            
+            
+            ```
+        executeWhenPageLoads:
+            ```javascript-browser
+            // Initialize offline storage
+            OfflineStorage.initDB();
+            ConnectionManager.init();
+            
+            // Offline handler for NEXT_STEP button.
+            // Capture phase (true) fires before APEX's bubble-phase DA,
+            // preventing the Execute PLSQL action from making an AJAX call that fails offline.
+            (function() {
+                var btn = document.querySelector('[data-otel-label="NEXT_STEP"]');
+                if (!btn) return;
+                btn.addEventListener('click', function(e) {
+                    if (navigator.onLine) return;
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                    var formData = {};
+                    apex.jQuery('form').serializeArray().forEach(function(i) { formData[i.name] = i.value; });
+                    OfflineStorage.saveFormData('2', formData, apex.jQuery('#P2_PERMIT_ID').val() || null)
+                        .then(function() {
+                            var u = new URL(window.location.href);
+                            var p = u.pathname.split('/');
+                            while (p[p.length - 1] === '') p.pop();
+                            // URL is /ords/r/app/page-alias/permit-id — replace page-alias, keep permit-id
+                            if (/^\d+$/.test(p[p.length - 1])) {
+                                p[p.length - 2] = 'control-measures-ppe';
+                            } else {
+                                p[p.length - 1] = 'control-measures-ppe';
+                            }
+                            u.pathname = p.join('/');
+                            u.search = '';
+                            apex.message.showPageSuccess('Data saved offline. Will sync when reconnected.');
+                            setTimeout(function() { window.location.href = u.toString(); }, 800);
+                        })
+                        .catch(function(err) {
+                            apex.message.showErrors([{type:'error',message:'Offline save error: '+err.message}]);
+                        });
+                }, true);
+            }());
+            
+            (function () {
+            
+                var BINARY_ITEMS = [
+                    'P2_CLIENT_PERMISSION_GRANTED',
+                    'P2_AFFECTS_IT_SYSTEMS',
+                    'P2_IT_PERMISSION_GRANTED'
+                ];
+            
+                var BADGES = [
+                    { val: 'Y', cls: 'binary-badge-yes', label: '✓' },
+                    { val: 'N', cls: 'binary-badge-no',  label: '✗' }
+                ];
+            
+                // Page 2 is editable when status is DRAFT
+                var status    = apex.item('P2_WORKFLOW_STATUS').getValue();
+                var isReadOnly = (apex.item('P2_WORKFLOW_STATUS').getValue() !== 'DRAFT');
+            
+                BINARY_ITEMS.forEach(function (itemName) {
+            
+                    var $fc = $('#' + itemName).closest('.t-Form-fieldContainer');
+                    if ($fc.length === 0) return;
+            
+                    $fc.find('.binary-badge-row').remove();
+            
+                    var currentVal = '';
+                    if (!isReadOnly) {
+                        currentVal = $('input[name="' + itemName + '"]:checked').val() || '';
+                    } else {
+                        currentVal = apex.item(itemName).getValue() || '';
+                    }
+            
+                    var $row = $('<div class="binary-badge-row"></div>').attr('data-item', itemName);
+            
+                    BADGES.forEach(function (b) {
+                        $('<span></span>')
+                            .addClass('binary-badge ' + b.cls)
+                            .toggleClass('cm-active', currentVal === b.val)
+                            .toggleClass('binary-readonly', isReadOnly)
+                            .attr('data-value', b.val)
+                            .text(b.label)
+                            .appendTo($row);
+                    });
+            
+                    $fc.find('.t-Form-inputContainer').append($row);
+            
+                });
+            
+                $('.cm-binary-item .apex-item-grid').hide();
+            
+                $(document).off('click.binarybadge').on('click.binarybadge', '.binary-badge:not(.binary-readonly)', function () {
+                    var $badge   = $(this);
+                    var $row     = $badge.closest('.binary-badge-row');
+                    var itemName = $row.attr('data-item');
+                    var val      = $badge.attr('data-value');
+            
+                    $('input[name="' + itemName + '"][value="' + val + '"]')
+                        .prop('checked', true).trigger('change');
+            
+                    $row.find('.binary-badge').removeClass('cm-active');
+                    $badge.addClass('cm-active');
+                });
+                
+                $('.cm-binary-item .apex-item-grid').hide();
+            
+            }());
+            
+            function initCMChecklist() {
+                var $items = $('.cm-binary-item');
+            
+                if ($items.length === 0) return; // not on a CM page
+            
+                // Append red asterisk to each item's label
+                $items.each(function() {
+                    $(this).find('.t-Form-labelContainer label, label').first()
+                           .append('<span class="cm-required-star" aria-hidden="true"> *</span>');
+                });
+            }
+            
+            apex.jQuery(document).on('apexreadyend', function() {
+                initCMChecklist();
+            });
+            ```
+    }
+    css {
+        inline:
+            ```css
+            .ptw-workflow-progress {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin: 2rem 0;
+                padding: 1.5rem;
+                background: var(--ut-component-background-color, #ffffff);
+                border-radius: 8px;
+                border: 1px solid var(--ut-component-border-color, #e0e0e0);
+                position: relative;
+            }
+            
+            .ptw-workflow-progress::before {
+                content: '';
+                position: absolute;
+                top: 3rem;
+                left: 3rem;
+                right: 3rem;
+                height: 2px;
+                background: var(--ut-palette-neutral-300, #d0d0d0);
+                z-index: 0;
+            }
+            
+            .workflow-step {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                position: relative;
+                z-index: 1;
+                flex: 1;
+                gap: 0.5rem;
+            }
+            
+            .step-icon {
+                width: 48px;
+                height: 48px;
+                border-radius: 50%;
+                background: var(--ut-component-background-color, #ffffff);
+                border: 3px solid var(--ut-palette-neutral-300, #d0d0d0);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 600;
+                font-size: 1.125rem;
+                color: var(--ut-palette-neutral-500, #666666);
+                transition: all 0.3s ease;
+            }
+            
+            .workflow-step.active .step-icon {
+                background: #003366;
+                border-color: #003366;
+                color: #ffffff;
+                box-shadow: 0 4px 8px rgba(0, 51, 102, 0.2);
+            }
+            
+            .workflow-step.completed .step-icon {
+                background: var(--ut-palette-success, #3ea055);
+                border-color: var(--ut-palette-success, #3ea055);
+                color: #ffffff;
+            }
+            
+            .step-text {
+                font-size: 0.875rem;
+                text-align: center;
+                color: var(--ut-palette-neutral-600, #595959);
+                max-width: 100px;
+                line-height: 1.3;
+            }
+            
+            .workflow-step.active .step-text {
+                color: #003366;
+                font-weight: 600;
+            }
+            
+            @media (max-width: 768px) {
+                .ptw-workflow-progress {
+                    flex-wrap: wrap;
+                    gap: 1rem;
+                }
+                .workflow-step {
+                    flex-basis: 30%;
+                }
+                .ptw-workflow-progress::before {
+                    display: none;
+                }
+            }
+            
+            /* ==========================================================
+               BINARY YES/NO BADGES — Y=green / N=red
+               ========================================================== */
+            
+            .cm-binary-item .apex-item-grid {
+                display: none !important;
+                pointer-events: none !important;
+            }
+            
+            .binary-badge-row {
+                display: flex;
+                gap: 6px;
+                margin-top: 4px;
+            }
+            
+            .binary-badge {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 52px;
+                height: 34px;
+                border-radius: 8px;
+                border: 2px solid #ced4da;
+                background: #f0f0f0;
+                color: #aaa;
+                font-weight: 700;
+                font-size: 1.3rem;
+                cursor: pointer;
+                line-height: 1;
+                transition: background 0.15s, border-color 0.15s, color 0.15s;
+                user-select: none;
+            }
+            
+            .binary-badge:hover {
+                border-color: #999;
+                background: #e2e6ea;
+            }
+            
+            .binary-badge-yes.cm-active {
+                background: #28a745;
+                border-color: #1e7e34;
+                color: #fff;
+            }
+            
+            .binary-badge-no.cm-active {
+                background: #dc3545;
+                border-color: #a71d2a;
+                color: #fff;
+            }
+            
+            .binary-badge.binary-readonly {
+                cursor: default;
+            }
+            
+            .binary-badge.binary-readonly:hover {
+                background: #f0f0f0;
+                border-color: #ced4da;
+                color: #aaa;
+            }
+            
+            .binary-badge-yes.cm-active.binary-readonly:hover {
+                background: #28a745;
+                border-color: #1e7e34;
+                color: #fff;
+            }
+            
+            .binary-badge-no.cm-active.binary-readonly:hover {
+                background: #dc3545;
+                border-color: #a71d2a;
+                color: #fff;
+            }
+            
+            /* ── Required asterisk on each item ── */
+            .cm-required-star {
+                color: #c0392b;
+                font-weight: 700;
+                margin-left: 2px;
+            }
+            
+            .cm-binary-item .apex-item-grid {
+                display: none !important;
+                pointer-events: none !important;
+            }
+            
+            .binary-badge-row {
+                display: flex;
+                gap: 6px;
+                margin-top: 4px;
+            }
+            ```
+    }
+    readOnly {
+        type: item!=value
+        item: P2_WORKFLOW_STATUS
+        value: DRAFT
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 130
+            slot: body
+        }
+        appearance {
+            template: @/buttons-container
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region cancellation-notice (
+        name: Cancellation Notice
+        title: Cancellation Notice
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    r      ptw_pro.ptw_lv_cancellation_reason_v%ROWTYPE;
+                    v_html CLOB;
+                BEGIN
+                    SELECT * INTO r FROM ptw_pro.ptw_lv_cancellation_reason_v WHERE permit_id = :P2_PERMIT_ID;
+                
+                    IF r.is_concern_cancellation = 'Y' THEN
+                        v_html := '<div class="ptw-cancel-banner ptw-cancel-banner--concern">'
+                            || '<strong>This permit was cancelled following a monitoring concern.</strong><br>'
+                            || 'Check failed: ' || r.check_label || '<br>'
+                            || 'Concern: ' || r.concern_description || '<br>'
+                            || 'Action taken: ' || r.actions_taken || '<br>'
+                            || 'Reported by ' || r.concern_person_name
+                            || ' on ' || TO_CHAR(r.concern_datetime, 'DD-Mon-YYYY HH24:MI')
+                            || '</div>';
+                    ELSE
+                        v_html := '<div class="ptw-cancel-banner">'
+                            || '<strong>This permit was cancelled.</strong><br>'
+                            || 'Cancelled by ' || r.cancel_person_name
+                            || ' on ' || TO_CHAR(r.cancel_datetime, 'DD-Mon-YYYY HH24:MI')
+                            || '</div>';
+                    END IF;
+                
+                    RETURN v_html;
+                EXCEPTION
+                    WHEN NO_DATA_FOUND THEN
+                        RETURN NULL;
+                END;
+                ```
+            pageItemsToSubmit: P2_PERMIT_ID
+        }
+        layout {
+            sequence: 70
+            slot: body
+        }
+        appearance {
+            template: @/alert
+            templateOptions: [
+                #DEFAULT#
+                t-Alert--colorBG
+                t-Alert--horizontal
+                t-Alert--defaultIcons
+                t-Alert--danger
+            ]
+        }
+        serverSideCondition {
+            type: item=value
+            item: P2_WORKFLOW_STATUS
+            value: CANCELLED
+        }
+    )
+
+    region client-permission (
+        name: Client Permission
+        title: Client Permission
+        type: staticContent
+        layout {
+            sequence: 120
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-check-square
+        }
+    )
+
+    region header-information (
+        name: Header Information
+        title: Permit Header Information
+        type: staticContent
+        layout {
+            sequence: 100
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-file-text
+        }
+        serverSideCondition {
+            type: item=value
+            item: P2_PTW_TYPE
+            value: LV ISOLATION
+        }
+    )
+
+    region permit-information-badge (
+        name: Permit Information Badge
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                RETURN ptw_pro.ptw_ui_pkg.get_permit_type_badge_html(
+                    p_permit_id => :P2_PERMIT_ID,
+                    p_ptw_type  => :P2_PTW_TYPE
+                );
+                ```
+        }
+        layout {
+            sequence: 90
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region site-work-details (
+        name: Site & Work Details
+        title: Site & Work Details
+        type: staticContent
+        layout {
+            sequence: 110
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-building
+        }
+    )
+
+    region syncstatus (
+        name: SyncStatus
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div id="connection-status" style="padding: 10px; margin-bottom: 10px; border-radius: 4px;">
+                    <span id="status-icon"></span>
+                    <span id="status-text"></span>
+                    <!-- <button id="sync-btn" style="margin-left: 10px; display: none;">Sync Now</button> -->
+                </div>
+                ```
+        }
+        layout {
+            sequence: 60
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region workflow-status (
+        name: Workflow Status
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                RETURN ptw_pro.ptw_ui_pkg.get_workflow_steps_html(
+                    p_permit_id => :P2_PERMIT_ID,
+                    p_ptw_type  => :P2_PTW_TYPE
+                );
+                ```
+        }
+        layout {
+            sequence: 80
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P2_AFFECTS_IT_SYSTEMS (
+        type: radioGroup
+        label {
+            label: Will these works affect any IT or other business critical systems?
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes;Y,No;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 20
+            region: @client-permission
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-above
+            templateOptions: #DEFAULT#
+            cssClasses: cm-binary-item
+        }
+        readOnly {
+            type: expression
+            plsqlExpression: ptw_pro.ptw_lv_is_contract_support(V('APP_USER')) = 'Y'
+        }
+    )
+
+    pageItem P2_AREA_OF_WORKS (
+        type: textarea
+        label {
+            label: Area Of Works
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @site-work-details
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 3
+        }
+    )
+
+    pageItem P2_CLIENT_PERMISSION_GRANTED (
+        type: radioGroup
+        label {
+            label: Has the client granted permission for these works to proceed?
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes;Y,No;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 10
+            region: @client-permission
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-above
+            templateOptions: #DEFAULT#
+            cssClasses: cm-binary-item
+        }
+        readOnly {
+            type: expression
+            plsqlExpression: ptw_pro.ptw_lv_is_contract_support(V('APP_USER')) = 'Y'
+        }
+    )
+
+    pageItem P2_CURRENT_STEP (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+    )
+
+    pageItem P2_ISOLATION_DIAGRAM_SERIAL_NO (
+        type: textField
+        label {
+            label: Isolation & Earthing Diagram Serial No.
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @header-information
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: Enter serial number
+        }
+        validation {
+            maxLength: 100
+        }
+        readOnly {
+            type: expression
+            plsqlExpression: ptw_pro.ptw_lv_is_contract_support(V('APP_USER')) = 'Y'
+        }
+    )
+
+    pageItem P2_IS_CHANGED (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+    )
+
+    pageItem P2_IT_PERMISSION_GRANTED (
+        type: radioGroup
+        label {
+            label: If 'Yes' has permission been granted to proceed?
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes;Y,No;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 30
+            region: @client-permission
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-above
+            templateOptions: #DEFAULT#
+            cssClasses: cm-binary-item
+        }
+        readOnly {
+            type: expression
+            plsqlExpression: ptw_pro.ptw_lv_is_contract_support(V('APP_USER')) = 'Y'
+        }
+    )
+
+    pageItem P2_OTHER_PERSONS_COUNT (
+        type: numberField
+        label {
+            label: Number of other persons working under this Permit
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            region: @site-work-details
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: 0
+        }
+        validation {
+            valueRequired: true
+        }
+        readOnly {
+            type: expression
+            plsqlExpression: ptw_pro.ptw_lv_is_contract_support(V('APP_USER')) = 'Y'
+        }
+    )
+
+    pageItem P2_PERMIT_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+    )
+
+    pageItem P2_PERMIT_NUMBER (
+        type: hidden
+        layout {
+            sequence: 40
+            slot: body
+        }
+    )
+
+    pageItem P2_PERSON_IN_CHARGE_NAME (
+        type: textField
+        label {
+            label: Name of Person in Charge
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @site-work-details
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: Full name of person in charge
+        }
+        validation {
+            valueRequired: true
+            maxLength: 200
+        }
+        readOnly {
+            type: expression
+            plsqlExpression: ptw_pro.ptw_lv_is_contract_support(V('APP_USER')) = 'Y'
+        }
+    )
+
+    pageItem P2_PTW_TYPE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+    )
+
+    pageItem P2_SAFETY_PROGRAMME_REF_NO (
+        type: textField
+        label {
+            label: Safety Programme Reference No.
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @header-information
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: Enter reference number
+        }
+        validation {
+            maxLength: 100
+        }
+        readOnly {
+            type: expression
+            plsqlExpression: ptw_pro.ptw_lv_is_contract_support(V('APP_USER')) = 'Y'
+        }
+    )
+
+    pageItem P2_SITE_DETAILS (
+        type: combobox
+        label {
+            label: Site
+            alignment: left
+        }
+        settings {
+            manualEntriesItem: P2_SITE_NEW_NAME
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                    SELECT s.site_name d, s.site_id r
+                    FROM   ptw_pro.ptw_lv_sites s
+                    WHERE  s.is_active = 'Y'
+                    ORDER  BY s.site_name
+                ```
+        }
+        layout {
+            sequence: 10
+            region: @site-work-details
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: Enter full site details and area of works
+        }
+        validation {
+            maxLength: 500
+        }
+        readOnly {
+            type: expression
+            plsqlExpression: ptw_pro.ptw_lv_is_contract_support(V('APP_USER')) = 'Y'
+        }
+    )
+
+    pageItem P2_SITE_NEW_NAME (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            region: @site-work-details
+            slot: regionBody
+        }
+    )
+
+    pageItem P2_SUPERVISING_COMPANY (
+        type: textField
+        label {
+            label: Company responsible for supervising the works
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @site-work-details
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: Company name
+        }
+        validation {
+            valueRequired: true
+            maxLength: 200
+        }
+        readOnly {
+            type: expression
+            plsqlExpression: ptw_pro.ptw_lv_is_contract_support(V('APP_USER')) = 'Y'
+        }
+    )
+
+    pageItem P2_WORKFLOW_STATUS (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+    )
+
+    pageItem P2_WORK_DESCRIPTION (
+        type: textarea
+        label {
+            label: Description of work activity
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @site-work-details
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 3
+            valuePlaceholder: Describe the work activity to be carried out
+        }
+        validation {
+            valueRequired: true
+            maxLength: 2000
+        }
+        readOnly {
+            type: expression
+            plsqlExpression: ptw_pro.ptw_lv_is_contract_support(V('APP_USER')) = 'Y'
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancel
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 1
+                items: {
+                    P1_PERMIT_ID: &P2_PERMIT_ID.
+                }
+                clearCache: 2
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        advanced {
+            htmlDomId: BTN_CANCEL_P2
+        }
+    )
+
+    button next-step (
+        buttonName: NEXT_STEP
+        label: Next Step
+        layout {
+            sequence: 30
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconRight
+            ]
+            icon: fa-arrow-right
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        advanced {
+            htmlDomId: BTN_NEXT_STEP_P2
+        }
+    )
+
+    button save-draft (
+        buttonName: SAVE_DRAFT
+        label: Save Draft
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        advanced {
+            htmlDomId: BTN_SAVE_DRAFT_P2
+        }
+        security {
+            authorizationScheme: @can-edit-permits
+        }
+    )
+
+    dynamicAction click-next-step (
+        name: Click NEXT STEP
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @next-step
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: captureLocationThenSubmit('NEXT_STEP');
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction click-save-draft (
+        name: Click SAVE DRAFT
+        execution {
+            sequence: 30
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @save-draft
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    captureLocationThenSubmit('SAVE_DRAFT');
+                    
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction show-hide-it-permission-question (
+        name: Show/Hide IT Permission Question
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P2_AFFECTS_IT_SYSTEMS
+        }
+        clientSideCondition {
+            type: item=value
+            item: P2_AFFECTS_IT_SYSTEMS
+            value: Y
+        }
+
+        action native-hide (
+            action: hide
+            affectedElements {
+                selectionType: items
+                items: P2_IT_PERMISSION_GRANTED
+            }
+            execution {
+                sequence: 10
+                fireWhenEventResultIs: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P2_AFFECTS_IT_SYSTEMS
+                value: N
+            }
+        )
+
+        action native-show (
+            action: show
+            affectedElements {
+                selectionType: items
+                items: P2_IT_PERMISSION_GRANTED
+            }
+            execution {
+                sequence: 10
+            }
+            clientSideCondition {
+                type: item=value
+                item: P2_AFFECTS_IT_SYSTEMS
+                value: Y
+            }
+        )
+
+    )
+
+    validation area-of-works-required (
+        name: Area of Works Required
+        execution {
+            sequence: 20
+        }
+        validation {
+            type: itemIsNotNull
+            item: P2_AREA_OF_WORKS
+        }
+        error {
+            errorMessage: Area of Works is required.
+            associatedItem: @P2_AREA_OF_WORKS
+        }
+    )
+
+    validation client-permission-required (
+        name: Client Permission Required
+        execution {
+            sequence: 40
+        }
+        validation {
+            type: itemIsNotNull
+            item: P2_CLIENT_PERMISSION_GRANTED
+        }
+        error {
+            errorMessage: Please indicate if the client has granted permission.
+            associatedItem: @P2_CLIENT_PERMISSION_GRANTED
+        }
+    )
+
+    validation client-permission-validation (
+        name: Client permission validation
+        execution {
+            sequence: 50
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                RETURN (
+                    :P2_AFFECTS_IT_SYSTEMS IS NOT NULL
+                    AND :P2_CLIENT_PERMISSION_GRANTED IS NOT NULL
+                    );
+                ```
+        }
+        error {
+            errorMessage: Both the mandatory Client Permission questions must be answered
+        }
+        serverSideCondition {
+            type: request=Value
+            value: NEXT_STEP
+        }
+    )
+
+    validation person-in-charge-required (
+        name: Person in Charge Required
+        execution {
+            sequence: 30
+        }
+        validation {
+            type: itemIsNotNull
+            item: P2_PERSON_IN_CHARGE_NAME
+        }
+        error {
+            errorMessage: Name of Person in Charge is required.
+            associatedItem: @P2_PERSON_IN_CHARGE_NAME
+        }
+    )
+
+    validation site-details-required (
+        name: Site Details Required
+        execution {
+            sequence: 10
+        }
+        validation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                BEGIN
+                    IF :P2_SITE_DETAILS IS NULL AND :P2_SITE_NEW_NAME IS NULL THEN
+                        RETURN 'Site is required.';
+                    END IF;
+                    RETURN NULL;
+                END;
+                ```
+        }
+        error {
+            associatedItem: @P2_SITE_DETAILS
+        }
+    )
+
+    process engineer-own-permit-check (
+        name: Engineer Own Permit Check
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    v_is_engineer NUMBER;
+                    v_is_owner    NUMBER;
+                    v_is_auth     NUMBER;
+                BEGIN
+                    SELECT COUNT(*) INTO v_is_engineer
+                    FROM   ptw_pro.ptw_lv_user_roles_v          -- changed
+                    WHERE  UPPER(username) = UPPER(V('APP_USER'))
+                    AND    role_name = 'ENGINEER'
+                    AND    is_active = 'Y';
+                
+                    IF v_is_engineer > 0 AND :P2_PERMIT_ID IS NOT NULL THEN  -- use correct Pn_PERMIT_ID per page
+                
+                        SELECT COUNT(*) INTO v_is_owner
+                        FROM   ptw_pro.ptw_lv_permits
+                        WHERE  permit_id = :P2_PERMIT_ID         -- use correct Pn_PERMIT_ID per page
+                        AND    UPPER(created_by) = UPPER(V('APP_USER'));
+                
+                        IF v_is_owner = 0 THEN
+                
+                            SELECT COUNT(*) INTO v_is_auth
+                            FROM   ptw_pro.ptw_signatures
+                            WHERE  permit_id = :P2_PERMIT_ID
+                            AND    stage     = 'AUTH'
+                            AND    UPPER(person_name) = UPPER(V('APP_USER'));  -- check if the engineer is the auth_person
+                
+                          IF v_is_auth = 0 THEN
+                
+                            apex_error.add_error(
+                                p_message          => 'Access denied. You can only edit permits you have created.',
+                                p_display_location => apex_error.c_inline_in_notification
+                            );
+                            apex_util.redirect_url(
+                                apex_page.get_url(p_page => 1)
+                            );
+                          END IF;
+                
+                        END IF;
+                
+                    END IF;
+                END;
+                ```
+        }
+        execution {
+            sequence: 20
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 30143717338642706
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P2_PERMIT_ID
+        }
+    )
+
+    process load-permit-data (
+        name: Load Permit Data
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                BEGIN
+                
+                  :P2_CURRENT_STEP := 'SITE_WORK_DETAILS';
+                  
+                    SELECT
+                        permit_number,
+                        current_step,
+                        workflow_status,
+                        safety_programme_ref_no,
+                        isolation_diagram_serial_no,
+                        site_id,
+                        area_of_works,
+                        work_description,
+                        person_in_charge_name,
+                        supervising_company,
+                        other_persons_count,
+                        client_permission_granted,
+                        affects_it_systems,
+                        it_permission_granted
+                    INTO
+                        :P2_PERMIT_NUMBER,
+                        :P2_CURRENT_STEP,
+                        :P2_WORKFLOW_STATUS,
+                        :P2_SAFETY_PROGRAMME_REF_NO,
+                        :P2_ISOLATION_DIAGRAM_SERIAL_NO,
+                        :P2_SITE_DETAILS,
+                        :P2_AREA_OF_WORKS,
+                        :P2_WORK_DESCRIPTION,
+                        :P2_PERSON_IN_CHARGE_NAME,
+                        :P2_SUPERVISING_COMPANY,
+                        :P2_OTHER_PERSONS_COUNT,
+                        :P2_CLIENT_PERMISSION_GRANTED,
+                        :P2_AFFECTS_IT_SYSTEMS,
+                        :P2_IT_PERMISSION_GRANTED
+                    FROM ptw_pro.ptw_lv_permits
+                    WHERE permit_id = :P2_PERMIT_ID;
+                
+                EXCEPTION
+                    WHEN NO_DATA_FOUND THEN
+                        :P2_PERMIT_ID := NULL;
+                        :P2_WORKFLOW_STATUS := 'DRAFT';
+                        apex_error.add_error(
+                            p_message => 'Permit not found.',
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                    WHEN OTHERS THEN
+                        apex_error.add_error(
+                            p_message => 'Error loading permit: ' || SQLERRM,
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 26944769422347718
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P2_PERMIT_ID
+        }
+    )
+
+    process save-permit-data-insert-or-update (
+        name: Save Permit Data (INSERT or UPDATE)
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    v_permit_id      NUMBER;
+                    v_permit_number  VARCHAR2(50);
+                    v_site_id        ptw_pro.ptw_lv_sites.site_id%TYPE;
+                    v_company_id     NUMBER;
+                BEGIN
+                
+                    -- Resolve site: existing selection wins; otherwise find-or-create from
+                    -- the typed value. Runs on every save (draft included) — see §1.
+                    IF :P2_SITE_DETAILS IS NOT NULL THEN
+                        v_site_id := :P2_SITE_DETAILS;  -- Combobox returned an existing site_id
+                    ELSIF :P2_SITE_NEW_NAME IS NOT NULL THEN
+                        v_company_id := ptw_pro.ptw_sec_pkg.get_effective_company_id;
+                        IF v_company_id IS NULL THEN
+                            apex_error.add_error(
+                                p_message => 'Unable to determine company for this site. '
+                                    || 'If you are a Super User, select an Active Company first.',
+                                p_display_location => apex_error.c_inline_in_notification);
+                        END IF;
+                
+                        BEGIN
+                            SELECT site_id INTO v_site_id
+                            FROM   ptw_pro.ptw_lv_sites
+                            WHERE  UPPER(site_name) = UPPER(:P2_SITE_NEW_NAME)
+                            AND    company_id = v_company_id;
+                        EXCEPTION
+                            WHEN NO_DATA_FOUND THEN
+                                INSERT INTO ptw_pro.ptw_lv_sites (company_id, site_name, created_by)
+                                VALUES (v_company_id, :P2_SITE_NEW_NAME, NVL(V('APP_USER'), USER))
+                                RETURNING site_id INTO v_site_id;
+                        END;
+                
+                        :P2_SITE_DETAILS := v_site_id;   -- so the rest of this process, and the
+                        :P2_SITE_NEW_NAME := NULL;       -- page on re-render, treat it as selected
+                    END IF;
+                    
+                  IF :P2_WORKFLOW_STATUS = 'DRAFT' THEN
+                    IF :P2_PERMIT_ID IS NULL THEN
+                        -- INSERT NEW PERMIT
+                        INSERT INTO ptw_pro.ptw_lv_permits (
+                            safety_programme_ref_no,
+                            ptw_type,
+                            isolation_diagram_serial_no,
+                            site_id,
+                            area_of_works,
+                            work_description,
+                            person_in_charge_name,
+                            supervising_company,
+                            other_persons_count,
+                            client_permission_granted,
+                            affects_it_systems,
+                            it_permission_granted,
+                            current_step,
+                            workflow_status,
+                            site_work_latitude,
+                            site_work_longitude,
+                            created_by
+                        ) VALUES (
+                            :P2_SAFETY_PROGRAMME_REF_NO,
+                            NVL(:P2_PTW_TYPE, 'LV ISOLATION'),
+                            :P2_ISOLATION_DIAGRAM_SERIAL_NO,
+                            v_site_id,
+                            :P2_AREA_OF_WORKS,
+                            :P2_WORK_DESCRIPTION,
+                            :P2_PERSON_IN_CHARGE_NAME,
+                            :P2_SUPERVISING_COMPANY,
+                            :P2_OTHER_PERSONS_COUNT,
+                            :P2_CLIENT_PERMISSION_GRANTED,
+                            :P2_AFFECTS_IT_SYSTEMS,
+                            :P2_IT_PERMISSION_GRANTED,
+                            'SITE_WORK_DETAILS',
+                            'DRAFT',
+                            :APP_LATITUDE,
+                            :APP_LONGITUDE,
+                            NVL(V('APP_USER'), USER)
+                        ) RETURNING permit_id, permit_number
+                          INTO v_permit_id, v_permit_number;
+                
+                        :P2_PERMIT_ID := v_permit_id;
+                        :P2_PERMIT_NUMBER := v_permit_number;
+                        :P2_CURRENT_STEP := 'SITE_WORK_DETAILS';
+                        :P2_WORKFLOW_STATUS := 'DRAFT';
+                
+                        apex_application.g_print_success_message :=
+                            'Permit ' || v_permit_number || ' created successfully.';
+                
+                    ELSE
+                        -- UPDATE EXISTING PERMIT (only if something has changed)
+                        UPDATE ptw_pro.ptw_lv_permits
+                        SET safety_programme_ref_no     = :P2_SAFETY_PROGRAMME_REF_NO,
+                            isolation_diagram_serial_no = :P2_ISOLATION_DIAGRAM_SERIAL_NO,
+                            site_id                     = v_site_id,
+                            area_of_works               = :P2_AREA_OF_WORKS,
+                            work_description            = :P2_WORK_DESCRIPTION,
+                            person_in_charge_name       = :P2_PERSON_IN_CHARGE_NAME,
+                            supervising_company         = :P2_SUPERVISING_COMPANY,
+                            other_persons_count         = :P2_OTHER_PERSONS_COUNT,
+                            client_permission_granted   = :P2_CLIENT_PERMISSION_GRANTED,
+                            affects_it_systems          = :P2_AFFECTS_IT_SYSTEMS,
+                            it_permission_granted       = :P2_IT_PERMISSION_GRANTED,
+                            site_work_latitude          = :APP_LATITUDE,
+                            site_work_longitude         = :APP_LONGITUDE,
+                            modified_by                 = NVL(V('APP_USER'), USER),
+                            modified_date               = CURRENT_TIMESTAMP
+                        WHERE permit_id = :P2_PERMIT_ID
+                        AND (
+                            NVL(safety_programme_ref_no,     'x') != NVL(:P2_SAFETY_PROGRAMME_REF_NO,     'x') OR
+                            NVL(isolation_diagram_serial_no, 'x') != NVL(:P2_ISOLATION_DIAGRAM_SERIAL_NO, 'x') OR
+                            NVL(site_id,                      -1) != NVL(v_site_id,                        -1)  OR
+                            NVL(area_of_works,               'x') != NVL(:P2_AREA_OF_WORKS,               'x') OR
+                            NVL(work_description,            'x') != NVL(:P2_WORK_DESCRIPTION,            'x') OR
+                            NVL(person_in_charge_name,       'x') != NVL(:P2_PERSON_IN_CHARGE_NAME,       'x') OR
+                            NVL(supervising_company,         'x') != NVL(:P2_SUPERVISING_COMPANY,         'x') OR
+                            NVL(TO_CHAR(other_persons_count),'x') != NVL(TO_CHAR(:P2_OTHER_PERSONS_COUNT),'x') OR
+                            NVL(client_permission_granted,   'x') != NVL(:P2_CLIENT_PERMISSION_GRANTED,   'x') OR
+                            NVL(affects_it_systems,          'x') != NVL(:P2_AFFECTS_IT_SYSTEMS,          'x') OR
+                            NVL(it_permission_granted,       'x') != NVL(:P2_IT_PERMISSION_GRANTED,       'x')
+                        );
+                
+                        -- SQL%ROWCOUNT = 0 is fine here — means nothing changed, not an error
+                        IF SQL%ROWCOUNT > 0 THEN
+                            apex_application.g_print_success_message :=
+                                'Permit ' || :P2_PERMIT_NUMBER || ' updated successfully.';
+                        END IF;
+                    END IF;
+                
+                    COMMIT;
+                  END IF;
+                
+                EXCEPTION
+                    WHEN DUP_VAL_ON_INDEX THEN
+                        -- Race condition: two users typed the same new site name for the same
+                        -- company at the same moment. Re-select rather than fail the permit save.
+                        BEGIN
+                            SELECT site_id INTO v_site_id
+                            FROM   ptw_pro.ptw_lv_sites
+                            WHERE  UPPER(site_name) = UPPER(:P2_SITE_NEW_NAME)
+                            AND    company_id = ptw_pro.ptw_sec_pkg.get_effective_company_id;
+                            :P2_SITE_DETAILS := v_site_id;
+                        EXCEPTION WHEN OTHERS THEN
+                            ROLLBACK;
+                            apex_error.add_error(
+                                p_message => 'Error saving permit: ' || SQLERRM,
+                                p_display_location => apex_error.c_inline_in_notification);
+                            RAISE;
+                        END;
+                    WHEN OTHERS THEN
+                        ROLLBACK;
+                        apex_error.add_error(
+                            p_message => 'Error saving permit: ' || SQLERRM,
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                        RAISE;
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        successMessage {
+            successMessage: Permit saved successfully.
+        }
+        advanced {
+            executionMappingIdentifier: 26944820115347719
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST IN ('SAVE_DRAFT','NEXT_STEP')
+        }
+        security {
+            authorizationScheme: @can-edit-permits
+        }
+    )
+
+    process sync-offline-data (
+        name: SYNC_OFFLINE_DATA
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    l_data_json  CLOB := apex_application.g_x01;
+                    l_page_id    VARCHAR2(100) := apex_application.g_x02;
+                    l_record_id  NUMBER := apex_application.g_x03;  -- NULL = INSERT, value = UPDATE
+                    l_json       JSON_OBJECT_T;
+                    l_success    BOOLEAN := TRUE;
+                    l_message    VARCHAR2(4000);
+                    v_site_id        ptw_pro.ptw_lv_sites.site_id%TYPE;
+                    v_company_id     NUMBER;
+                BEGIN
+                    -- Parse JSON data
+                    l_json := JSON_OBJECT_T.parse(l_data_json);
+                
+                        IF l_json.get_string('P2_SITE_DETAILS') IS NOT NULL THEN
+                            v_site_id := TO_NUMBER(l_json.get_string('P2_SITE_DETAILS'));
+                        ELSIF l_json.get_string('P2_SITE_NEW_NAME') IS NOT NULL THEN
+                            v_company_id := ptw_pro.ptw_sec_pkg.get_effective_company_id;
+                            IF v_company_id IS NULL THEN
+                                RAISE_APPLICATION_ERROR(-20020,
+                                    'Unable to determine company for this site.');
+                            END IF;
+                            BEGIN
+                                SELECT site_id INTO v_site_id
+                                FROM   ptw_pro.ptw_lv_sites
+                                WHERE  UPPER(site_name) = UPPER(l_json.get_string('P2_SITE_NEW_NAME'))
+                                AND    company_id = v_company_id;
+                            EXCEPTION
+                                WHEN NO_DATA_FOUND THEN
+                                    INSERT INTO ptw_pro.ptw_lv_sites (company_id, site_name, created_by)
+                                    VALUES (v_company_id, l_json.get_string('P2_SITE_NEW_NAME'),
+                                            NVL(V('APP_USER'), USER))
+                                    RETURNING site_id INTO v_site_id;
+                            END;
+                        END IF;
+                    
+                    BEGIN
+                        IF l_record_id IS NULL THEN
+                            -- INSERT new record
+                            INSERT INTO ptw_pro.ptw_lv_permits (
+                              safety_programme_ref_no,
+                              isolation_diagram_serial_no,
+                              site_id,
+                              area_of_works,
+                              work_description,
+                              person_in_charge_name,
+                              supervising_company,
+                              other_persons_count,
+                              client_permission_granted,
+                              affects_it_systems,
+                              it_permission_granted,
+                              current_step,
+                              workflow_status,
+                              site_work_latitude,
+                              site_work_longitude,
+                              created_by,
+                              created_date
+                            ) VALUES (
+                                l_json.get_string('P2_SAFETY_PROGRAMME_REF_NO'),
+                                l_json.get_string('P2_ISOLATION_DIAGRAM_SERIAL_NO'),
+                                v_site_id,
+                                l_json.get_string('P2_AREA_OF_WORKS'),
+                                l_json.get_string('P2_WORK_DESCRIPTION'),
+                                l_json.get_string('P2_PERSON_IN_CHARGE_NAME'),
+                                l_json.get_string('P2_SUPERVISING_COMPANY'),
+                                l_json.get_number('P2_OTHER_PERSONS_COUNT'),
+                                l_json.get_string('P2_CLIENT_PERMISSION_GRANTED'),
+                                l_json.get_string('P2_AFFECTS_IT_SYSTEMS'),
+                                l_json.get_string('P2_IT_PERMISSION_GRANTED'),
+                                'SITE_WORK_DETAILS',
+                                'DRAFT',
+                                l_json.get_number('APP_LATITUDE'),
+                                l_json.get_number('APP_LONGITUDE'),
+                                NVL(V('APP_USER'), USER),
+                                SYSDATE
+                            );
+                            
+                            l_message := 'Record created successfully';
+                            
+                        ELSE
+                            -- UPDATE existing record
+                            UPDATE ptw_pro.ptw_lv_permits
+                            SET safety_programme_ref_no      = l_json.get_string('P2_SAFETY_PROGRAMME_REF_NO'),
+                                isolation_diagram_serial_no  = l_json.get_string('P2_ISOLATION_DIAGRAM_SERIAL_NO'),
+                                site_id                      = v_site_id,
+                                area_of_works                = l_json.get_string('P2_AREA_OF_WORKS'),
+                                work_description             = l_json.get_string('P2_WORK_DESCRIPTION'),
+                                person_in_charge_name        = l_json.get_string('P2_PERSON_IN_CHARGE_NAME'),
+                                supervising_company          = l_json.get_string('P2_SUPERVISING_COMPANY'),
+                                other_persons_count          = l_json.get_number('P2_OTHER_PERSONS_COUNT'),
+                                client_permission_granted    = l_json.get_string('P2_CLIENT_PERMISSION_GRANTED'),
+                                affects_it_systems           = l_json.get_string('P2_AFFECTS_IT_SYSTEMS'),
+                                it_permission_granted        = l_json.get_string('P2_IT_PERMISSION_GRANTED'),
+                                site_work_latitude           = l_json.get_number('APP_LATITUDE'),
+                                site_work_longitude          = l_json.get_number('APP_LONGITUDE'),
+                                modified_by                  = NVL(V('APP_USER'), USER),
+                                modified_date                = SYSDATE
+                            WHERE permit_id = l_record_id;
+                            
+                            l_message := 'Record updated successfully';
+                        END IF;
+                        
+                        COMMIT;
+                        
+                    EXCEPTION WHEN OTHERS THEN
+                        l_success := FALSE;
+                        l_message := SQLERRM;
+                        ROLLBACK;
+                    END;
+                    
+                    -- Return JSON response
+                    apex_json.open_object;
+                    apex_json.write('success', l_success);
+                    apex_json.write('message', l_message);
+                    apex_json.close_object;
+                    
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: ajaxCallback
+        }
+        advanced {
+            executionMappingIdentifier: 27017024078886521
+        }
+        serverSideCondition {
+            type: request=Value
+            value: SYNC_OFFLINE_DATA
+        }
+        security {
+            authorizationScheme: @can-edit-permits
+        }
+    )
+
+    branch (
+        name: Refresh Current Page
+        execution {
+            sequence: 20
+        }
+        behavior {
+            target: {
+                page: 2
+                items: {
+                    P2_PERMIT_ID: &P2_PERMIT_ID.
+                }
+                clearCache: 2
+                successMessage: false
+            }
+        }
+        serverSideCondition {
+            type: request=Value
+            value: SAVE_DRAFT
+        }
+    )
+
+    branch (
+        name: Go to Control Measures
+        execution {
+            sequence: 10
+        }
+        behavior {
+            target: {
+                page: 3
+                items: {
+                    P3_PERMIT_ID: &P2_PERMIT_ID.
+                }
+                clearCache: 3
+                successMessage: false
+            }
+        }
+        serverSideCondition {
+            type: request=Value
+            value: NEXT_STEP
+        }
+    )
+
+)
+

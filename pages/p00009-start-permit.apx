@@ -1,0 +1,586 @@
+page 9 (
+    name: Start Permit
+    alias: START-PERMIT
+    title: Start Permit -  &P9_PERMIT_NUMBER.
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @/modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 110
+            slot: contentBody
+        }
+        appearance {
+            template: @/buttons-container
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region immediate-dates (
+        name: Immediate Dates
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div id="p9ImmediateDates" class="t-Alert t-Alert--info t-Alert--horizontal">
+                  <div class="t-Alert-wrap">
+                    <div class="t-Alert-icon"><span class="t-Icon fa fa-clock-o"></span></div>
+                    <div class="t-Alert-content">
+                      <div class="t-Alert-body">
+                        Permit will be valid: <strong id="p9ImmFrom"></strong> &mdash; <strong id="p9ImmTo"></strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                ```
+        }
+        layout {
+            sequence: 100
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-clock-o
+        }
+    )
+
+    region permit-duration-notice (
+        name: Permit Duration Notice
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="ptw-section-card">
+                    <div class="ptw-section-body">
+                        <div class="declaration-box">
+                            This Permit <strong>MUST</strong> be issued for the <strong>SHORTEST</strong> reasonable period of TIME (never usually longer than 12 Hours).
+                        </div>
+                    </div>
+                </div>
+                
+                ```
+        }
+        layout {
+            sequence: 60
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-clock-o
+        }
+    )
+
+    pageItem P9_END_DATE (
+        type: datePicker
+        label {
+            label: END (Date & Time)
+            alignment: left
+        }
+        settings {
+            showTime: true
+        }
+        layout {
+            sequence: 90
+            slot: contentBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            formatMask: DD-MON-YYYY HH24:MI
+            width: 30
+        }
+    )
+
+    pageItem P9_PERMIT_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+    )
+
+    pageItem P9_PERMIT_NUMBER (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: contentBody
+        }
+    )
+
+    pageItem P9_START_DATE (
+        type: datePicker
+        label {
+            label: START (Date & Time)
+            alignment: left
+        }
+        settings {
+            showTime: true
+        }
+        layout {
+            sequence: 80
+            slot: contentBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            formatMask: DD-MON-YYYY HH24:MI
+            width: 30
+        }
+    )
+
+    pageItem P9_START_MODE (
+        type: radioGroup
+        label {
+            label: Choose the permit validity window
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: sharedComponent
+            lov: @ptw-start-mode
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 70
+            slot: contentBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P9_WORKFLOW_STATUS (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 50
+            slot: contentBody
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancel
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button start-permit (
+        buttonName: START_PERMIT
+        label: Start Permit
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-play-circle
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction auto-calc-end-date-on-start-date-change (
+        name: Auto-calc End Date on Start Date change
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P9_START_DATE
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var startVal = apex.item('P9_START_DATE').getValue();
+                    if (startVal) {
+                        var sd = new Date(startVal.replace(
+                            /(\d{2})-([A-Z]{3})-(\d{4}) (\d{2}):(\d{2})/,
+                            function(_, d, mon, y, h, mi) {
+                                var mns = {JAN:0,FEB:1,MAR:2,APR:3,MAY:4,JUN:5,JUL:6,AUG:7,SEP:8,OCT:9,NOV:10,DEC:11};
+                                return y + '-' + String(mns[mon]+1).padStart(2,'0') + '-' + d + 'T' + h + ':' + mi;
+                            }
+                        ));
+                        var ed = new Date(sd.getTime() + 12 * 60 * 60 * 1000);
+                        var m = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+                        var fmtd = String(ed.getDate()).padStart(2,'0') + '-' + m[ed.getMonth()] + '-'
+                                   + ed.getFullYear() + ' ' + String(ed.getHours()).padStart(2,'0')
+                                   + ':' + String(ed.getMinutes()).padStart(2,'0');
+                        apex.item('P9_END_DATE').setValue(fmtd);
+                    }
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction cancel-processing (
+        name: Cancel processing
+        execution {
+            sequence: 40
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cancel
+        }
+
+        action native-dialog-close (
+            action: closeDialog
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction set-immediate-dates-on-load (
+        name: Set Immediate Dates on Load
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var now    = new Date();
+                    var toDate = new Date(now.getTime() + 12 * 60 * 60 * 1000);
+                    function fmtDt(d) {
+                        var m = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+                        return String(d.getDate()).padStart(2,'0') + '-' + m[d.getMonth()] + '-' + d.getFullYear()
+                               + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+                    }
+                    $('#p9ImmFrom').text(fmtDt(now));
+                    $('#p9ImmTo').text(fmtDt(toDate));
+                    
+                    // Default radio to IMMEDIATE
+                    apex.item('P9_START_MODE').setValue('IMMEDIATE');
+                    $('#p9ImmediateDates').show();
+                    $('[id*="P9_START_DATE"], [id*="P9_END_DATE"]').closest('.t-Form-fieldContainer').hide();
+                    
+                    // Pre-populate date pickers with calculated values
+                    apex.item('P9_START_DATE').setValue(fmtDt(now));
+                    apex.item('P9_END_DATE').setValue(fmtDt(toDate));
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction start-the-permit (
+        name: Start the permit
+        execution {
+            sequence: 50
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @start-permit
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: captureLocationThenSubmit('START_PERMIT');
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction toggle-date-fields-on-mode-change (
+        name: Toggle Date Fields on Mode Change
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P9_START_MODE
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    if (apex.item('P9_START_MODE').getValue() === 'IMMEDIATE') {
+                        $('#p9ImmediateDates').show();
+                        $('[id*="P9_START_DATE"], [id*="P9_END_DATE"]').closest('.t-Form-fieldContainer').hide();
+                    } else {
+                        $('#p9ImmediateDates').hide();
+                        $('[id*="P9_START_DATE"], [id*="P9_END_DATE"]').closest('.t-Form-fieldContainer').show();
+                    }
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    validation end-after-start (
+        name: End after Start
+        execution {
+            sequence: 30
+        }
+        validation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                BEGIN
+                  IF :P9_END_DATE <= :P9_START_DATE THEN
+                    RETURN 'End Date must be after Start Date.';
+                  END IF;
+                END;
+                ```
+        }
+        serverSideCondition {
+            type: item=value
+            item: P9_START_MODE
+            value: SCHEDULED
+        }
+    )
+
+    validation end-date-required-scheduled (
+        name: End Date Required (Scheduled)
+        execution {
+            sequence: 20
+        }
+        validation {
+            type: itemIsNotNull
+            item: P9_END_DATE
+        }
+        error {
+            errorMessage: End date is required.
+        }
+        serverSideCondition {
+            type: item=value
+            item: P9_START_MODE
+            value: SCHEDULED
+        }
+    )
+
+    validation max-of-12-hours (
+        name: Max of 12 hours
+        execution {
+            sequence: 40
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                BEGIN
+                    RETURN NOT (
+                        :P9_START_MODE = 'SCHEDULED' AND
+                        :P9_START_DATE IS NOT NULL AND
+                        :P9_END_DATE IS NOT NULL AND
+                        (TO_DATE(:P9_END_DATE, 'DD-MON-YYYY HH24:MI') - 
+                         TO_DATE(:P9_START_DATE, 'DD-MON-YYYY HH24:MI')) * 24 > 12
+                    );
+                EXCEPTION WHEN OTHERS THEN RETURN TRUE;
+                END;
+                ```
+        }
+        error {
+            errorMessage: A permit can only be open for maximum of 12 hours.
+        }
+    )
+
+    validation start-date-required-scheduled (
+        name: Start Date Required (Scheduled)
+        execution {
+            sequence: 10
+        }
+        validation {
+            type: itemIsNotNull
+            item: P9_START_DATE
+        }
+        error {
+            errorMessage: Start Date is required.
+        }
+        serverSideCondition {
+            type: item=value
+            item: P9_START_MODE
+            value: SCHEDULED
+        }
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        settings {
+            itemsToReturn: P9_WORKFLOW_STATUS
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 20
+            point: afterSubmit
+        }
+        advanced {
+            executionMappingIdentifier: 37958131306176042
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    process start-permit (
+        name: Start Permit
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    v_from_dt DATE;
+                    v_to_dt   DATE;
+                    v_now     DATE := SYSDATE;
+                BEGIN
+                    IF :P9_START_MODE = 'IMMEDIATE' THEN
+                        v_from_dt := v_now;
+                        v_to_dt   := v_now + 12/24;
+                    ELSE
+                        v_from_dt := TO_DATE(:P9_START_DATE, 'DD-MON-YYYY HH24:MI');
+                        v_to_dt   := TO_DATE(:P9_END_DATE,   'DD-MON-YYYY HH24:MI');
+                    END IF;
+                
+                    UPDATE ptw_pro.ptw_lv_permits
+                    SET    workflow_status    = 'STARTED',
+                           current_step       = 'LIVE',
+                           started_datetime   = v_from_dt,
+                           ended_datetime     = v_to_dt,
+                           started_latitude   = TO_NUMBER(:APP_LATITUDE),
+                           started_longitude  = TO_NUMBER(:APP_LONGITUDE),
+                           modified_by        = V('APP_USER'),
+                           modified_date      = v_now
+                    WHERE  permit_id = :P9_PERMIT_ID;
+                
+                    IF SQL%ROWCOUNT = 0 THEN
+                        RAISE_APPLICATION_ERROR(-20001, 'Permit not found.');
+                    END IF;
+                
+                    COMMIT;
+                    :P9_WORKFLOW_STATUS := 'STARTED';
+                    apex_application.g_print_success_message := 'Permit started successfully.';
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        ROLLBACK;
+                        apex_error.add_error(
+                            p_message          => 'Error starting permit: ' || SQLERRM,
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        advanced {
+            executionMappingIdentifier: 37957981155176040
+        }
+        serverSideCondition {
+            type: request=Value
+            value: START_PERMIT
+        }
+    )
+
+    branch (
+        name: Back to dashboard
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 1
+                clearCache: 1
+                successMessage: false
+            }
+        }
+        serverSideCondition {
+            type: request=Value
+            value: START_PERMIT
+        }
+    )
+
+)
+

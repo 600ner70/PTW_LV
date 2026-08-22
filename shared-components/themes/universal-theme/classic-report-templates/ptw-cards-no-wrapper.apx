@@ -1,0 +1,16 @@
+classicReportTemplate ptw-cards-no-wrapper (
+    name: PTW Cards - No Wrapper
+    templateClass: oneColumnUnorderedList
+    type: genericColumns
+    reportTemplate {
+        top: " "
+        bottom: " "
+    }
+    columnTemplate1 {
+        template: #COLUMN_VALUE#
+    }
+    advanced {
+        identifier: PTW_CARDS_NO_WRAPPER
+    }
+)
+

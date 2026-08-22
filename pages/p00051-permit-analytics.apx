@@ -1,0 +1,1061 @@
+page 51 (
+    name: Permit Analytics
+    alias: PERMIT-ANALYTICS
+    title: Permit Analytics
+    appearance {
+        pageTemplate: @/left-side-column
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+        warnOnUnsavedChanges: false
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            // Refresh all chart and KPI regions after any filter change
+            function p51RefreshCharts() {
+                apex.region('p51-bar-company').refresh();
+                apex.region('p51-pie-status').refresh();
+                apex.region('p51-line-trend').refresh();
+            }
+            
+            // Called by chart bar onclick — filters IR to that company
+            function p51DrillCompany(companyVal) {
+                apex.item('P51_DRILL_COMPANY').setValue(companyVal);
+                apex.item('P51_DRILL_STATUS').setValue('');
+                var banner = document.getElementById('p51-drill-banner');
+                var text   = document.getElementById('p51-drill-text');
+                if (banner && text) {
+                    text.textContent = 'Filtered: Company = ' + companyVal;
+                    banner.classList.add('active');
+                }
+                apex.region('p51-results').refresh();
+            }
+            
+            // Called by chart slice onclick — filters IR to that status
+            function p51DrillStatus(statusVal) {
+                apex.item('P51_DRILL_STATUS').setValue(statusVal);
+                apex.item('P51_DRILL_COMPANY').setValue('');
+                var banner = document.getElementById('p51-drill-banner');
+                var text   = document.getElementById('p51-drill-text');
+                if (banner && text) {
+                    text.textContent = 'Filtered: Status = ' + statusVal;
+                    banner.classList.add('active');
+                }
+                apex.region('p51-results').refresh();
+            }
+            
+            // Called by the Clear link in the drill banner
+            function p51ClearDrill() {
+                apex.item('P51_DRILL_STATUS').setValue('');
+                apex.item('P51_DRILL_COMPANY').setValue('');
+                var banner = document.getElementById('p51-drill-banner');
+                if (banner) banner.classList.remove('active');
+                apex.region('p51-results').refresh();
+            }
+            
+            ```
+    }
+    css {
+        inline:
+            ```css
+            .p51-kpi-strip {
+                display: flex;
+                gap: 12px;
+                flex-wrap: wrap;
+                margin-bottom: 4px;
+            }
+            .p51-kpi-box {
+                flex: 1;
+                min-width: 120px;
+                background: #ffffff;
+                border: 1px solid #e0e0e0;
+                border-radius: 6px;
+                padding: 14px 18px;
+                text-align: center;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            }
+            .p51-kpi-value {
+                font-size: 2rem;
+                font-weight: 700;
+                color: #003366;
+                line-height: 1.1;
+            }
+            .p51-kpi-label {
+                font-size: 0.72rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: #595959;
+                margin-top: 4px;
+            }
+            .p51-kpi-box.kpi-live   .p51-kpi-value { color: #28a745; }
+            .p51-kpi-box.kpi-active .p51-kpi-value { color: #17a2b8; }
+            .p51-kpi-box.kpi-done   .p51-kpi-value { color: #6f42c1; }
+            .p51-kpi-box.kpi-cancel .p51-kpi-value { color: #dc3545; }
+            
+            .p51-drill-banner {
+                display: none;
+                background: #e8f4fd;
+                border-left: 4px solid #17a2b8;
+                padding: 8px 14px;
+                border-radius: 0 4px 4px 0;
+                margin-bottom: 8px;
+                font-size: 0.875rem;
+                color: #003366;
+                font-weight: 600;
+            }
+            .p51-drill-banner.active {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .p51-drill-clear {
+                cursor: pointer;
+                color: #17a2b8;
+                font-size: 0.8rem;
+                font-weight: 400;
+                text-decoration: underline;
+            }
+            
+            .ptw-badge {
+                display: inline-block;
+                padding: 3px 10px;
+                border-radius: 12px;
+                font-size: 0.72rem;
+                font-weight: 600;
+                text-transform: uppercase;
+            }
+            .ptw-badge--live       { background: #28a745; color: #fff; }
+            .ptw-badge--authorised { background: #6c757d; color: #fff; }
+            .ptw-badge--completed  { background: #6f42c1; color: #fff; }
+            .ptw-badge--lapsed     { background: #6c757d; color: #fff; }
+            .ptw-badge--suspended  { background: #fd7e14; color: #fff; }
+            .ptw-badge--cancelled  { background: #dc3545; color: #fff; }
+            .ptw-badge--draft      { background: #17a2b8; color: #fff; }
+            
+            #p51_active_facets { margin-bottom: 8px; }
+            
+            ```
+    }
+    security {
+        authorizationScheme: @administration-rights
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region analytics-results (
+        name: Analytics Results
+        title: Permit Results
+        type: classicReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT
+                    p.permit_id,
+                    p.permit_number,
+                    p.status_display,
+                    p.workflow_status,
+                    p.company,
+                    p.person_in_charge,
+                    p.site_details,
+                    p.created_date,
+                    TO_CHAR(p.created_date,    'DD-Mon-YYYY')          AS created_display,
+                    TO_CHAR(p.auth_datetime,   'DD-Mon-YYYY HH24:MI')  AS authorised_display,
+                    TO_CHAR(p.started_datetime,'DD-Mon-YYYY HH24:MI')  AS started_display,
+                    TO_CHAR(p.ended_datetime,  'DD-Mon-YYYY HH24:MI')  AS ended_display,
+                    TO_CHAR(p.clear_datetime,  'DD-Mon-YYYY HH24:MI')  AS cleared_display,
+                    TO_CHAR(p.cancel_datetime, 'DD-Mon-YYYY HH24:MI')  AS cancelled_display,
+                    p.has_clearance,
+                    p.has_cancellation,
+                    p.has_photos,
+                    (SELECT t.type_desc FROM ptw_pro.ptw_types t
+                     WHERE  t.ptw_type = p.ptw_type) AS ptw_type_desc,
+                    '<span class="ptw-badge ' ||
+                    CASE p.workflow_status
+                        WHEN 'STARTED'     THEN 'ptw-badge--live'
+                        WHEN 'COMPLETED'   THEN 'ptw-badge--completed'
+                        WHEN 'AUTHORISED'  THEN 'ptw-badge--authorised'
+                        WHEN 'LAPSED'      THEN 'ptw-badge--lapsed'
+                        WHEN 'SUSPENDED'   THEN 'ptw-badge--suspended'
+                        WHEN 'CANCELLED'   THEN 'ptw-badge--cancelled'
+                        WHEN 'DRAFT'       THEN 'ptw-badge--draft'
+                        ELSE                    'ptw-badge--lapsed'
+                    END || '">' || p.status_display || '</span>'        AS status_badge_html,
+                    apex_page.get_url(
+                        p_page   => 2,
+                        p_items  => 'P2_PERMIT_ID',
+                        p_values => p.permit_id
+                    )                                                   AS permit_link
+                FROM ptw_pro.ptw_lv_analytics_v p
+                WHERE (
+                    :P51_DRILL_STATUS  IS NULL
+                    OR p.workflow_status = :P51_DRILL_STATUS
+                )
+                AND (
+                    :P51_DRILL_COMPANY IS NULL
+                    OR p.company        = :P51_DRILL_COMPANY
+                )
+                ```
+            pageItemsToSubmit: [
+                P51_DRILL_STATUS
+                P51_DRILL_COMPANY
+            ]
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-table
+        }
+        advanced {
+            htmlDomId: p51-results
+        }
+        componentAppearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Report--altRowsDefault
+                t-Report--rowHighlight
+            ]
+        }
+        pagination {
+            type: nextAndPreviousLinks
+        }
+
+        column AUTHORISED_DISPLAY (
+            reportColumnQueryId: 10
+            derivedColumn: N
+            heading {
+                heading: Authorised
+            }
+            layout {
+                sequence: 80
+            }
+        )
+
+        column CANCELLED_DISPLAY (
+            reportColumnQueryId: 14
+            derivedColumn: N
+            heading {
+                heading: Cancelled
+            }
+            layout {
+                sequence: 120
+            }
+        )
+
+        column CLEARED_DISPLAY (
+            reportColumnQueryId: 13
+            derivedColumn: N
+            heading {
+                heading: Cleared
+            }
+            layout {
+                sequence: 110
+            }
+        )
+
+        column COMPANY (
+            reportColumnQueryId: 5
+            derivedColumn: N
+            heading {
+                heading: Company
+            }
+            layout {
+                sequence: 40
+            }
+        )
+
+        column CREATED_DATE (
+            reportColumnQueryId: 8
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 180
+            }
+        )
+
+        column CREATED_DISPLAY (
+            reportColumnQueryId: 9
+            derivedColumn: N
+            heading {
+                heading: Created
+            }
+            layout {
+                sequence: 70
+            }
+        )
+
+        column ENDED_DISPLAY (
+            reportColumnQueryId: 12
+            derivedColumn: N
+            heading {
+                heading: Permit Expiry
+            }
+            layout {
+                sequence: 100
+            }
+        )
+
+        column HAS_CANCELLATION (
+            reportColumnQueryId: 16
+            derivedColumn: N
+            heading {
+                heading: Cancellation Data?
+            }
+            layout {
+                sequence: 140
+            }
+        )
+
+        column HAS_CLEARANCE (
+            reportColumnQueryId: 15
+            derivedColumn: N
+            heading {
+                heading: Clearance Data?
+            }
+            layout {
+                sequence: 130
+            }
+        )
+
+        column HAS_PHOTOS (
+            reportColumnQueryId: 17
+            derivedColumn: N
+            heading {
+                heading: Photos?
+            }
+            layout {
+                sequence: 150
+            }
+        )
+
+        column PERMIT_ID (
+            reportColumnQueryId: 1
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 10
+            }
+        )
+
+        column PERMIT_LINK (
+            reportColumnQueryId: 20
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 200
+            }
+        )
+
+        column PERMIT_NUMBER (
+            reportColumnQueryId: 2
+            derivedColumn: N
+            type: link
+            heading {
+                heading: Permit
+            }
+            layout {
+                sequence: 20
+            }
+            link {
+                target: {
+                    page: 2
+                    items: {
+                        P2_PERMIT_ID: #PERMIT_ID#
+                    }
+                    clearCache: 2
+                }
+                linkText: #PERMIT_NUMBER#
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column PERSON_IN_CHARGE (
+            reportColumnQueryId: 6
+            derivedColumn: N
+            heading {
+                heading: Person In Charge
+            }
+            layout {
+                sequence: 50
+            }
+        )
+
+        column PTW_TYPE_DESC (
+            reportColumnQueryId: 18
+            derivedColumn: N
+            heading {
+                heading: Ptw Type Desc
+            }
+            layout {
+                sequence: 210
+            }
+        )
+
+        column SITE_DETAILS (
+            reportColumnQueryId: 7
+            derivedColumn: N
+            heading {
+                heading: Site
+            }
+            layout {
+                sequence: 60
+            }
+        )
+
+        column STARTED_DISPLAY (
+            reportColumnQueryId: 11
+            derivedColumn: N
+            heading {
+                heading: Started (LIVE)
+            }
+            layout {
+                sequence: 90
+            }
+        )
+
+        column STATUS_BADGE_HTML (
+            reportColumnQueryId: 19
+            derivedColumn: N
+            heading {
+                heading: Status
+            }
+            layout {
+                sequence: 30
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column STATUS_DISPLAY (
+            reportColumnQueryId: 3
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 160
+            }
+        )
+
+        column WORKFLOW_STATUS (
+            reportColumnQueryId: 4
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 170
+            }
+        )
+
+    )
+
+    region chart-controls (
+        name: Chart Controls
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div id="p51_active_facets" style="margin-bottom:6px;"></div>
+                <div id="p51-drill-banner" class="p51-drill-banner">
+                    <span id="p51-drill-text">Filtered by chart selection</span>
+                    <span class="p51-drill-clear" onclick="p51ClearDrill()">&#10005; Clear filter</span>
+                </div>
+                ```
+        }
+        layout {
+            sequence: 60
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filters (
+        name: Filters
+        title: Filters
+        type: facetedSearch
+        source {
+            filteredRegion: @analytics-results
+        }
+        layout {
+            sequence: 60
+            slot: leftColumn
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+        accessibility {
+            landmarkLabel: Filters
+        }
+        settings {
+            compactNosThreshold: 10000
+            showCurrentFacets: selector
+            currentFacetsSelector: #p51_active_facets
+            showTotalRowCount: true
+            showCharts: false
+        }
+
+        facet P51_COMPANY (
+            type: checkboxGroup
+            label {
+                label: Company
+            }
+            lov {
+                type: distinctValues
+            }
+            layout {
+                sequence: 40
+            }
+            listEntries {
+                maxDisplayedEntries: 7
+            }
+            source {
+                databaseColumn: COMPANY
+            }
+        )
+
+        facet P51_CREATED_DATE (
+            type: range
+            label {
+                label: Created Date
+            }
+            layout {
+                sequence: 70
+            }
+            appearance {
+                formatMask: DD-MON-YYYY
+            }
+            source {
+                databaseColumn: CREATED_DATE
+                dataType: date
+            }
+        )
+
+        facet P51_PERSON_IN_CHARGE (
+            type: checkboxGroup
+            label {
+                label: Person In Charge
+            }
+            lov {
+                type: distinctValues
+            }
+            layout {
+                sequence: 50
+            }
+            listEntries {
+                maxDisplayedEntries: 7
+            }
+            source {
+                databaseColumn: PERSON_IN_CHARGE
+            }
+        )
+
+        facet P51_PTW_TYPE (
+            type: checkboxGroup
+            label {
+                label: Permit Type
+            }
+            lov {
+                type: distinctValues
+            }
+            layout {
+                sequence: 20
+            }
+            listEntries {
+                maxDisplayedEntries: 7
+            }
+            source {
+                databaseColumn: PTW_TYPE_DESC
+            }
+        )
+
+        facet P51_SEARCH (
+            type: search
+            label {
+                label: Search
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dbColumns: PERMIT_NUMBER, SITE_DETAILS, COMPANY,PERSON_IN_CHARGE, STATUS_DISPLAY, WORKFLOW_STATUS
+            }
+        )
+
+        facet P51_SITE_DETAILS (
+            type: checkboxGroup
+            label {
+                label: Site Details
+            }
+            lov {
+                type: distinctValues
+            }
+            layout {
+                sequence: 60
+            }
+            listEntries {
+                maxDisplayedEntries: 7
+            }
+            source {
+                databaseColumn: SITE_DETAILS
+            }
+        )
+
+        facet P51_WORKFLOW_STATUS (
+            type: checkboxGroup
+            label {
+                label: Workflow Status
+            }
+            lov {
+                type: distinctValues
+            }
+            layout {
+                sequence: 30
+            }
+            listEntries {
+                maxDisplayedEntries: 7
+            }
+            source {
+                databaseColumn: WORKFLOW_STATUS
+            }
+        )
+
+    )
+
+    region permit-trend (
+        name: Permit Trend
+        type: chart
+        layout {
+            sequence: 90
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-line-chart
+        }
+        advanced {
+            htmlDomId: p51-line-trend
+        }
+        chart {
+            type: line
+        }
+        chartLayout {
+            height: 280
+        }
+        legend {
+            show: false
+        }
+
+        series total-permits (
+            name: Total Permits
+            execution {
+                sequence: 10
+            }
+            source {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT
+                        CASE :P51_TIME_GROUPING
+                            WHEN 'DAILY'  THEN TO_CHAR(group_daily,   'DD-Mon-YYYY')
+                            WHEN 'WEEKLY' THEN 'Wk ' || TO_CHAR(group_weekly, 'IW YYYY')
+                            ELSE               TO_CHAR(group_monthly,  'Mon-YYYY')
+                        END              AS period_label,
+                        CASE :P51_TIME_GROUPING
+                            WHEN 'DAILY'  THEN group_daily
+                            WHEN 'WEEKLY' THEN group_weekly
+                            ELSE               group_monthly
+                        END              AS period_date,
+                        COUNT(*)         AS permit_count
+                    FROM ptw_pro.ptw_lv_analytics_v
+                    GROUP BY
+                        CASE :P51_TIME_GROUPING
+                            WHEN 'DAILY'  THEN group_daily
+                            WHEN 'WEEKLY' THEN group_weekly
+                            ELSE               group_monthly
+                        END,
+                        CASE :P51_TIME_GROUPING
+                            WHEN 'DAILY'  THEN TO_CHAR(group_daily,   'DD-Mon-YYYY')
+                            WHEN 'WEEKLY' THEN 'Wk ' || TO_CHAR(group_weekly, 'IW YYYY')
+                            ELSE               TO_CHAR(group_monthly,  'Mon-YYYY')
+                        END
+                    ORDER BY
+                        CASE :P51_TIME_GROUPING
+                            WHEN 'DAILY'  THEN group_daily
+                            WHEN 'WEEKLY' THEN group_weekly
+                            ELSE               group_monthly
+                        END
+                    ```
+                pageItemsToSubmit: [
+                    P51_TIME_GROUPING
+                    " P51_WORKFLOW_STATUS"
+                    P51_COMPANY
+                    " P51_SITE_DETAILS"
+                    P51_PERSON_IN_CHARGE
+                    " P51_CREATED_DATE"
+                    " P51_SEARCH"
+                ]
+            }
+            columnMapping {
+                label: PERIOD_LABEL
+                value: PERMIT_COUNT
+            }
+            appearance {
+                color: #4a9fd4
+            }
+        )
+
+        axis x (
+            name: x
+            minorTicks {
+                show: false
+            }
+        )
+
+        axis y (
+            name: y
+            value {
+                format: decimal
+                decimalPlaces: 0
+                formatScaling: none
+            }
+            minorTicks {
+                show: false
+            }
+        )
+
+    )
+
+    region permits-by-company (
+        name: Permits by Company
+        title: Permits by Company
+        type: chart
+        layout {
+            sequence: 70
+            slot: body
+            columnSpan: 6
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-bar-chart
+        }
+        advanced {
+            htmlDomId: p51-bar-company
+        }
+        chartLayout {
+            height: 320
+        }
+        legend {
+            show: false
+        }
+
+        series permits (
+            name: Permits
+            execution {
+                sequence: 10
+            }
+            source {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT
+                        company          AS label,
+                        COUNT(*)         AS permit_count
+                    FROM ptw_pro.ptw_lv_analytics_v
+                    GROUP BY company
+                    ORDER BY COUNT(*) DESC
+                    FETCH FIRST 15 ROWS ONLY
+                    ```
+            }
+            columnMapping {
+                label: LABEL
+                value: PERMIT_COUNT
+            }
+            appearance {
+                color: #344b5c
+            }
+            link {
+                type: redirectUrl
+                targetUrl: javascript:p51DrillCompany('#LABEL#');
+            }
+        )
+
+        axis x (
+            name: x
+            minorTicks {
+                show: false
+            }
+        )
+
+        axis y (
+            name: y
+            value {
+                format: decimal
+                decimalPlaces: 0
+                formatScaling: none
+            }
+            minorTicks {
+                show: false
+            }
+        )
+
+    )
+
+    region permits-by-status (
+        name: Permits by Status
+        title: Permits by Status
+        type: chart
+        layout {
+            sequence: 80
+            slot: body
+            startNewRow: false
+            columnSpan: 6
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-pie-chart
+        }
+        advanced {
+            htmlDomId: p51-pie-status
+        }
+        chart {
+            type: pie
+        }
+        chartLayout {
+            height: 320
+        }
+        value {
+            format: decimal
+            decimalPlaces: 0
+            formatScaling: none
+        }
+
+        series status-breakdown (
+            name: Status Breakdown
+            execution {
+                sequence: 10
+            }
+            source {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT
+                        status_display   AS label,
+                        workflow_status  AS status_val,
+                        COUNT(*)         AS permit_count,
+                        status_colour    AS series_color
+                    FROM ptw_pro.ptw_lv_analytics_v
+                    GROUP BY status_display, workflow_status, status_colour
+                    ORDER BY COUNT(*) DESC
+                    ```
+            }
+            columnMapping {
+                label: LABEL
+                value: PERMIT_COUNT
+            }
+            appearance {
+                color: #SERIES_COLOR#
+            }
+            link {
+                type: redirectUrl
+                targetUrl: javascript:p51DrillStatus('#STATUS_VAL#');
+            }
+            label {
+                show: true
+            }
+        )
+
+    )
+
+    pageItem P51_DRILL_COMPANY (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+    )
+
+    pageItem P51_DRILL_STATUS (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+    )
+
+    pageItem P51_TIME_GROUPING (
+        type: selectList
+        label {
+            label: Group By
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Monthly;MONTHLY,Weekly;WEEKLY,Daily;DAILY
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 10
+            region: @permit-trend
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        default {
+            type: static
+            staticValue: MONTHLY
+        }
+    )
+
+    dynamicAction drill-company-refresh-report (
+        name: Drill Company - Refresh Report
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P51_DRILL_COMPANY
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @analytics-results
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction drill-status-refresh-report (
+        name: Drill Status - Refresh Report
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: items
+            items: P51_DRILL_STATUS
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @analytics-results
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction facet-change-refresh-charts (
+        name: Facet Change - Refresh Charts
+        execution {
+            sequence: 10
+        }
+        when {
+            event: apexafterrefresh
+            selectionType: region
+            region: @analytics-results
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: p51RefreshCharts();
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction time-grouping-change (
+        name: Time Grouping Change
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P51_TIME_GROUPING
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @permit-trend
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+)
+

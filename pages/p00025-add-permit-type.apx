@@ -1,0 +1,455 @@
+page 25 (
+    name: Add Permit Type
+    alias: ADD-PERMIT-TYPE
+    title: Add Permit Type
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @/modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        executeWhenPageLoads:
+            ```javascript-browser
+            (function () {
+                var BINARY_ITEMS = ['P25_AVAILABLE'];
+            
+                var BADGES = [
+                    { val: 'Y', cls: 'binary-badge-yes', label: '✓' },
+                    { val: 'N', cls: 'binary-badge-no',  label: '✗' }
+                ];
+            
+                BINARY_ITEMS.forEach(function (itemName) {
+                    var $fc = $('#' + itemName).closest('.t-Form-fieldContainer');
+                    if ($fc.length === 0) return;
+            
+                    $fc.find('.binary-badge-row').remove();
+            
+                    var currentVal = $('input[name="' + itemName + '"]:checked').val() || '';
+            
+                    var $row = $('<div class="binary-badge-row"></div>').attr('data-item', itemName);
+            
+                    BADGES.forEach(function (b) {
+                        $('<span></span>')
+                            .addClass('binary-badge ' + b.cls)
+                            .toggleClass('cm-active', currentVal === b.val)
+                            .attr('data-value', b.val)
+                            .text(b.label)
+                            .appendTo($row);
+                    });
+            
+                    $fc.find('.t-Form-inputContainer').append($row);
+                });
+            
+                $('.cm-binary-item .apex-item-grid').hide();
+            
+                $(document).off('click.binarybadge25').on('click.binarybadge25', '.binary-badge:not(.binary-readonly)', function () {
+                    var $badge   = $(this);
+                    var $row     = $badge.closest('.binary-badge-row');
+                    var itemName = $row.attr('data-item');
+                    var val      = $badge.attr('data-value');
+            
+                    $('input[name="' + itemName + '"][value="' + val + '"]')
+                        .prop('checked', true).trigger('change');
+            
+                    $row.find('.binary-badge').removeClass('cm-active');
+                    $badge.addClass('cm-active');
+                });
+            }());
+            
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 50
+            slot: contentBody
+        }
+        appearance {
+            template: @/buttons-container
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region permit-type-details (
+        name: Permit Type Details
+        title: Permit Type Details
+        type: staticContent
+        layout {
+            sequence: 40
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    pageItem P25_AVAILABLE (
+        type: radioGroup
+        label {
+            label: Available?
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes;Y,No;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 30
+            region: @permit-type-details
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            cssClasses: cm-binary-item
+        }
+        default {
+            type: static
+            staticValue: Y
+        }
+    )
+
+    pageItem P25_COMPANY_COUNT (
+        type: displayOnly
+        label {
+            label: Companies Using This Type
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @permit-type-details
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+        }
+        source {
+            type: sqlQuerySingleValue
+            sqlQuery:
+                ```sql
+                SELECT COUNT(*) FROM ptw_pro.ptw_lv_company_types
+                WHERE type_id = :P25_TYPE_ID AND is_active = 'Y'
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P25_TYPE_ID
+        }
+    )
+
+    pageItem P25_CREATED_DATE (
+        type: displayOnly
+        label {
+            label: Date Created
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @permit-type-details
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            formatMask: DD-MON-YYYY
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P25_TYPE_ID
+        }
+    )
+
+    pageItem P25_PTW_TYPE (
+        type: textField
+        label {
+            label: Type code
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @permit-type-details
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        advanced {
+            customAttributes: style="text-transform:uppercase"
+        }
+        readOnly {
+            type: itemIsNotNull
+            item: P25_TYPE_ID
+        }
+    )
+
+    pageItem P25_TYPE_DESC (
+        type: textField
+        label {
+            label: Description
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @permit-type-details
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        readOnly {
+            type: itemIsNotNull
+            item: P25_TYPE_ID
+        }
+    )
+
+    pageItem P25_TYPE_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancel
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: regionBody
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 22
+                clearCache: 22
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        advanced {
+            htmlDomId: BTN_CANCEL_P25
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Save
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        advanced {
+            htmlDomId: BTN_SAVE_P25
+        }
+    )
+
+    validation description-required (
+        name: Description Required
+        execution {
+            sequence: 20
+        }
+        validation {
+            type: itemIsNotNull
+            item: P25_TYPE_DESC
+        }
+        error {
+            errorMessage: Description is required.
+            associatedItem: @P25_TYPE_DESC
+        }
+        serverSideCondition {
+            whenButtonPressed: @save
+        }
+    )
+
+    validation type-code-must-be-unique (
+        name: Type Code Must Be Unique
+        execution {
+            sequence: 30
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    v_count NUMBER;
+                BEGIN
+                    SELECT COUNT(*) INTO v_count
+                    FROM   ptw_pro.ptw_types
+                    WHERE  UPPER(ptw_type) = UPPER(:P25_PTW_TYPE)
+                    AND    (type_id != :P25_TYPE_ID OR :P25_TYPE_ID IS NULL);
+                    RETURN v_count = 0;
+                END;
+                ```
+        }
+        error {
+            errorMessage: This Type Code already exists. Please choose a different code.
+            associatedItem: @P25_PTW_TYPE
+        }
+        serverSideCondition {
+            whenButtonPressed: @save
+        }
+    )
+
+    validation type-code-required (
+        name: Type Code Required
+        execution {
+            sequence: 10
+        }
+        validation {
+            type: itemIsNotNull
+            item: P25_PTW_TYPE
+        }
+        error {
+            errorMessage: Type Code is required.
+            associatedItem: @P25_PTW_TYPE
+        }
+        serverSideCondition {
+            whenButtonPressed: @save
+        }
+    )
+
+    process fetch-permit-type (
+        name: Fetch Permit Type
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                BEGIN
+                    SELECT t.ptw_type,
+                           t.type_desc,
+                           t.available,
+                           TO_CHAR(t.created_date, 'DD-MON-YYYY') AS created_date,
+                           (SELECT COUNT(*) FROM ptw_pro.ptw_lv_company_types ct
+                             WHERE ct.type_id = t.type_id AND ct.is_active = 'Y') AS company_count
+                    INTO   :P25_PTW_TYPE,
+                           :P25_TYPE_DESC,
+                           :P25_AVAILABLE,
+                           :P25_CREATED_DATE,
+                           :P25_COMPANY_COUNT
+                    FROM   ptw_pro.ptw_types t
+                    WHERE  type_id = :P25_TYPE_ID;
+                END;
+                
+                ```
+        }
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 52461243254584409
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P25_TYPE_ID
+        }
+    )
+
+    process save-permit-type (
+        name: Save Permit Type
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                IF :P25_TYPE_ID IS NOT NULL THEN
+                
+                    -- Existing type: ptw_type and type_desc are locked - only
+                    -- available can change.
+                    UPDATE ptw_pro.ptw_types
+                    SET    available = :P25_AVAILABLE
+                    WHERE  type_id = :P25_TYPE_ID;
+                
+                ELSE
+                
+                    -- New type
+                    INSERT INTO ptw_pro.ptw_types (ptw_type, type_desc, available)
+                    VALUES     (:P25_PTW_TYPE, :P25_TYPE_DESC, :P25_AVAILABLE);
+                
+                END IF;
+                
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 52461356308584410
+        }
+    )
+
+    branch (
+        name: Back to page 22
+        execution {
+            sequence: 10
+        }
+        behavior {
+            target: {
+                page: 22
+                clearCache: 22
+                successMessage: false
+            }
+        }
+    )
+
+)
+

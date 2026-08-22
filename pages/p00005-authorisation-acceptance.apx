@@ -1,0 +1,1654 @@
+page 5 (
+    name: Authorisation & Acceptance
+    alias: AUTHORISATION-ACCEPTANCE
+    title: Authorisation & Acceptance
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        fileUrls: #APP_FILES#offline-storage#MIN#.js
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            let authSignaturePad;
+            let acceptSignaturePad;
+            
+            function initSignaturePads() {
+                setTimeout(function() {
+                    initPad('authSignaturePad',   'P5_AUTH_SIGNATURE_DATA',   function(pad) { authSignaturePad   = pad; });
+                    initPad('acceptSignaturePad', 'P5_ACCEPT_SIGNATURE_DATA', function(pad) { acceptSignaturePad = pad; });
+                }, 200);
+            }
+            
+            function clearAuthSignature() {
+                if (authSignaturePad) {
+                    authSignaturePad.clear();
+                    apex.item('P5_AUTH_SIGNATURE_DATA').setValue('');
+                }
+            }
+            
+            function clearAcceptSignature() {
+                if (acceptSignaturePad) {
+                    acceptSignaturePad.clear();
+                    apex.item('P5_ACCEPT_SIGNATURE_DATA').setValue('');
+                }
+            }
+            
+            function saveSignatures() {
+                if (authSignaturePad   && !authSignaturePad.isEmpty)   { apex.item('P5_AUTH_SIGNATURE_DATA').setValue(authSignaturePad.getDataURL()); }
+                if (acceptSignaturePad && !acceptSignaturePad.isEmpty) { apex.item('P5_ACCEPT_SIGNATURE_DATA').setValue(acceptSignaturePad.getDataURL()); }
+            }
+            
+            function updateConnectionUI() {
+                const statusDiv  = document.getElementById('connection-status');
+                const statusIcon = document.getElementById('status-icon');
+                const statusText = document.getElementById('status-text');
+                if (!statusDiv) return;
+                if (navigator.onLine) {
+                    statusDiv.style.backgroundColor = '#d4edda';
+                    statusIcon.innerHTML = '\u2713';
+                    statusText.innerHTML = 'Connected';
+                } else {
+                    statusDiv.style.backgroundColor = '#fff3cd';
+                    statusIcon.innerHTML = '\u26A0';
+                    statusText.innerHTML = 'Offline Mode';
+                }
+            }
+            
+            ```
+        executeWhenPageLoads:
+            ```javascript-browser
+            $(document).on('dialogclose', function(e) {
+                console.log('dialogclose fired', e);
+            });
+            
+            $(document).on('apexafterclosedialog', function(e, data) {
+                console.log('apexafterclosedialog fired', data);
+            });
+            ```
+    }
+    css {
+        inline:
+            ```css
+            .ptw-workflow-progress {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin: 2rem 0;
+                padding: 1.5rem;
+                background: var(--ut-component-background-color, #ffffff);
+                border-radius: 8px;
+                border: 1px solid var(--ut-component-border-color, #e0e0e0);
+                position: relative;
+            }
+             
+            .ptw-workflow-progress::before {
+                content: '';
+                position: absolute;
+                top: 3rem;
+                left: 3rem;
+                right: 3rem;
+                height: 2px;
+                background: var(--ut-palette-neutral-300, #d0d0d0);
+                z-index: 0;
+            }
+             
+            .workflow-step {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                position: relative;
+                z-index: 1;
+                flex: 1;
+                gap: 0.5rem;
+            }
+             
+            .step-icon {
+                width: 48px;
+                height: 48px;
+                border-radius: 50%;
+                background: var(--ut-component-background-color, #ffffff);
+                border: 3px solid var(--ut-palette-neutral-300, #d0d0d0);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 600;
+                font-size: 1.125rem;
+                color: var(--ut-palette-neutral-500, #666666);
+                transition: all 0.3s ease;
+            }
+             
+            .workflow-step.active .step-icon {
+                background: #003366;
+                border-color: #003366;
+                color: #ffffff;
+                box-shadow: 0 4px 8px rgba(0, 51, 102, 0.2);
+            }
+             
+            .workflow-step.completed .step-icon {
+                background: var(--ut-palette-success, #3ea055);
+                border-color: var(--ut-palette-success, #3ea055);
+                color: #ffffff;
+            }
+             
+            .step-text {
+                font-size: 0.875rem;
+                text-align: center;
+                color: var(--ut-palette-neutral-600, #595959);
+                max-width: 100px;
+                line-height: 1.3;
+            }
+             
+            .workflow-step.active .step-text {
+                color: #003366;
+                font-weight: 600;
+            }
+             
+            @media (max-width: 768px) {
+                .ptw-workflow-progress {
+                    flex-wrap: wrap;
+                    gap: 1rem;
+                }
+                .workflow-step {
+                    flex-basis: 30%;
+                }
+                .ptw-workflow-progress::before {
+                    display: none;
+                }
+            }
+             
+            /* ---- Page-5-specific additions only ---- */
+             
+            /* Declaration box - uses APEX vars, no hard-coded colours */
+            .declaration-box {
+                background: var(--ut-palette-warning-light, #fff8e1);
+                border-left: 4px solid var(--ut-palette-warning, #f0ad4e);
+                padding: 1rem 1.25rem;
+                border-radius: 0 6px 6px 0;
+                margin-bottom: 1rem;
+                font-size: 0.9rem;
+                color: var(--ut-component-font-color, #333333);
+                line-height: 1.5;
+            }
+             
+            .signature-pad-container {
+                border: 2px solid var(--ut-component-border-color, #d0d0d0);
+                border-radius: 8px;
+                background: #ffffff;
+                padding: 10px;
+                margin: 10px 0;
+            }
+            
+            .signature-pad {
+                width: 100%;
+                height: 150px;
+                border: 1px dashed #ccc;
+                border-radius: 4px;
+                touch-action: none;
+                cursor: crosshair;
+            }
+            
+            .signature-controls {
+                display: flex;
+                gap: 10px;
+                margin-top: 10px;
+                justify-content: flex-end;
+            }
+            
+            .signature-controls button {
+                padding: 6px 12px;
+                border-radius: 4px;
+                border: 1px solid #d0d0d0;
+                background: #f5f5f5;
+                cursor: pointer;
+                font-size: 0.875rem;
+            }
+            
+            .signature-controls button:hover {
+                background: #e0e0e0;
+            }
+            ```
+    }
+    readOnly {
+        type: item!=value
+        item: P5_WORKFLOW_STATUS
+        value: DRAFT
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region acceptance-declaration (
+        name: Acceptance Declaration
+        title: Acceptance of this Permit to Work
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="ptw-section-card">
+                    <div class="ptw-section-body">
+                        <div class="declaration-box">
+                            <strong>Acceptance of this Permit to Work:</strong>
+                            I certify that I am competent to supervise and undertake the works
+                            detailed within this Permit to Work and have read and fully understand
+                            the documentation associated with this work activity. I am satisfied
+                            that those personnel who will be employed on the task are properly
+                            equipped and understand the relevant safety and emergency procedures
+                            to be followed and are competent to carry out these works.
+                        </div>
+                    </div>
+                </div>
+                
+                ```
+        }
+        layout {
+            sequence: 210
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-handshake-o
+        }
+    )
+
+    region acceptance-fields (
+        name: Acceptance Fields
+        title: Person in Charge of Works Details
+        type: staticContent
+        layout {
+            sequence: 220
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-signature
+        }
+    )
+
+    region accsignature (
+        name: AccSignature
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="signature-pad-container">
+                    <canvas id="acceptSignaturePad" class="signature-pad"></canvas>
+                    <div class="signature-controls">
+                        <button type="button" id="BTN_CLEAR_ACCEPT_SIG_P5" onclick="clearAcceptSignature()">Clear</button>
+                    </div>
+                    <div class="geo-info" id="acceptGeoInfo"></div>
+                </div>
+                ```
+        }
+        layout {
+            sequence: 70
+            parentRegion: @acceptance-fields
+            slot: regionBody
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region authorisation-declaration (
+        name: Authorisation Declaration
+        title: Authorisation of this Permit to Work
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="ptw-section-card">
+                    <div class="ptw-section-body">
+                        <div class="declaration-box">
+                            <strong>Authorisation of this Permit to Work:</strong>
+                            I have reviewed all aspects of the task/activity and I am satisfied
+                            with the arrangements as detailed within the relevant risk assessment
+                            and method statement that have been put in place and certify that
+                            this activity detailed is authorised to proceed. Suitable insurance
+                            is in place, (employers and public liability).
+                        </div>
+                    </div>
+                </div>
+                 
+                ```
+        }
+        layout {
+            sequence: 230
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-certificate
+        }
+    )
+
+    region authorisation-fields (
+        name: Authorisation Fields
+        title: Authorised Person Details
+        type: staticContent
+        layout {
+            sequence: 240
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-signature
+        }
+    )
+
+    region authsignature (
+        name: AuthSignature
+        title: Signature - Authorised Person
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="signature-pad-container">
+                    <canvas id="authSignaturePad" class="signature-pad"></canvas>
+                    <div class="signature-controls">
+                        <button type="button" id="BTN_CLEAR_AUTH_SIG_P5" onclick="clearAuthSignature()">Clear</button>
+                    </div>
+                    <div class="geo-info" id="authGeoInfo"></div>
+                </div>
+                ```
+        }
+        layout {
+            sequence: 50
+            parentRegion: @authorisation-fields
+            slot: regionBody
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 250
+            slot: body
+        }
+        appearance {
+            template: @/buttons-container
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region permit-information-badge (
+        name: Permit Information Badge
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div style="margin-bottom: 20px;">
+                    <span class="apex-badge" style="background-color: #3ea055; color: white; padding: 6px 16px; border-radius: 20px; font-weight: 600;">
+                        Permit: &P5_PERMIT_NUMBER.
+                    </span>
+                </div>
+                ```
+        }
+        layout {
+            sequence: 200
+            slot: body
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P5_PERMIT_NUMBER
+        }
+    )
+
+    region role-permit-status (
+        name: Role & Permit Status
+        title: Role & Permit Status
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    v_from_dt       DATE;
+                    v_to_dt         DATE;
+                    v_now           DATE          := SYSDATE;
+                    v_clob          CLOB          := '';
+                BEGIN
+                    -- Get permit validity window if set
+                    BEGIN
+                        SELECT started_datetime, ended_datetime
+                        INTO   v_from_dt, v_to_dt
+                        FROM   ptw_pro.ptw_lv_permits
+                        WHERE  permit_id = :P5_PERMIT_ID;
+                    EXCEPTION
+                        WHEN NO_DATA_FOUND THEN NULL;
+                    END;
+                
+                    -- Permit validity window (only show if dates are set)
+                    IF v_from_dt IS NOT NULL OR v_to_dt IS NOT NULL THEN
+                        v_clob := v_clob ||
+                            '<div class="t-Alert t-Alert--info t-Alert--horizontal margin-bottom-sm" role="region">' ||
+                            '  <div class="t-Alert-wrap">' ||
+                            '    <div class="t-Alert-icon"><span class="t-Icon fa fa-clock-o"></span></div>' ||
+                            '    <div class="t-Alert-content">' ||
+                            '      <div class="t-Alert-body"><strong>Permit validity window:</strong> ';
+                
+                        IF v_from_dt IS NOT NULL THEN
+                            v_clob := v_clob || 'From ' || TO_CHAR(v_from_dt, 'DD-MON-YYYY HH24:MI');
+                        END IF;
+                
+                        IF v_to_dt IS NOT NULL THEN
+                            v_clob := v_clob || ' &nbsp;&mdash;&nbsp; To ' || TO_CHAR(v_to_dt, 'DD-MON-YYYY HH24:MI');
+                        END IF;
+                
+                        IF v_to_dt IS NOT NULL AND v_now > v_to_dt THEN
+                            v_clob := v_clob || ' &nbsp;<strong style="color:var(--ut-palette-danger,#c0392b);">(Expired)</strong>';
+                        END IF;
+                
+                        v_clob := v_clob ||
+                            '      </div>' ||
+                            '    </div>' ||
+                            '  </div>' ||
+                            '</div>';
+                    END IF;
+                
+                    RETURN v_clob;
+                END;
+                ```
+        }
+        layout {
+            sequence: 10
+            parentRegion: @authorisation-declaration
+            slot: subRegions
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region syncstatus (
+        name: SyncStatus
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div id="connection-status" style="padding: 10px; margin-bottom: 10px; border-radius: 4px;">
+                    <span id="status-icon"></span>
+                    <span id="status-text"></span>
+                    <!-- <button id="sync-btn" style="margin-left: 10px; display: none;">Sync Now</button> -->
+                </div>
+                ```
+        }
+        layout {
+            sequence: 180
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region workflow-progress (
+        name: Workflow Progress
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="ptw-workflow-progress">
+                    <div class="workflow-step completed" data-step="1">
+                        <span class="step-icon">&#10003;</span>
+                        <span class="step-text">Site &amp; Work Details</span>
+                    </div>
+                    <div class="workflow-step completed" data-step="2">
+                        <span class="step-icon">&#10003;</span>
+                        <span class="step-text">Control Measures</span>
+                    </div>
+                    <div class="workflow-step completed" data-step="3">
+                        <span class="step-icon">&#10003;</span>
+                        <span class="step-text">Equipment Isolation</span>
+                    </div>
+                    <div class="workflow-step active" data-step="4">
+                        <span class="step-icon">4</span>
+                        <span class="step-text">Authorisation</span>
+                    </div>
+                    <div class="workflow-step" data-step="5">
+                        <span class="step-icon">5</span>
+                        <span class="step-text">Clearance</span>
+                    </div>
+                </div>
+                ```
+        }
+        layout {
+            sequence: 190
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P5_ACCEPT_COMPANY (
+        type: displayOnly
+        label {
+            label: Company
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 40
+            region: @acceptance-fields
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+        }
+        security {
+            encryptSessionState: false
+        }
+    )
+
+    pageItem P5_ACCEPT_DATETIME (
+        type: displayOnly
+        label {
+            label: Date & Time
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 50
+            region: @acceptance-fields
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: SELECT TO_CHAR(SYSDATE,'DD-MON-YYYY HH24:MI') FROM dual;
+        }
+        security {
+            encryptSessionState: false
+        }
+    )
+
+    pageItem P5_ACCEPT_LATITUDE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 130
+            slot: body
+        }
+    )
+
+    pageItem P5_ACCEPT_LONGITUDE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 140
+            slot: body
+        }
+    )
+
+    pageItem P5_ACCEPT_PERSON_MOBILE (
+        type: textField
+        label {
+            label: Mobile Tel. No.
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @acceptance-fields
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        security {
+            encryptSessionState: false
+        }
+    )
+
+    pageItem P5_ACCEPT_PERSON_NAME (
+        type: displayOnly
+        label {
+            label: Name
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 20
+            region: @acceptance-fields
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+        }
+        security {
+            encryptSessionState: false
+        }
+    )
+
+    pageItem P5_ACCEPT_SIGNATURE_DATA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 100
+            slot: body
+        }
+        security {
+            encryptSessionState: false
+        }
+    )
+
+    pageItem P5_AUTH_DATETIME (
+        type: datePicker
+        label {
+            label: Authorisation Date
+            alignment: left
+        }
+        settings {
+            showTime: true
+        }
+        layout {
+            sequence: 40
+            region: @authorisation-fields
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            formatMask: DD-MON-YYYY HH24:MI
+            width: 30
+        }
+        validation {
+            maxLength: 20
+        }
+    )
+
+    pageItem P5_AUTH_LATITUDE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 110
+            slot: body
+        }
+    )
+
+    pageItem P5_AUTH_LONGITUDE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 120
+            slot: body
+        }
+    )
+
+    pageItem P5_AUTH_PERSON_DISPLAY (
+        type: displayOnly
+        label {
+            label: Authorising Person
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 20
+            region: @authorisation-fields
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: item!=value
+            item: P5_WORKFLOW_STATUS
+            value: DRAFT
+        }
+    )
+
+    pageItem P5_AUTH_PERSON_MOBILE (
+        type: textField
+        label {
+            label: Mobile Tel No.
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @authorisation-fields
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 50
+        }
+    )
+
+    pageItem P5_AUTH_PERSON_SELECT (
+        type: selectList
+        label {
+            label: Authorising person
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @ptw-authorised-persons
+            nullDisplayValue: -- Select Authorising Person --
+        }
+        layout {
+            sequence: 10
+            region: @authorisation-fields
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        serverSideCondition {
+            type: item=value
+            item: P5_WORKFLOW_STATUS
+            value: DRAFT
+        }
+    )
+
+    pageItem P5_AUTH_SIGNATURE_DATA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 90
+            slot: body
+        }
+        security {
+            encryptSessionState: false
+        }
+    )
+
+    pageItem P5_CURRENT_STEP (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 60
+            slot: body
+        }
+    )
+
+    pageItem P5_IS_CHANGED (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+    )
+
+    pageItem P5_PERMIT_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+    )
+
+    pageItem P5_PERMIT_NUMBER (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 80
+            slot: body
+        }
+    )
+
+    pageItem P5_REDIRECT_URL (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+    )
+
+    pageItem P5_USER_CAN_AUTHORISE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 150
+            slot: body
+        }
+    )
+
+    pageItem P5_WORKFLOW_STATUS (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 70
+            slot: body
+        }
+    )
+
+    button authorise (
+        buttonName: AUTHORISE
+        label: Authorise
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-clipboard-check
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        advanced {
+            htmlDomId: BTN_AUTHORISE_P5
+        }
+        serverSideCondition {
+            type: item=value
+            item: P5_WORKFLOW_STATUS
+            value: DRAFT
+        }
+    )
+
+    button back (
+        buttonName: BACK
+        label: Back
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 4
+                items: {
+                    P4_PERMIT_ID: &P5_PERMIT_ID.
+                }
+                clearCache: 4
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        advanced {
+            htmlDomId: BTN_BACK_P5
+        }
+    )
+
+    button start-permit (
+        buttonName: START_PERMIT
+        label: Start Permit
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-clock-o
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 9
+                items: {
+                    P9_PERMIT_ID: &P5_PERMIT_ID.
+                    P9_PERMIT_NUMBER: &P5_PERMIT_NUMBER.
+                }
+                clearCache: 9
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        advanced {
+            htmlDomId: BTN_START_PERMIT_P5
+        }
+        serverSideCondition {
+            type: item=value
+            item: P5_WORKFLOW_STATUS
+            value: AUTHORISED
+        }
+    )
+
+    dynamicAction authorisors-mobile-no-load (
+        name: Authorisors mobile No load
+        execution {
+            sequence: 90
+        }
+        when {
+            selectionType: items
+            items: P5_AUTH_PERSON_SELECT
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    BEGIN
+                        SELECT first_name||' '||last_name, mobile_no
+                        INTO   :P5_AUTH_PERSON_DISPLAY, :P5_AUTH_PERSON_MOBILE
+                        FROM   ptw_pro.ptw_lv_users
+                        WHERE  UPPER(username) = UPPER(:P5_AUTH_PERSON_SELECT);
+                    EXCEPTION
+                        WHEN NO_DATA_FOUND THEN NULL;
+                    END;
+                    ```
+                itemsToSubmit: P5_AUTH_PERSON_SELECT
+                itemsToReturn: P5_AUTH_PERSON_MOBILE
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction click-the-authorise-button (
+        name: Click the Authorise button
+        execution {
+            sequence: 110
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @authorise
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    ptwShowAuthoriseDeclaration();
+                    
+                    
+                    
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction initialise-page (
+        name: Initialise page
+        execution {
+            sequence: 2
+        }
+        when {
+            event: ready
+        }
+
+        action connection-ui (
+            name: Connection UI
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    updateConnectionUI();
+                    window.addEventListener('online',  updateConnectionUI);
+                    window.addEventListener('offline', updateConnectionUI);
+                    
+                    window.addEventListener('resize', function() {
+                        initSignaturePads();
+                    });
+                    ```
+            }
+            execution {
+                sequence: 60
+            }
+        )
+
+        action load-signatures (
+            name: Load Signatures
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var authData   = apex.item('P5_AUTH_SIGNATURE_DATA').getValue();
+                    var acceptData = apex.item('P5_ACCEPT_SIGNATURE_DATA').getValue();
+                    
+                    if (authData) {
+                        loadSignature(authSignaturePad,
+                            document.getElementById('authSignaturePad'),
+                            'data:image/png;base64,' + authData);
+                    }
+                    if (acceptData) {
+                        loadSignature(acceptSignaturePad,
+                            document.getElementById('acceptSignaturePad'),
+                            'data:image/png;base64,' + acceptData);
+                    }
+                    ```
+            }
+            execution {
+                sequence: 50
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        action load-the-auth-person-details (
+            name: Load the Auth person details
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    BEGIN
+                        SELECT mobile_no,
+                               first_name || ' ' || last_name
+                        INTO   :P5_AUTH_PERSON_MOBILE,
+                               :P5_AUTH_PERSON_DISPLAY
+                        FROM   ptw_pro.ptw_lv_users
+                        WHERE  UPPER(username) = UPPER(:P5_AUTH_PERSON_SELECT);
+                    EXCEPTION
+                        WHEN NO_DATA_FOUND THEN
+                            :P5_AUTH_PERSON_MOBILE  := NULL;
+                            :P5_AUTH_PERSON_DISPLAY := NULL;
+                    END;
+                    ```
+                itemsToSubmit: P5_AUTH_PERSON_SELECT
+                itemsToReturn: [
+                    P5_AUTH_PERSON_DISPLAY
+                    P5_AUTH_PERSON_MOBILE
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 40
+            }
+        )
+
+        action manage-offline (
+            name: Manage Offline
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    OfflineStorage.initDB();
+                    ConnectionManager.init();
+                    ```
+            }
+            execution {
+                sequence: 70
+            }
+        )
+
+        action signatures (
+            name: Signatures
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    initSignaturePads();
+                    
+                    // If read-only, disable canvases after pads have initialised
+                    setTimeout(function() {
+                        var status = apex.item('P5_WORKFLOW_STATUS').getValue();
+                        if (status !== 'DRAFT' && status !== '') {
+                            ['authSignaturePad', 'acceptSignaturePad'].forEach(function(id) {
+                                var canvas = document.getElementById(id);
+                                if (canvas) {
+                                    canvas.style.pointerEvents = 'none';
+                                    canvas.style.opacity       = '0.6';
+                                    canvas.style.cursor        = 'not-allowed';
+                                    canvas.title               = 'This permit is read-only';
+                                }
+                            });
+                        }
+                    }, 250);
+                    ```
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+    )
+
+    dynamicAction save-signatures (
+        name: Save Signatures
+        execution {
+            sequence: 30
+        }
+        when {
+            event: custom
+            customEvent: apexbeforepagesubmit
+            selectionType: jsExpression
+            javaScriptExpression: document
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    saveSignatures();
+                    
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction set-page-read-only-when-not-draft (
+        name: Set Page Read-Only when not DRAFT
+        execution {
+            sequence: 70
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P5_WORKFLOW_STATUS IN ('AUTHORISED', 'STARTED')
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                     // Disable signature canvases
+                     ['authSignaturePad', 'acceptSignaturePad'].forEach(function(id) {
+                         var canvas = document.getElementById(id);
+                         if (canvas) {
+                             canvas.style.pointerEvents = 'none';
+                             canvas.style.opacity       = '0.6';
+                             canvas.style.cursor        = 'not-allowed';
+                             canvas.title               = 'This permit is read-only';
+                                 }
+                         });
+                    // Hide Clear Signature buttons
+                    $('#BTN_CLEAR_AUTH_SIG_P5, #BTN_CLEAR_ACCEPT_SIG_P5').hide();
+                    // Hide Save Draft and Authorise buttons when read-only
+                    //$('#BTN_SAVE_DRAFT_P5, #BTN_START_PERMIT_P5').hide();
+                    // Disable all editable items via APEX API
+                    apex.item('P5_AUTH_PERSON_SELECT').disable();
+                    apex.item('P5_AUTH_DATETIME').disable();
+                    apex.item('P5_ACCEPT_PERSON_NAME').disable();
+                    apex.item('P5_ACCEPT_PERSON_COMPANY').disable();
+                    apex.item('P5_ACCEPT_DATETIME').disable();
+                    
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction when-start-permit-screen-closed (
+        name: When Start permit screen closed
+        execution {
+            sequence: 120
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: jsExpression
+            javaScriptExpression: document
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: javaScriptExpression
+                javaScriptExpression:
+                    ```javascript-browser
+                    apex.navigation.redirect(apex.util.makeApplicationUrl({
+                        pageId: 5
+                    }));
+                    ```
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    validation accept-person-cannot-be-null (
+        name: Accept person cannot be NULL
+        execution {
+            sequence: 58
+        }
+        validation {
+            type: itemIsNotNull
+            item: P5_ACCEPT_PERSON_NAME
+        }
+        error {
+            errorMessage: Person in Charge cannot be blank.
+        }
+        serverSideCondition {
+            whenButtonPressed: @authorise
+        }
+    )
+
+    validation accept-signature-required (
+        name: Accept Signature required
+        execution {
+            sequence: 38
+        }
+        validation {
+            type: itemIsNotNull
+            item: P5_ACCEPT_SIGNATURE_DATA
+        }
+        error {
+            errorMessage: Person in charge signature is required.
+        }
+        serverSideCondition {
+            whenButtonPressed: @authorise
+        }
+    )
+
+    validation auth-person-name-required (
+        name: Auth Person Name Required
+        execution {
+            sequence: 20
+        }
+        validation {
+            type: itemIsNotNull
+            item: P5_AUTH_PERSON_SELECT
+        }
+        error {
+            errorMessage: Authorised person name is required.
+        }
+        serverSideCondition {
+            whenButtonPressed: @authorise
+        }
+    )
+
+    validation auth-signature-required (
+        name: Auth Signature Required
+        execution {
+            sequence: 48
+        }
+        validation {
+            type: itemIsNotNull
+            item: P5_AUTH_SIGNATURE_DATA
+        }
+        error {
+            errorMessage: Authorised person signature is required.
+        }
+        serverSideCondition {
+            whenButtonPressed: @authorise
+        }
+    )
+
+    validation no-self-authorisation (
+        name: No Self-Authorisation
+        execution {
+            sequence: 27
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                BEGIN
+                  DECLARE
+                    l_name VARCHAR2(200);
+                  BEGIN
+                    BEGIN
+                      SELECT first_name || ' ' || last_name
+                      INTO   l_name
+                      FROM   ptw_pro.ptw_lv_user_roles_v
+                      WHERE  username = :P5_AUTH_PERSON_SELECT;
+                    EXCEPTION
+                      WHEN OTHERS THEN l_name := NULL; 
+                    END;
+                    RETURN NOT (
+                        l_name  IS NOT NULL AND
+                        l_name IS NOT NULL AND
+                        UPPER(TRIM(l_name)) = UPPER(TRIM(:P5_ACCEPT_PERSON_NAME))
+                    );
+                  END;
+                EXCEPTION
+                    WHEN OTHERS THEN RETURN TRUE;
+                END;
+                ```
+        }
+        error {
+            errorMessage: The Authorised Person and Person in Charge of Works cannot be the same individual. A permit must not be self-authorised.
+        }
+        serverSideCondition {
+            whenButtonPressed: @authorise
+        }
+    )
+
+    validation permit-id-required (
+        name: Permit ID Required
+        execution {
+            sequence: 10
+        }
+        validation {
+            type: itemIsNotNull
+            item: P5_PERMIT_ID
+        }
+        error {
+            errorMessage: Permit ID is required.
+        }
+    )
+
+    process load-authorisation-and-acceptance-data (
+        name: Load Authorisation and Acceptance Data
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                BEGIN
+                    :P5_CURRENT_STEP := 'AUTHORISATION';
+                
+                    BEGIN
+                        SELECT permit_number, workflow_status
+                        INTO   :P5_PERMIT_NUMBER, :P5_WORKFLOW_STATUS
+                        FROM   ptw_pro.ptw_lv_permits
+                        WHERE  permit_id = :P5_PERMIT_ID;
+                    EXCEPTION
+                        WHEN NO_DATA_FOUND THEN
+                            :P5_WORKFLOW_STATUS := 'DRAFT';
+                    END;
+                
+                    DECLARE
+                        v_auth_sig   BLOB;
+                        v_accept_sig BLOB;
+                        v_na_company ptw_pro.ptw_signatures.company_name%TYPE;
+                        v_auth_lat   ptw_pro.ptw_signatures.latitude%TYPE;
+                        v_auth_lng   ptw_pro.ptw_signatures.longitude%TYPE;
+                    BEGIN
+                        ptw_pro.ptw_signature_pkg.get_signature(:P5_PERMIT_ID, 'AUTH',
+                            :P5_AUTH_PERSON_SELECT, v_auth_sig, :P5_AUTH_PERSON_MOBILE, v_na_company,
+                            :P5_AUTH_DATETIME, :P5_AUTH_LATITUDE, :P5_AUTH_LONGITUDE);
+                
+                        ptw_pro.ptw_signature_pkg.get_signature(:P5_PERMIT_ID, 'ACCEPT',
+                            :P5_ACCEPT_PERSON_NAME, v_accept_sig, :P5_ACCEPT_PERSON_MOBILE, :P5_ACCEPT_COMPANY,
+                            :P5_ACCEPT_DATETIME, :P5_ACCEPT_LATITUDE, :P5_ACCEPT_LONGITUDE);
+                
+                        IF :P5_ACCEPT_DATETIME IS NULL THEN
+                            :P5_ACCEPT_DATETIME := TO_CHAR(SYSDATE, 'DD-MON-YYYY HH24:MI');
+                        END IF;
+                        IF :P5_AUTH_DATETIME IS NULL THEN
+                            :P5_AUTH_DATETIME := TO_CHAR(SYSDATE, 'DD-MON-YYYY HH24:MI');
+                        END IF;
+                
+                        IF :P5_ACCEPT_COMPANY IS NULL AND :P5_ACCEPT_PERSON_NAME IS NULL THEN
+                            BEGIN
+                                SELECT person_in_charge_name, supervising_company
+                                INTO   :P5_ACCEPT_PERSON_NAME, :P5_ACCEPT_COMPANY
+                                FROM   ptw_pro.ptw_lv_permits
+                                WHERE  permit_id = :P5_PERMIT_ID;
+                            EXCEPTION
+                                WHEN OTHERS THEN NULL;
+                            END;
+                        END IF;
+                
+                        IF v_auth_sig IS NOT NULL THEN
+                            :P5_AUTH_SIGNATURE_DATA := 'data:image/png;base64,'
+                                || apex_web_service.blob2clobbase64(v_auth_sig);
+                        END IF;
+                        IF v_accept_sig IS NOT NULL THEN
+                            :P5_ACCEPT_SIGNATURE_DATA := 'data:image/png;base64,'
+                                || apex_web_service.blob2clobbase64(v_accept_sig);
+                        END IF;
+                    EXCEPTION
+                        WHEN OTHERS THEN NULL;
+                    END;
+                END;
+                
+                
+                
+                
+                
+                
+                
+                ```
+        }
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 27356851819033439
+        }
+    )
+
+    process save-authorisation-and-acceptance-data (
+        name: Save Authorisation and Acceptance Data
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    v_auth_sig_blob   BLOB;
+                    v_accept_sig_blob BLOB;
+                    v_auth_mobile     ptw_pro.ptw_lv_users.mobile_no%TYPE;
+                
+                    FUNCTION base64_to_blob(p_base64 CLOB) RETURN BLOB IS
+                        v_blob BLOB;
+                        v_clob CLOB;
+                    BEGIN
+                        IF p_base64 IS NULL THEN
+                            RETURN NULL;
+                        END IF;
+                        v_clob := REGEXP_REPLACE(p_base64, '^data:image/[^;]+;base64,', '');
+                        v_blob := apex_web_service.clobbase642blob(v_clob);
+                        RETURN v_blob;
+                    END base64_to_blob;
+                
+                BEGIN
+                    v_auth_sig_blob   := base64_to_blob(:P5_AUTH_SIGNATURE_DATA);
+                    v_accept_sig_blob := base64_to_blob(:P5_ACCEPT_SIGNATURE_DATA);
+                
+                    -- Resolve auth person's mobile_no first; scalar subqueries can't be
+                    -- used as bare PL/SQL expressions in a named-parameter call (PLS-00103).
+                    BEGIN
+                        SELECT mobile_no
+                        INTO   v_auth_mobile
+                        FROM   ptw_pro.ptw_lv_users
+                        WHERE  UPPER(username) = UPPER(:P5_AUTH_PERSON_SELECT);
+                    EXCEPTION
+                        WHEN NO_DATA_FOUND THEN
+                            v_auth_mobile := NULL;
+                        WHEN TOO_MANY_ROWS THEN
+                            v_auth_mobile := NULL;
+                    END;
+                
+                    ptw_pro.ptw_signature_pkg.save_signature(
+                        p_permit_id      => :P5_PERMIT_ID,
+                        p_stage          => 'AUTH',
+                        p_person_name    => UPPER(:P5_AUTH_PERSON_SELECT),
+                        --   was: (SELECT first_name || ' ' || last_name FROM ptw_pro.ptw_lv_users
+                        --         WHERE UPPER(username) = UPPER(:P5_AUTH_PERSON_SELECT)) — left as
+                        --   username per the original's own commented-out alternative
+                        p_signature_blob => v_auth_sig_blob,
+                        p_mobile_no      => v_auth_mobile,
+                        p_event_datetime => TO_DATE(:P5_AUTH_DATETIME, 'DD-MON-YYYY HH24:MI'),
+                        p_latitude       => :APP_LATITUDE,
+                        p_longitude      => :APP_LONGITUDE
+                    );
+                
+                    ptw_pro.ptw_signature_pkg.save_signature(
+                        p_permit_id      => :P5_PERMIT_ID,
+                        p_stage          => 'ACCEPT',
+                        p_person_name    => :P5_ACCEPT_PERSON_NAME,
+                        p_signature_blob => v_accept_sig_blob,
+                        p_mobile_no      => :P5_ACCEPT_PERSON_MOBILE,
+                        p_company_name   => :P5_ACCEPT_COMPANY,
+                        p_event_datetime => TO_DATE(:P5_ACCEPT_DATETIME, 'DD-MON-YYYY HH24:MI'),
+                        p_latitude       => :APP_LATITUDE,
+                        p_longitude      => :APP_LONGITUDE
+                    );
+                
+                    UPDATE ptw_pro.ptw_lv_permits
+                    SET    workflow_status = 'AUTHORISED',
+                           current_step    = 'AUTHORISATION',
+                           modified_by     = NVL(V('APP_USER'), USER),
+                           modified_date   = CURRENT_TIMESTAMP
+                    WHERE  permit_id = :P5_PERMIT_ID;
+                
+                    COMMIT;
+                
+                    apex_application.g_print_success_message :=
+                        CASE WHEN :REQUEST = 'AUTHORISE'
+                             THEN 'Permit ' || :P5_PERMIT_NUMBER || ' has been authorised.'
+                             ELSE 'Permit ' || :P5_PERMIT_NUMBER || ' saved successfully.'
+                        END;
+                
+                    :P5_WORKFLOW_STATUS := 'AUTHORISED';
+                
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        ROLLBACK;
+                        apex_error.add_error(
+                            p_message => 'Error saving authorisation data: ' || SQLERRM,
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 27356922514033440
+        }
+        serverSideCondition {
+            type: item=value
+            item: P5_WORKFLOW_STATUS
+            value: DRAFT
+        }
+    )
+
+    branch (
+        name: Refresh page after submit
+        execution {
+            sequence: 10
+        }
+        behavior {
+            target: {
+                page: 5
+                items: {
+                    P5_PERMIT_ID: &P5_PERMIT_ID.
+                }
+                clearCache: 5
+                successMessage: false
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @authorise
+        }
+    )
+
+)
+

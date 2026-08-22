@@ -1,0 +1,1662 @@
+page 17 (
+    name: Cancel Permit
+    alias: CANCEL-PERMIT
+    title: Cancel Permit
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @/modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            var p17SigPad = null;
+            
+            function p17InitSig() {
+                var canvas = document.getElementById('p17SigCanvas');
+                if (!canvas) return;
+                var wrapper = canvas.parentElement;
+                var w = Math.max((wrapper ? wrapper.offsetWidth - 24 : 400), 280);
+                canvas.width  = w;
+                canvas.height = 150;
+                canvas.style.width  = w + 'px';
+                canvas.style.height = '150px';
+                var ctx = canvas.getContext('2d');
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth   = 2;
+                ctx.lineCap     = 'round';
+                ctx.lineJoin    = 'round';
+                p17SigPad = new SignaturePad(canvas, ctx);
+            }
+            
+            function p17ClearSig() {
+                if (p17SigPad) { p17SigPad.clear(); }
+            }
+            
+            function p17SaveSig() {
+                if (!p17SigPad || p17SigPad.isEmpty) {
+                    apex.item('P17_CANCEL_SIGNATURE_DATA').setValue('');
+                } else {
+                    apex.item('P17_CANCEL_SIGNATURE_DATA').setValue(p17SigPad.getDataURL());
+                }
+            }
+            
+            function p17LockCanvas() {
+                var canvas = document.getElementById('p17SigCanvas');
+                if (!canvas) return;
+                canvas.style.pointerEvents   = 'none';
+                canvas.style.opacity         = '0.85';
+                canvas.style.cursor          = 'not-allowed';
+                canvas.style.backgroundColor = '#ffffff';
+                canvas.title                 = 'Signature is locked';
+            }
+            
+            function p17TogglePhotoRequirement() {
+                var workStatus  = apex.item('P17_CANCEL_WORK_COMPLETE').getValue();
+                var warning     = document.getElementById('p17-photo-warning');
+                var uploadArea  = document.getElementById('p17-photo-upload-area');
+                var sigRegion   = document.getElementById('p17-signature-region');
+                var photoRegion = document.getElementById('p17-photo-region');
+            
+                if (workStatus === 'N') {
+                    if (photoRegion) photoRegion.style.display = '';
+                    if (warning)     warning.style.display     = 'block';
+                    if (uploadArea)  uploadArea.style.display  = 'block';
+                    var uploaded = apex.item('P17_AREA_PHOTO_UPLOADED').getValue();
+                    if (sigRegion) {
+                        sigRegion.style.display = (uploaded === 'Y') ? '' : 'none';
+                    }
+                } else {
+                    if (photoRegion) photoRegion.style.display = 'none';
+                    if (sigRegion)   sigRegion.style.display   = '';
+                }
+            }
+            
+            // ── File type helpers (copied from Page 4) ─────────────────
+            function ptwGetFileCategory(mimeType, fileName) {
+                var ext = (fileName || '').split('.').pop().toLowerCase();
+                if (mimeType && mimeType.startsWith('image/'))               return 'image';
+                if (mimeType === 'application/pdf')                          return 'pdf';
+                if (mimeType && (mimeType.indexOf('word')     > -1 ||
+                                 mimeType.indexOf('document') > -1))         return 'word';
+                if (mimeType && (mimeType.indexOf('sheet')    > -1 ||
+                                 mimeType.indexOf('excel')    > -1))         return 'excel';
+                if (['jpg','jpeg','png','gif','webp'].indexOf(ext) > -1)     return 'image';
+                if (ext === 'pdf')                                           return 'pdf';
+                if (['doc','docx'].indexOf(ext) > -1)                        return 'word';
+                if (['xls','xlsx'].indexOf(ext) > -1)                        return 'excel';
+                return 'other';
+            }
+            
+            function ptwFileIcon(category) {
+                var icons = {
+                    pdf:   '<div class="ptw-file-icon icon-pdf"><span class="fa fa-file-pdf-o"></span></div>',
+                    word:  '<div class="ptw-file-icon icon-word"><span class="fa fa-file-word-o"></span></div>',
+                    excel: '<div class="ptw-file-icon icon-excel"><span class="fa fa-file-excel-o"></span></div>',
+                    other: '<div class="ptw-file-icon"><span class="fa fa-file-o"></span></div>'
+                };
+                return icons[category] || icons.other;
+            }
+            
+            function ptwOpenLightbox(url, caption) {
+                document.getElementById('ptw-lightbox-img').src             = url;
+                document.getElementById('ptw-lightbox-caption').textContent = caption || '';
+                document.getElementById('ptw-lightbox').style.display       = 'flex';
+                document.body.style.overflow                                 = 'hidden';
+            }
+            function ptwCloseLightbox() {
+                document.getElementById('ptw-lightbox').style.display = 'none';
+                document.getElementById('ptw-lightbox-img').src       = '';
+                document.body.style.overflow                          = '';
+            }
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') ptwCloseLightbox();
+            });
+            
+            // ── Upload ─────────────────────────────────────────────────
+            function p17UploadFile(file) {
+                var permitId = apex.item('P17_PERMIT_ID').getValue();
+                if (!permitId) {
+                    apex.message.showErrors([{type:'error',
+                        message:'Permit must be saved before attaching files.'}]);
+                    return;
+                }
+                if (file.size > 20 * 1024 * 1024) {
+                    apex.message.showErrors([{type:'error', message:'File must be less than 20MB.'}]);
+                    return;
+                }
+                var allowed     = ['image/jpeg','image/png','image/gif','image/webp'];
+                var allowedExts = ['jpg','jpeg','png','gif','webp'];
+                var ext         = file.name.split('.').pop().toLowerCase();
+                if (allowed.indexOf(file.type) === -1 && allowedExts.indexOf(ext) === -1) {
+                    apex.message.showErrors([{type:'error', message:'Images only (JPG, PNG, GIF, WEBP).'}]);
+                    return;
+                }
+            
+                var caption  = document.getElementById('ptw-caption-input').value;
+                var spinner$ = apex.util.showSpinner($('#ptw-photo-gallery'));
+            
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var b64       = e.target.result.replace(/^data:[^;]+;base64,/, '');
+                    var f01       = [];
+                    var chunkSize = 30000;
+                    for (var i = 0; i < b64.length; i += chunkSize) {
+                        f01.push(b64.substring(i, i + chunkSize));
+                    }
+                    apex.server.process('UPLOAD_PERMIT_PHOTO', {
+                        x01: permitId,
+                        x02: caption,
+                        x03: apex.item('P0_LATITUDE').getValue()  || '',
+                        x04: apex.item('P0_LONGITUDE').getValue() || '',
+                        x05: file.name,
+                        x06: file.type || 'image/jpeg',
+                        f01: f01
+                    }, {
+                        pageId: 17,
+                        success: function(data) {
+                            spinner$.remove();
+                            if (data.success) {
+                                apex.message.showPageSuccess('Photo uploaded successfully.');
+                                document.getElementById('ptw-caption-input').value              = '';
+                                document.getElementById('ptw-file-input').value                 = '';
+                                document.getElementById('ptw-camera-input').value               = '';
+                                document.getElementById('ptw-selected-file-info').style.display = 'none';
+            
+                                // Flag uploaded and reveal signature region
+                                apex.item('P17_AREA_PHOTO_UPLOADED').setValue('Y');
+            
+                                // Re-run toggle to show signature now photo is uploaded
+                                p17TogglePhotoRequirement();
+            
+                                // Refresh gallery
+                                p17LoadPhotos();
+            
+                            } else {
+                                apex.message.showErrors([{type:'error', message: data.message}]);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            spinner$.remove();
+                            apex.message.showErrors([{type:'error', message:'Upload failed: ' + error}]);
+                        }
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            function p17HandleFileSelection(file) {
+                if (!file) return;
+                // Show filename and upload button — don't upload yet
+                document.getElementById('ptw-selected-file-name').textContent   = file.name;
+                document.getElementById('ptw-selected-file-info').style.display = 'block';
+                document.getElementById('btn-upload-file').onclick = function() {
+                    p17UploadFile(file);
+                };
+            }
+            
+            // ── Gallery ────────────────────────────────────────────────
+            function p17LoadPhotos() {
+                var permitId = apex.item('P17_PERMIT_ID').getValue();
+                if (!permitId) return;
+            
+                var isReadOnly = (apex.item('P17_WORKFLOW_STATUS').getValue() === 'CANCELLED');
+            
+                apex.server.process('GET_PERMIT_PHOTOS', { x01: permitId }, {
+                    pageId: 17,
+                    success: function(data) {
+                        var gallery = document.getElementById('ptw-photo-gallery');
+                        if (!gallery) return;
+            
+                        if (!data.photos || data.photos.length === 0) {
+                            gallery.innerHTML = '<p class="ptw-no-photos">No photos attached.</p>';
+                            return;
+                        }
+            
+                        var html = '<div class="ptw-photo-grid">';
+            
+                        data.photos.forEach(function(p) {
+                            var cat = ptwGetFileCategory(p.mimeType, p.fileName);
+            
+                            html += '<div class="ptw-photo-card" data-photo-id="' + p.photoId + '">';
+            
+                            if (cat === 'image') {
+                                html += '<a href="javascript:void(0)" '
+                                      + 'onclick="ptwOpenLightbox(\'' + p.url + '\','
+                                      + '\'' + apex.util.escapeHTMLAttr(p.caption || '') + '\')">';
+                                html += '<img src="' + p.url + '" '
+                                      + 'alt="' + apex.util.escapeHTMLAttr(p.caption || 'Photo') + '" '
+                                      + 'class="ptw-photo-thumb" loading="lazy">';
+                                html += '</a>';
+                            } else {
+                                html += '<a href="' + p.url + '" target="_blank" rel="noopener">';
+                                html += ptwFileIcon(cat);
+                                html += '</a>';
+                            }
+            
+                            html += '<div class="ptw-photo-meta">';
+                            html += '<span class="ptw-photo-caption">'
+                                  + apex.util.escapeHTML(p.fileName) + '</span>';
+                            if (p.caption) {
+                                html += '<span class="ptw-photo-caption" style="font-weight:normal;">'
+                                      + apex.util.escapeHTML(p.caption) + '</span>';
+                            }
+                            html += '<span class="ptw-photo-date">' + p.uploadedDate + '</span>';
+                            html += '<span class="ptw-photo-user">'
+                                  + apex.util.escapeHTML(p.uploadedBy) + '</span>';
+                            html += '</div>';
+            
+                            if (!isReadOnly) {
+                                html += '<button type="button" '
+                                      + 'class="t-Button t-Button--danger t-Button--slim t-Button--stretch ptw-delete-photo" '
+                                      + 'data-photo-id="' + p.photoId + '" '
+                                      + 'data-permit-id="' + permitId + '">'
+                                      + '<span class="t-Icon fa fa-trash-o"></span> Delete</button>';
+                            }
+            
+                            html += '</div>';
+                        });
+            
+                        html += '</div>';
+                        gallery.innerHTML = html;
+                    },
+                    error: function() {
+                        var gallery = document.getElementById('ptw-photo-gallery');
+                        if (gallery) {
+                            gallery.innerHTML = '<p class="ptw-no-photos">Could not load photos.</p>';
+                        }
+                    }
+                });
+            }
+            
+            function p17DeletePhoto(photoId, permitId) {
+                apex.message.confirm('Delete this photo? This cannot be undone.', function(okPressed) {
+                    if (!okPressed) return;
+                    apex.server.process('DELETE_PERMIT_PHOTO', { x01: photoId }, {
+                        pageId: 17,
+                        success: function(data) {
+                            if (data.success) {
+                                apex.message.showPageSuccess('Photo deleted.');
+                                p17LoadPhotos();
+                            } else {
+                                apex.message.showErrors([{type:'error', message: data.message}]);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            apex.message.showErrors([{type:'error', message:'Delete failed: ' + error}]);
+                        }
+                    });
+                });
+            }
+            
+            function p17UpdateDeclaration() {
+                var workVal = apex.item('P17_CANCEL_WORK_COMPLETE').getValue();
+                var $work   = $('#p17-decl-work-complete');
+            
+                if (workVal === 'Y') {
+                    $work.text('completed').css('color', '#1e7e34');
+                } else if (workVal === 'N') {
+                    $work.text('not complete').css('color', '#a71d2a');
+                } else {
+                    $work.text('completed / not complete').css('color', '#344B5C');
+                }
+            }
+            
+            function p17ViewPhoto(photoId, el) {
+                var container = document.getElementById('p17-thumb-' + photoId);
+                if (!container) return;
+            
+                // If already loaded, open lightbox
+                var img = container.querySelector('img');
+                if (img && img.src && img.src.indexOf('data:') === 0) {
+                    ptwOpenLightbox(img.src, '');
+                    return;
+                }
+            
+                // Show spinner while loading
+                container.innerHTML = '<span class="fa fa-spinner fa-spin" '
+                    + 'style="font-size:2rem; color:#aaa;"></span>';
+            
+                apex.server.process('GET_PHOTO_DATA', { x01: photoId }, {
+                    pageId: 17,
+                    success: function(data) {
+                        if (data.success && data.dataUrl) {
+                            // Reset container styles — remove flex/height that clips img
+                            container.style.display    = 'block';
+                            container.style.height     = 'auto';
+                            container.style.background = 'none';
+                            container.style.padding    = '0';
+                            container.style.cursor     = 'pointer';
+            
+                            // Render image
+                            container.innerHTML = '<img src="' + data.dataUrl + '" '
+                                + 'class="ptw-photo-thumb" '
+                                + 'alt="Area photo" '
+                                + 'style="width:100%; height:130px; object-fit:cover; display:block;">';
+            
+                            // Open lightbox immediately
+                            ptwOpenLightbox(data.dataUrl, '');
+            
+                        } else {
+                            container.style.display         = 'flex';
+                            container.style.alignItems      = 'center';
+                            container.style.justifyContent  = 'center';
+                            container.style.height          = '130px';
+                            container.style.background      = '#f0f4f8';
+                            container.innerHTML = '<span class="fa fa-exclamation-circle" '
+                                + 'style="font-size:2rem; color:#c0392b;" '
+                                + 'title="Could not load image"></span>';
+                        }
+                    },
+                    error: function() {
+                        container.style.display         = 'flex';
+                        container.style.alignItems      = 'center';
+                        container.style.justifyContent  = 'center';
+                        container.style.height          = '130px';
+                        container.style.background      = '#f0f4f8';
+                        container.innerHTML = '<span class="fa fa-exclamation-circle" '
+                            + 'style="font-size:2rem; color:#c0392b;" '
+                            + 'title="Load failed"></span>';
+                    }
+                });
+            }
+            
+            ```
+        executeWhenPageLoads:
+            ```javascript-browser
+            // ── Save sig before submit ─────────────────────────────────
+            apex.jQuery(document).on('apexbeforepagesubmit', function() {
+                p17SaveSig();
+            });
+            
+            // ── Radio change handlers ──────────────────────────────────
+            $(document).on('change', 'input[name="P17_CANCEL_WORK_COMPLETE"]', function() {
+                p17TogglePhotoRequirement();
+                setTimeout(p17UpdateDeclaration, 50);
+            });
+            
+            // ── File inputs — delegated to handle modal timing ─────────
+            $(document).on('change', '#ptw-file-input', function() {
+                if (this.files && this.files[0]) p17HandleFileSelection(this.files[0]);
+            });
+            $(document).on('change', '#ptw-camera-input', function() {
+                if (this.files && this.files[0]) p17HandleFileSelection(this.files[0]);
+            });
+            
+            // ── Delegated delete handler ───────────────────────────────
+            $(document).on('click', '.ptw-delete-photo', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                p17DeletePhoto($(this).data('photo-id'), $(this).data('permit-id'));
+            });
+            
+            // ── Main init inside setTimeout ───────────────────────────
+            setTimeout(function() {
+            
+                // Read status here — guaranteed available
+                var p17Status  = apex.item('P17_WORKFLOW_STATUS').getValue();
+                var isReadOnly = (p17Status === 'CANCELLED');
+            
+                // Initialise signature pad
+                p17InitSig();
+                if (p17SigPad) { p17SigPad.clear(); }
+            
+                // Load existing signature
+                var sigItem     = document.querySelector('input[name="P17_CANCEL_SIGNATURE_DATA_URL"]');
+                var existingSig = sigItem ? sigItem.value : null;
+            
+                if (existingSig) {
+                    var sigCanvas = document.getElementById('p17SigCanvas');
+                    loadSignature(p17SigPad, sigCanvas, existingSig);
+                }
+            
+                // Update declaration text
+                p17UpdateDeclaration();
+            
+                if (isReadOnly) {
+            
+                    // Lock canvas
+                    var canvas = document.getElementById('p17SigCanvas');
+                    if (canvas) {
+                        canvas.style.pointerEvents  = 'none';
+                        canvas.style.opacity        = '0.85';
+                        canvas.style.cursor         = 'not-allowed';
+                        canvas.title                = 'Signature locked';
+                    }
+            
+                    // Hide clear sig button
+                    var clearBtn = document.getElementById('p17-clear-sig-btn');
+                    if (clearBtn) clearBtn.style.display = 'none';
+            
+                    // Disable form items
+                    apex.item('P17_CANCEL_WORK_COMPLETE').disable();
+                    apex.item('P17_CANCEL_PERSON_NAME').disable();
+            
+                    // Disable native radio inputs underlying badges
+                    $('input[name="P17_CANCEL_WORK_COMPLETE"]').prop('disabled', true);
+            
+                    // Hide required indicator
+                    $('#P17_CANCEL_PERSON_NAME')
+                        .closest('.t-Form-fieldContainer')
+                        .find('.t-Form-required').hide();
+            
+                    // Hide submit button
+                    $('#BTN_CANCEL_PERMIT_P17').hide();
+            
+                    // Show readonly banner
+                    var banner = document.getElementById('p17-readonly-banner');
+                    if (banner) banner.style.display = 'block';
+            
+                    // Show area photo if work was not complete
+                    var workStatus  = apex.item('P17_CANCEL_WORK_COMPLETE').getValue();
+                    var photoRegion = document.getElementById('p17-photo-region');
+            
+                    if (workStatus === 'N') {
+                        if (photoRegion) photoRegion.style.display = '';
+            
+                        // Hide upload controls in readonly
+                        var uploadControls = document.querySelector('.ptw-upload-controls');
+                        if (uploadControls) uploadControls.style.display = 'none';
+            
+                        p17LoadPhotos();
+            
+                    } else {
+                        if (photoRegion) photoRegion.style.display = 'none';
+                    }
+            
+                } else {
+            
+                    // Entry mode — show/hide photo region based on work status
+                    var photoRegion = document.getElementById('p17-photo-region');
+                    if (photoRegion) photoRegion.style.display = 'none';
+                    p17TogglePhotoRequirement();
+            
+                    // Load gallery in case photos already exist this session
+                    p17LoadPhotos();
+            
+                }
+            
+                // Binary Y/N badges
+                (function() {
+                    var BINARY_ITEMS = ['P17_CANCEL_WORK_COMPLETE'];
+                    var BADGES = [
+                        { val: 'Y', cls: 'binary-badge-yes', label: '✓' },
+                        { val: 'N', cls: 'binary-badge-no',  label: '✗' }
+                    ];
+            
+                    BINARY_ITEMS.forEach(function(itemName) {
+                        var $fc = $('#' + itemName).closest('.t-Form-fieldContainer');
+                        if ($fc.length === 0) return;
+            
+                        $fc.find('.binary-badge-row').remove();
+            
+                        var currentVal = isReadOnly
+                            ? (apex.item(itemName).getValue() || '')
+                            : ($('input[name="' + itemName + '"]:checked').val() || '');
+            
+                        var $row = $('<div class="binary-badge-row"></div>')
+                            .attr('data-item', itemName);
+            
+                        BADGES.forEach(function(b) {
+                            $('<span></span>')
+                                .addClass('binary-badge ' + b.cls)
+                                .toggleClass('cm-active',       currentVal === b.val)
+                                .toggleClass('binary-readonly',  isReadOnly)
+                                .attr('data-value', b.val)
+                                .text(b.label)
+                                .appendTo($row);
+                        });
+            
+                        $fc.find('.t-Form-inputContainer').append($row);
+                    });
+            
+                    $('.cm-binary-item .apex-item-grid').hide();
+            
+                    $(document)
+                        .off('click.binarybadge')
+                        .on('click.binarybadge', '.binary-badge:not(.binary-readonly)', function() {
+                            var $badge   = $(this);
+                            var $row     = $badge.closest('.binary-badge-row');
+                            var itemName = $row.attr('data-item');
+                            var val      = $badge.attr('data-value');
+            
+                            $('input[name="' + itemName + '"][value="' + val + '"]')
+                                .prop('checked', true).trigger('change');
+            
+                            $row.find('.binary-badge').removeClass('cm-active');
+                            $badge.addClass('cm-active');
+                        });
+                }());
+            
+            }, 350);
+            
+            // ── Required star ──────────────────────────────────────────
+            apex.jQuery(document).on('apexreadyend', function() {
+                var $fc = $('#P17_CANCEL_WORK_COMPLETE').closest('.t-Form-fieldContainer');
+                if ($fc.length === 0) return;
+                $fc.find('.t-Form-labelContainer label').first()
+                   .append('<span class="cm-required-star" aria-hidden="true"> *</span>');
+            });
+            ```
+    }
+    css {
+        inline:
+            ```css
+            .p17-declaration-box {
+                background: #fff8e1;
+                border-left: 4px solid #f59c00;
+                padding: 16px 20px;
+                border-radius: 4px;
+                font-size: 14px;
+                line-height: 1.7;
+                margin-bottom: 4px;
+            }
+            .p17-declaration-box strong { color: #344B5C; }
+            
+            .p17-sig-wrapper canvas {
+                display: block;
+                border: 1px dashed var(--ut-component-border-color, #ccc);
+                border-radius: 4px;
+                touch-action: none;
+                cursor: crosshair;
+                background: #fff;
+            }
+            
+            .ptw-photo-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 1rem;
+                padding: 0.5rem 0;
+            }
+            .ptw-photo-card {
+                border: 1px solid var(--ut-component-border-color, #e0e0e0);
+                border-radius: 8px;
+                overflow: hidden;
+                background: var(--ut-component-background-color, #fff);
+                display: flex;
+                flex-direction: column;
+            }
+            .ptw-photo-thumb {
+                width: 100%;
+                height: 130px;
+                object-fit: cover;
+                display: block;
+                transition: opacity 0.2s;
+            }
+            .ptw-photo-thumb:hover { opacity: 0.82; }
+            .ptw-photo-meta {
+                padding: 0.4rem 0.6rem;
+                font-size: 0.75rem;
+                color: var(--ut-component-font-color-muted, #666);
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                flex: 1;
+            }
+            .ptw-photo-caption { font-weight: 600; color: var(--ut-component-font-color, #333); font-size: 0.8rem; }
+            .ptw-photo-date    { font-size: 0.7rem; }
+            .ptw-photo-user    { font-size: 0.7rem; font-style: italic; }
+            .ptw-delete-photo  { margin: 0.4rem; font-size: 0.75rem !important; }
+            .ptw-no-photos     { color: var(--ut-component-font-color-muted, #888); font-style: italic; padding: 0.5rem 0; margin: 0; }
+            .ptw-file-icon     { display: flex; align-items: center; justify-content: center; height: 130px; font-size: 3rem; background: #f0f4f8; color: #4A5568; }
+            .ptw-file-icon.icon-pdf   { color: #C0392B; }
+            .ptw-file-icon.icon-word  { color: #1F4E79; }
+            .ptw-file-icon.icon-excel { color: #1E7A4E; }
+            .ptw-upload-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+            .ptw-upload-row .t-Button { flex: 1; min-width: 130px; }
+            #ptw-lightbox {
+                position: fixed; inset: 0; background: rgba(0,0,0,0.88);
+                z-index: 9999; display: flex; align-items: center;
+                justify-content: center; padding: 1rem;
+            }
+            #ptw-lightbox-inner {
+                position: relative; max-width: 95vw; max-height: 90vh;
+                display: flex; flex-direction: column; align-items: center;
+            }
+            #ptw-lightbox-close {
+                position: absolute; top: -2.5rem; right: 0;
+                background: none; border: none; color: #fff;
+                font-size: 1.8rem; cursor: pointer; padding: 0.25rem 0.5rem; line-height: 1;
+            }
+            #ptw-lightbox-img { max-width: 100%; max-height: 80vh; border-radius: 4px; object-fit: contain; }
+            #ptw-lightbox-caption { color: #ddd; margin-top: 0.5rem; font-size: 0.9rem; text-align: center; }
+            @media (max-width: 420px) { .ptw-photo-grid { grid-template-columns: 1fr 1fr; } }
+            
+            .ptw-photo-placeholder {
+                min-height: 130px;
+            }
+            
+            .ptw-photo-placeholder img {
+                width: 100% !important;
+                height: 130px !important;
+                object-fit: cover !important;
+                display: block !important;
+                border-radius: 4px 4px 0 0;
+            }
+            
+            ```
+    }
+    security {
+        authorizationScheme: @reader-rights
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region area-photo (
+        name: Area Photo
+        title: Area Photo
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <!-- Hidden file inputs -->
+                <input type="file"
+                       id="ptw-file-input"
+                       accept=".jpg,.jpeg,.png,.gif,.webp"
+                       style="display:none">
+                
+                <input type="file"
+                       id="ptw-camera-input"
+                       accept="image/*"
+                       capture="environment"
+                       style="display:none">
+                
+                <!-- Workflow status marker for JS -->
+                <span id="ptw-workflow-status"
+                      data-status="&P17_WORKFLOW_STATUS."
+                      style="display:none;"></span>
+                
+                <!-- Upload controls -->
+                <div class="ptw-upload-controls">
+                    <div class="ptw-upload-row">
+                        <button type="button"
+                                id="btn-attach-file"
+                                class="t-Button t-Button--primary t-Button--iconLeft"
+                                onclick="document.getElementById('ptw-file-input').click()">
+                            <span class="t-Icon fa fa-paperclip"></span> Attach Photo
+                        </button>
+                        <button type="button"
+                                id="btn-take-photo"
+                                class="t-Button t-Button--primary t-Button--iconLeft"
+                                onclick="document.getElementById('ptw-camera-input').click()">
+                            <span class="t-Icon fa fa-camera"></span> Take Photo
+                        </button>
+                    </div>
+                
+                    <div class="ptw-caption-row" style="margin-top:0.5rem;">
+                        <input type="text"
+                               id="ptw-caption-input"
+                               class="apex-item-text"
+                               placeholder="Caption / description (optional)"
+                               maxlength="500"
+                               style="width:100%;">
+                    </div>
+                
+                    <div id="ptw-selected-file-info" style="display:none; margin-top:0.4rem;">
+                        <span class="t-Icon fa fa-file-o"></span>
+                        <span id="ptw-selected-file-name" style="font-size:0.85rem; color:#555;"></span>
+                        <button type="button"
+                                id="btn-upload-file"
+                                class="t-Button t-Button--hot t-Button--slim t-Button--iconLeft"
+                                style="margin-left:0.75rem;">
+                            <span class="t-Icon fa fa-upload"></span> Upload
+                        </button>
+                    </div>
+                </div>
+                
+                <hr style="margin: 1rem 0; border-color: #e0e0e0;">
+                
+                <!-- Gallery -->
+                <div id="ptw-photo-gallery">
+                    <p class="ptw-no-photos">Loading files...</p>
+                </div>
+                
+                <!-- Lightbox -->
+                <div id="ptw-lightbox" style="display:none;"
+                     onclick="if(event.target===this)ptwCloseLightbox()">
+                    <div id="ptw-lightbox-inner">
+                        <button type="button"
+                                id="ptw-lightbox-close"
+                                onclick="ptwCloseLightbox()"
+                                aria-label="Close">
+                            <span class="fa fa-times"></span>
+                        </button>
+                        <img id="ptw-lightbox-img" src="" alt="Photo preview">
+                        <div id="ptw-lightbox-caption"></div>
+                    </div>
+                </div>
+                ```
+        }
+        layout {
+            sequence: 130
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-camera
+        }
+        advanced {
+            htmlDomId: p17-photo-region
+        }
+    )
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 150
+            slot: contentBody
+        }
+        appearance {
+            template: @/buttons-container
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region cancellation-details (
+        name: Cancellation Details
+        title: Cancellation Details
+        type: staticContent
+        layout {
+            sequence: 120
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-user-circle
+        }
+    )
+
+    region declaration (
+        name: Declaration
+        title: Declaration
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="p17-declaration-box">
+                    <p style="margin:0 0 8px 0;">
+                        I confirm that these works have been
+                        <strong><span id="p17-decl-work-complete">completed / not complete</span></strong>
+                        and that I have checked that the place of work has been left in a
+                        safe and tidy condition. Where the work is not complete a further
+                        Permit may be required.
+                    </p>
+                    <p style="margin:0;">
+                        Both the Original and copy of this Permit to Work must be signed
+                        by the Authorised Person when cancelling this Permit.
+                    </p>
+                </div>
+                ```
+        }
+        layout {
+            sequence: 110
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-file-text-o
+        }
+    )
+
+    region permit-info-banner (
+        name: Permit Info Banner
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="t-Alert t-Alert--info t-Alert--horizontal p17-cancel-banner" role="region" style="margin-bottom:8px;">
+                  <div class="t-Alert-wrap">
+                    <div class="t-Alert-icon">
+                      <span class="t-Icon fa fa-ban" aria-hidden="true"></span>
+                    </div>
+                    <div class="t-Alert-content">
+                      <div class="t-Alert-header">
+                        <h2 class="t-Alert-title">Cancellation of Permit to Work</h2>
+                      </div>
+                      <div class="t-Alert-body">
+                        Permit: <strong>&P17_PERMIT_NUMBER.</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                ```
+        }
+        layout {
+            sequence: 100
+            slot: contentBody
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region signature (
+        name: Signature
+        title: Authorised Person Signature
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="p17-sig-wrapper">
+                    <canvas id="p17SigCanvas"></canvas>
+                </div>
+                <div style="margin-top:8px;">
+                    <button type="button"
+                            class="t-Button t-Button--small"
+                            onclick="p17ClearSig();">
+                        <span class="t-Icon fa fa-eraser"></span> Clear Signature
+                    </button>
+                </div>
+                
+                ```
+        }
+        layout {
+            sequence: 140
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-pencil-square-o
+        }
+        advanced {
+            htmlDomId: p17-signature-region
+        }
+    )
+
+    pageItem P17_AREA_PHOTO_UPLOADED (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 70
+            slot: contentBody
+        }
+    )
+
+    pageItem P17_CANCELLED (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 90
+            slot: contentBody
+        }
+    )
+
+    pageItem P17_CANCEL_DATETIME (
+        type: displayOnly
+        label {
+            label: Date / Time
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @cancellation-details
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+        }
+        default {
+            type: expression
+            plsqlExpression: TO_CHAR(SYSDATE, 'DD-MON-YYYY HH24:MI')
+        }
+    )
+
+    pageItem P17_CANCEL_PERSON_NAME (
+        type: textField
+        label {
+            label: Authorised Person Name
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @cancellation-details
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: Full name (print clearly)
+        }
+        validation {
+            maxLength: 200
+        }
+    )
+
+    pageItem P17_CANCEL_SIGNATURE_DATA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 50
+            slot: contentBody
+        }
+    )
+
+    pageItem P17_CANCEL_SIGNATURE_DATA_URL (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 60
+            slot: contentBody
+        }
+    )
+
+    pageItem P17_CANCEL_WORK_COMPLETE (
+        type: radioGroup
+        label {
+            label: Works Status
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Completed;Y,Not Complete;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 10
+            region: @cancellation-details
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            cssClasses: cm-binary-item
+        }
+    )
+
+    pageItem P17_PERMIT_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+    )
+
+    pageItem P17_PERMIT_NUMBER (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: contentBody
+        }
+    )
+
+    pageItem P17_WORKFLOW_STATUS (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 80
+            slot: contentBody
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancel
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        advanced {
+            htmlDomId: BTN_CANCEL_P17
+        }
+    )
+
+    button cancel-permit (
+        buttonName: CANCEL_PERMIT
+        label: Cancel Permit
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-ban
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        advanced {
+            htmlDomId: BTN_CANCEL_PERMIT_P17
+        }
+    )
+
+    dynamicAction cancel-close-dialog (
+        name: Cancel - Close Dialog
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cancel
+        }
+
+        action native-dialog-cancel (
+            action: cancelDialog
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction cancel-permit-capture-location-and-submit (
+        name: Cancel Permit - Capture Location and Submit
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cancel-permit
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: captureLocationThenSubmit('CANCEL_PERMIT');
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    validation area-photo-required (
+        name: Area Photo Required
+        execution {
+            sequence: 50
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                RETURN NOT (
+                    :P17_CANCEL_WORK_COMPLETE = 'N'
+                    AND (
+                        :P17_AREA_PHOTO_UPLOADED IS NULL
+                        OR :P17_AREA_PHOTO_UPLOADED != 'Y'
+                    )
+                );
+                ```
+        }
+        error {
+            errorMessage: A photo of the area is required when works are not complete. Please take or upload a photo before signing off the cancellation.
+        }
+    )
+
+    validation permit-still-valid-for-cancellation (
+        name: Permit Still Valid for Cancellation
+        execution {
+            sequence: 40
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    l_count NUMBER;
+                BEGIN
+                    SELECT COUNT(*)
+                    INTO   l_count
+                    FROM   ptw_pro.ptw_lv_permits
+                    WHERE  permit_id       = :P17_PERMIT_ID
+                    AND    workflow_status NOT IN ('CANCELLED','COMPLETED','CLEARED');
+                    IF l_count > 0 THEN
+                      RETURN TRUE;
+                    ELSE
+                      RETURN FALSE;
+                    END IF;
+                END;
+                ```
+        }
+        error {
+            errorMessage: This permit cannot be cancelled. It may already be cancelled or completed.
+        }
+        serverSideCondition {
+            whenButtonPressed: @cancel-permit
+        }
+    )
+
+    validation person-name-required (
+        name: Person Name Required
+        execution {
+            sequence: 20
+        }
+        validation {
+            type: itemIsNotNull
+            item: P17_CANCEL_PERSON_NAME
+        }
+        error {
+            errorMessage: Name of Authorised Person is required.
+        }
+    )
+
+    validation signature-required (
+        name: Signature Required
+        execution {
+            sequence: 30
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                RETURN NOT (
+                    :P17_CANCEL_SIGNATURE_DATA IS NULL
+                    OR TRIM(:P17_CANCEL_SIGNATURE_DATA) IS NULL
+                    OR :P17_CANCEL_SIGNATURE_DATA = 'data:,'
+                );
+                ```
+        }
+        error {
+            errorMessage: A signature is required to cancel this permit.
+        }
+        serverSideCondition {
+            whenButtonPressed: @cancel-permit
+        }
+    )
+
+    validation work-status-required (
+        name: Work Status Required
+        execution {
+            sequence: 10
+        }
+        validation {
+            type: itemIsNotNull
+            item: P17_CANCEL_WORK_COMPLETE
+        }
+        error {
+            errorMessage: Please indicate whether the works are completed  or not complete.
+        }
+    )
+
+    process cancel-permit (
+        name: Cancel Permit
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    v_sig_blob BLOB;
+                
+                    FUNCTION base64_to_blob(p_base64 CLOB) RETURN BLOB IS
+                        v_blob BLOB;
+                        v_clob CLOB;
+                    BEGIN
+                        IF p_base64 IS NULL THEN RETURN NULL; END IF;
+                        v_clob := REGEXP_REPLACE(p_base64, '^data:image/[^;]+;base64,', '');
+                        v_blob := apex_web_service.clobbase642blob(v_clob);
+                        RETURN v_blob;
+                    END base64_to_blob;
+                
+                BEGIN
+                    v_sig_blob := base64_to_blob(:P17_CANCEL_SIGNATURE_DATA);
+                
+                    -- Guarded status transition, same protection as before.
+                    UPDATE ptw_pro.ptw_lv_permits
+                    SET    cancel_work_complete = :P17_CANCEL_WORK_COMPLETE,
+                           workflow_status      = 'CANCELLED',
+                           current_step         = 'CANCELLED',
+                           completion_date      = SYSDATE,
+                           modified_by          = NVL(V('APP_USER'), USER),
+                           modified_date        = CURRENT_TIMESTAMP
+                    WHERE  permit_id            = :P17_PERMIT_ID
+                    AND    workflow_status NOT IN ('CANCELLED','COMPLETED','CLEARED');
+                
+                    IF SQL%ROWCOUNT = 0 THEN
+                        apex_error.add_error(
+                            p_message          => 'Permit could not be cancelled. It may have already '
+                                               || 'been cancelled or completed. Please refresh the '
+                                               || 'permits list.',
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                        RETURN;
+                    END IF;
+                
+                    ptw_pro.ptw_signature_pkg.save_signature(
+                        p_permit_id      => :P17_PERMIT_ID,
+                        p_stage          => 'CANCEL',
+                        p_person_name    => UPPER(TRIM(:P17_CANCEL_PERSON_NAME)),
+                        p_signature_blob => v_sig_blob,
+                        p_event_datetime => SYSDATE,
+                        p_latitude       => :APP_LATITUDE,
+                        p_longitude      => :APP_LONGITUDE
+                    );
+                
+                    :P17_CANCELLED := 'Y';
+                    COMMIT;
+                
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        ROLLBACK;
+                        apex_error.add_error(
+                            p_message          => 'Error cancelling permit: ' || SQLERRM,
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                        RAISE;
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 47751164940890033
+        }
+        serverSideCondition {
+            whenButtonPressed: @cancel-permit
+        }
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        settings {
+            itemsToReturn: P17_CANCELLED
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 47751263076890034
+        }
+        serverSideCondition {
+            type: item=value
+            item: P17_CANCELLED
+            value: N
+        }
+    )
+
+    process delete-permit-photo (
+        name: DELETE_PERMIT_PHOTO
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    l_photo_id   NUMBER        := TO_NUMBER(apex_application.g_x01);
+                    l_app_user   VARCHAR2(255) := NVL(V('APP_USER'), USER);
+                    l_can_delete NUMBER;
+                BEGIN
+                    SELECT COUNT(*)
+                    INTO   l_can_delete
+                    FROM   ptw_pro.ptw_lv_permit_photos ph
+                    WHERE  ph.photo_id = l_photo_id
+                    AND    (
+                               UPPER(ph.uploaded_by) = UPPER(l_app_user)
+                               OR EXISTS (
+                                   SELECT 1
+                                   FROM   ptw_pro.ptw_lv_user_roles_v
+                                   WHERE  UPPER(username) = UPPER(l_app_user)
+                                   AND    role_name IN ('ADMIN', 'ADMIN_CONTRACT_SUPPORT')
+                                   AND    is_active = 'Y'
+                               )
+                           );
+                
+                    IF l_can_delete = 0 THEN
+                        apex_json.open_object;
+                        apex_json.write('success', false);
+                        apex_json.write('message', 'File not found or you do not have permission to delete it.');
+                        apex_json.close_object;
+                        RETURN;
+                    END IF;
+                
+                    DELETE FROM ptw_pro.ptw_lv_permit_photos
+                    WHERE  photo_id = l_photo_id;
+                
+                    COMMIT;
+                
+                    apex_json.open_object;
+                    apex_json.write('success', true);
+                    apex_json.close_object;
+                
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        ROLLBACK;
+                        apex_json.open_object;
+                        apex_json.write('success', false);
+                        apex_json.write('message', 'Delete error: ' || SQLERRM);
+                        apex_json.close_object;
+                END;
+                
+                ```
+        }
+        execution {
+            sequence: 30
+            point: ajaxCallback
+        }
+        advanced {
+            executionMappingIdentifier: 47752296176890044
+        }
+    )
+
+    process get-permit-photos (
+        name: GET_PERMIT_PHOTOS
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    l_permit_id NUMBER := TO_NUMBER(apex_application.g_x01);
+                BEGIN
+                    apex_json.open_object;
+                    apex_json.open_array('photos');
+                
+                    FOR r IN (
+                        SELECT photo_id,
+                               photo_caption,
+                               file_name,
+                               mime_type,
+                               TO_CHAR(uploaded_date, 'DD-Mon-YYYY HH24:MI') AS uploaded_date,
+                               uploaded_by
+                        FROM   ptw_pro.ptw_lv_permit_photos
+                        WHERE  permit_id      = l_permit_id
+                        AND    source_page_id = :APP_PAGE_ID                    -- ADDED
+                        ORDER  BY uploaded_date DESC
+                    ) LOOP
+                        apex_json.open_object;
+                        apex_json.write('photoId',      r.photo_id);
+                        apex_json.write('caption',      NVL(r.photo_caption, ''));
+                        apex_json.write('fileName',     NVL(r.file_name, 'attachment'));
+                        apex_json.write('mimeType',     NVL(r.mime_type, 'application/octet-stream'));
+                        apex_json.write('uploadedDate', r.uploaded_date);
+                        apex_json.write('uploadedBy',   r.uploaded_by);
+                        apex_json.write('url',
+                            apex_page.get_url(
+                                p_page   => 20,
+                                p_items  => 'P20_PHOTO_ID',
+                                p_values => r.photo_id,
+                                p_plain_url => true
+                            )
+                        );
+                        apex_json.close_object;
+                    END LOOP;
+                
+                    apex_json.close_array;
+                    apex_json.close_object;
+                
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        apex_json.open_object;
+                        apex_json.open_array('photos');
+                        apex_json.close_array;
+                        apex_json.write('error', SQLERRM);
+                        apex_json.close_object;
+                END;
+                
+                ```
+        }
+        execution {
+            sequence: 20
+            point: ajaxCallback
+        }
+        advanced {
+            executionMappingIdentifier: 47752153706890043
+        }
+    )
+
+    process load-cancel-permit-data (
+        name: Load Cancel Permit Data
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    v_clob CLOB;
+                    v_sig  BLOB;
+                    v_na_mobile  ptw_pro.ptw_signatures.mobile_no%TYPE;
+                    v_na_company ptw_pro.ptw_signatures.company_name%TYPE;
+                    v_na_lat     ptw_pro.ptw_signatures.latitude%TYPE;
+                    v_na_lng     ptw_pro.ptw_signatures.longitude%TYPE;
+                BEGIN
+                    SELECT permit_number, workflow_status
+                    INTO   :P17_PERMIT_NUMBER, :P17_WORKFLOW_STATUS
+                    FROM   ptw_pro.ptw_lv_permits
+                    WHERE  permit_id = :P17_PERMIT_ID;
+                
+                    IF :P17_WORKFLOW_STATUS = 'CANCELLED' THEN
+                
+                        ptw_pro.ptw_signature_pkg.get_signature(:P17_PERMIT_ID, 'CANCEL',
+                            :P17_CANCEL_PERSON_NAME, v_sig, v_na_mobile, v_na_company,
+                            :P17_CANCEL_DATETIME, v_na_lat, v_na_lng);
+                
+                        SELECT cancel_work_complete
+                        INTO   :P17_CANCEL_WORK_COMPLETE
+                        FROM   ptw_pro.ptw_lv_permits
+                        WHERE  permit_id = :P17_PERMIT_ID;
+                
+                        IF v_sig IS NOT NULL AND DBMS_LOB.GETLENGTH(v_sig) > 0 THEN
+                            v_clob := apex_web_service.blob2clobbase64(v_sig);
+                            v_clob := REPLACE(REPLACE(v_clob, CHR(13), ''), CHR(10), '');
+                            :P17_CANCEL_SIGNATURE_DATA_URL :=
+                                'data:image/png;base64,' || DBMS_LOB.SUBSTR(v_clob, 32000, 1);
+                        ELSE
+                            :P17_CANCEL_SIGNATURE_DATA_URL := NULL;
+                        END IF;
+                
+                    ELSE
+                        :P17_CANCEL_DATETIME := TO_CHAR(SYSDATE, 'DD-MON-YYYY HH24:MI');
+                        :P17_CANCEL_SIGNATURE_DATA_URL := NULL;
+                    END IF;
+                
+                EXCEPTION
+                    WHEN NO_DATA_FOUND THEN
+                        apex_error.add_error(
+                            p_message => 'Permit not found.', p_display_location => apex_error.c_on_error_page
+                        );
+                    WHEN OTHERS THEN
+                        apex_error.add_error(
+                            p_message => 'Error loading cancellation data: ' || SQLERRM,
+                            p_display_location => apex_error.c_on_error_page
+                        );
+                END;
+                
+                ```
+        }
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 47751662520890038
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P17_PERMIT_ID
+        }
+    )
+
+    process upload-permit-photo (
+        name: UPLOAD_PERMIT_PHOTO
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    l_permit_id   NUMBER        := TO_NUMBER(apex_application.g_x01);
+                    l_caption     VARCHAR2(500) := apex_application.g_x02;
+                    l_latitude    NUMBER;
+                    l_longitude   NUMBER;
+                    l_file_name   VARCHAR2(255) := apex_application.g_x05;
+                    l_mime_type   VARCHAR2(100) := apex_application.g_x06;
+                    l_b64_clob    CLOB;
+                    l_blob        BLOB;
+                    l_token       VARCHAR2(32767);
+                BEGIN
+                    BEGIN l_latitude  := TO_NUMBER(apex_application.g_x03); EXCEPTION WHEN OTHERS THEN l_latitude  := NULL; END;
+                    BEGIN l_longitude := TO_NUMBER(apex_application.g_x04); EXCEPTION WHEN OTHERS THEN l_longitude := NULL; END;
+                
+                    IF l_permit_id IS NULL THEN
+                        apex_json.open_object;
+                        apex_json.write('success', false);
+                        apex_json.write('message', 'Invalid permit ID.');
+                        apex_json.close_object;
+                        RETURN;
+                    END IF;
+                
+                    IF apex_application.g_f01.COUNT = 0 THEN
+                        apex_json.open_object;
+                        apex_json.write('success', false);
+                        apex_json.write('message', 'No file data received.');
+                        apex_json.close_object;
+                        RETURN;
+                    END IF;
+                
+                    -- Reassemble base64 CLOB from chunked f01 array
+                    DBMS_LOB.CREATETEMPORARY(l_b64_clob, FALSE, DBMS_LOB.SESSION);
+                    FOR i IN 1 .. apex_application.g_f01.COUNT LOOP
+                        l_token := apex_application.g_f01(i);
+                        IF LENGTH(l_token) > 0 THEN
+                            DBMS_LOB.WRITEAPPEND(l_b64_clob, LENGTH(l_token), l_token);
+                        END IF;
+                    END LOOP;
+                
+                    l_blob := apex_web_service.clobbase642blob(l_b64_clob);
+                    DBMS_LOB.FREETEMPORARY(l_b64_clob);
+                
+                    IF DBMS_LOB.GETLENGTH(l_blob) > 20971520 THEN
+                        DBMS_LOB.FREETEMPORARY(l_blob);
+                        apex_json.open_object;
+                        apex_json.write('success', false);
+                        apex_json.write('message', 'File exceeds the 20MB size limit.');
+                        apex_json.close_object;
+                        RETURN;
+                    END IF;
+                
+                    INSERT INTO ptw_pro.ptw_lv_permit_photos (
+                        permit_id, photo_data, mime_type, file_name,
+                        photo_caption, photo_latitude, photo_longitude,
+                        uploaded_by, uploaded_date, source_page_id          -- ADDED
+                    ) VALUES (
+                        l_permit_id, l_blob,
+                        NVL(l_mime_type, 'application/octet-stream'),
+                        NVL(l_file_name, 'attachment'),
+                        NULLIF(TRIM(l_caption), ''),
+                        l_latitude, l_longitude,
+                        NVL(V('APP_USER'), USER),
+                        CURRENT_TIMESTAMP,
+                        :APP_PAGE_ID                                        -- ADDED
+                    );
+                
+                    COMMIT;
+                    DBMS_LOB.FREETEMPORARY(l_blob);
+                
+                    apex_json.open_object;
+                    apex_json.write('success', true);
+                    apex_json.write('message', 'Photo uploaded successfully.');
+                    apex_json.close_object;
+                
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        ROLLBACK;
+                        apex_json.open_object;
+                        apex_json.write('success', false);
+                        apex_json.write('message', 'Upload error: ' || SQLERRM);
+                        apex_json.close_object;
+                END;
+                
+                ```
+        }
+        execution {
+            sequence: 10
+            point: ajaxCallback
+        }
+        advanced {
+            executionMappingIdentifier: 47752004439890042
+        }
+    )
+
+    branch (
+        name: Navigate back to Dashboard
+        execution {
+            sequence: 10
+        }
+        behavior {
+            target: {
+                page: 1
+                clearCache: 1
+                successMessage: false
+            }
+        }
+        serverSideCondition {
+            type: item=value
+            item: P17_CANCELLED
+            value: Y
+        }
+    )
+
+)
+

@@ -1,0 +1,360 @@
+page 27 (
+    name: Team Management
+    alias: TEAM-MANAGEMENT
+    title: Team Management
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            .admin-page-header {
+                background: linear-gradient(135deg, #003366 0%, #005599 100%);
+                color: white;
+                padding: 25px 30px;
+                border-radius: 8px;
+                margin-bottom: 25px;
+            }
+            .admin-page-header h1 { margin: 0 0 5px 0; font-size: 1.75rem; font-weight: 700; }
+            .admin-page-header p  { margin: 0; opacity: 0.85; font-size: 0.95rem; }
+            ```
+    }
+    security {
+        authorizationScheme: @administration-rights
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region page-header (
+        name: Page Header
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    l_html CLOB;
+                BEGIN
+                    l_html := '<div class="admin-page-header">'
+                           || '  <h1>Team Management</h1>'
+                           || '  <p>Manage teams within your company and assign engineers to them.</p>'
+                           || '</div>';
+                    RETURN l_html;
+                END;
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region teams (
+        name: Teams
+        title: Teams
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT t.team_id,
+                       t.team_name,
+                       CASE t.is_active WHEN 'Y' THEN 'Active' ELSE 'Inactive' END AS status,
+                       t.is_active,
+                       (SELECT COUNT(*) FROM ptw_pro.ptw_lv_users u
+                         WHERE u.team_id = t.team_id)         AS engineer_count,
+                       TO_CHAR(t.created_date, 'DD-MON-YYYY HH24:MI') AS created_date,
+                       t.created_by,
+                       TO_CHAR(t.modified_date, 'DD-MON-YYYY HH24:MI') AS modified_date,
+                       t.modified_by
+                FROM   ptw_pro.ptw_lv_teams t
+                ORDER  BY t.team_name
+                ```
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 53153435464466103
+        }
+
+        column CREATED_BY (
+            type: plainText
+            heading {
+                heading: Created By
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column CREATED_DATE (
+            type: plainText
+            heading {
+                heading: Created Date
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column ENGINEER_COUNT (
+            type: plainText
+            heading {
+                heading: Engineer Count
+                alignment: end
+            }
+            layout {
+                sequence: 50
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column IS_ACTIVE (
+            type: plainText
+            heading {
+                heading: Is Active
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column MODIFIED_BY (
+            type: plainText
+            heading {
+                heading: Modified By
+            }
+            layout {
+                sequence: 90
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column MODIFIED_DATE (
+            type: plainText
+            heading {
+                heading: Modified Date
+            }
+            layout {
+                sequence: 80
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column STATUS (
+            type: plainText
+            heading {
+                heading: Status
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column TEAM_ID (
+            type: link
+            heading {
+                heading: Edit
+                alignment: center
+            }
+            layout {
+                sequence: 10
+                columnAlignment: end
+            }
+            link {
+                target: {
+                    page: 29
+                    items: {
+                        P29_TEAM_ID: #TEAM_ID#
+                    }
+                    clearCache: 29
+                }
+                linkText: " <span class=\"fa fa-edit\" title=\"Edit\"></span>"
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column TEAM_NAME (
+            type: plainText
+            heading {
+                heading: Team Name
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Teams
+        }
+
+        savedReport 531639 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CREATED_BY (
+                sequence: 7
+            )
+
+            displayColumn CREATED_DATE (
+                sequence: 6
+            )
+
+            displayColumn ENGINEER_COUNT (
+                sequence: 5
+            )
+
+            displayColumn IS_ACTIVE (
+                sequence: 4
+            )
+
+            displayColumn MODIFIED_BY (
+                sequence: 9
+            )
+
+            displayColumn MODIFIED_DATE (
+                sequence: 8
+            )
+
+            displayColumn STATUS (
+                sequence: 3
+            )
+
+            displayColumn TEAM_ID (
+                sequence: 1
+            )
+
+            displayColumn TEAM_NAME (
+                sequence: 2
+            )
+
+        )
+
+    )
+
+    pageItem P27_TEAM_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 60
+            slot: body
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Create Team
+        layout {
+            sequence: 10
+            region: @teams
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-users
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 29
+                clearCache: 29
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+)
+

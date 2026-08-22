@@ -1,0 +1,1011 @@
+page 23 (
+    name: Permit Types
+    alias: PERMIT-TYPES
+    title: Permit Types
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+        cssClasses: ptw-locked-note
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            .admin-page-header {
+                background: linear-gradient(135deg, #003366 0%, #005599 100%);
+                color: white;
+                padding: 25px 30px;
+                border-radius: 8px;
+                margin-bottom: 25px;
+            }
+            .admin-page-header h1 { margin: 0 0 5px 0; font-size: 1.75rem; font-weight: 700; }
+            .admin-page-header p  { margin: 0; opacity: 0.85; font-size: 0.95rem; }
+            
+            .ptw-locked-note {
+                color: #888;
+                font-style: italic;
+                margin-left: 6px;
+                font-size: 0.9em;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @administration-rights
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region page-header (
+        name: Page Header
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    l_is_admin  VARCHAR2(1) := 'N';
+                    l_html      CLOB;
+                BEGIN
+                    BEGIN
+                        SELECT CASE is_admin WHEN 'Yes' THEN 'Y' ELSE 'N' END
+                        INTO   l_is_admin
+                        FROM   apex_workspace_apex_users
+                        WHERE  UPPER(user_name)  = UPPER(V('APP_USER'))
+                        AND    workspace_name    = (
+                                   SELECT workspace FROM apex_applications
+                                   WHERE  application_id = :APP_ID
+                               );
+                    EXCEPTION
+                        WHEN NO_DATA_FOUND THEN l_is_admin := 'N';
+                    END;
+                
+                    l_html := '<div class="admin-page-header">'
+                           || '  <div style="display:flex; justify-content:space-between; align-items:center;">'
+                           || '    <div>'
+                           || '  <h1>Permit Types</h1>'
+                           || '  <p>Permit types your company is licensed to use. Use '
+                           || '     <strong>Add Type to Company</strong> to make additional '
+                           || '     master permit types available to your users.</p>'
+                           || '    </div>';
+                
+                    IF l_is_admin = 'Y' THEN
+                        l_html := l_html
+                               || '<div style="flex-shrink:0; margin-left:20px;">'
+                               || '  <span style="background:#dc3545; color:white;'
+                               || '             display:inline-flex; align-items:center;'
+                               || '             padding:6px 16px; border-radius:20px;'
+                               || '             font-size:0.78rem; font-weight:700;'
+                               || '             letter-spacing:0.5px; text-transform:uppercase;'
+                               || '             box-shadow:0 2px 4px rgba(0,0,0,0.3);'
+                               || '             white-space:nowrap;">'
+                               || '  <span class="fa fa-shield" style="margin-right:8px; font-size:0.9rem;"></span>'
+                               || '  Workspace Administrator'
+                               || '</span>'
+                               || '</div>';
+                    END IF;
+                
+                    l_html := l_html
+                           || '  </div>'
+                           || '</div>';
+                
+                    RETURN l_html;
+                END;
+                ```
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region permit-types (
+        name: Permit Types
+        title: Permit Types
+        type: classicReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT x.type_id,
+                       x.type_desc,
+                       x.company_default,
+                       CASE :P23_SCOPE
+                           WHEN 'COMPANY' THEN
+                               apex_item.select_list(1, x.company_setting, 'Yes;Y,No;N',
+                                                      'class="ptw-company-select"')
+                               || apex_item.hidden(2, x.type_id)
+                           WHEN 'TEAM' THEN
+                               apex_item.select_list(1, x.team_setting,
+                                   'Inherit;INHERIT,Granted;Y,Denied;N',
+                                   'class="ptw-team-select"')
+                               || apex_item.hidden(2, x.type_id)
+                           WHEN 'ENGINEER' THEN
+                               apex_item.checkbox(1, x.type_id,
+                                   'class="ptw-competency-checkbox"' ||
+                                   ' data-type-desc="' || APEX_ESCAPE.HTML(x.type_desc) || '"' ||
+                                   CASE WHEN x.engineer_setting = 'Y' THEN ' checked="checked"' END)
+                               || apex_item.hidden(2, x.type_id)
+                       END AS row_control,
+                       x.competency_confirmed_by,
+                       x.competency_confirmed_date
+                FROM (
+                    SELECT pt.type_id,
+                           pt.type_desc,
+                           ct.is_active                   AS company_default,
+                           NVL(ct.is_active, 'N')         AS company_setting,
+                           NVL(tt.is_active, 'INHERIT')   AS team_setting,
+                           NVL(ut.is_active, 'N')         AS engineer_setting,
+                           ut.modified_by                 AS competency_confirmed_by,
+                           ut.modified_date               AS competency_confirmed_date
+                    FROM   ptw_pro.ptw_types pt
+                    LEFT JOIN ptw_pro.ptw_lv_company_types ct
+                           ON ct.type_id = pt.type_id AND ct.company_id = :P23_EFFECTIVE_COMPANY_ID
+                    LEFT JOIN ptw_pro.ptw_lv_team_types tt
+                           ON tt.type_id = pt.type_id AND tt.team_id = :P23_TEAM_ID
+                    LEFT JOIN ptw_pro.ptw_lv_user_types ut
+                           ON ut.type_id = pt.type_id AND ut.user_id = :P23_ENGINEER_ID
+                    WHERE  pt.available = 'Y'
+                ) x
+                ORDER BY x.type_desc
+                ```
+            pageItemsToSubmit: [
+                P23_TEAM_ID
+                P23_ENGINEER_ID
+                P23_EFFECTIVE_COMPANY_ID
+            ]
+        }
+        layout {
+            sequence: 110
+            slot: body
+            columnSpan: 6
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-tags
+        }
+        componentAppearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Report--altRowsDefault
+                t-Report--rowHighlight
+            ]
+        }
+        pagination {
+            type: nextAndPreviousLinks
+        }
+
+        column COMPANY_DEFAULT (
+            reportColumnQueryId: 3
+            derivedColumn: N
+            heading {
+                heading: Company Default
+            }
+            layout {
+                sequence: 80
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+        column COMPETENCY_CONFIRMED_BY (
+            reportColumnQueryId: 5
+            derivedColumn: N
+            heading {
+                heading: Competency Confirmed By
+            }
+            layout {
+                sequence: 100
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+        column COMPETENCY_CONFIRMED_DATE (
+            reportColumnQueryId: 6
+            derivedColumn: N
+            heading {
+                heading: Competency Confirmed Date
+            }
+            layout {
+                sequence: 110
+            }
+            appearance {
+                formatMask: DD-MON-YYYY HH24:MI
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+        column ROW_CONTROL (
+            reportColumnQueryId: 4
+            derivedColumn: N
+            heading {
+                heading: Competency Checked
+            }
+            layout {
+                sequence: 120
+                columnAlignment: center
+            }
+            sorting {
+                sortable: false
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column TYPE_DESC (
+            reportColumnQueryId: 2
+            derivedColumn: N
+            heading {
+                heading: Description
+            }
+            layout {
+                sequence: 30
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+        column TYPE_ID (
+            reportColumnQueryId: 1
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 70
+            }
+        )
+
+    )
+
+    region super-user-current-company (
+        name: Super User Current Company
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    v_override  VARCHAR2(50) := V('G_OVERRIDE_COMPANY_ID');
+                    v_name      VARCHAR2(200);
+                    v_html      CLOB;
+                BEGIN
+                    IF v_override IS NULL OR v_override = '' THEN
+                        RETURN NULL;
+                    END IF;
+                
+                    SELECT company_name
+                    INTO   v_name
+                    FROM   ptw_pro.ptw_lv_companies
+                    WHERE  company_id = TO_NUMBER(v_override);
+                
+                    v_html := '<p><strong>Switched to Company: </strong>' 
+                           || apex_escape.html(v_name) || '</p>';
+                
+                    RETURN v_html;
+                
+                EXCEPTION
+                    WHEN OTHERS THEN RETURN NULL;
+                END;
+                ```
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @/title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        serverSideCondition {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    v_is_super VARCHAR2(1);
+                BEGIN
+                    SELECT is_super_user INTO v_is_super
+                    FROM   ptw_pro.ptw_lv_users
+                    WHERE  UPPER(username) = UPPER(:APP_USER)
+                    AND    is_active = 'Y';
+                    RETURN v_is_super = 'Y';
+                EXCEPTION
+                    WHEN OTHERS THEN RETURN FALSE;
+                END;
+                ```
+        }
+    )
+
+    pageItem P23_COMPETENCY_ACK (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 100
+            slot: body
+        }
+    )
+
+    pageItem P23_EFFECTIVE_COMPANY_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 90
+            slot: body
+        }
+    )
+
+    pageItem P23_ENGINEER_ID (
+        type: selectList
+        label {
+            label: Engineer
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT first_name || ' ' || last_name || ' (' || username || ')' d,
+                       user_id r
+                FROM   ptw_pro.ptw_lv_users
+                WHERE  company_id = :P23_EFFECTIVE_COMPANY_ID
+                AND    is_super_user = 'N'
+                AND    is_active = 'Y'
+                ORDER  BY last_name, first_name
+                ```
+            displayExtraValues: false
+            nullDisplayValue: -- Select Engineer --
+        }
+        layout {
+            sequence: 80
+            slot: body
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+    )
+
+    pageItem P23_SCOPE (
+        type: radioGroup
+        label {
+            label: Scope Selector
+            alignment: left
+        }
+        settings {
+            noOfCols: 3
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Company;COMPANY,Team;TEAM,Engineer;ENGINEER
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 60
+            slot: body
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+        }
+        default {
+            type: static
+            staticValue: COMPANY
+        }
+    )
+
+    pageItem P23_TEAM_ID (
+        type: selectList
+        label {
+            label: Team
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT team_name d, team_id r
+                FROM   ptw_pro.ptw_lv_teams
+                WHERE  company_id = :P23_EFFECTIVE_COMPANY_ID  -- same resolution
+                                                           -- pattern as the
+                                                           -- rest of this page
+                AND    is_active = 'Y'
+                ORDER  BY team_name
+                ```
+            displayExtraValues: false
+            nullDisplayValue: -- Select Team --
+        }
+        layout {
+            sequence: 70
+            slot: body
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Save
+        layout {
+            sequence: 10
+            region: @permit-types
+            slot: aboveBox
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction competency-confirm-dialog (
+        name: Competency Confirm Dialog
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: jQuerySelector
+            jquerySelector: .ptw-competency-checkbox
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var $cb = $(this.triggeringElement);
+                    var typeDesc = $cb.data("type-desc");
+                    
+                    apex.confirm(
+                        "Confirm you have personally verified this engineer is " +
+                        "competent to issue " + typeDesc + "?",
+                        function(okPressed) {
+                            if (okPressed) {
+                                // P23_COMPETENCY_ACK is a real page item (unlike the
+                                // per-row checkbox above), so apex.item() is correct
+                                // and Oracle-documented here.
+                                apex.item("P23_COMPETENCY_ACK").setValue("Y");
+                            } else {
+                                $cb.prop("checked", false);
+                            }
+                        }
+                    );
+                    
+                    ```
+            }
+            affectedElements {
+                selectionType: eventSource
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction scope-switch-to-engineer (
+        name: Scope Switch to Engineer
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P23_SCOPE
+        }
+        clientSideCondition {
+            type: item=value
+            item: P23_SCOPE
+            value: ENGINEER
+        }
+
+        action native-hide (
+            action: hide
+            affectedElements {
+                selectionType: items
+                items: P23_ENGINEER_ID
+            }
+            execution {
+                sequence: 10
+                fireWhenEventResultIs: false
+            }
+        )
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @permit-types
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh-2 (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @permit-types
+            }
+            execution {
+                sequence: 20
+                fireWhenEventResultIs: false
+                fireOnInit: false
+            }
+        )
+
+        action native-show (
+            action: show
+            affectedElements {
+                selectionType: items
+                items: P23_ENGINEER_ID
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction scope-switch-to-team (
+        name: Scope Switch to Team
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P23_SCOPE
+        }
+        clientSideCondition {
+            type: item=value
+            item: P23_SCOPE
+            value: TEAM
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode: NULL;
+                itemsToSubmit: P23_SCOPE
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-hide (
+            action: hide
+            affectedElements {
+                selectionType: items
+                items: P23_TEAM_ID
+            }
+            execution {
+                sequence: 10
+                fireWhenEventResultIs: false
+            }
+        )
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @permit-types
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh-2 (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @permit-types
+            }
+            execution {
+                sequence: 20
+                fireWhenEventResultIs: false
+                fireOnInit: false
+            }
+        )
+
+        action native-show (
+            action: show
+            affectedElements {
+                selectionType: items
+                items: P23_TEAM_ID
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+    )
+
+    dynamicAction session-state (
+        name: Session state
+        execution {
+            sequence: 5
+        }
+        when {
+            selectionType: items
+            items: P23_SCOPE
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode: NULL;
+                itemsToSubmit: P23_SCOPE
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction when-change-engineer-list (
+        name: when change Engineer list
+        execution {
+            sequence: 50
+        }
+        when {
+            selectionType: items
+            items: P23_ENGINEER_ID
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @permit-types
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction when-change-team-list (
+        name: when change Team list
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: items
+            items: P23_TEAM_ID
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @permit-types
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    validation engineer-is-not-null (
+        name: Engineer is not null
+        execution {
+            sequence: 20
+        }
+        validation {
+            type: itemIsNotNull
+            item: P23_ENGINEER_ID
+        }
+        error {
+            errorMessage: Engineer must be selected.
+            associatedItem: @P23_ENGINEER_ID
+        }
+        serverSideCondition {
+            type: item=value
+            item: P23_SCOPE
+            value: ENGINEER
+        }
+    )
+
+    validation team-is-not-null (
+        name: Team is not null
+        execution {
+            sequence: 10
+        }
+        validation {
+            type: itemIsNotNull
+            item: P23_TEAM_ID
+        }
+        error {
+            errorMessage:
+                ```
+                Team must be selected.
+                
+                ```
+            associatedItem: @P23_TEAM_ID
+        }
+        serverSideCondition {
+            type: item=value
+            item: P23_SCOPE
+            value: TEAM
+        }
+    )
+
+    process load-data (
+        name: Load data
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    v_override   VARCHAR2(50) := V('G_OVERRIDE_COMPANY_ID');
+                    v_company_id NUMBER;
+                BEGIN
+                    IF v_override IS NOT NULL AND TRIM(v_override) IS NOT NULL THEN
+                        v_company_id := TO_NUMBER(TRIM(v_override));
+                    ELSE
+                        BEGIN
+                            SELECT company_id INTO v_company_id
+                            FROM   ptw_pro.ptw_lv_users
+                            WHERE  UPPER(username) = UPPER(SYS_CONTEXT('APEX$SESSION', 'APP_USER'))
+                            AND    is_super_user   = 'N'
+                            AND    is_active       = 'Y';
+                        EXCEPTION
+                            WHEN NO_DATA_FOUND THEN
+                                v_company_id := NULL;
+                        END;
+                    END IF;
+                
+                    :P23_EFFECTIVE_COMPANY_ID := v_company_id;
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: afterHeader
+        }
+        advanced {
+            executionMappingIdentifier: 53188634878153110
+        }
+    )
+
+    process save-permit-type-assignments (
+        name: Save Permit Type Assignments
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    v_company_id NUMBER;
+                    v_override   VARCHAR2(50) := V('G_OVERRIDE_COMPANY_ID');
+                    v_exists     NUMBER;
+                    v_used       NUMBER;
+                    v_type_id    NUMBER;
+                    v_new_val    VARCHAR2(10);
+                    v_checked    VARCHAR2(1);
+                BEGIN
+                    -- Resolve effective company_id - unchanged from v2 fix
+                    IF v_override IS NOT NULL AND TRIM(v_override) IS NOT NULL THEN
+                        v_company_id := TO_NUMBER(TRIM(v_override));
+                    ELSE
+                        BEGIN
+                            SELECT company_id
+                            INTO   v_company_id
+                            FROM   ptw_pro.ptw_lv_users
+                            WHERE  UPPER(username) = UPPER(SYS_CONTEXT('APEX$SESSION', 'APP_USER'))
+                            AND    is_super_user   = 'N'
+                            AND    is_active       = 'Y';
+                        EXCEPTION
+                            WHEN NO_DATA_FOUND THEN
+                                apex_error.add_error(
+                                    p_message          => 'Unable to determine your company. Contact an administrator.',
+                                    p_display_location => apex_error.c_inline_in_notification);
+                                RETURN;
+                        END;
+                    END IF;
+                
+                    IF v_company_id IS NULL THEN
+                        apex_error.add_error(
+                            p_message          => 'No active company selected. Use "Set Active Company" first.',
+                            p_display_location => apex_error.c_inline_in_notification);
+                        RETURN;
+                    END IF;
+                
+                    -- Server-side enforcement of the competency confirm dialog -
+                    -- FIX: g_f01 (checkbox) only contains entries for CHECKED rows,
+                    -- can't be indexed positionally against g_f02 (hidden, all rows)
+                    IF :P23_SCOPE = 'ENGINEER' AND :P23_COMPETENCY_ACK != 'Y' THEN
+                        FOR i IN 1 .. NVL(apex_application.g_f01.count, 0) LOOP
+                            IF apex_application.g_f01(i) = 'Y' THEN
+                                apex_error.add_error(
+                                    p_message          => 'Competency must be confirmed before saving.',
+                                    p_display_location => apex_error.c_inline_in_notification);
+                                RETURN;
+                            END IF;
+                        END LOOP;
+                    END IF;
+                
+                    FOR i IN 1 .. apex_application.g_f02.count LOOP
+                        v_type_id := apex_application.g_f02(i);
+                
+                        IF :P23_SCOPE = 'ENGINEER' THEN
+                            -- Checkbox array only contains CHECKED rows' type_ids -
+                            -- test membership, don't index positionally
+                            v_checked := 'N';
+                            FOR j IN 1 .. NVL(apex_application.g_f01.count, 0) LOOP
+                                IF apex_application.g_f01(j) = TO_CHAR(v_type_id) THEN
+                                    v_checked := 'Y';
+                                    EXIT;
+                                END IF;
+                            END LOOP;
+                            v_new_val := v_checked;
+                        ELSE
+                            -- Company/Team use select_list - always one value per
+                            -- row, positional index is safe
+                            v_new_val := apex_application.g_f01(i);
+                        END IF;
+                
+                        CASE :P23_SCOPE
+                        WHEN 'COMPANY' THEN
+                
+                            SELECT COUNT(*) INTO v_exists
+                            FROM   ptw_pro.ptw_lv_company_types
+                            WHERE  type_id    = v_type_id
+                            AND    company_id = v_company_id;
+                
+                            IF v_new_val = 'Y' AND v_exists = 0 THEN
+                
+                                INSERT INTO ptw_pro.ptw_lv_company_types (company_id, type_id, is_active)
+                                VALUES (v_company_id, v_type_id, 'Y');
+                
+                            ELSIF v_new_val = 'N' AND v_exists > 0 THEN
+                
+                                SELECT COUNT(*) INTO v_used
+                                FROM   ptw_pro.ptw_lv_permits p
+                                WHERE  p.ptw_type   = (SELECT ptw_type FROM ptw_pro.ptw_types
+                                                         WHERE type_id = v_type_id)
+                                AND    p.company_id = v_company_id;
+                
+                                IF v_used = 0 THEN
+                                    DELETE FROM ptw_pro.ptw_lv_company_types
+                                    WHERE  type_id    = v_type_id
+                                    AND    company_id = v_company_id;
+                
+                                    DELETE FROM ptw_pro.ptw_lv_team_types
+                                    WHERE  company_id = v_company_id
+                                    AND    type_id    = v_type_id;
+                
+                                    DELETE FROM ptw_pro.ptw_lv_user_types
+                                    WHERE  company_id = v_company_id
+                                    AND    type_id    = v_type_id;
+                                ELSE
+                                    apex_error.add_error(
+                                        p_message          => 'This permit type has been used by your company and cannot be deactivated.',
+                                        p_display_location => apex_error.c_inline_in_notification);
+                                    RETURN;
+                                END IF;
+                
+                            END IF;
+                
+                        WHEN 'TEAM' THEN
+                
+                            IF v_new_val = 'INHERIT' THEN
+                                DELETE FROM ptw_pro.ptw_lv_team_types
+                                WHERE  team_id = :P23_TEAM_ID AND type_id = v_type_id;
+                            ELSE
+                                MERGE INTO ptw_pro.ptw_lv_team_types tt
+                                USING (SELECT v_company_id AS company_id, :P23_TEAM_ID AS team_id,
+                                              v_type_id AS type_id FROM dual) src
+                                ON (tt.team_id = src.team_id AND tt.type_id = src.type_id)
+                                WHEN MATCHED THEN UPDATE SET is_active = v_new_val
+                                WHEN NOT MATCHED THEN INSERT (company_id, team_id, type_id, is_active)
+                                                      VALUES (src.company_id, src.team_id, src.type_id, v_new_val);
+                            END IF;
+                
+                        WHEN 'ENGINEER' THEN
+                
+                            IF v_new_val = 'Y' THEN
+                                MERGE INTO ptw_pro.ptw_lv_user_types ut
+                                USING (SELECT v_company_id AS company_id, :P23_ENGINEER_ID AS user_id,
+                                              v_type_id AS type_id FROM dual) src
+                                ON (ut.user_id = src.user_id AND ut.type_id = src.type_id)
+                                WHEN MATCHED THEN UPDATE SET is_active = 'Y'
+                                WHEN NOT MATCHED THEN INSERT (company_id, user_id, type_id, is_active)
+                                                      VALUES (src.company_id, src.user_id, src.type_id, 'Y');
+                            ELSE
+                                UPDATE ptw_pro.ptw_lv_user_types
+                                SET    is_active = 'N'
+                                WHERE  user_id = :P23_ENGINEER_ID AND type_id = v_type_id;
+                            END IF;
+                
+                        END CASE;
+                
+                    END LOOP;
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        successMessage {
+            successMessage: Permit types updated.
+        }
+        advanced {
+            executionMappingIdentifier: 52464836682584445
+        }
+        serverSideCondition {
+            whenButtonPressed: @save
+        }
+    )
+
+    branch (
+        name: Reload Permit Types
+        execution {
+            sequence: 10
+        }
+        behavior {
+            target: {
+                page: 23
+                clearCache: 23
+                successMessage: false
+            }
+        }
+    )
+
+)
+

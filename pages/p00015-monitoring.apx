@@ -1,0 +1,409 @@
+page 15 (
+    name: Monitoring
+    alias: MONITORING
+    title: Monitoring
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @/modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region monitoring (
+        name: Monitoring
+        title: Monitoring for &P15_PERMIT_NUMBER.
+        type: staticContent
+        layout {
+            sequence: 70
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region monitoring-report (
+        name: Monitoring report
+        title: List
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT monitoring_id,
+                       permit_id,
+                       'LV MONITORING' AS ptw_type,
+                       monitor_name,
+                       monitor_date,
+                       monitoring_status,
+                       CASE monitoring_status
+                           WHEN 'IN_PROGRESS' THEN
+                               '<a href="' 
+                               || apex_page.get_url(
+                                    p_page        => 10,
+                                    p_clear_cache => '10',
+                                    p_items       => 'P10_PERMIT_ID,P10_MONITORING_ID',
+                                    p_values      => permit_id || ',' || monitoring_id
+                                  )
+                               || '"><span class="fa fa-pencil" title="Edit"></span></a>'
+                           ELSE
+                               '<a href="'
+                               || apex_page.get_url(
+                                    p_page        => 10,
+                                    p_clear_cache => '10',
+                                    p_items       => 'P10_PERMIT_ID,P10_MONITORING_ID',
+                                    p_values      => permit_id || ',' || monitoring_id
+                                  )
+                               || '"><span class="fa fa-eye" title="View"></span></a>'
+                       END AS action_link
+                FROM   ptw_pro.ptw_lv_monitoring
+                WHERE  permit_id = :P15_PERMIT_ID
+                ORDER BY monitor_date DESC
+                ```
+            pageItemsToSubmit: [
+                P15_PERMIT_ID
+                P15_PTW_TYPE
+            ]
+        }
+        layout {
+            sequence: 10
+            parentRegion: @monitoring
+            slot: subRegions
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        searchBar {
+            finderDropDown: false
+            reportsSelectList: false
+        }
+        actionsMenu {
+            includeActionsMenu: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 41968258127328813
+        }
+
+        column ACTION_LINK (
+            type: plainText
+            heading {
+                heading: Action
+            }
+            layout {
+                sequence: 90
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: I
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column MONITORING_ID (
+            type: plainText
+            heading {
+                heading: Monitoring Id
+                alignment: end
+            }
+            layout {
+                sequence: 10
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column MONITORING_STATUS (
+            type: plainText
+            heading {
+                heading: Monitoring Status
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column MONITOR_DATE (
+            type: plainText
+            heading {
+                heading: Monitor Date
+            }
+            layout {
+                sequence: 50
+            }
+            appearance {
+                formatMask: DD-MON-YYYY
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column MONITOR_NAME (
+            type: plainText
+            heading {
+                heading: Monitor Name
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column PERMIT_ID (
+            type: plainText
+            heading {
+                heading: Permit Id
+                alignment: end
+            }
+            layout {
+                sequence: 20
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column PTW_TYPE (
+            type: plainText
+            heading {
+                heading: Ptw Type
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        savedReport 419854 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn ACTION_LINK (
+                sequence: 1
+            )
+
+            displayColumn MONITORING_STATUS (
+                sequence: 3
+            )
+
+            displayColumn MONITOR_DATE (
+                sequence: 5
+            )
+
+            displayColumn MONITOR_NAME (
+                sequence: 4
+            )
+
+            displayColumn PTW_TYPE (
+                sequence: 2
+            )
+
+        )
+
+    )
+
+    pageItem P15_PERMIT_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+    )
+
+    pageItem P15_PERMIT_NUMBER (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: contentBody
+        }
+    )
+
+    pageItem P15_PTW_TYPE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 50
+            slot: contentBody
+        }
+    )
+
+    pageItem P15_WORKFLOW_STATUS (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 60
+            slot: contentBody
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Create New
+        layout {
+            sequence: 10
+            region: @monitoring
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 10
+                items: {
+                    P10_PERMIT_ID: &P15_PERMIT_ID.
+                }
+                clearCache: 10
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: item=value
+            item: P15_WORKFLOW_STATUS
+            value: STARTED
+        }
+    )
+
+    button exit (
+        buttonName: EXIT
+        label: Exit
+        layout {
+            sequence: 10
+            region: @monitoring
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction back-to-dashboard (
+        name: Back to Dashboard
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @exit
+        }
+
+        action native-dialog-cancel (
+            action: cancelDialog
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process populate-items (
+        name: Populate items
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                BEGIN
+                  SELECT workflow_status
+                  INTO   :P15_WORKFLOW_STATUS
+                  FROM   ptw_pro.ptw_lv_permits
+                  WHERE  permit_id = :P15_PERMIT_ID;
+                EXCEPTION
+                  WHEN OTHERS THEN
+                    NULL;
+                END;
+                
+                
+                ```
+        }
+        execution {
+            sequence: 10
+            point: afterHeader
+        }
+        advanced {
+            executionMappingIdentifier: 47748162967890003
+        }
+    )
+
+)
+

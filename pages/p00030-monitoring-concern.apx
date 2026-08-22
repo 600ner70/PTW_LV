@@ -1,0 +1,1636 @@
+page 30 (
+    name: Monitoring Concern
+    alias: MONITORING-CONCERN
+    title: Concern - Check &P30_CHECK_NUMBER. Not In Order
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @/modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            var p30SigPad = null;
+            
+            function p30InitSig() {
+                var canvas = document.getElementById('p30SigCanvas');
+                if (!canvas) return;
+                var wrapper = canvas.parentElement;
+                var w = Math.max((wrapper ? wrapper.offsetWidth - 24 : 400), 280);
+                canvas.width  = w;
+                canvas.height = 150;
+                canvas.style.width  = w + 'px';
+                canvas.style.height = '150px';
+                var ctx = canvas.getContext('2d');
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth   = 2;
+                ctx.lineCap     = 'round';
+                ctx.lineJoin    = 'round';
+                p30SigPad = new SignaturePad(canvas, ctx);
+            }
+            
+            function p30ClearSig() {
+                if (p30SigPad) { p30SigPad.clear(); }
+            }
+            
+            function p30SaveSig() {
+                if (!p30SigPad || p30SigPad.isEmpty) {
+                    apex.item('P30_CONCERN_SIGNATURE_DATA').setValue('');
+                } else {
+                    apex.item('P30_CONCERN_SIGNATURE_DATA').setValue(p30SigPad.getDataURL());
+                }
+            }
+            
+            // ── File type helpers (copied from Page 17 / Page 4) ──────────
+            function ptwGetFileCategory(mimeType, fileName) {
+                var ext = (fileName || '').split('.').pop().toLowerCase();
+                if (mimeType && mimeType.startsWith('image/'))               return 'image';
+                if (mimeType === 'application/pdf')                          return 'pdf';
+                if (mimeType && (mimeType.indexOf('word')     > -1 ||
+                                 mimeType.indexOf('document') > -1))         return 'word';
+                if (mimeType && (mimeType.indexOf('sheet')    > -1 ||
+                                 mimeType.indexOf('excel')    > -1))         return 'excel';
+                if (['jpg','jpeg','png','gif','webp'].indexOf(ext) > -1)     return 'image';
+                if (ext === 'pdf')                                           return 'pdf';
+                if (['doc','docx'].indexOf(ext) > -1)                        return 'word';
+                if (['xls','xlsx'].indexOf(ext) > -1)                        return 'excel';
+                return 'other';
+            }
+            
+            function ptwFileIcon(category) {
+                var icons = {
+                    pdf:   '<div class="ptw-file-icon icon-pdf"><span class="fa fa-file-pdf-o"></span></div>',
+                    word:  '<div class="ptw-file-icon icon-word"><span class="fa fa-file-word-o"></span></div>',
+                    excel: '<div class="ptw-file-icon icon-excel"><span class="fa fa-file-excel-o"></span></div>',
+                    other: '<div class="ptw-file-icon"><span class="fa fa-file-o"></span></div>'
+                };
+                return icons[category] || icons.other;
+            }
+            
+            function ptwOpenLightbox(url, caption) {
+                document.getElementById('ptw-lightbox-img').src             = url;
+                document.getElementById('ptw-lightbox-caption').textContent = caption || '';
+                document.getElementById('ptw-lightbox').style.display       = 'flex';
+                document.body.style.overflow                                 = 'hidden';
+            }
+            function ptwCloseLightbox() {
+                document.getElementById('ptw-lightbox').style.display = 'none';
+                document.getElementById('ptw-lightbox-img').src       = '';
+                document.body.style.overflow                          = '';
+            }
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') ptwCloseLightbox();
+            });
+            
+            // ── Upload ──────────────────────────────────────────────────
+            // x07 is the ONE addition to Page 17's real UPLOAD_PERMIT_PHOTO
+            // call - it carries concern_id (Part D). x01-x06 are otherwise
+            // identical to the live Page 17 code: permit_id, caption,
+            // latitude, longitude, filename, mime type.
+            function p30UploadFile(file) {
+                var permitId = apex.item('P30_PERMIT_ID').getValue();
+                if (!permitId) {
+                    apex.message.showErrors([{type:'error',
+                        message:'Concern must be loaded before attaching files.'}]);
+                    return;
+                }
+                if (file.size > 20 * 1024 * 1024) {
+                    apex.message.showErrors([{type:'error', message:'File must be less than 20MB.'}]);
+                    return;
+                }
+                var allowed     = ['image/jpeg','image/png','image/gif','image/webp'];
+                var allowedExts = ['jpg','jpeg','png','gif','webp'];
+                var ext         = file.name.split('.').pop().toLowerCase();
+                if (allowed.indexOf(file.type) === -1 && allowedExts.indexOf(ext) === -1) {
+                    apex.message.showErrors([{type:'error', message:'Images only (JPG, PNG, GIF, WEBP).'}]);
+                    return;
+                }
+            
+                var caption  = document.getElementById('ptw-caption-input').value;
+                var spinner$ = apex.util.showSpinner($('#ptw-photo-gallery'));
+            
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var b64       = e.target.result.replace(/^data:[^;]+;base64,/, '');
+                    var f01       = [];
+                    var chunkSize = 30000;
+                    for (var i = 0; i < b64.length; i += chunkSize) {
+                        f01.push(b64.substring(i, i + chunkSize));
+                    }
+                    apex.server.process('UPLOAD_PERMIT_PHOTO', {
+                        x01: permitId,
+                        x02: caption,
+                        x03: apex.item('P0_LATITUDE').getValue()  || '',
+                        x04: apex.item('P0_LONGITUDE').getValue() || '',
+                        x05: file.name,
+                        x06: file.type || 'image/jpeg',
+                        x07: apex.item('P30_CONCERN_ID').getValue(),
+                        f01: f01
+                    }, {
+                        pageId: 30,
+                        success: function(data) {
+                            spinner$.remove();
+                            if (data.success) {
+                                apex.message.showPageSuccess('Photo uploaded successfully.');
+                                document.getElementById('ptw-caption-input').value              = '';
+                                document.getElementById('ptw-file-input').value                 = '';
+                                document.getElementById('ptw-camera-input').value               = '';
+                                document.getElementById('ptw-selected-file-info').style.display = 'none';
+                                p30LoadPhotos();
+                            } else {
+                                apex.message.showErrors([{type:'error', message: data.message}]);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            spinner$.remove();
+                            apex.message.showErrors([{type:'error', message:'Upload failed: ' + error}]);
+                        }
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            function p30HandleFileSelection(file) {
+                if (!file) return;
+                // Show filename and upload button - don't upload yet
+                document.getElementById('ptw-selected-file-name').textContent   = file.name;
+                document.getElementById('ptw-selected-file-info').style.display = 'block';
+                document.getElementById('btn-upload-file').onclick = function() {
+                    p30UploadFile(file);
+                };
+            }
+            
+            // ── Gallery ─────────────────────────────────────────────────
+            // x02 is the ONE addition to Page 17's real GET_PERMIT_PHOTOS
+            // call - it carries concern_id (Part D), so each check's photos
+            // stay separate even though they share the same permit_id and
+            // source_page_id (30).
+            function p30LoadPhotos() {
+                var permitId   = apex.item('P30_PERMIT_ID').getValue();
+                var concernId  = apex.item('P30_CONCERN_ID').getValue();
+                if (!permitId || !concernId) return;
+            
+                var isReadOnly = (apex.item('P30_RESOLVED').getValue() === 'Y');
+            
+                apex.server.process('GET_PERMIT_PHOTOS', { x01: permitId, x02: concernId }, {
+                    pageId: 30,
+                    success: function(data) {
+                        var gallery = document.getElementById('ptw-photo-gallery');
+                        if (!gallery) return;
+            
+                        if (!data.photos || data.photos.length === 0) {
+                            gallery.innerHTML = '<p class="ptw-no-photos">No photos attached.</p>';
+                            return;
+                        }
+            
+                        var html = '<div class="ptw-photo-grid">';
+            
+                        data.photos.forEach(function(p) {
+                            var cat = ptwGetFileCategory(p.mimeType, p.fileName);
+                            html += '<div class="ptw-photo-card" data-photo-id="' + p.photoId + '">';
+            
+                            if (cat === 'image') {
+                                html += '<a href="javascript:void(0)" '
+                                      + 'onclick="ptwOpenLightbox(\'' + p.url + '\','
+                                      + '\'' + apex.util.escapeHTMLAttr(p.caption || '') + '\')">';
+                                html += '<img src="' + p.url + '" '
+                                      + 'alt="' + apex.util.escapeHTMLAttr(p.caption || 'Photo') + '" '
+                                      + 'class="ptw-photo-thumb" loading="lazy">';
+                                html += '</a>';
+                            } else {
+                                html += '<a href="' + p.url + '" target="_blank" rel="noopener">';
+                                html += ptwFileIcon(cat);
+                                html += '</a>';
+                            }
+            
+                            html += '<div class="ptw-photo-meta">';
+                            html += '<span class="ptw-photo-caption">' + apex.util.escapeHTML(p.fileName) + '</span>';
+                            if (p.caption) {
+                                html += '<span class="ptw-photo-caption" style="font-weight:normal;">'
+                                      + apex.util.escapeHTML(p.caption) + '</span>';
+                            }
+                            html += '<span class="ptw-photo-date">' + p.uploadedDate + '</span>';
+                            html += '<span class="ptw-photo-user">' + apex.util.escapeHTML(p.uploadedBy) + '</span>';
+                            html += '</div>';
+            
+                            if (!isReadOnly) {
+                                html += '<button type="button" '
+                                      + 'class="t-Button t-Button--danger t-Button--slim t-Button--stretch ptw-delete-photo" '
+                                      + 'data-photo-id="' + p.photoId + '" '
+                                      + 'data-permit-id="' + permitId + '">'
+                                      + '<span class="t-Icon fa fa-trash-o"></span> Delete</button>';
+                            }
+            
+                            html += '</div>';
+                        });
+            
+                        html += '</div>';
+                        gallery.innerHTML = html;
+                    },
+                    error: function() {
+                        var gallery = document.getElementById('ptw-photo-gallery');
+                        if (gallery) gallery.innerHTML = '<p class="ptw-no-photos">Could not load photos.</p>';
+                    }
+                });
+            }
+            
+            function p30DeletePhoto(photoId, permitId) {
+                apex.message.confirm('Delete this photo? This cannot be undone.', function(okPressed) {
+                    if (!okPressed) return;
+                    apex.server.process('DELETE_PERMIT_PHOTO', { x01: photoId }, {
+                        pageId: 30,
+                        success: function(data) {
+                            if (data.success) {
+                                apex.message.showPageSuccess('Photo deleted.');
+                                p30LoadPhotos();
+                            } else {
+                                apex.message.showErrors([{type:'error', message: data.message}]);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            apex.message.showErrors([{type:'error', message:'Delete failed: ' + error}]);
+                        }
+                    });
+                });
+            }
+            
+            function p30LockCanvas() {
+                var canvas = document.getElementById('p30SigCanvas');
+                if (!canvas) return;
+                canvas.style.pointerEvents   = 'none';
+                canvas.style.opacity         = '0.85';
+                canvas.style.cursor          = 'not-allowed';
+                canvas.style.backgroundColor = '#ffffff';
+                canvas.title                 = 'Signature is locked';
+            }
+            ```
+        executeWhenPageLoads:
+            ```javascript-browser
+            apex.jQuery(document).on('apexbeforepagesubmit', function() {
+                p30SaveSig();
+            });
+            
+            $(document).on('change', '#ptw-file-input', function() {
+                if (this.files && this.files[0]) p30HandleFileSelection(this.files[0]);
+            });
+            $(document).on('change', '#ptw-camera-input', function() {
+                if (this.files && this.files[0]) p30HandleFileSelection(this.files[0]);
+            });
+            
+            $(document).on('click', '.ptw-delete-photo', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                p30DeletePhoto($(this).data('photo-id'), $(this).data('permit-id'));
+            });
+            
+            setTimeout(function() {
+            
+                var isReadOnly = (apex.item('P30_RESOLVED').getValue() === 'Y');
+            
+                // Signature pad
+                p30InitSig();
+                if (p30SigPad) { p30SigPad.clear(); }
+            
+                var existingSig = apex.item('P30_CONCERN_SIGNATURE_DATA_URL').getValue();
+                if (existingSig) {
+                    var sigCanvas = document.getElementById('p30SigCanvas');
+                    loadSignature(p30SigPad, sigCanvas, existingSig);
+                }
+            
+                p30LoadPhotos();
+            
+                if (isReadOnly) {
+            
+                    p30LockCanvas();
+            
+                    document.getElementById('p30-clear-sig-btn')?.style.setProperty('display', 'none');
+            
+                    apex.item('P30_CONCERN_DESCRIPTION').disable();
+                    apex.item('P30_ACTIONS_TAKEN').disable();
+                    apex.item('P30_CONCERN_PERSON_NAME').disable();
+                    $('input[name="P30_HAPPY_TO_CONTINUE"]').prop('disabled', true);
+            
+                    var uploadControls = document.querySelector('.ptw-upload-controls');
+                    if (uploadControls) uploadControls.style.display = 'none';
+            
+                    $('#BTN_SAVE_CLOSE_P30').hide();
+                    $('#BTN_SIGN_CONCERN_P30').hide();
+            
+                    var banner = document.getElementById('p30-readonly-banner');
+                    if (banner) banner.style.display = 'block';
+                }
+            
+                (function () {
+                    var itemName = 'P30_HAPPY_TO_CONTINUE';
+                    var badges = [
+                        { val: 'Y', cls: 'cm-badge-yes', label: '✓' },
+                        { val: 'N', cls: 'cm-badge-no',  label: '✗' }
+                    ];
+            
+                    function buildBadgeRow(name, badgeList) {
+                        var currentVal = apex.item(name).getValue() || '';
+                        var $row = $('<div class="cm-badge-row"></div>').attr('data-item', name);
+            
+                        badgeList.forEach(function (b) {
+                            $('<span></span>')
+                                .addClass('cm-badge ' + b.cls)
+                                .toggleClass('cm-active', currentVal === b.val)
+                                .toggleClass('cm-badge-readonly', isReadOnly)
+                                .attr('data-value', b.val)
+                                .text(b.label)
+                                .appendTo($row);
+                        });
+                        return $row;
+                    }
+            
+                    var $fc = $('#' + itemName).closest('.t-Form-fieldContainer');
+                    if ($fc.length) {
+                        $fc.find('.cm-badge-row').remove();
+                        $fc.find('.t-Form-inputContainer').append(buildBadgeRow(itemName, badges));
+                    }
+            
+                    $('.cm-binary-item .apex-item-radio').hide();
+            
+                    $(document).off('click.p30badges').on('click.p30badges', '.cm-badge:not(.cm-badge-readonly)', function () {
+                        var $badge = $(this);
+                        var $row   = $badge.closest('.cm-badge-row');
+                        var name   = $row.attr('data-item');
+                        var val    = $badge.attr('data-value');
+            
+                        $('input[name="' + name + '"][value="' + val + '"]')
+                            .prop('checked', true).trigger('change');
+            
+                        $row.find('.cm-badge').removeClass('cm-active');
+                        $badge.addClass('cm-active');
+                    });
+                }());
+            
+            }, 350);
+            
+            (function () {
+                var itemName = 'P30_HAPPY_TO_CONTINUE';
+                var badges = [
+                    { val: 'Y', cls: 'cm-badge-yes', label: '✓' },
+                    { val: 'N', cls: 'cm-badge-no',  label: '✗' }
+                ];
+            
+                function buildBadgeRow(name, badgeList) {
+                    var currentVal = apex.item(name).getValue() || '';
+                    var $row = $('<div class="cm-badge-row"></div>').attr('data-item', name);
+            
+                    badgeList.forEach(function (b) {
+                        $('<span></span>')
+                            .addClass('cm-badge ' + b.cls)
+                            .toggleClass('cm-active', currentVal === b.val)
+                            .attr('data-value', b.val)
+                            .text(b.label)
+                            .appendTo($row);
+                    });
+                    return $row;
+                }
+            
+                var $fc = $('#' + itemName).closest('.t-Form-fieldContainer');
+                if ($fc.length) {
+                    $fc.find('.cm-badge-row').remove();
+                    $fc.find('.t-Form-inputContainer').append(buildBadgeRow(itemName, badges));
+                }
+            
+                $('.cm-binary-item .apex-item-radio').hide();
+            
+                $(document).off('click.p30badges').on('click.p30badges', '.cm-badge:not(.cm-badge-readonly)', function () {
+                    var $badge = $(this);
+                    var $row   = $badge.closest('.cm-badge-row');
+                    var name   = $row.attr('data-item');
+                    var val    = $badge.attr('data-value');
+            
+                    $('input[name="' + name + '"][value="' + val + '"]')
+                        .prop('checked', true).trigger('change');
+            
+                    $row.find('.cm-badge').removeClass('cm-active');
+                    $badge.addClass('cm-active');
+                });
+            }());
+            ```
+    }
+    css {
+        inline:
+            ```css
+            .p30-sig-wrapper canvas {
+                display: block;
+                border: 1px dashed var(--ut-component-border-color, #ccc);
+                border-radius: 4px;
+                touch-action: none;
+                cursor: crosshair;
+                background: #fff;
+            }
+            
+            .ptw-photo-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 1rem;
+                padding: 0.5rem 0;
+            }
+            .ptw-photo-card {
+                border: 1px solid var(--ut-component-border-color, #e0e0e0);
+                border-radius: 8px;
+                overflow: hidden;
+                background: var(--ut-component-background-color, #fff);
+                display: flex;
+                flex-direction: column;
+            }
+            .ptw-photo-thumb {
+                width: 100%;
+                height: 130px;
+                object-fit: cover;
+                display: block;
+                transition: opacity 0.2s;
+            }
+            .ptw-photo-thumb:hover { opacity: 0.82; }
+            .ptw-photo-meta {
+                padding: 0.4rem 0.6rem;
+                font-size: 0.75rem;
+                color: var(--ut-component-font-color-muted, #666);
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                flex: 1;
+            }
+            .ptw-photo-caption { font-weight: 600; color: var(--ut-component-font-color, #333); font-size: 0.8rem; }
+            .ptw-photo-date    { font-size: 0.7rem; }
+            .ptw-photo-user    { font-size: 0.7rem; font-style: italic; }
+            .ptw-delete-photo  { margin: 0.4rem; font-size: 0.75rem !important; }
+            .ptw-no-photos     { color: var(--ut-component-font-color-muted, #888); font-style: italic; padding: 0.5rem 0; margin: 0; }
+            .ptw-file-icon     { display: flex; align-items: center; justify-content: center; height: 130px; font-size: 3rem; background: #f0f4f8; color: #4A5568; }
+            .ptw-file-icon.icon-pdf   { color: #C0392B; }
+            .ptw-file-icon.icon-word  { color: #1F4E79; }
+            .ptw-file-icon.icon-excel { color: #1E7A4E; }
+            .ptw-upload-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+            .ptw-upload-row .t-Button { flex: 1; min-width: 130px; }
+            #ptw-lightbox {
+                position: fixed; inset: 0; background: rgba(0,0,0,0.88);
+                z-index: 9999; display: flex; align-items: center;
+                justify-content: center; padding: 1rem;
+            }
+            #ptw-lightbox-inner {
+                position: relative; max-width: 95vw; max-height: 90vh;
+                display: flex; flex-direction: column; align-items: center;
+            }
+            #ptw-lightbox-close {
+                position: absolute; top: -2.5rem; right: 0;
+                background: none; border: none; color: #fff;
+                font-size: 1.8rem; cursor: pointer; padding: 0.25rem 0.5rem; line-height: 1;
+            }
+            #ptw-lightbox-img { max-width: 100%; max-height: 80vh; border-radius: 4px; object-fit: contain; }
+            #ptw-lightbox-caption { color: #ddd; margin-top: 0.5rem; font-size: 0.9rem; text-align: center; }
+            @media (max-width: 420px) { .ptw-photo-grid { grid-template-columns: 1fr 1fr; } }
+            
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 170
+            slot: contentBody
+        }
+        appearance {
+            template: @/buttons-container
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region concern-details (
+        name: Concern Details
+        title: Concern Details
+        type: staticContent
+        layout {
+            sequence: 130
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region concern-info-banner (
+        name: Concern Info Banner
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="t-Alert t-Alert--warning t-Alert--horizontal p30-concern-banner" role="region" style="margin-bottom:8px;">
+                  <div class="t-Alert-wrap">
+                    <div class="t-Alert-icon">
+                      <span class="t-Icon fa fa-exclamation-triangle" aria-hidden="true"></span>
+                    </div>
+                    <div class="t-Alert-content">
+                      <div class="t-Alert-header">
+                        <h2 class="t-Alert-title">Method Statement Check Not In Order</h2>
+                      </div>
+                      <div class="t-Alert-body">
+                        Permit: <strong>&P30_PERMIT_NUMBER.</strong> &mdash; Check <strong>&P30_CHECK_NUMBER.</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                ```
+        }
+        layout {
+            sequence: 120
+            slot: contentBody
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region decision (
+        name: Decision
+        title: Decision
+        type: staticContent
+        layout {
+            sequence: 150
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region evidence-photos (
+        name: Evidence Photos
+        title: Evidence Photos
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <!-- Hidden file inputs -->
+                <input type="file"
+                       id="ptw-file-input"
+                       accept=".jpg,.jpeg,.png,.gif,.webp"
+                       style="display:none">
+                
+                <input type="file"
+                       id="ptw-camera-input"
+                       accept="image/*"
+                       capture="environment"
+                       style="display:none">
+                
+                <!-- Upload controls -->
+                <div class="ptw-upload-controls">
+                    <div class="ptw-upload-row">
+                        <button type="button"
+                                id="btn-attach-file"
+                                class="t-Button t-Button--primary t-Button--iconLeft"
+                                onclick="document.getElementById('ptw-file-input').click()">
+                            <span class="t-Icon fa fa-paperclip"></span> Attach Photo
+                        </button>
+                        <button type="button"
+                                id="btn-take-photo"
+                                class="t-Button t-Button--primary t-Button--iconLeft"
+                                onclick="document.getElementById('ptw-camera-input').click()">
+                            <span class="t-Icon fa fa-camera"></span> Take Photo
+                        </button>
+                    </div>
+                
+                    <div class="ptw-caption-row" style="margin-top:0.5rem;">
+                        <input type="text"
+                               id="ptw-caption-input"
+                               class="apex-item-text"
+                               placeholder="Caption / description (optional)"
+                               maxlength="500"
+                               style="width:100%;">
+                    </div>
+                
+                    <div id="ptw-selected-file-info" style="display:none; margin-top:0.4rem;">
+                        <span class="t-Icon fa fa-file-o"></span>
+                        <span id="ptw-selected-file-name" style="font-size:0.85rem; color:#555;"></span>
+                        <button type="button"
+                                id="btn-upload-file"
+                                class="t-Button t-Button--hot t-Button--slim t-Button--iconLeft"
+                                style="margin-left:0.75rem;">
+                            <span class="t-Icon fa fa-upload"></span> Upload
+                        </button>
+                    </div>
+                </div>
+                
+                <hr style="margin: 1rem 0; border-color: #e0e0e0;">
+                
+                <!-- Gallery -->
+                <div id="ptw-photo-gallery">
+                    <p class="ptw-no-photos">Loading files...</p>
+                </div>
+                
+                <!-- Lightbox -->
+                <div id="ptw-lightbox" style="display:none;"
+                     onclick="if(event.target===this)ptwCloseLightbox()">
+                    <div id="ptw-lightbox-inner">
+                        <button type="button"
+                                id="ptw-lightbox-close"
+                                onclick="ptwCloseLightbox()"
+                                aria-label="Close">
+                            <span class="fa fa-times"></span>
+                        </button>
+                        <img id="ptw-lightbox-img" src="" alt="Photo preview">
+                        <div id="ptw-lightbox-caption"></div>
+                    </div>
+                </div>
+                
+                ```
+        }
+        layout {
+            sequence: 140
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-camera
+        }
+    )
+
+    region p30-signoff-region (
+        name: Sign Off
+        title: Sign Off
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div id="p30-readonly-banner" class="t-Alert t-Alert--success t-Alert--horizontal" style="display:none; margin-bottom:8px;">
+                  <div class="t-Alert-wrap">
+                    <div class="t-Alert-icon"><span class="t-Icon fa fa-check-circle" aria-hidden="true"></span></div>
+                    <div class="t-Alert-content">
+                      <div class="t-Alert-body">This concern has been signed off and can no longer be edited.</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="p30-sig-wrapper">
+                    <canvas id="p30SigCanvas"></canvas>
+                </div>
+                <div style="margin-top:8px;">
+                    <button type="button"
+                            id="p30-clear-sig-btn"
+                            class="t-Button t-Button--small"
+                            onclick="p30ClearSig();">
+                        <span class="t-Icon fa fa-eraser"></span> Clear Signature
+                    </button>
+                </div>
+                
+                ```
+        }
+        layout {
+            sequence: 160
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-pencil-square-o
+        }
+    )
+
+    pageItem P30_ACTIONS_TAKEN (
+        type: textarea
+        label {
+            label: Actions taken so far
+            alignment: left
+        }
+        settings {
+            resizable: false
+        }
+        layout {
+            sequence: 20
+            region: @concern-details
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 5
+        }
+        validation {
+            valueRequired: true
+        }
+    )
+
+    pageItem P30_CHECK_NUMBER (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 60
+            slot: contentBody
+        }
+    )
+
+    pageItem P30_CONCERN_DESCRIPTION (
+        type: textarea
+        label {
+            label: What's the concern?
+            alignment: left
+        }
+        settings {
+            resizable: false
+        }
+        layout {
+            sequence: 10
+            region: @concern-details
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 5
+        }
+        validation {
+            valueRequired: true
+        }
+    )
+
+    pageItem P30_CONCERN_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 70
+            slot: contentBody
+        }
+    )
+
+    pageItem P30_CONCERN_PERSON_NAME (
+        type: textField
+        label {
+            label: Signed off by (name)
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @p30-signoff-region
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P30_CONCERN_SIGNATURE_DATA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 80
+            slot: contentBody
+        }
+    )
+
+    pageItem P30_CONCERN_SIGNATURE_DATA_URL (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 90
+            slot: contentBody
+        }
+    )
+
+    pageItem P30_HAPPY_TO_CONTINUE (
+        type: radioGroup
+        label {
+            label: Happy To Continue?
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes - Safe to Continue;Y,No - Permit Must Be Cancelled;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 10
+            region: @decision
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            cssClasses: cm-binary-item
+        }
+    )
+
+    pageItem P30_MONITORING_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 50
+            slot: contentBody
+        }
+    )
+
+    pageItem P30_PERMIT_CANCELLED (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 110
+            slot: contentBody
+        }
+    )
+
+    pageItem P30_PERMIT_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+    )
+
+    pageItem P30_PERMIT_NUMBER (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: contentBody
+        }
+    )
+
+    pageItem P30_RESOLVED (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 100
+            slot: contentBody
+        }
+    )
+
+    button BTN_SAVE_CLOSE_P30 (
+        buttonName: SAVE_CLOSE
+        label: Save Draft
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        advanced {
+            htmlDomId: BTN_SAVE_CLOSE_P30
+        }
+    )
+
+    button BTN_SIGN_CONCERN_P30 (
+        buttonName: SIGN_CONCERN
+        label: Continue
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        advanced {
+            htmlDomId: BTN_SIGN_CONCERN_P30
+        }
+    )
+
+    dynamicAction force-signature-if-not-happy-to-continue (
+        name: Force signature if not happy to continue
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P30_HAPPY_TO_CONTINUE
+        }
+        clientSideCondition {
+            type: item=value
+            item: P30_HAPPY_TO_CONTINUE
+            value: N
+        }
+
+        action native-hide (
+            action: hide
+            affectedElements {
+                selectionType: region
+                region: @p30-signoff-region
+            }
+            execution {
+                sequence: 10
+                fireWhenEventResultIs: false
+            }
+        )
+
+        action native-hide_1 (
+            action: hide
+            affectedElements {
+                selectionType: items
+                items: P30_CONCERN_PERSON_NAME
+            }
+            execution {
+                sequence: 20
+                fireWhenEventResultIs: false
+            }
+        )
+
+        action native-show (
+            action: show
+            affectedElements {
+                selectionType: region
+                region: @p30-signoff-region
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+        action native-show_1 (
+            action: show
+            affectedElements {
+                selectionType: items
+                items: P30_CONCERN_PERSON_NAME
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+    )
+
+    dynamicAction save-concern-capture-location-and-submit (
+        name: Save Concern - Capture Location and Submit
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @BTN_SAVE_CLOSE_P30
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: captureLocationThenSubmit('SAVE_CLOSE');
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction set-to-session-state (
+        name: set to session state
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P30_HAPPY_TO_CONTINUE
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode: NULL;
+                itemsToSubmit: P30_HAPPY_TO_CONTINUE
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction sign-concern-capture-location-and-submit (
+        name: Sign Concern - Capture Location and Submit
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @BTN_SIGN_CONCERN_P30
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    apex.page.cancelWarnOnUnsavedChanges();
+                    
+                    if (apex.item('P30_HAPPY_TO_CONTINUE').getValue() === 'N') {
+                        apex.message.confirm(
+                            'This will cancel the permit and stop the work. This cannot be undone. Do you want to continue?',
+                            function (okPressed) {
+                                if (okPressed) {
+                                    captureLocationThenSubmit('SIGN_CONCERN');
+                                }
+                            }
+                        );
+                    } else {
+                        captureLocationThenSubmit('SIGN_CONCERN');
+                    }
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    validation actions-taken-not-null (
+        name: Actions Taken NOT NULL
+        execution {
+            sequence: 20
+        }
+        validation {
+            type: itemIsNotNull
+            item: P30_ACTIONS_TAKEN
+        }
+        error {
+            errorMessage: Actions Taken is mandatory.
+            associatedItem: @P30_ACTIONS_TAKEN
+        }
+        serverSideCondition {
+            whenButtonPressed: @BTN_SIGN_CONCERN_P30
+        }
+    )
+
+    validation at-least-1-photo-required-below (
+        name: At least 1 photo required (below)
+        execution {
+            sequence: 60
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    l_count NUMBER;
+                BEGIN
+                    IF :P30_HAPPY_TO_CONTINUE != 'N' THEN
+                        RETURN TRUE;
+                    END IF;
+                
+                    SELECT COUNT(*)
+                    INTO   l_count
+                    FROM   ptw_pro.ptw_lv_permit_photos
+                    WHERE  concern_id = :P30_CONCERN_ID;
+                
+                    RETURN l_count > 0;
+                END;
+                ```
+        }
+        error {
+            errorMessage: At least one photo of the issue is required before this concern can be signed off.
+        }
+        serverSideCondition {
+            whenButtonPressed: @BTN_SIGN_CONCERN_P30
+        }
+    )
+
+    validation concern-description-not-null (
+        name: Concern Description NOT NULL
+        execution {
+            sequence: 10
+        }
+        validation {
+            type: itemIsNotNull
+            item: P30_CONCERN_DESCRIPTION
+        }
+        error {
+            errorMessage: Concern Description is mandatory.
+            associatedItem: @P30_CONCERN_DESCRIPTION
+        }
+        serverSideCondition {
+            whenButtonPressed: @BTN_SIGN_CONCERN_P30
+        }
+    )
+
+    validation concern-person-not-null (
+        name: Concern Person NOT NULL
+        execution {
+            sequence: 40
+        }
+        validation {
+            type: itemIsNotNull
+            item: P30_CONCERN_PERSON_NAME
+        }
+        error {
+            errorMessage: The concern person is mandatory.
+            associatedItem: @P30_CONCERN_PERSON_NAME
+        }
+        serverSideCondition {
+            whenButtonPressed: @BTN_SIGN_CONCERN_P30
+            type: expression
+            plsqlExpression: :P30_HAPPY_TO_CONTINUE = 'N'
+        }
+    )
+
+    validation happy-to-continue-not-null (
+        name: Happy To Continue NOT NULL
+        execution {
+            sequence: 30
+        }
+        validation {
+            type: itemIsNotNull
+            item: P30_HAPPY_TO_CONTINUE
+        }
+        error {
+            errorMessage: Happy to Continue is mandatory.
+            associatedItem: @P30_HAPPY_TO_CONTINUE
+        }
+        serverSideCondition {
+            whenButtonPressed: @BTN_SIGN_CONCERN_P30
+        }
+    )
+
+    validation signature-required (
+        name: Signature required
+        execution {
+            sequence: 50
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                RETURN
+                    :P30_HAPPY_TO_CONTINUE != 'N'
+                    OR NOT (
+                        :P30_CONCERN_SIGNATURE_DATA IS NULL
+                        OR TRIM(:P30_CONCERN_SIGNATURE_DATA) IS NULL
+                        OR :P30_CONCERN_SIGNATURE_DATA = 'data:,'
+                    );
+                ```
+        }
+        error {
+            errorMessage: Please sign before continuing.
+        }
+        serverSideCondition {
+            whenButtonPressed: @BTN_SIGN_CONCERN_P30
+        }
+    )
+
+    process close-this-dialog (
+        name: Close this dialog
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 8877579172853324
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P30_PERMIT_CANCELLED
+        }
+    )
+
+    process get-permit-photos (
+        name: GET_PERMIT_PHOTOS
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    l_permit_id  NUMBER := TO_NUMBER(apex_application.g_x01);
+                    l_concern_id NUMBER;
+                BEGIN
+                    BEGIN l_concern_id := TO_NUMBER(apex_application.g_x02); EXCEPTION WHEN OTHERS THEN l_concern_id := NULL; END;
+                
+                    apex_json.open_object;
+                    apex_json.open_array('photos');
+                
+                    FOR r IN (
+                        SELECT photo_id,
+                               photo_caption,
+                               file_name,
+                               mime_type,
+                               TO_CHAR(uploaded_date, 'DD-Mon-YYYY HH24:MI') AS uploaded_date,
+                               uploaded_by
+                        FROM   ptw_pro.ptw_lv_permit_photos
+                        WHERE  permit_id      = l_permit_id
+                        AND    source_page_id = :APP_PAGE_ID
+                        AND    NVL(concern_id, -1) = NVL(l_concern_id, NVL(concern_id, -1))  -- see note above
+                        ORDER  BY uploaded_date DESC
+                    ) LOOP
+                        apex_json.open_object;
+                        apex_json.write('photoId',      r.photo_id);
+                        apex_json.write('caption',      NVL(r.photo_caption, ''));
+                        apex_json.write('fileName',     NVL(r.file_name, 'attachment'));
+                        apex_json.write('mimeType',     NVL(r.mime_type, 'application/octet-stream'));
+                        apex_json.write('uploadedDate', r.uploaded_date);
+                        apex_json.write('uploadedBy',   r.uploaded_by);
+                        apex_json.write('url',
+                            apex_page.get_url(
+                                p_page   => 20,
+                                p_items  => 'P20_PHOTO_ID',
+                                p_values => r.photo_id,
+                                p_plain_url => true
+                            )
+                        );
+                        apex_json.close_object;
+                    END LOOP;
+                
+                    apex_json.close_array;
+                    apex_json.close_object;
+                
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        apex_json.open_object;
+                        apex_json.open_array('photos');
+                        apex_json.close_array;
+                        apex_json.write('error', SQLERRM);
+                        apex_json.close_object;
+                END;
+                ```
+        }
+        execution {
+            sequence: 20
+            point: ajaxCallback
+        }
+        advanced {
+            executionMappingIdentifier: 8875530919853304
+        }
+    )
+
+    process load-or-create-concern (
+        name: Load Or Create Concern
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    l_concern_id ptw_pro.ptw_lv_monitoring_concerns.concern_id%TYPE;
+                    l_sig_blob   ptw_pro.ptw_lv_monitoring_concerns.concern_signature%TYPE;
+                    l_clob       CLOB;
+                BEGIN
+                    BEGIN
+                        SELECT concern_id,
+                               concern_description,
+                               actions_taken,
+                               happy_to_continue,
+                               concern_person_name,
+                               concern_signature,
+                               CASE WHEN happy_to_continue IS NOT NULL
+                                     AND concern_signature IS NOT NULL THEN 'Y' ELSE 'N' END
+                        INTO   :P30_CONCERN_ID,
+                               :P30_CONCERN_DESCRIPTION,
+                               :P30_ACTIONS_TAKEN,
+                               :P30_HAPPY_TO_CONTINUE,
+                               :P30_CONCERN_PERSON_NAME,
+                               l_sig_blob,
+                               :P30_RESOLVED
+                        FROM   ptw_pro.ptw_lv_monitoring_concerns
+                        WHERE  monitoring_id = :P30_MONITORING_ID
+                        AND    check_number  = :P30_CHECK_NUMBER;
+                
+                        IF l_sig_blob IS NOT NULL AND DBMS_LOB.GETLENGTH(l_sig_blob) > 0 THEN
+                            l_clob := apex_web_service.blob2clobbase64(l_sig_blob);
+                            l_clob := REPLACE(REPLACE(l_clob, CHR(13), ''), CHR(10), '');
+                            :P30_CONCERN_SIGNATURE_DATA_URL :=
+                                'data:image/png;base64,' || DBMS_LOB.SUBSTR(l_clob, 32000, 1);
+                        ELSE
+                            :P30_CONCERN_SIGNATURE_DATA_URL := NULL;
+                        END IF;
+                    EXCEPTION
+                        WHEN NO_DATA_FOUND THEN
+                            INSERT INTO ptw_pro.ptw_lv_monitoring_concerns
+                                (monitoring_id, check_number, created_by)
+                            VALUES
+                                (:P30_MONITORING_ID, :P30_CHECK_NUMBER, :APP_USER)
+                            RETURNING concern_id INTO l_concern_id;
+                
+                            :P30_CONCERN_ID := l_concern_id;
+                            :P30_RESOLVED   := 'N';
+                            :P30_CONCERN_SIGNATURE_DATA_URL := NULL;
+                            COMMIT;
+                    END;
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 53190892789153132
+        }
+    )
+
+    process save-close (
+        name: Save & Close
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                UPDATE ptw_pro.ptw_lv_monitoring_concerns
+                SET    concern_description = :P30_CONCERN_DESCRIPTION,
+                       actions_taken       = :P30_ACTIONS_TAKEN,
+                       happy_to_continue   = :P30_HAPPY_TO_CONTINUE,
+                       concern_person_name = :P30_CONCERN_PERSON_NAME,
+                       modified_date       = SYSTIMESTAMP,
+                       modified_by         = :APP_USER
+                WHERE  concern_id = :P30_CONCERN_ID;
+                COMMIT;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 53190980766153133
+        }
+        serverSideCondition {
+            whenButtonPressed: @BTN_SAVE_CLOSE_P30
+        }
+    )
+
+    process sign-continue (
+        name: Sign & Continue
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    l_sig_clob  CLOB;
+                    l_sig_blob  BLOB;
+                    l_permit_id NUMBER := :P30_PERMIT_ID;
+                BEGIN
+                    l_sig_clob := REGEXP_REPLACE(:P30_CONCERN_SIGNATURE_DATA, '^data:image/[^;]+;base64,', '');
+                    l_sig_blob := apex_web_service.clobbase642blob(l_sig_clob);
+                
+                    UPDATE ptw_pro.ptw_lv_monitoring_concerns
+                    SET    concern_description = :P30_CONCERN_DESCRIPTION,
+                           actions_taken       = :P30_ACTIONS_TAKEN,
+                           happy_to_continue   = :P30_HAPPY_TO_CONTINUE,
+                           concern_person_name = :P30_CONCERN_PERSON_NAME,
+                           concern_signature   = l_sig_blob,
+                           concern_datetime    = SYSDATE,
+                           concern_latitude    = :APP_LATITUDE,
+                           concern_longitude   = :APP_LONGITUDE,
+                           modified_date       = SYSTIMESTAMP,
+                           modified_by         = :APP_USER
+                    WHERE  concern_id = :P30_CONCERN_ID;
+                
+                    IF :P30_HAPPY_TO_CONTINUE = 'N' THEN
+                        UPDATE ptw_pro.ptw_lv_permits
+                        SET    cancel_work_complete    = 'N',
+                               cancel_person_name      = UPPER(TRIM(:P30_CONCERN_PERSON_NAME)),
+                               cancel_person_signature = l_sig_blob,
+                               cancel_datetime         = SYSDATE,
+                               cancel_latitude         = :APP_LATITUDE,
+                               cancel_longitude        = :APP_LONGITUDE,
+                               workflow_status         = 'CANCELLED',
+                               current_step            = 'CANCELLED',
+                               completion_date         = SYSDATE,
+                               modified_by             = NVL(V('APP_USER'), USER),
+                               modified_date           = CURRENT_TIMESTAMP
+                        WHERE  permit_id       = l_permit_id
+                        AND    workflow_status NOT IN ('CANCELLED','COMPLETED','CLEARED');
+                
+                        UPDATE ptw_pro.ptw_lv_monitoring
+                        SET    monitor_name       = UPPER(TRIM(:P30_CONCERN_PERSON_NAME)),
+                               monitor_signature  = l_sig_blob,
+                               monitor_date       = SYSDATE,
+                               monitor_latitude   = :APP_LATITUDE,
+                               monitor_longitude  = :APP_LONGITUDE,
+                               monitoring_status  = 'COMPLETED',
+                               modified_date      = CURRENT_TIMESTAMP,
+                               modified_by        = NVL(V('APP_USER'), USER)
+                        WHERE  monitoring_id      = :P30_MONITORING_ID;
+                
+                        :P30_PERMIT_CANCELLED := 'Y';
+                
+                        IF SQL%ROWCOUNT = 0 THEN
+                            ROLLBACK;
+                            apex_error.add_error(
+                                p_message          => 'This permit could not be cancelled - it may already '
+                                                    || 'be cancelled or completed. Please refresh and check '
+                                                    || 'its current status.',
+                                p_display_location => apex_error.c_inline_in_notification
+                            );
+                            RETURN;
+                        END IF;
+                    END IF;
+                
+                    :P30_RESOLVED := 'Y';
+                    COMMIT;
+                
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        ROLLBACK;
+                        apex_error.add_error(
+                            p_message          => 'Error signing concern: ' || SQLERRM,
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                        RAISE;
+                END;
+                ```
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 53191094052153134
+        }
+        serverSideCondition {
+            whenButtonPressed: @BTN_SIGN_CONCERN_P30
+        }
+    )
+
+    process upload-permit-photo (
+        name: UPLOAD_PERMIT_PHOTO
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    l_permit_id   NUMBER        := TO_NUMBER(apex_application.g_x01);
+                    l_caption     VARCHAR2(500) := apex_application.g_x02;
+                    l_latitude    NUMBER;
+                    l_longitude   NUMBER;
+                    l_file_name   VARCHAR2(255) := apex_application.g_x05;
+                    l_mime_type   VARCHAR2(100) := apex_application.g_x06;
+                    l_concern_id  NUMBER;                                    -- ADDED
+                    l_b64_clob    CLOB;
+                    l_blob        BLOB;
+                    l_token       VARCHAR2(32767);
+                BEGIN
+                    BEGIN l_latitude   := TO_NUMBER(apex_application.g_x03); EXCEPTION WHEN OTHERS THEN l_latitude   := NULL; END;
+                    BEGIN l_longitude  := TO_NUMBER(apex_application.g_x04); EXCEPTION WHEN OTHERS THEN l_longitude  := NULL; END;
+                    BEGIN l_concern_id := TO_NUMBER(apex_application.g_x07); EXCEPTION WHEN OTHERS THEN l_concern_id := NULL; END; -- ADDED
+                
+                    IF l_permit_id IS NULL THEN
+                        apex_json.open_object;
+                        apex_json.write('success', false);
+                        apex_json.write('message', 'Invalid permit ID.');
+                        apex_json.close_object;
+                        RETURN;
+                    END IF;
+                
+                    IF apex_application.g_f01.COUNT = 0 THEN
+                        apex_json.open_object;
+                        apex_json.write('success', false);
+                        apex_json.write('message', 'No file data received.');
+                        apex_json.close_object;
+                        RETURN;
+                    END IF;
+                
+                    -- Reassemble base64 CLOB from chunked f01 array
+                    DBMS_LOB.CREATETEMPORARY(l_b64_clob, FALSE, DBMS_LOB.SESSION);
+                    FOR i IN 1 .. apex_application.g_f01.COUNT LOOP
+                        l_token := apex_application.g_f01(i);
+                        IF LENGTH(l_token) > 0 THEN
+                            DBMS_LOB.WRITEAPPEND(l_b64_clob, LENGTH(l_token), l_token);
+                        END IF;
+                    END LOOP;
+                
+                    l_blob := apex_web_service.clobbase642blob(l_b64_clob);
+                    DBMS_LOB.FREETEMPORARY(l_b64_clob);
+                
+                    IF DBMS_LOB.GETLENGTH(l_blob) > 20971520 THEN
+                        DBMS_LOB.FREETEMPORARY(l_blob);
+                        apex_json.open_object;
+                        apex_json.write('success', false);
+                        apex_json.write('message', 'File exceeds the 20MB size limit.');
+                        apex_json.close_object;
+                        RETURN;
+                    END IF;
+                
+                    INSERT INTO ptw_pro.ptw_lv_permit_photos (
+                        permit_id, photo_data, mime_type, file_name,
+                        photo_caption, photo_latitude, photo_longitude,
+                        uploaded_by, uploaded_date, source_page_id, concern_id  -- ADDED concern_id
+                    ) VALUES (
+                        l_permit_id, l_blob,
+                        NVL(l_mime_type, 'application/octet-stream'),
+                        NVL(l_file_name, 'attachment'),
+                        NULLIF(TRIM(l_caption), ''),
+                        l_latitude, l_longitude,
+                        NVL(V('APP_USER'), USER),
+                        CURRENT_TIMESTAMP,
+                        :APP_PAGE_ID,
+                        l_concern_id                                            -- ADDED
+                    );
+                
+                    COMMIT;
+                    DBMS_LOB.FREETEMPORARY(l_blob);
+                
+                    apex_json.open_object;
+                    apex_json.write('success', true);
+                    apex_json.write('message', 'Photo uploaded successfully.');
+                    apex_json.close_object;
+                
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        ROLLBACK;
+                        apex_json.open_object;
+                        apex_json.write('success', false);
+                        apex_json.write('message', 'Upload error: ' || SQLERRM);
+                        apex_json.close_object;
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: ajaxCallback
+        }
+        advanced {
+            executionMappingIdentifier: 8875408045853303
+        }
+    )
+
+    branch (
+        name: Back to Dashboard if Cancelled
+        execution {
+            sequence: 10
+        }
+        behavior {
+            target: {
+                page: 1
+                clearCache: 1
+                successMessage: false
+            }
+        }
+        serverSideCondition {
+            type: item=value
+            item: P30_PERMIT_CANCELLED
+            value: Y
+        }
+    )
+
+)
+

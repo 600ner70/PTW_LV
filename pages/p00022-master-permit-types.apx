@@ -1,0 +1,361 @@
+page 22 (
+    name: Master Permit Types
+    alias: MASTER-PERMIT-TYPES
+    title: Master Permit Types
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            .admin-page-header {
+                background: linear-gradient(135deg, #003366 0%, #005599 100%);
+                color: white;
+                padding: 25px 30px;
+                border-radius: 8px;
+                margin-bottom: 25px;
+            }
+            .admin-page-header h1 { margin: 0 0 5px 0; font-size: 1.75rem; font-weight: 700; }
+            .admin-page-header p  { margin: 0; opacity: 0.85; font-size: 0.95rem; }
+            ```
+    }
+    security {
+        authorizationScheme: @super-user-rights
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region master-permit-types (
+        name: Master Permit Types
+        title: Master Permit Types
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT t.type_id,
+                       t.ptw_type,
+                       t.type_desc,
+                       CASE t.available WHEN 'Y' THEN 'Available' ELSE 'Unavailable' END AS status,
+                       t.available,
+                       TO_CHAR(t.created_date, 'DD-MON-YYYY') AS created_date,
+                       (SELECT COUNT(*) FROM ptw_pro.ptw_lv_company_types ct
+                         WHERE ct.type_id = t.type_id AND ct.is_active = 'Y') AS company_count,
+                       (SELECT COUNT(*) FROM ptw_pro.ptw_lv_permits lp
+                         WHERE lp.ptw_type = t.ptw_type) AS permit_count
+                FROM   ptw_pro.ptw_types t
+                ORDER  BY t.ptw_type
+                ```
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 52417575173182139
+        }
+
+        column AVAILABLE (
+            type: hidden
+            heading {
+                heading: Available
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column COMPANY_COUNT (
+            type: plainText
+            heading {
+                heading: Company Count
+                alignment: end
+            }
+            layout {
+                sequence: 70
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column CREATED_DATE (
+            type: plainText
+            heading {
+                heading: Created Date
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column PERMIT_COUNT (
+            type: plainText
+            heading {
+                heading: Permit Count
+                alignment: end
+            }
+            layout {
+                sequence: 80
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column PTW_TYPE (
+            type: plainText
+            heading {
+                heading: Ptw Type
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column STATUS (
+            type: plainText
+            heading {
+                heading: Status
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column TYPE_DESC (
+            type: plainText
+            heading {
+                heading: Type Desc
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column TYPE_ID (
+            type: link
+            heading {
+                heading: &nbsp.
+            }
+            layout {
+                sequence: 10
+            }
+            link {
+                target: {
+                    page: 25
+                    items: {
+                        P25_TYPE_ID: #TYPE_ID#
+                    }
+                    clearCache: 25
+                }
+                linkText: <span class="fa fa-edit" title="Edit"></span>
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Master Permit Types
+        }
+
+        savedReport 524574 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn AVAILABLE (
+                sequence: 5
+            )
+
+            displayColumn COMPANY_COUNT (
+                sequence: 7
+            )
+
+            displayColumn CREATED_DATE (
+                sequence: 6
+            )
+
+            displayColumn PTW_TYPE (
+                sequence: 2
+            )
+
+            displayColumn STATUS (
+                sequence: 4
+            )
+
+            displayColumn TYPE_DESC (
+                sequence: 3
+            )
+
+            displayColumn TYPE_ID (
+                sequence: 1
+            )
+
+        )
+
+    )
+
+    region page-header (
+        name: Page Header
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    l_is_admin  VARCHAR2(1) := 'N';
+                    l_html      CLOB;
+                BEGIN
+                    BEGIN
+                        SELECT CASE is_admin WHEN 'Yes' THEN 'Y' ELSE 'N' END
+                        INTO   l_is_admin
+                        FROM   apex_workspace_apex_users
+                        WHERE  UPPER(user_name)  = UPPER(V('APP_USER'))
+                        AND    workspace_name    = (
+                                   SELECT workspace FROM apex_applications
+                                   WHERE  application_id = :APP_ID
+                               );
+                    EXCEPTION
+                        WHEN NO_DATA_FOUND THEN l_is_admin := 'N';
+                    END;
+                
+                    l_html := '<div class="admin-page-header">'
+                           || '  <div style="display:flex; justify-content:space-between; align-items:center;">'
+                           || '    <div>'
+                           || '  <h1>Master Permit Types</h1>'
+                           || '  <p>Manage the global list of permit types available across all '
+                           || '     companies. Companies must be granted access to a type before '
+                           || '     their users can select it on a new permit (see Permit Types '
+                           || '     under each company''s Admin menu).</p>'
+                           || '    </div>';
+                
+                    IF l_is_admin = 'Y' THEN
+                        l_html := l_html
+                               || '<div style="flex-shrink:0; margin-left:20px;">'
+                               || '  <span style="background:#dc3545; color:white;'
+                               || '             display:inline-flex; align-items:center;'
+                               || '             padding:6px 16px; border-radius:20px;'
+                               || '             font-size:0.78rem; font-weight:700;'
+                               || '             letter-spacing:0.5px; text-transform:uppercase;'
+                               || '             box-shadow:0 2px 4px rgba(0,0,0,0.3);'
+                               || '             white-space:nowrap;">'
+                               || '  <span class="fa fa-shield" style="margin-right:8px; font-size:0.9rem;"></span>'
+                               || '  Workspace Administrator'
+                               || '</span>'
+                               || '</div>';
+                    END IF;
+                
+                    l_html := l_html
+                           || '  </div>'
+                           || '</div>';
+                
+                    RETURN l_html;
+                END;
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    button addpermittype (
+        buttonName: addPermitType
+        label: Add Permit Type
+        layout {
+            sequence: 10
+            region: @master-permit-types
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-clipboard-check-alt
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 25
+                clearCache: 25
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+)
+

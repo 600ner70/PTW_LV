@@ -1,0 +1,1007 @@
+page 16 (
+    name: Clear Permit
+    alias: CLEAR-PERMIT
+    title: Clear Permit
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @/modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+        warnOnUnsavedChanges: false
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            var p16SigPad = null;
+            
+            function p16InitSig() {
+                var canvas = document.getElementById('p16SigCanvas');
+                if (!canvas) return;
+                var wrapper = canvas.parentElement;
+                var w = Math.max((wrapper ? wrapper.offsetWidth - 24 : 400), 280);
+                canvas.width  = w;
+                canvas.height = 150;
+                canvas.style.width  = w + 'px';
+                canvas.style.height = '150px';
+                var ctx = canvas.getContext('2d');
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth   = 2;
+                ctx.lineCap     = 'round';
+                ctx.lineJoin    = 'round';
+                p16SigPad = new SignaturePad(canvas, ctx);
+            }
+            
+            function p16ClearSig() {
+                if (p16SigPad) { p16SigPad.clear(); }
+            }
+            
+            function p16SaveSig() {
+                if (!p16SigPad || p16SigPad.isEmpty) {
+                    apex.item('P16_CLEAR_SIGNATURE_DATA').setValue('');
+                } else {
+                    apex.item('P16_CLEAR_SIGNATURE_DATA').setValue(p16SigPad.getDataURL());
+                }
+            }
+            
+            ```
+        executeWhenPageLoads:
+            ```javascript-browser
+            // ── Shared state ──────────────────────────────────────────
+            var p16Status  = apex.item('P16_WORKFLOW_STATUS').getValue();
+            var isReadOnly = (p16Status !== 'STARTED');
+            
+            // ── Signature pad init ────────────────────────────────────
+            // ── Signature pad init ────────────────────────────────────
+            setTimeout(function () {
+                p16InitSig();
+            
+                // Always clear first to prevent stale canvas from previous open
+                if (p16SigPad) { p16SigPad.clear(); }
+            
+                // ── Load existing signature (COMPLETED view) ──────────────
+                var existingSig = apex.item('P16_CLEAR_SIGNATURE_DATA_URL').getValue();
+            
+                if (existingSig) {
+                    loadSignature(p16SigPad, document.getElementById('p16SigCanvas'), existingSig);
+            
+                    if (isReadOnly) {
+                        var canvas = document.getElementById('p16SigCanvas');
+                        if (canvas) {
+                            canvas.style.pointerEvents  = 'none';
+                            canvas.style.opacity        = '0.85';
+                            canvas.style.cursor         = 'not-allowed';
+                            canvas.title                = 'Signature locked';
+                        }
+                        var clearBtn = document.getElementById('p16ClearSigBtn');
+                        if (clearBtn) clearBtn.style.display = 'none';
+                    }
+                } else if (isReadOnly) {
+                    // STARTED but no sig yet — just lock canvas
+                    var canvas = document.getElementById('p16SigCanvas');
+                    if (canvas) {
+                        canvas.style.pointerEvents  = 'none';
+                        canvas.style.opacity        = '0.85';
+                        canvas.style.cursor         = 'not-allowed';
+                    }
+                }
+            
+            }, 350);
+            
+            // ── Save signature before submit ──────────────────────────
+            apex.jQuery(document).on('apexbeforepagesubmit', function () {
+                p16SaveSig();
+            });
+            
+            // ── Binary Y/N badges ─────────────────────────────────────
+            (function () {
+            
+                var BINARY_ITEMS = [
+                    'P16_CLEAR_WORK_COMPLETE',
+                    'P16_CLEAR_AREA_SAFE'
+                ];
+            
+                var BADGES = [
+                    { val: 'Y', cls: 'binary-badge-yes', label: '✓' },
+                    { val: 'N', cls: 'binary-badge-no',  label: '✗' }
+                ];
+            
+                BINARY_ITEMS.forEach(function (itemName) {
+            
+                    var $fc = $('#' + itemName).closest('.t-Form-fieldContainer');
+                    if ($fc.length === 0) return;
+            
+                    $fc.find('.binary-badge-row').remove();
+            
+                    var currentVal = '';
+                    if (!isReadOnly) {
+                        currentVal = $('input[name="' + itemName + '"]:checked').val() || '';
+                    } else {
+                        currentVal = apex.item(itemName).getValue() || '';
+                    }
+            
+                    var $row = $('<div class="binary-badge-row"></div>').attr('data-item', itemName);
+            
+                    BADGES.forEach(function (b) {
+                        $('<span></span>')
+                            .addClass('binary-badge ' + b.cls)
+                            .toggleClass('cm-active', currentVal === b.val)
+                            .toggleClass('binary-readonly', isReadOnly)
+                            .attr('data-value', b.val)
+                            .text(b.label)
+                            .appendTo($row);
+                    });
+            
+                    $fc.find('.t-Form-inputContainer').append($row);
+                });
+            
+                $('.cm-binary-item .apex-item-grid').hide();
+            
+                $(document).off('click.binarybadge').on('click.binarybadge', '.binary-badge:not(.binary-readonly)', function () {
+                    var $badge   = $(this);
+                    var $row     = $badge.closest('.binary-badge-row');
+                    var itemName = $row.attr('data-item');
+                    var val      = $badge.attr('data-value');
+            
+                    $('input[name="' + itemName + '"][value="' + val + '"]')
+                        .prop('checked', true).trigger('change');
+            
+                    $row.find('.binary-badge').removeClass('cm-active');
+                    $badge.addClass('cm-active');
+                });
+            
+            }());
+            
+            // ── Lock text fields in read-only mode ────────────────────
+            if (isReadOnly) {
+                var readOnlyItems = [
+                    'P16_CLEAR_PERSON_NAME',
+                    'P16_CLEAR_PERSON_MOBILE',
+                    'P16_CLEAR_COMPANY',
+                    'P16_CLEAR_DATETIME'
+                ];
+                readOnlyItems.forEach(function (itemName) {
+                    var $el = $('#' + itemName);
+                    $el.prop('readonly', true)
+                       .css({
+                           'background-color': 'rgb(213, 209, 209)',
+                           'pointer-events':   'none',
+                           'cursor':           'default'
+                       });
+                });
+            
+                // Hide submit button
+                $('#BTN_CLEAR_PERMIT_P16').hide();
+            }
+            
+            // ── Required star (mandatory indicator) ───────────────────
+            function initP16RequiredStars() {
+                var $fc = $('#P16_CLEAR_WORK_COMPLETE').closest('.t-Form-fieldContainer');
+                if ($fc.length === 0) return;
+                $fc.find('.t-Form-labelContainer label, label').first()
+                   .append('<span class="cm-required-star" aria-hidden="true"> *</span>');
+            }
+            
+            apex.jQuery(document).on('apexreadyend', function () {
+                initP16RequiredStars();
+            });
+            
+            // ── Declaration text update ───────────────────────────────
+            function p16UpdateDeclaration() {
+                var workVal = apex.item('P16_CLEAR_WORK_COMPLETE').getValue();
+                var safeVal = apex.item('P16_CLEAR_AREA_SAFE').getValue();
+            
+                var $work = $('#p16-decl-work-complete');
+                if (workVal === 'Y') {
+                    $work.text('completed').css('color', '#1e7e34');
+                } else if (workVal === 'N') {
+                    $work.text('not completed').css('color', '#a71d2a');
+                } else {
+                    $work.text('completed / not completed').css('color', '#344B5C');
+                }
+            
+                var $safe = $('#p16-decl-area-safe');
+                var $tidy = $('#p16-decl-area-tidy');
+                if (safeVal === 'Y') {
+                    $safe.text('is').css('color', '#1e7e34');
+                    $tidy.text('has').css('color', '#1e7e34');
+                } else if (safeVal === 'N') {
+                    $safe.text('is NOT').css('color', '#a71d2a');
+                    $tidy.text('has NOT').css('color', '#a71d2a');
+                } else {
+                    $safe.text('is / is not').css('color', '#344B5C');
+                    $tidy.text('has / has not').css('color', '#344B5C');
+                }
+            }
+            
+            // Run on load then on every badge click
+            p16UpdateDeclaration();
+            
+            $(document).on('click.p16decl', '.binary-badge', function () {
+                setTimeout(p16UpdateDeclaration, 50);
+            });
+            ```
+    }
+    css {
+        inline:
+            ```css
+            .p16-declaration-box {
+                background: #fff8e1;
+                border-left: 4px solid #f59c00;
+                padding: 16px 20px;
+                border-radius: 4px;
+                font-size: 14px;
+                line-height: 1.7;
+                margin-bottom: 4px;
+            }
+            .p16-declaration-box strong { color: #344B5C; }
+            
+            .p16-sig-wrapper canvas {
+                display: block;
+                border: 1px dashed var(--ut-component-border-color, #ccc);
+                border-radius: 4px;
+                touch-action: none;
+                cursor: crosshair;
+                background: #fff;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @can-edit-permits
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 90
+            slot: contentBody
+        }
+        appearance {
+            template: @/buttons-container
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region declaration (
+        name: Declaration
+        title: Declaration
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="p16-declaration-box">
+                  <p style="margin:0 0 10px 0;">
+                    By signing below, I confirm that the works carried out under this Permit to Work
+                    have been <strong id="p16-decl-work-complete">completed / not completed</strong> and that all personnel under
+                    my supervision have vacated the work area.
+                  </p>
+                  <p style="margin:0 0 10px 0;">
+                    I confirm that it <strong id="p16-decl-area-safe">is / is not</strong> safe to reinstate the plant and
+                    equipment which has been worked on under this Permit to Work.
+                  </p>
+                  <p style="margin:0;">
+                    The work area <strong id="p16-decl-area-tidy">has / has not</strong> been left in a safe and tidy condition,
+                    all temporary measures have been removed, and all waste has been cleared from site.
+                    This Permit to Work is hereby surrendered and closed.
+                  </p>
+                </div>
+                ```
+        }
+        layout {
+            sequence: 60
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-file-text-o
+        }
+    )
+
+    region permit-info-banner (
+        name: Permit Info Banner
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="t-Alert t-Alert--info t-Alert--horizontal" role="region" style="margin-bottom:8px;">
+                  <div class="t-Alert-wrap">
+                    <div class="t-Alert-icon"><span class="t-Icon fa fa-check-circle-o"></span></div>
+                    <div class="t-Alert-content">
+                      <div class="t-Alert-header">
+                        <h2 class="t-Alert-title">Clearance of Permit to Work</h2>
+                      </div>
+                      <div class="t-Alert-body">
+                        Permit: <strong>&P16_PERMIT_NUMBER.</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                ```
+        }
+        layout {
+            sequence: 50
+            slot: contentBody
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region person-in-charge-of-works (
+        name: Person in Charge of Works
+        title: Person in Charge of Works
+        type: staticContent
+        layout {
+            sequence: 70
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-user
+        }
+    )
+
+    region signature (
+        name: Signature
+        title: Signature – Person in Charge of Works
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="p16-sig-wrapper">
+                  <label class="t-Form-label" style="display:block;margin-bottom:6px;">
+                    Signature <span style="color:#C0392B;" aria-hidden="true">*</span>
+                  </label>
+                  <canvas id="p16SigCanvas"></canvas>
+                  <button type="button"
+                          class="t-Button t-Button--small t-Button--simple"
+                          id="p16ClearSigBtn"
+                          style="margin-top:6px;"
+                          onclick="p16ClearSig()">
+                    <span class="fa fa-eraser" aria-hidden="true"></span> Clear Signature
+                  </button>
+                </div>
+                
+                ```
+        }
+        layout {
+            sequence: 80
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-pencil
+        }
+    )
+
+    pageItem P16_CLEARED (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 70
+            region: @person-in-charge-of-works
+            slot: regionBody
+        }
+    )
+
+    pageItem P16_CLEAR_AREA_SAFE (
+        type: radioGroup
+        label {
+            label: It is safe to reinstate plant and equipment?
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Safe to reinstate plant and equipment;Y,NOT Safe to reinstate;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 20
+            region: @declaration
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            cssClasses: cm-binary-item
+        }
+    )
+
+    pageItem P16_CLEAR_COMPANY (
+        type: textField
+        label {
+            label: Company
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @person-in-charge-of-works
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: Company Name
+        }
+        validation {
+            maxLength: 200
+        }
+    )
+
+    pageItem P16_CLEAR_DATETIME (
+        type: displayOnly
+        label {
+            label: Time / Date
+            alignment: left
+        }
+        settings {
+            showLineBreaks: false
+        }
+        layout {
+            sequence: 60
+            region: @person-in-charge-of-works
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 6
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P16_CLEAR_PERSON_MOBILE (
+        type: textField
+        label {
+            label: Mobile Tel. No.
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @person-in-charge-of-works
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: 07700 900000
+        }
+        validation {
+            maxLength: 50
+        }
+    )
+
+    pageItem P16_CLEAR_PERSON_NAME (
+        type: textField
+        label {
+            label: Name
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @person-in-charge-of-works
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: Full name of person in charge
+        }
+        validation {
+            maxLength: 200
+        }
+    )
+
+    pageItem P16_CLEAR_SIGNATURE_DATA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 10
+            region: @signature
+            slot: regionBody
+        }
+    )
+
+    pageItem P16_CLEAR_SIGNATURE_DATA_URL (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: contentBody
+        }
+    )
+
+    pageItem P16_CLEAR_WORK_COMPLETE (
+        type: radioGroup
+        label {
+            label: Works are completed?
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Completed;Y,Not Complete;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 10
+            region: @declaration
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            cssClasses: cm-binary-item
+        }
+    )
+
+    pageItem P16_PERMIT_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 10
+            region: @person-in-charge-of-works
+            slot: regionBody
+        }
+    )
+
+    pageItem P16_PERMIT_NUMBER (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 20
+            region: @person-in-charge-of-works
+            slot: regionBody
+        }
+    )
+
+    pageItem P16_WORKFLOW_STATUS (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancel
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button clear-permit (
+        buttonName: CLEAR_PERMIT
+        label: Clear Permit
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-check-circle
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        advanced {
+            htmlDomId: BTN_CLEAR_PERMIT_P16
+        }
+    )
+
+    dynamicAction cancel-close-dialog (
+        name: Cancel - Close Dialog
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cancel
+        }
+
+        action native-dialog-cancel (
+            action: cancelDialog
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction clear-permit-capture-location-and-submit (
+        name: Clear Permit - Capture Location and Submit
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @clear-permit
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: captureLocationThenSubmit('CLEAR_PERMIT');
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    validation area-safe-required (
+        name: Area Safe Required
+        execution {
+            sequence: 20
+        }
+        validation {
+            type: itemIsNotNull
+            item: P16_CLEAR_AREA_SAFE
+        }
+        error {
+            errorMessage: Please indicate whether it is safe to reinstate plant and equipment.
+        }
+        serverSideCondition {
+            whenButtonPressed: @clear-permit
+        }
+    )
+
+    validation permit-still-valid (
+        name: Permit Still Valid
+        execution {
+            sequence: 50
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    v_count NUMBER;
+                BEGIN
+                    SELECT COUNT(*)
+                    INTO   v_count
+                    FROM   ptw_pro.ptw_lv_permits
+                    WHERE  permit_id       = :P16_PERMIT_ID
+                    AND    workflow_status = 'STARTED'
+                    AND    SYSDATE         < ended_datetime;
+                    RETURN v_count > 0;
+                END;
+                ```
+        }
+        error {
+            errorMessage: Permit can no longer be cleared — it may have expired or already been closed.
+            displayLocation: inlineInNotification
+        }
+        serverSideCondition {
+            whenButtonPressed: @clear-permit
+        }
+    )
+
+    validation person-name-required (
+        name: Person Name Required
+        execution {
+            sequence: 30
+        }
+        validation {
+            type: itemIsNotNull
+            item: P16_CLEAR_PERSON_NAME
+        }
+        error {
+            errorMessage: Name of Person in Charge is required.
+        }
+        serverSideCondition {
+            whenButtonPressed: @clear-permit
+        }
+    )
+
+    validation signature-required (
+        name: Signature Required
+        execution {
+            sequence: 40
+        }
+        validation {
+            type: itemIsNotNull
+            item: P16_CLEAR_SIGNATURE_DATA
+        }
+        error {
+            errorMessage: A signature is required to clear the permit.
+            displayLocation: inlineInNotification
+        }
+        serverSideCondition {
+            whenButtonPressed: @clear-permit
+        }
+    )
+
+    validation work-complete-required (
+        name: Work Complete Required
+        execution {
+            sequence: 10
+        }
+        validation {
+            type: itemIsNotNull
+            item: P16_CLEAR_WORK_COMPLETE
+        }
+        error {
+            errorMessage: Please indicate whether the works are completed or not complete.
+        }
+        serverSideCondition {
+            whenButtonPressed: @clear-permit
+        }
+    )
+
+    process clear-permit (
+        name: Clear Permit
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    v_sig_blob  BLOB;
+                    v_clob      CLOB;
+                    v_now       DATE := SYSDATE;
+                BEGIN
+                    IF :P16_CLEAR_SIGNATURE_DATA IS NOT NULL THEN
+                        v_clob     := REPLACE(:P16_CLEAR_SIGNATURE_DATA, 'data:image/png;base64,', '');
+                        v_sig_blob := apex_web_service.clobbase642blob(v_clob);
+                    END IF;
+                
+                    -- Guarded status transition stays on PTW_LV_PERMITS, same race-condition
+                    -- protection as before (workflow_status/expiry check + ROWCOUNT).
+                    UPDATE ptw_pro.ptw_lv_permits
+                    SET    clear_work_complete = :P16_CLEAR_WORK_COMPLETE,
+                           clear_area_safe     = :P16_CLEAR_AREA_SAFE,
+                           workflow_status     = 'COMPLETED',
+                           current_step        = 'CLEARANCE',
+                           completion_date     = v_now,
+                           modified_by         = V('APP_USER'),
+                           modified_date       = v_now
+                    WHERE  permit_id           = :P16_PERMIT_ID
+                    AND    workflow_status     = 'STARTED'
+                    AND    SYSDATE             < ended_datetime;
+                
+                    IF SQL%ROWCOUNT = 0 THEN
+                        RAISE_APPLICATION_ERROR(-20001,
+                            'Permit could not be cleared. It may have expired or '
+                            || 'already been closed. Please refresh the permits list.');
+                    END IF;
+                
+                    ptw_pro.ptw_signature_pkg.save_signature(
+                        p_permit_id      => :P16_PERMIT_ID,
+                        p_stage          => 'CLEAR',
+                        p_person_name    => UPPER(TRIM(:P16_CLEAR_PERSON_NAME)),
+                        p_signature_blob => v_sig_blob,
+                        p_mobile_no      => TRIM(:P16_CLEAR_PERSON_MOBILE),
+                        p_company_name   => UPPER(TRIM(:P16_CLEAR_COMPANY)),
+                        p_event_datetime => v_now,
+                        p_latitude       => TO_NUMBER(:APP_LATITUDE),
+                        p_longitude      => TO_NUMBER(:APP_LONGITUDE)
+                    );
+                
+                    COMMIT;
+                    :P16_CLEARED := 'Y';
+                    apex_application.g_print_success_message :=
+                        'Permit ' || :P16_PERMIT_NUMBER || ' cleared successfully.';
+                
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        ROLLBACK;
+                        apex_error.add_error(
+                            p_message          => 'Error clearing permit: ' || SQLERRM,
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                END;
+                
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 45755480536782506
+        }
+        serverSideCondition {
+            whenButtonPressed: @clear-permit
+        }
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        settings {
+            itemsToReturn: P16_CLEARED
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 45755524966782507
+        }
+        serverSideCondition {
+            type: item=value
+            item: P16_CLEARED
+            value: N
+        }
+    )
+
+    process load-permit-data (
+        name: Load Permit Data
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    v_status   VARCHAR2(20);
+                    v_ended    DATE;
+                    v_sig      BLOB;
+                    v_na_lat   ptw_pro.ptw_signatures.latitude%TYPE;
+                    v_na_lng   ptw_pro.ptw_signatures.longitude%TYPE;
+                BEGIN
+                    SELECT workflow_status, ended_datetime, permit_number,
+                           person_in_charge_name, supervising_company
+                    INTO   v_status, v_ended, :P16_PERMIT_NUMBER,
+                           :P16_CLEAR_PERSON_NAME, :P16_CLEAR_COMPANY
+                    FROM   ptw_pro.ptw_lv_permits
+                    WHERE  permit_id = :P16_PERMIT_ID;
+                
+                    IF v_status NOT IN ('STARTED', 'COMPLETED') THEN
+                        apex_error.add_error(
+                            p_message          => 'This permit cannot be viewed here. Current status: ' || v_status,
+                            p_display_location => apex_error.c_on_error_page
+                        );
+                        RETURN;
+                    END IF;
+                
+                    IF v_status = 'STARTED' THEN
+                        IF SYSDATE >= v_ended THEN
+                            apex_error.add_error(
+                                p_message          => 'This permit has expired ('
+                                                      || TO_CHAR(v_ended, 'DD-MON-YYYY HH24:MI')
+                                                      || ') and cannot be cleared.',
+                                p_display_location => apex_error.c_on_error_page
+                            );
+                            RETURN;
+                        END IF;
+                        :P16_CLEAR_DATETIME := TO_CHAR(SYSDATE, 'DD-MON-YYYY HH24:MI');
+                    END IF;
+                
+                    IF v_status = 'COMPLETED' THEN
+                        ptw_pro.ptw_signature_pkg.get_signature(:P16_PERMIT_ID, 'CLEAR',
+                            :P16_CLEAR_PERSON_NAME, v_sig, :P16_CLEAR_PERSON_MOBILE, :P16_CLEAR_COMPANY,
+                            :P16_CLEAR_DATETIME, v_na_lat, v_na_lng);
+                
+                        SELECT clear_work_complete, clear_area_safe
+                        INTO   :P16_CLEAR_WORK_COMPLETE, :P16_CLEAR_AREA_SAFE
+                        FROM   ptw_pro.ptw_lv_permits
+                        WHERE  permit_id = :P16_PERMIT_ID;
+                
+                        IF v_sig IS NOT NULL AND DBMS_LOB.GETLENGTH(v_sig) > 0 THEN
+                            :P16_CLEAR_SIGNATURE_DATA_URL := 'data:image/png;base64,'
+                                || apex_web_service.blob2clobbase64(v_sig);
+                        ELSE
+                            :P16_CLEAR_SIGNATURE_DATA_URL := NULL;
+                        END IF;
+                    END IF;
+                
+                EXCEPTION
+                    WHEN NO_DATA_FOUND THEN
+                        apex_error.add_error(
+                            p_message => 'Permit not found.', p_display_location => apex_error.c_on_error_page
+                        );
+                    WHEN OTHERS THEN
+                        apex_error.add_error(
+                            p_message => 'Error loading permit data: ' || SQLERRM,
+                            p_display_location => apex_error.c_on_error_page
+                        );
+                END;
+                
+                ```
+        }
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 45755388825782505
+        }
+    )
+
+    branch (
+        name: Back to Dashboard after saving
+        execution {
+            sequence: 10
+        }
+        behavior {
+            target: {
+                page: 1
+                clearCache: 1
+                successMessage: false
+            }
+        }
+        serverSideCondition {
+            type: item=value
+            item: P16_CLEARED
+            value: Y
+        }
+    )
+
+)
+

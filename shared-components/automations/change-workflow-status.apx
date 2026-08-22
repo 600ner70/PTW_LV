@@ -1,0 +1,44 @@
+automation change-workflow-status (
+    name: Change workflow status
+    execution {
+        scheduleExpression: FREQ=MINUTELY;INTERVAL=15;BYHOUR=8,9,10,11,12,13,14,15,16,17,18,19
+        scheduleStatus: active
+        actionsInitiatedOn: always
+    }
+    actionExecution {
+        actionErrorHandling: terminate
+    }
+
+    action workflow-clean-up (
+        name: Workflow clean up
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                BEGIN
+                  apex_session.create_session(
+                    p_app_id   => 105,
+                    p_page_id  => 0,
+                    p_username => 'SYSTEM_AUTOMATION'
+                  );
+                
+                  UPDATE ptw_pro.ptw_lv_permits
+                  SET    workflow_status = 'LAPSED'
+                  WHERE  workflow_status = 'STARTED'
+                  AND    ended_datetime < SYSDATE;
+                
+                  COMMIT;
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        error {
+            errorMessage: Error with permit clear-up job. Please contact support.
+        }
+    )
+
+)
+

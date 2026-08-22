@@ -1,0 +1,100 @@
+file geoLocation.js (
+    mimeType: text/javascript
+    charSet: utf-8
+)
+
+file geoLocation.min.js (
+    mimeType: text/javascript
+    charSet: utf-8
+)
+
+file "icons/app-icon-144-rounded.png" (
+    mimeType: image/png
+    charSet: utf-8
+)
+
+file "icons/app-icon-192.png" (
+    mimeType: image/png
+    charSet: utf-8
+)
+
+file "icons/app-icon-256-rounded.png" (
+    mimeType: image/png
+    charSet: utf-8
+)
+
+file "icons/app-icon-32.png" (
+    mimeType: image/png
+    charSet: utf-8
+)
+
+file "icons/app-icon-512.png" (
+    mimeType: image/png
+    charSet: utf-8
+)
+
+file logo_1.png (
+    mimeType: image/png
+    charSet: utf-8
+)
+
+file logo_2.png (
+    mimeType: image/png
+    charSet: utf-8
+)
+
+file logo_21.png (
+    mimeType: image/png
+    charSet: utf-8
+)
+
+file logo_41.png (
+    mimeType: image/png
+    charSet: utf-8
+)
+
+file offline-nav#MIN#.js (
+    mimeType: text/javascript
+    charSet: utf-8
+)
+
+file offline-nav.js (
+    mimeType: text/javascript
+    charSet: utf-8
+)
+
+file offline-nav.min.js (
+    mimeType: text/javascript
+    charSet: utf-8
+)
+
+file offline-storage.js (
+    mimeType: text/javascript
+    charSet: utf-8
+)
+
+file offline-storage.min.js (
+    mimeType: text/javascript
+    charSet: utf-8
+)
+
+file ptw-global.css (
+    mimeType: text/css
+    charSet: utf-8
+)
+
+file ptw-global.min.css (
+    mimeType: text/css
+    charSet: utf-8
+)
+
+file ptw-utils.js (
+    mimeType: text/javascript
+    charSet: utf-8
+)
+
+file ptw-utils.min.js (
+    mimeType: text/javascript
+    charSet: utf-8
+)
+

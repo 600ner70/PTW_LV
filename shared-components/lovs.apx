@@ -1,0 +1,154 @@
+lov access-roles (
+    name: ACCESS_ROLES
+    source {
+        type: sqlQuery
+        sqlQuery:
+            ```sql
+            select role_name d, role_id r
+            from APEX_APPL_ACL_ROLES where application_id = :APP_ID 
+            order by 1
+            ```
+    }
+    columnMapping {
+        return: R
+        display: D
+    }
+)
+
+lov control-measures-lov (
+    name: CONTROL_MEASURES_LOV
+    source {
+        location: staticValues
+    }
+
+    entry n (
+        sequence: 2
+        display: No
+        return: N
+    )
+
+    entry na (
+        sequence: 3
+        display: N/A
+        return: NA
+    )
+
+    entry y (
+        sequence: 1
+        display: Yes
+        return: Y
+    )
+
+)
+
+lov email-username-format (
+    name: EMAIL_USERNAME_FORMAT
+    source {
+        location: staticValues
+    }
+
+    entry email (
+        sequence: 1
+        display: Email Addresses
+        return: EMAIL
+    )
+
+)
+
+lov ptw-authorised-persons (
+    name: PTW_AUTHORISED_PERSONS
+    source {
+        type: sqlQuery
+        sqlQuery:
+            ```sql
+            SELECT DISTINCT
+                u.first_name || ' ' || u.last_name     AS display_value,
+                u.username                             AS return_value,
+                u.mobile_no
+            FROM   ptw_pro.ptw_lv_user_roles_v  u
+            WHERE  u.role_name IN ('ADMIN', 'AUTHORISER')
+            AND    u.username <> 'PTW_PRO'
+            AND    u.is_active = 'Y'
+            AND    u.company_id = (
+                CASE
+                    WHEN V('G_OVERRIDE_COMPANY_ID') IS NULL
+                      OR V('G_OVERRIDE_COMPANY_ID') = ''
+                    THEN (SELECT company_id
+                          FROM   ptw_pro.ptw_lv_users
+                          WHERE  UPPER(username) = UPPER(:APP_USER))
+                    ELSE TO_NUMBER(V('G_OVERRIDE_COMPANY_ID'))
+                END
+            )
+            ORDER BY display_value
+            ```
+    }
+    columnMapping {
+        return: RETURN_VALUE
+        display: DISPLAY_VALUE
+    }
+)
+
+lov ptw-start-mode (
+    name: PTW_START_MODE
+    source {
+        location: staticValues
+    }
+
+    entry immediate (
+        sequence: 1
+        display: Start immediately
+        return: IMMEDIATE
+    )
+
+    entry scheduled (
+        sequence: 2
+        display: Scheduled start
+        return: SCHEDULED
+    )
+
+)
+
+lov timeframe-4-weeks (
+    name: TIMEFRAME (4 WEEKS)
+    source {
+        type: sqlQuery
+        sqlQuery:
+            ```sql
+            select disp,
+                   val as seconds
+              from table( apex_util.get_timeframe_lov_data )
+             order by insert_order
+            ```
+    }
+    columnMapping {
+        return: SECONDS
+        display: DISP
+    }
+)
+
+lov view-as-report-chart (
+    name: VIEW_AS_REPORT_CHART
+    source {
+        location: staticValues
+    }
+
+    entry chart (
+        sequence: 2
+        display: Add Chart Page
+        return: CHART
+        globalization {
+            template: <span class="fa fa-pie-chart" aria-hidden="true"></span><span class="u-VisuallyHidden">#DISPLAY_VALUE#</span>
+        }
+    )
+
+    entry report (
+        sequence: 1
+        display: Add Report Page
+        return: REPORT
+        globalization {
+            template: <span class="fa fa-table" aria-hidden="true"></span><span class="u-VisuallyHidden">#DISPLAY_VALUE#</span>
+        }
+    )
+
+)
+

@@ -1,0 +1,268 @@
+page 7 (
+    name: Location
+    alias: LOCATION
+    title: Location
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @/modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+        warnOnUnsavedChanges: false
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            setTimeout(function() {
+                var mapCanvas = document.querySelector('.ol-viewport');
+                console.log('Map canvas:', mapCanvas);
+                if (mapCanvas) {
+                    var allDivs = document.querySelectorAll('div[id]');
+                    allDivs.forEach(function(d) {
+                        console.log('Div ID:', d.id, 'Classes:', d.className);
+                    });
+                }
+            }, 5000);
+            ```
+        executeWhenPageLoads:
+            ```javascript-browser
+            // Wait for map to be fully initialised before manipulating it
+            $(document).on('spatialmapinitialized', function() {
+            
+                var mapObj = apex.region('history_map').call('getMapObject');
+                if (!mapObj) return;
+            
+                // Fly to the pin location at 100m zoom
+                // Coordinates must match what's in your layer SQL
+                var lat = &P7_LATITUDE.;
+                var lng = &P7_LONGITUDE.;
+            
+                mapObj.flyTo({
+                    center: [ lng, lat ],
+                    zoom:   18,
+                    speed:  2
+                });
+            });
+            ```
+    }
+    css {
+        inline:
+            ```css
+            .ui-dialog {
+                border: 2px solid #000000 !important;
+                border-radius: 4px !important;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region location (
+        name: Location
+        type: map
+        layout {
+            sequence: 70
+            slot: contentBody
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            htmlDomId: history_map
+        }
+        map {
+            background: builtIn
+            standard: openstreetmapBright
+        }
+        controls {
+            options: [
+                scaleBar
+                infiniteMap
+                rectangleZoom
+            ]
+        }
+        initialPositionAndZoom {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT longitude,
+                       latitude,
+                       18 AS zoomlevel
+                FROM   (
+                    SELECT longitude,
+                           latitude,
+                           created_date,
+                           ROW_NUMBER() OVER (ORDER BY created_date DESC) AS rn
+                    FROM   ptw_pro.ptw_stage_locations
+                    WHERE  permit_id    = :P7_PERMIT_ID
+                    AND    permit_stage = :P7_CURRENT_STAGE
+                )
+                WHERE rn = 1
+                ```
+            geometryColumnDataType: longitudeLatitude
+            initialLongitudeColumn: LONGITUDE
+            initialLatitudeColumn: LATITUDE
+            initialZoomlevelColumn: ZOOMLEVEL
+        }
+        legend {
+            show: false
+        }
+        attributes {
+            messagesPosition: below
+        }
+
+        layer location (
+            name: Location
+            layout {
+                sequence: 10
+            }
+            source {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select PERMIT_ID,
+                           CASE PERMIT_STAGE
+                            WHEN 'SITE_WORK_DETAILS' THEN 'Step 1: Site and Work Details'
+                            WHEN 'CONTROL_MEASURES'  THEN 'Step 2: Control Measures'
+                            WHEN 'EQUIP_ISOLATION'   THEN 'Step 3: Equipment Isolation'
+                            WHEN 'AUTHORISATION'     THEN 'Step 4: Authorisation'
+                            WHEN 'COMPLETED'         THEN 'Step 5: Live'
+                            WHEN 'MONITORING'        THEN 'Step 6: Monitoring'
+                            WHEN 'CLEARANCE'         THEN 'Step 7: Clearnace'
+                            WHEN 'CANCELLED'         THEN 'Cancelled'
+                           ELSE PERMIT_STAGE
+                           END as step_display,
+                           LATITUDE,
+                           LONGITUDE,
+                           CREATED_DATE,
+                           CREATED_BY,
+                           PERMIT_STAGE
+                    from   (SELECT MAX(psl.CREATED_DATE) created_date,
+                                   psl.LONGITUDE,
+                                   psl.LATITUDE,
+                                   psl.permit_id,
+                                   psl.permit_stage,
+                                   psl.created_by      
+                            FROM   PTW_PRO.PTW_STAGE_LOCATIONS psl
+                            WHERE  psl.PERMIT_ID    = :P7_PERMIT_ID 
+                            AND    psl.PERMIT_STAGE = :P7_CURRENT_STAGE
+                            GROUP BY psl.permit_id,
+                                     psl.permit_stage,
+                                     psl.LONGITUDE,
+                                     psl.LATITUDE,
+                                     psl.created_by) map_data
+                    
+                    ```
+                pageItemsToSubmit: [
+                    P7_PERMIT_ID
+                    P7_CURRENT_STAGE
+                    P7_CREATED_DATE
+                ]
+            }
+            columnMapping {
+                geometryColumnDataType: longitudeLatitude
+                longitudeColumn: LONGITUDE
+                latitudeColumn: LATITUDE
+            }
+            pointObjects {
+                shape: Pin Circle
+                shapeScale: 3
+            }
+            appearance {
+                fillColor: #182bfc
+            }
+        )
+
+    )
+
+    pageItem P7_CREATED_DATE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 60
+            slot: contentBody
+        }
+        appearance {
+            formatMask: DD-MON-YYYY HH24:MI
+        }
+        security {
+            encryptSessionState: false
+        }
+    )
+
+    pageItem P7_CURRENT_STAGE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 50
+            slot: contentBody
+        }
+    )
+
+    pageItem P7_LATITUDE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+    )
+
+    pageItem P7_LONGITUDE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: contentBody
+        }
+    )
+
+    pageItem P7_PERMIT_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+    )
+
+    process load-defaults (
+        name: Load defaults
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                SELECT latitude, longitude
+                INTO   :P7_LATITUDE, :P7_LONGITUDE
+                FROM   ptw_pro.ptw_stage_locations
+                WHERE  permit_id    = :P7_PERMIT_ID
+                AND    permit_stage = :P7_CURRENT_STAGE
+                ORDER  BY created_date DESC
+                FETCH  FIRST 1 ROW ONLY;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 41969583459328826
+        }
+    )
+
+)
+

@@ -1,0 +1,368 @@
+page 50 (
+    name: Permit Search
+    alias: PERMIT-SEARCH
+    title: Permit Search
+    appearance {
+        pageTemplate: @/left-side-column
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            .ptw-badge {
+                display: inline-block;
+                padding: 4px 12px;
+                border-radius: 12px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                text-transform: uppercase;
+            }
+            .ptw-badge--live       { background: #28a745; color: #ffffff; }
+            .ptw-badge--authorised { background: #6c757d; color: #ffffff; }
+            .ptw-badge--completed  { background: #6f42c1; color: #ffffff; }
+            .ptw-badge--lapsed     { background: #6c757d; color: #ffffff; }
+            .ptw-badge--suspended  { background:  #fd7e14; color: #ffffff; }
+            .ptw-badge--cancelled  { background: #dc3545; color: #ffffff; }
+            .ptw-badge--draft      { background: #17a2b8; color: #ffffff; }
+            
+            /* Permit number link — match page 1 teal */
+            .t-Card-title a {
+                color: #1a6cb5 !important;
+                text-decoration: none !important;
+                font-weight: 600 !important;
+            }
+            .t-Card-title a:hover {
+                text-decoration: underline !important;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @administration-rights
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region button-bar (
+        name: Button Bar
+        type: staticContent
+        source {
+            htmlCode: <div id="active_facets"></div>
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @/buttons-container
+            templateOptions: [
+                #DEFAULT#
+                t-ButtonRegion--noPadding
+                t-ButtonRegion--noUI
+            ]
+        }
+    )
+
+    region search (
+        name: Search
+        type: facetedSearch
+        source {
+            filteredRegion: @search-results
+        }
+        layout {
+            sequence: 20
+            slot: leftColumn
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                t-Region--hideHeader js-addHiddenHeadingRoleDesc
+                t-Region--scrollBody
+            ]
+        }
+        accessibility {
+            landmarkLabel: Filters
+        }
+        settings {
+            compactNosThreshold: 10000
+            showCurrentFacets: selector
+            currentFacetsSelector: #active_facets
+            showTotalRowCount: true
+            displayChartForTopNValues: 10
+        }
+
+        facet P50_CREATED_DATE (
+            type: range
+            label {
+                label: Created Date
+            }
+            layout {
+                sequence: 20
+            }
+            appearance {
+                formatMask: DD-MON-YYYY
+            }
+            source {
+                databaseColumn: CREATED_DATE
+                dataType: date
+            }
+        )
+
+        facet P50_PERSON_IN_CHARGE (
+            type: checkboxGroup
+            label {
+                label: Person In Charge
+            }
+            lov {
+                type: distinctValues
+            }
+            layout {
+                sequence: 60
+            }
+            listEntries {
+                maxDisplayedEntries: 7
+            }
+            source {
+                databaseColumn: PERSON_IN_CHARGE_NAME
+            }
+        )
+
+        facet P50_PTW_TYPE (
+            type: checkboxGroup
+            label {
+                label: Permit Type
+            }
+            lov {
+                type: distinctValues
+            }
+            layout {
+                sequence: 40
+            }
+            listEntries {
+                maxDisplayedEntries: 7
+            }
+            source {
+                databaseColumn: PTW_TYPE_DESC
+            }
+        )
+
+        facet P50_SEARCH (
+            type: search
+            label {
+                label: Search
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dbColumns: PERMIT_NUMBER,SITE_DETAILS,AREA_OF_WORKS,WORK_DESCRIPTION,PERSON_IN_CHARGE,SUPERVISING_COMPANY,PERSON_IN_CHARGE_NAME,WORKFLOW_STATUS,STATUS_DISPLAY,STATUS_CLASS,CREATED_BY,AUTH_PERSON_NAME,CURRENT_STEP,STEP_DISPLAY,PTW_TYPE
+            }
+        )
+
+        facet P50_SITE_DETAILS (
+            type: checkboxGroup
+            label {
+                label: Sites
+            }
+            lov {
+                type: distinctValues
+            }
+            layout {
+                sequence: 50
+            }
+            listEntries {
+                maxDisplayedEntries: 7
+            }
+            source {
+                databaseColumn: SITE_DETAILS
+            }
+        )
+
+        facet P50_WORKFLOW_STATUS (
+            type: checkboxGroup
+            label {
+                label: Workflow Status
+            }
+            lov {
+                type: staticValues
+                staticValues: STATIC:Live;STARTED,Authorised;AUTHORISED,Completed;COMPLETED,Lapsed;LAPSED,Draft;DRAFT,Suspended;SUSPENDED,Cancelled;CANCELLED
+            }
+            layout {
+                sequence: 30
+            }
+            listEntries {
+                maxDisplayedEntries: 7
+            }
+            source {
+                databaseColumn: WORKFLOW_STATUS
+            }
+        )
+
+    )
+
+    region search-results (
+        name: Search Results
+        type: cards
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT
+                    p.permit_id,
+                    p.permit_number,
+                    p.site_details,
+                    p.area_of_works,
+                    p.work_description,
+                    p.supervising_company || ' - ' || p.person_in_charge_name AS person_in_charge,
+                    p.supervising_company,
+                    p.person_in_charge_name,
+                    p.workflow_status,
+                    p.created_by,
+                    (SELECT sig.person_name FROM ptw_pro.ptw_signatures sig
+                     WHERE  sig.permit_id = p.permit_id AND sig.stage = 'AUTH') AS auth_person_name,
+                    p.started_datetime,
+                    p.ended_datetime,
+                    p.created_date,
+                    p.ptw_type,
+                    (SELECT t.type_desc FROM ptw_pro.ptw_types t
+                     WHERE  t.ptw_type = p.ptw_type) AS ptw_type_desc,
+                    '<span class="ptw-badge ' ||
+                    CASE p.workflow_status
+                        WHEN 'STARTED'     THEN 'ptw-badge--live'
+                        WHEN 'COMPLETED'   THEN 'ptw-badge--completed'
+                        WHEN 'AUTHORISED'  THEN 'ptw-badge--authorised'
+                        WHEN 'LAPSED'      THEN 'ptw-badge--lapsed'
+                        WHEN 'SUSPENDED'   THEN 'ptw-badge--suspended'
+                        WHEN 'CANCELLED'   THEN 'ptw-badge--cancelled'
+                        WHEN 'DRAFT'       THEN 'ptw-badge--draft'
+                        ELSE 'ptw-badge--lapsed'
+                    END || '">' ||
+                    CASE p.workflow_status
+                        WHEN 'STARTED'     THEN 'Live'
+                        WHEN 'COMPLETED'   THEN 'Completed'
+                        WHEN 'AUTHORISED'  THEN 'Authorised'
+                        WHEN 'LAPSED'      THEN 'Lapsed'
+                        WHEN 'SUSPENDED'   THEN 'Suspended'
+                        WHEN 'CANCELLED'   THEN 'Cancelled'
+                        WHEN 'DRAFT'       THEN 'Draft'
+                        ELSE p.workflow_status
+                    END || '</span>' AS status_badge_html,
+                    apex_page.get_url(
+                        p_page   => 300,
+                        p_items  => 'P300_PERMIT_ID,P300_RETURN_PAGE',
+                        p_values => p.permit_id || ',50'
+                    ) AS pdf_url
+                FROM ptw_pro.ptw_lv_permits p
+                ```
+        }
+        orderBy {
+            type: item
+            item: {
+                itemName: P50_ORDER_BY
+                orderBys: {
+                    PERMIT_ID: "PERMIT_ID" asc
+                    PERSON_IN_CHARGE: "PERSON_IN_CHARGE" asc
+                    WORKFLOW_STATUS: "WORKFLOW_STATUS" asc
+                    CREATED_DATE: "CREATED_DATE" desc
+                }
+            }
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @/cards-container
+            templateOptions: [
+                #DEFAULT#
+                t-CardsRegion--hideHeader js-addHiddenHeadingRoleDesc
+            ]
+        }
+        title {
+            advancedFormatting: true
+            htmlExpression: <a href="&PDF_URL.">&PERMIT_NUMBER.</a>
+        }
+        subtitle {
+            advancedFormatting: true
+            htmlExpression: &STATUS_BADGE_HTML!RAW.
+        }
+        body {
+            advancedFormatting: true
+            htmlExpression:
+                ```html
+                &PERSON_IN_CHARGE.<br>
+                &SITE_DETAILS!RAW.
+                ```
+        }
+    )
+
+    pageItem P50_ORDER_BY (
+        type: selectList
+        label {
+            label: Order By
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC2:Permit Number;PERMIT_ID,Person In Charge;PERSON_IN_CHARGE,Workflow Status;WORKFLOW_STATUS,Created Date;CREATED_DATE
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 10
+            region: @search-results
+            slot: sortOrder
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        validation {
+            valueRequired: true
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        default {
+            type: static
+            staticValue: PERMIT_ID
+        }
+    )
+
+    button reset (
+        buttonName: RESET
+        label: Reset
+        layout {
+            sequence: 10
+            region: @button-bar
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--noUI
+                t-Button--iconLeft
+            ]
+            icon: fa-undo
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 50
+                clearCache: 50
+                action: resetRegions
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+)
+

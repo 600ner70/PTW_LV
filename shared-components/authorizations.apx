@@ -1,0 +1,278 @@
+authorization administration-rights (
+    name: Administration Rights
+    type: plSqlFunctionBody
+    settings {
+        plsqlFunctionBody:
+            ```plsql
+            DECLARE
+                v_count NUMBER;
+            BEGIN
+                SELECT COUNT(*)
+                INTO   v_count
+                FROM   ptw_pro.ptw_lv_user_roles_v
+                WHERE  UPPER(username) = UPPER(:APP_USER)
+                AND    role_name IN ('ADMIN', 'ADMIN_USER_SUPPORT')
+                AND    is_active = 'Y';
+                RETURN v_count > 0;
+            EXCEPTION
+                WHEN OTHERS THEN RETURN FALSE;
+            END;
+            ```
+    }
+    error {
+        errorMessage: Insufficient privileges - you must be an Administrator or User Support Admin to access this page.
+    }
+)
+
+authorization can-authorise-permits (
+    name: Can Authorise Permits
+    type: plSqlFunctionBody
+    settings {
+        plsqlFunctionBody:
+            ```plsql
+            DECLARE
+                v_count NUMBER;
+            BEGIN
+                SELECT COUNT(*)
+                INTO   v_count
+                FROM   ptw_pro.ptw_lv_user_roles_v
+                WHERE  UPPER(username) = UPPER(:APP_USER)
+                AND    role_name IN ('ADMIN', 'AUTHORISER')
+                AND    is_active = 'Y';
+                RETURN v_count > 0;
+            EXCEPTION
+                WHEN OTHERS THEN RETURN FALSE;
+            END;
+            ```
+    }
+    error {
+        errorMessage:
+            ```
+            You do not have permission to perform this action.
+            Please contact your system administrator.
+            
+            ```
+    }
+)
+
+authorization can-delete-permits (
+    name: Can Delete Permits
+    type: plSqlFunctionBody
+    settings {
+        plsqlFunctionBody:
+            ```plsql
+            DECLARE
+                v_count NUMBER;
+            BEGIN
+                SELECT COUNT(*)
+                INTO   v_count
+                FROM   ptw_pro.ptw_lv_user_roles_v
+                WHERE  UPPER(username) = UPPER(:APP_USER)
+                AND    role_name IN ('ADMIN', 'ADMIN_CONTRACT_SUPPORT')
+                AND    is_active = 'Y';
+                RETURN v_count > 0;
+            EXCEPTION
+                WHEN OTHERS THEN RETURN FALSE;
+            END;
+            ```
+    }
+    error {
+        errorMessage:
+            ```
+            You do not have permission to perform this action.
+            Please contact your system administrator.
+            ```
+    }
+)
+
+authorization can-edit-permits (
+    name: Can Edit Permits
+    type: plSqlFunctionBody
+    settings {
+        plsqlFunctionBody:
+            ```plsql
+            DECLARE
+                v_count NUMBER;
+            BEGIN
+                SELECT COUNT(*)
+                INTO   v_count
+                FROM   ptw_pro.ptw_lv_user_roles_v
+                WHERE  UPPER(username) = UPPER(:APP_USER)
+                AND    role_name IN ('ADMIN', 'AUTHORISER', 'ENGINEER')
+                AND    is_active = 'Y';
+                RETURN v_count > 0;
+            EXCEPTION
+                WHEN OTHERS THEN RETURN FALSE;
+            END;
+            ```
+    }
+    error {
+        errorMessage:
+            ```
+            You do not have permission to perform this action.
+            Please contact your system administrator.
+            ```
+    }
+)
+
+authorization can-export-reports (
+    name: Can Export Reports
+    type: plSqlFunctionBody
+    settings {
+        plsqlFunctionBody:
+            ```plsql
+            DECLARE
+                v_count NUMBER;
+            BEGIN
+                SELECT COUNT(*)
+                INTO   v_count
+                FROM   ptw_pro.ptw_lv_user_roles_v
+                WHERE  UPPER(username) = UPPER(:APP_USER)
+                AND    role_name IN ('ADMIN', 'ADMIN_CONTRACT_SUPPORT', 'AUTHORISER')
+                AND    is_active = 'Y';
+                RETURN v_count > 0;
+            EXCEPTION
+                WHEN OTHERS THEN RETURN FALSE;
+            END;
+            ```
+    }
+    error {
+        errorMessage:
+            ```
+            You do not have permission to perform this action.
+            Please contact your system administrator.
+            ```
+    }
+)
+
+authorization can-generate-pdf (
+    name: Can Generate PDF
+    type: plSqlFunctionBody
+    settings {
+        plsqlFunctionBody:
+            ```plsql
+            DECLARE
+                v_count NUMBER;
+            BEGIN
+                SELECT COUNT(*)
+                INTO   v_count
+                FROM   ptw_pro.ptw_lv_user_roles_v
+                WHERE  UPPER(username) = UPPER(:APP_USER)
+                AND    role_name IN ('ADMIN', 'ADMIN_CONTRACT_SUPPORT', 'AUTHORISER', 'ENGINEER')
+                AND    is_active = 'Y';
+                RETURN v_count > 0;
+            EXCEPTION
+                WHEN OTHERS THEN RETURN FALSE;
+            END;
+            ```
+    }
+    error {
+        errorMessage:
+            ```
+            You do not have permission to perform this action.
+            Please contact your system administrator.
+            ```
+    }
+)
+
+authorization contribution-rights (
+    name: Contribution Rights
+    type: isInRoleOrGroup
+    settings {
+        names: [
+            Administrator
+            Contributor
+        ]
+    }
+    error {
+        errorMessage: Insufficient privileges, user is not a Contributor
+    }
+)
+
+authorization is-administrator (
+    name: Is Administrator
+    type: plSqlFunctionBody
+    settings {
+        plsqlFunctionBody:
+            ```plsql
+            DECLARE
+                v_count NUMBER;
+            BEGIN
+                SELECT COUNT(*)
+                INTO   v_count
+                FROM   ptw_pro.ptw_lv_user_roles_v
+                WHERE  UPPER(username) = UPPER(:APP_USER)
+                AND    role_name = 'ADMIN'
+                AND    is_active = 'Y';
+                RETURN v_count > 0;
+            EXCEPTION
+                WHEN OTHERS THEN RETURN FALSE;
+            END;
+            ```
+    }
+    error {
+        errorMessage:
+            ```
+            You do not have permission to perform this action.
+            Please contact your system administrator.
+            ```
+    }
+)
+
+authorization reader-rights (
+    name: Reader Rights
+    type: plSqlFunctionBody
+    settings {
+        plsqlFunctionBody:
+            ```plsql
+            DECLARE
+                v_count NUMBER;
+            BEGIN
+                SELECT COUNT(*)
+                INTO   v_count
+                FROM   ptw_pro.ptw_lv_user_roles_v
+                WHERE  UPPER(username) = UPPER(:APP_USER)
+                AND    is_active = 'Y';
+                RETURN v_count > 0;
+            EXCEPTION
+                WHEN OTHERS THEN RETURN FALSE;
+            END;
+            ```
+    }
+    error {
+        errorMessage: You are not authorized to view this application, either because you have not been granted access, or your account has been locked. Please contact the application administrator.
+    }
+    advanced {
+        evaluationType: perSession
+    }
+)
+
+authorization super-user-rights (
+    name: Super User Rights
+    type: plSqlFunctionBody
+    settings {
+        plsqlFunctionBody:
+            ```plsql
+            DECLARE
+                v_count NUMBER;
+            BEGIN
+                SELECT COUNT(*)
+                INTO   v_count
+                FROM   ptw_pro.ptw_lv_users
+                WHERE  UPPER(username) = UPPER(:APP_USER)
+                AND    is_super_user   = 'Y'
+                AND    is_active       = 'Y';
+                RETURN v_count > 0;
+            EXCEPTION
+                WHEN OTHERS THEN RETURN FALSE;
+            END;
+            ```
+    }
+    error {
+        errorMessage: Access denied - Super User rights required.
+    }
+    advanced {
+        evaluationType: perSession
+    }
+)
+

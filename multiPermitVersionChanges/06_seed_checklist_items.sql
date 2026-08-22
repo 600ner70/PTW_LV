@@ -140,6 +140,37 @@ BEGIN
     upsert_item(l_general_type_id, 'PPE', 'PPE_EAR_DEFENDERS',   50, 'Ear Defenders/Plugs',       NULL, 'TICK');
     upsert_item(l_general_type_id, 'PPE', 'PPE_SAFETY_GLOVES',   60, 'Safety Gloves',             NULL, 'TICK');
 
-    COMMIT;
+    COMMIT;    ------------------------------------------------------------------------
+    -- GENERAL — Control Measures (corrected against the full "Permit to
+    -- Work — General Work" form; previous seed was based on the closure
+    -- page only and missed/misworded several items — see chat history).
+    -- Shared item_codes reused only where the question is genuinely the
+    -- same as LV's; items 4, 6, 8-13 have no LV equivalent and are new.
+    ------------------------------------------------------------------------
+    upsert_item(l_general_type_id, 'CONTROL_MEASURES', 'CM_01_SITE_INDUCTION',        10, 'All persons working under this permit have undertaken a site specific safety induction.');
+    upsert_item(l_general_type_id, 'CONTROL_MEASURES', 'CM_02_RISK_ASSESSMENT',       20, 'A suitable and sufficient written risk assessment and method statement for these works, which has been read and understood by all persons working under this permit, is in place and has been reviewed at the point of works by the person controlling the works.');
+    upsert_item(l_general_type_id, 'CONTROL_MEASURES', 'CM_03_COMPETENCE_CHECKED',    30, 'The competence of the people working under the permit has been checked and is deemed to be adequate for these works.');
+    upsert_item(l_general_type_id, 'CONTROL_MEASURES', 'GEN_02_PIC_HAZARDS_AWARE',    40, 'The person in charge of the works must be made aware of all hazards within the vicinity of the place of works.');
+    upsert_item(l_general_type_id, 'CONTROL_MEASURES', 'CM_05_PPE_IDENTIFIED',        50, 'Where the use of PPE is identified as a control measure within the risk assessment, this equipment is in good order.');
+    upsert_item(l_general_type_id, 'CONTROL_MEASURES', 'GEN_03_ISOLATED_LOCKED',      60, 'All equipment/systems to be worked on have been isolated and locked off from all sources of energy, with suitable signage fitted.');
+    upsert_item(l_general_type_id, 'CONTROL_MEASURES', 'CM_08_STORED_ENERGY',         70, 'All systems to be worked on have been checked to ensure that any stored energy has been dissipated.');
+    upsert_item(l_general_type_id, 'CONTROL_MEASURES', 'GEN_04_ACCEPTOR_ISOLATION',   80, 'The person accepting this permit must be shown the points of isolation and be given the option of fitting additional safety locks.');
+    upsert_item(l_general_type_id, 'CONTROL_MEASURES', 'GEN_05_REFERRAL_LV_HV_TEST',  90, 'Where works and/or testing is to be conducted on potentially ''live equipment'', a separate ''Low Voltage'' and/or ''High Voltage'' Electrical Permit and/or ''Sanction to Test'' must be issued.');
+    upsert_item(l_general_type_id, 'CONTROL_MEASURES', 'GEN_06_REFERRAL_HV_ACCESS',  100, 'Where works are in the vicinity of High Voltage systems and/or equipment a ''High Voltage Limitation of Access'' must be issued.');
+    upsert_item(l_general_type_id, 'CONTROL_MEASURES', 'GEN_07_REFERRAL_HEIGHT',     110, 'Where ''Working at Height'' is to be conducted, a separate ''Working at Height Permit'' must be issued.');
+    upsert_item(l_general_type_id, 'CONTROL_MEASURES', 'GEN_08_REFERRAL_CONFINED',   120, 'Where works are to be conducted in an area defined as a ''Confined Space'', a separate ''Confined Spaces Permit'' must be issued.');
+    upsert_item(l_general_type_id, 'CONTROL_MEASURES', 'GEN_09_REFERRAL_HOT_WORKS',  130, 'Where ''Hot Works'' are to be conducted, a separate ''Hot Works Permit'' must be issued.');
+    upsert_item(l_general_type_id, 'CONTROL_MEASURES', 'GEN_01_PRESSURE_NEUTRAL',    140, 'Where works are to be conducted on pressurised systems, the pressure system must be returned to a neutral state before work commences.');
+
+    ------------------------------------------------------------------------
+    -- GENERAL — PPE: no separate PPE checklist section exists on the real
+    -- form (PPE is only referenced inline in item 5 above). The 6 PPE items
+    -- seeded previously were invented, not derived from the form — retire
+    -- them rather than leave stale rows the checklist UI would still render.
+    ------------------------------------------------------------------------
+    UPDATE ptw_pro.ptw_checklist_items
+    SET    is_active = 'N'
+    WHERE  type_id      = l_general_type_id
+    AND    section_code = 'PPE';
 END;
 /

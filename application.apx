@@ -1,0 +1,103 @@
+app PTW-PRO (
+    name: PTW_PRO
+    version: "Release 1.0 [&APP_ENV.]"
+    navigation {
+        homeUrl: {
+            page: 1
+        }
+        loginUrl: {
+            page: LOGIN
+        }
+    }
+    navigationMenu {
+        listTemplate: @/side-navigation-menu
+        templateOptions: [
+            #DEFAULT#
+            js-defaultCollapsed
+            js-navCollapsed--hidden
+            t-TreeNav--styleA
+        ]
+        list: @navigation-menu
+    }
+    navigationBar {
+        list: @navigation-bar
+        listTemplate: @/navigation-bar
+        templateOptions: #DEFAULT#
+    }
+    userInterface {
+        currentTheme: @universal-theme
+        globalPage: 0
+        addBuiltWithApexToFooter: false
+    }
+    appFormatMasks {
+        date: DS
+        timestamp: DS
+        timestampTimeZone: DS
+    }
+    javaScript {
+        fileUrls: #APP_FILES#ptw-utils#MIN#.js
+    }
+    css {
+        fileUrls: #APP_FILES#ptw-global#MIN#.css
+    }
+    authentication {
+        scheme: @oracle-apex-accounts
+        publicUser: APEX_PUBLIC_USER
+    }
+    authorization {
+        scheme: @reader-rights
+    }
+    security {
+        browserCache: true
+        runtimeApiUsage: modifyWorkspaceRepository
+    }
+    sessionStateProtection {
+        checksumSalt: A9926E9A37BC8591E2F899AA8424E879CD546B06F9181DA62E16FA46A2A826D9
+    }
+    sessionManagement {
+        sessionTimeoutWarning: 0
+    }
+    progressiveWebApp {
+        installable: true
+        display: fullscreen
+        enablePushNotifications: true
+        pushNotificationsCredentials: @App_105_Push_Notifications_Credentials
+    }
+    runtime {
+        allowFeedback: true
+        compatibilityMode: 24.2
+    }
+    advanced {
+        modernizeApp: true
+    }
+
+    substitution APP_NAME (
+        value {
+            staticValue: PTW_PRO
+        }
+    )
+
+    substitution APP_ENV (
+        value {
+            staticValue: DEV
+        }
+    )
+
+    appSetting ACCESS_CONTROL_SCOPE (
+        value {
+            staticValue: ACL_ONLY
+            onUpgradeKeepValue: true
+        }
+        validation {
+            validValues: ACL_ONLY, ALL_USERS
+        }
+        config {
+            buildOption: @feature-access-control
+        }
+        comments {
+            comments: The default access level given to authenticated users who are not in the access control list
+        }
+    )
+
+)
+

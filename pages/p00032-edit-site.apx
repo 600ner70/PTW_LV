@@ -1,0 +1,487 @@
+page 32 (
+    name: Edit Site
+    alias: EDIT-SITE
+    title: Edit Site
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @/modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        executeWhenPageLoads:
+            ```javascript-browser
+            (function () {
+                var BINARY_ITEMS = ['P32_IS_ACTIVE'];
+            
+                var BADGES = [
+                    { val: 'Y', cls: 'binary-badge-yes', label: '✓' },
+                    { val: 'N', cls: 'binary-badge-no',  label: '✗' }
+                ];
+            
+                BINARY_ITEMS.forEach(function (itemName) {
+                    var $fc = $('#' + itemName).closest('.t-Form-fieldContainer');
+                    if ($fc.length === 0) return;
+            
+                    $fc.find('.binary-badge-row').remove();
+            
+                    var currentVal = $('input[name="' + itemName + '"]:checked').val() || '';
+            
+                    var $row = $('<div class="binary-badge-row"></div>').attr('data-item', itemName);
+            
+                    BADGES.forEach(function (b) {
+                        $('<span></span>')
+                            .addClass('binary-badge ' + b.cls)
+                            .toggleClass('cm-active', currentVal === b.val)
+                            .attr('data-value', b.val)
+                            .text(b.label)
+                            .appendTo($row);
+                    });
+            
+                    $fc.find('.t-Form-inputContainer').append($row);
+                });
+            
+                $('.cm-binary-item .apex-item-grid').hide();
+            
+                $(document).off('click.binarybadge24').on('click.binarybadge24', '.binary-badge:not(.binary-readonly)', function () {
+                    var $badge   = $(this);
+                    var $row     = $badge.closest('.binary-badge-row');
+                    var itemName = $row.attr('data-item');
+                    var val      = $badge.attr('data-value');
+            
+                    $('input[name="' + itemName + '"][value="' + val + '"]')
+                        .prop('checked', true).trigger('change');
+            
+                    $row.find('.binary-badge').removeClass('cm-active');
+                    $badge.addClass('cm-active');
+                });
+            }());
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 50
+            slot: contentBody
+        }
+        appearance {
+            template: @/buttons-container
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region edit-team (
+        name: Edit Site
+        type: staticContent
+        layout {
+            sequence: 40
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    pageItem P32_COMPANY_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+    )
+
+    pageItem P32_CREATED_DATE (
+        type: displayOnly
+        label {
+            label: Created Date
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @edit-team
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            formatMask: DD-MON-YYYY HH24:MI:SS
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P32_SITE_ID
+        }
+    )
+
+    pageItem P32_IS_ACTIVE (
+        type: radioGroup
+        label {
+            label: Is Active
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Active;Y,Inactive;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 30
+            region: @edit-team
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            cssClasses: cm-binary-item
+        }
+    )
+
+    pageItem P32_PERMIT_COUNT (
+        type: displayOnly
+        label {
+            label: Permit Count
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @edit-team
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 6
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P32_SITE_ID
+        }
+        help {
+            inlineHelpText: Number of permits currently assigned
+        }
+    )
+
+    pageItem P32_SITE_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 10
+            region: @edit-team
+            slot: regionBody
+        }
+    )
+
+    pageItem P32_SITE_NAME (
+        type: textField
+        label {
+            label: Site Name
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @edit-team
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+            maxLength: 200
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancel
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 31
+                clearCache: 31
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Save
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    validation company-required-for-super-user (
+        name: Company required for Super User
+        execution {
+            sequence: 30
+        }
+        validation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                BEGIN
+                    IF :P32_COMPANY_ID IS NULL THEN
+                        RETURN 'Unable to determine which company this site belongs to. '
+                            || 'If you are a Super User, please select an Active Company '
+                            || '(Admin > Set Active Company) before creating a site.';
+                    END IF;
+                    RETURN NULL;
+                END;
+                ```
+        }
+        serverSideCondition {
+            whenButtonPressed: @save
+        }
+    )
+
+    validation team-name-must-be-unique (
+        name: Site name must be unique
+        execution {
+            sequence: 20
+        }
+        validation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    v_count NUMBER;
+                BEGIN
+                    SELECT COUNT(*) INTO v_count
+                    FROM   ptw_pro.ptw_lv_sites
+                    WHERE  UPPER(site_name) = UPPER(:P32_SITE_NAME)
+                    AND    company_id = :P32_COMPANY_ID
+                    AND    (site_id != :P32_SITE_ID OR :P32_SITE_ID IS NULL);
+                
+                    IF v_count > 0 THEN
+                        RETURN 'This Site is already in use for this company. Please choose a different name.';
+                    END IF;
+                END;
+                ```
+        }
+        error {
+            associatedItem: @P32_SITE_NAME
+        }
+        serverSideCondition {
+            whenButtonPressed: @save
+        }
+    )
+
+    validation team-name-required (
+        name: Site name required
+        execution {
+            sequence: 10
+        }
+        validation {
+            type: itemIsNotNull
+            item: P32_SITE_NAME
+        }
+        error {
+            errorMessage:
+                ```
+                Site name is mandatory.
+                
+                ```
+            associatedItem: @P32_SITE_NAME
+        }
+        serverSideCondition {
+            whenButtonPressed: @save
+        }
+    )
+
+    process load-data (
+        name: Load data
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                SELECT s.site_name,
+                       s.is_Active,
+                       s.company_id,
+                       TO_CHAR(s.created_date,'DD-MON-YYYY HH24:MI') as created_date,
+                      (SELECT COUNT(*) FROM ptw_pro.ptw_lv_permits p
+                       WHERE p.site_id = s.site_id) 
+                INTO   :P32_SITE_NAME,
+                       :P32_IS_ACTIVE,
+                       :P32_COMPANY_ID,
+                       :P32_CREATED_DATE,
+                       :P32_PERMIT_COUNT
+                FROM   ptw_pro.ptw_lv_sites s
+                WHERE  s.site_id = :P32_SITE_ID;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: afterHeader
+        }
+        advanced {
+            executionMappingIdentifier: 9007354511499208
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P32_SITE_ID
+        }
+    )
+
+    process save-team (
+        name: Save Site
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                BEGIN
+                    IF :P32_SITE_ID IS NULL THEN
+                
+                        -- CREATE: company_id comes from P32_COMPANY_ID, resolved earlier by
+                        -- "Determine Effective Company" and guaranteed NOT NULL by the
+                        -- "Company Required for Super User" validation before we ever get here.
+                        INSERT INTO ptw_pro.ptw_lv_sites (company_id, site_name, is_active)
+                        VALUES (:P32_COMPANY_ID, :P32_SITE_NAME, :P32_IS_ACTIVE)
+                        RETURNING site_id INTO :P32_SITE_ID;
+                
+                    ELSE
+                
+                        -- UPDATE: company_id is intentionally NOT in the SET list.
+                        -- A team's company is fixed at creation; this form has no control
+                        -- to reassign it, and the VPD policy's update_check would reject
+                        -- a cross-company UPDATE attempt anyway.
+                        UPDATE ptw_pro.ptw_lv_sites
+                        SET    site_name     = :P32_SITE_NAME,
+                               is_active     = :P32_IS_ACTIVE,
+                               modified_date = SYSTIMESTAMP,
+                               modified_by   = :APP_USER
+                        WHERE  site_id       = :P32_SITE_ID;
+                
+                    END IF;
+                
+                EXCEPTION
+                    WHEN DUP_VAL_ON_INDEX THEN
+                        -- Belt-and-braces: UQ_PTW_LV_TEAMS (company_id, team_name) catches
+                        -- any race condition the app-level uniqueness validation missed
+                        -- (e.g. two concurrent saves). Same friendly message either way.
+                        apex_error.add_error(
+                            p_message          => 'This site is already in use for this company. Please choose a different name.',
+                            p_display_location => apex_error.c_inline_in_notification);
+                
+                    WHEN OTHERS THEN
+                        apex_error.add_error(
+                            p_message          => 'Unable to save site: ' || SQLERRM,
+                            p_display_location => apex_error.c_inline_in_notification);
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 9006973169499206
+        }
+        serverSideCondition {
+            whenButtonPressed: @save
+        }
+    )
+
+    process super-user-check (
+        name: Super User check
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                BEGIN
+                    SELECT CASE
+                               WHEN is_super_user = 'Y' AND (V('G_OVERRIDE_COMPANY_ID') IS NULL OR V('G_OVERRIDE_COMPANY_ID') = '')
+                                   THEN NULL
+                               WHEN is_super_user = 'Y'
+                                   THEN TO_NUMBER(V('G_OVERRIDE_COMPANY_ID'))
+                               ELSE company_id
+                           END
+                    INTO :P32_COMPANY_ID
+                    FROM ptw_pro.ptw_lv_users
+                    WHERE UPPER(username) = UPPER(:APP_USER) AND is_active = 'Y';
+                EXCEPTION
+                    WHEN NO_DATA_FOUND THEN :P32_COMPANY_ID := NULL;
+                END;
+                ```
+        }
+        execution {
+            sequence: 20
+            point: afterHeader
+        }
+        advanced {
+            executionMappingIdentifier: 9007763861499209
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P32_SITE_ID
+        }
+    )
+
+    branch (
+        name: Return to page 31
+        execution {
+            sequence: 10
+        }
+        behavior {
+            target: {
+                page: 31
+                items: {
+                    P31_SITE_ID: &P32_SITE_ID.
+                }
+                clearCache: 31
+                successMessage: false
+            }
+        }
+    )
+
+)
+

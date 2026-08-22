@@ -1,0 +1,15 @@
+appItem APP_IS_ADMIN (
+)
+
+appItem APP_IS_ENGINEER (
+)
+
+appItem APP_LATITUDE (
+)
+
+appItem APP_LONGITUDE (
+)
+
+appItem G_OVERRIDE_COMPANY_ID (
+)
+

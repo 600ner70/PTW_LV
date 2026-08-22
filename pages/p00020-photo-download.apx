@@ -1,0 +1,84 @@
+page 20 (
+    name: Photo Download
+    alias: PHOTO-DOWNLOAD
+    title: Photo Download
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    pageItem P20_PERMIT_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+    )
+
+    pageItem P20_PHOTO_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+    )
+
+    process stream-photo (
+        name: Stream Photo
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    l_blob      BLOB;
+                    l_mime_type VARCHAR2(100);
+                    l_file_name VARCHAR2(255);
+                BEGIN
+                    SELECT photo_data, mime_type, file_name
+                    INTO   l_blob, l_mime_type, l_file_name
+                    FROM   ptw_pro.ptw_lv_permit_photos
+                    WHERE  photo_id = TO_NUMBER(:P20_PHOTO_ID);
+                
+                    owa_util.mime_header(NVL(l_mime_type, 'image/jpeg'), FALSE);
+                    htp.p('Content-Length: ' || DBMS_LOB.GETLENGTH(l_blob));
+                    htp.p('Content-Disposition: inline; filename="' || NVL(l_file_name, 'photo.jpg') || '"');
+                    htp.p('Cache-Control: private, max-age=3600');
+                    owa_util.http_header_close;
+                    wpg_docload.download_file(l_blob);
+                    apex_application.stop_apex_engine;
+                
+                EXCEPTION
+                    WHEN apex_application.e_stop_apex_engine THEN RAISE;
+                    WHEN NO_DATA_FOUND THEN apex_application.stop_apex_engine;
+                    WHEN OTHERS THEN apex_application.stop_apex_engine;
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 40755250521498302
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P20_PHOTO_ID
+        }
+    )
+
+)
+
