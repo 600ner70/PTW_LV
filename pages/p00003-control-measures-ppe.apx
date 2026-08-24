@@ -78,129 +78,6 @@ page 3 (
                 }, true);
             }());
             
-            (function () {
-            
-                var CM_ITEMS = [
-                    'P3_CM_01','P3_CM_02','P3_CM_03','P3_CM_04',
-                    'P3_CM_05','P3_CM_06','P3_CM_07','P3_CM_08',
-                    'P3_CM_09','P3_CM_10','P3_CM_11','P3_CM_12',
-                    'P3_CM_13','P3_CM_14','P3_CM_15','P3_CM_16'
-                ];
-            
-                var PPE_ITEMS = [
-                    'P3_PPE_SAFETY_HELMET',
-                    'P3_PPE_ARC_FLASH',
-                    'P3_PPE_SAFETY_FOOTWEAR',
-                    'P3_PPE_HI_VIS',
-                    'P3_PPE_SAFETY_GOGGLES',
-                    'P3_PPE_INSULATING_GLOVES',
-                    'P3_PPE_FALL_RESTRAINT',
-                    'P3_PPE_FALL_ARREST',
-                    'P3_PPE_EAR_DEFENDERS',
-                    'P3_PPE_SAFETY_GLOVES'
-                ];
-            
-                var BADGES = [
-                    { val: 'Y',  cls: 'cm-badge-yes', label: '✓' },
-                    { val: 'N',  cls: 'cm-badge-no',  label: '✗' },
-                    { val: 'NA', cls: 'cm-badge-na',  label: 'N/A' }
-                ];
-            
-                var isReadOnly = (apex.item('P3_WORKFLOW_STATUS').getValue() !== 'DRAFT');
-            
-                // -------------------------------------------------------
-                // CM TRISTATE BADGES
-                // -------------------------------------------------------
-                CM_ITEMS.forEach(function (itemName) {
-            
-                    var $fc = $('#' + itemName).closest('.t-Form-fieldContainer');
-                    if ($fc.length === 0) {
-                        $fc = $('[id="' + itemName + '_LABEL"]').closest('.t-Form-fieldContainer');
-                    }
-                    if ($fc.length === 0) return;
-            
-                    $fc.find('.cm-badge-row').remove();
-            
-                    var currentVal = '';
-                    if (!isReadOnly) {
-                        currentVal = $('input[name="' + itemName + '"]:checked').val() || '';
-                    } else {
-                        currentVal = apex.item(itemName).getValue() || '';
-                    }
-            
-                    var $row = $('<div class="cm-badge-row"></div>').attr('data-item', itemName);
-            
-                    BADGES.forEach(function (b) {
-                        $('<span></span>')
-                            .addClass('cm-badge ' + b.cls)
-                            .toggleClass('cm-active', currentVal === b.val)
-                            .toggleClass('cm-badge-readonly', isReadOnly)
-                            .attr('data-value', b.val)
-                            .text(b.label)
-                            .appendTo($row);
-                    });
-            
-                    $fc.find('.t-Form-inputContainer').append($row);
-                });
-            
-                // Hide native CM radio grid
-                $('.cm-tristate-item .apex-item-grid').hide();
-            
-                // CM delegated click — edit mode only
-                $(document).off('click.cmtristate').on('click.cmtristate', '.cm-badge:not(.cm-badge-readonly)', function () {
-                    var $badge   = $(this);
-                    var $row     = $badge.closest('.cm-badge-row');
-                    var itemName = $row.attr('data-item');
-                    var val      = $badge.attr('data-value');
-            
-                    $('input[name="' + itemName + '"][value="' + val + '"]')
-                        .prop('checked', true).trigger('change');
-            
-                    $row.find('.cm-badge').removeClass('cm-active');
-                    $badge.addClass('cm-active');
-                });
-            
-                // -------------------------------------------------------
-                // PPE SINGLE TICK BADGES
-                // -------------------------------------------------------
-                PPE_ITEMS.forEach(function (itemName) {
-            
-                    var $fc = $('#' + itemName).closest('.t-Form-fieldContainer');
-                    if ($fc.length === 0) return;
-            
-                    $fc.find('.ppe-badge-row').remove();
-            
-                    var currentVal = apex.item(itemName).getValue() || '';
-                    var isChecked  = (currentVal.indexOf('Y') > -1);
-            
-                    var $badge = $('<span></span>')
-                        .addClass('ppe-badge')
-                        .toggleClass('ppe-active', isChecked)
-                        .toggleClass('ppe-readonly', isReadOnly)
-                        .attr('data-item', itemName)
-                        .text('✓');
-            
-                    var $row = $('<div class="ppe-badge-row"></div>').append($badge);
-                    $fc.find('.t-Form-inputContainer').append($row);
-                });
-            
-                // Hide native PPE checkboxes
-                $('.cm-tick-item .apex-item-checkbox').hide();
-            
-                // PPE delegated click — edit mode only
-                $(document).off('click.ppetick').on('click.ppetick', '.ppe-badge:not(.ppe-readonly)', function () {
-                    var $badge     = $(this);
-                    var itemName   = $badge.attr('data-item');
-                    var isNowActive = !$badge.hasClass('ppe-active');
-            
-                    $('input[name="' + itemName + '"]').prop('checked', isNowActive).trigger('change');
-                    apex.item(itemName).setValue(isNowActive ? 'Y' : '');
-            
-                    $badge.toggleClass('ppe-active', isNowActive);
-                });
-            
-            }());
-            
             function initCMChecklist() {
                 var $items = $('.cm-tristate-item');
             
@@ -216,6 +93,12 @@ page 3 (
             apex.jQuery(document).on('apexreadyend', function() {
                 initCMChecklist();
             });
+            
+            PTW.checklist.load(
+                $v('P3_PERMIT_ID'),
+                { controlMeasures: 'cm-checklist-region', ppe: 'ppe-checklist-region' },
+                apex.item('P3_WORKFLOW_STATUS').getValue() !== 'DRAFT'
+            );
             
             ```
     }
@@ -326,7 +209,7 @@ page 3 (
         name: Buttons
         type: staticContent
         layout {
-            sequence: 150
+            sequence: 170
             slot: body
         }
         appearance {
@@ -335,12 +218,12 @@ page 3 (
         }
     )
 
-    region control-measures-checklist (
+    region cm-checklist-region (
         name: Control Measures Checklist
-        title: Control Measures - must be in place before issuing a Permit to Work LV Electrical
+        title: Control Measures - must be in place before issuing a Permit to Work
         type: staticContent
         layout {
-            sequence: 130
+            sequence: 150
             slot: body
         }
         appearance {
@@ -353,25 +236,30 @@ page 3 (
             ]
             icon: fa-clipboard-check
         }
+        advanced {
+            htmlDomId: cm-checklist-region
+        }
     )
 
     region permit-information-badge (
-        name: Permit Information Badge
-        type: staticContent
+        name: Permit Type Badge
+        type: dynamicContent
         source {
-            htmlCode:
-                ```html
-                <div style="margin-bottom: 20px;">
-                    <span class="apex-badge" style="background-color: #3ea055; color: white; padding: 6px 16px; border-radius: 20px; font-weight: 600;">
-                        Permit: &P3_PERMIT_NUMBER.
-                    </span>
-                </div>
-                
+            plsqlFunctionBody:
+                ```plsql
+                RETURN ptw_pro.ptw_ui_pkg.get_permit_type_badge_html(
+                    p_permit_id => :P3_PERMIT_ID,
+                    p_ptw_type  => :P3_PTW_TYPE
+                );
                 ```
         }
         layout {
-            sequence: 120
+            sequence: 130
             slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
         }
         serverSideCondition {
             type: itemIsNotNull
@@ -379,12 +267,39 @@ page 3 (
         }
     )
 
-    region ppe-requirements (
+    region permit-number-badge (
+        name: Permit Number Badge
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                    <div style="margin-bottom: 20px;">
+                        <span class="apex-badge" style="background-color: #3ea055; color: white; padding: 6px 16px; border-radius: 20px; font-weight: 600;">
+                            Permit: &P3_PERMIT_NUMBER.
+                        </span>
+                    </div>
+                ```
+        }
+        layout {
+            sequence: 140
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P3_PERMIT_NUMBER
+        }
+    )
+
+    region ppe-checklist-region (
         name: PPE Requirements
         title: Identify Essential Personal Protective Equipment (PPE) Required To Be Worn
         type: staticContent
         layout {
-            sequence: 140
+            sequence: 160
             slot: body
         }
         appearance {
@@ -396,6 +311,9 @@ page 3 (
                 t-Region--scrollBody
             ]
             icon: fa-shield
+        }
+        advanced {
+            htmlDomId: ppe-checklist-region
         }
     )
 
@@ -413,7 +331,7 @@ page 3 (
                 ```
         }
         layout {
-            sequence: 100
+            sequence: 110
             slot: body
         }
         appearance {
@@ -435,7 +353,7 @@ page 3 (
                 ```
         }
         layout {
-            sequence: 110
+            sequence: 120
             slot: body
         }
         appearance {
@@ -444,463 +362,14 @@ page 3 (
         }
     )
 
-    pageItem P3_CM_01 (
-        type: radioGroup
-        label {
-            label: 1. All workers under this PTW have completed and signed off on a site induction?
-            alignment: left
-        }
+    pageItem P3_CHECKLIST_JSON (
+        type: hidden
         settings {
-            noOfCols: 3
-        }
-        lov {
-            type: sharedComponent
-            lov: @control-measures-lov
-            displayExtraValues: false
-            displayNullValue: false
-        }
-        layout {
-            sequence: 10
-            region: @control-measures-checklist
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/optional-above
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tristate-item
-        }
-        help {
-            helpText: All persons working under this PTW have received and signed, as understood, a suitable site induction?
-        }
-    )
-
-    pageItem P3_CM_02 (
-        type: radioGroup
-        label {
-            label: 2. A reviewed risk assessment and method statement, including emergency evacuation, is in place and understood by all workers.?
-            alignment: left
-        }
-        settings {
-            noOfCols: 3
-        }
-        lov {
-            type: sharedComponent
-            lov: @control-measures-lov
-            displayExtraValues: false
-            displayNullValue: false
-        }
-        layout {
-            sequence: 20
-            region: @control-measures-checklist
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/optional-above
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tristate-item
-        }
-        help {
-            helpText: A suitable and sufficient written risk assessment and method statement for these works, which has already been understood by all persons working under this permit is in place and has been reviewed at the point of works by the person controlling the works. This must include the provision of an emergency evacuation plan.
-        }
-    )
-
-    pageItem P3_CM_03 (
-        type: radioGroup
-        label {
-            label: 3. The competence of the people working under the permit has been checked and is deemed to be adequate for these works.
-            alignment: left
-        }
-        settings {
-            noOfCols: 3
-        }
-        lov {
-            type: sharedComponent
-            lov: @control-measures-lov
-            displayExtraValues: false
-            displayNullValue: false
-        }
-        layout {
-            sequence: 30
-            region: @control-measures-checklist
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/optional-above
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tristate-item
-        }
-    )
-
-    pageItem P3_CM_04 (
-        type: radioGroup
-        label {
-            label: 4. The person in charge of the works must be made aware of all hazards within the vicinity of the place of works.
-            alignment: left
-        }
-        settings {
-            noOfCols: 3
-        }
-        lov {
-            type: sharedComponent
-            lov: @control-measures-lov
-            displayExtraValues: false
-            displayNullValue: false
-        }
-        layout {
-            sequence: 40
-            region: @control-measures-checklist
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/optional-above
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tristate-item
-        }
-    )
-
-    pageItem P3_CM_05 (
-        type: radioGroup
-        label {
-            label: 5. Where the use of PPE is identified as a control measure within the risk assessment, this equipment is in good order.
-            alignment: left
-        }
-        settings {
-            noOfCols: 3
-        }
-        lov {
-            type: sharedComponent
-            lov: @control-measures-lov
-            displayExtraValues: false
-            displayNullValue: false
-        }
-        layout {
-            sequence: 50
-            region: @control-measures-checklist
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/optional-above
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tristate-item
-        }
-    )
-
-    pageItem P3_CM_06 (
-        type: radioGroup
-        label {
-            label: 6. Confirm that all sources of supply have been isolated, locked off and caution signs fitted, list details below.
-            alignment: left
-        }
-        settings {
-            noOfCols: 3
-        }
-        lov {
-            type: sharedComponent
-            lov: @control-measures-lov
-            displayExtraValues: false
-            displayNullValue: false
-        }
-        layout {
-            sequence: 60
-            region: @control-measures-checklist
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/optional-above
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tristate-item
-        }
-    )
-
-    pageItem P3_CM_07 (
-        type: radioGroup
-        label {
-            label: 7. Confirm all isolated supplies are proven or confirmed dead before work starts?
-            alignment: left
-        }
-        settings {
-            noOfCols: 3
-        }
-        lov {
-            type: sharedComponent
-            lov: @control-measures-lov
-            displayExtraValues: false
-            displayNullValue: false
-        }
-        layout {
-            sequence: 70
-            region: @control-measures-checklist
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/optional-above
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tristate-item
-        }
-        help {
-            helpText: Confirm that all isolated sources of supply have been proved dead using an approved tester and proving unit, where this is not possible the AP must confirm dead at the point of work after the issue of this Permit.
-        }
-    )
-
-    pageItem P3_CM_08 (
-        type: radioGroup
-        label {
-            label: 8. Confirm all systems to be worked on have been checked to ensure that any stored energy has been dissipated.
-            alignment: left
-        }
-        settings {
-            noOfCols: 3
-        }
-        lov {
-            type: sharedComponent
-            lov: @control-measures-lov
-            displayExtraValues: false
-            displayNullValue: false
-        }
-        layout {
-            sequence: 80
-            region: @control-measures-checklist
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/optional-above
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tristate-item
-        }
-    )
-
-    pageItem P3_CM_09 (
-        type: radioGroup
-        label {
-            label: 9. Confirm any live parts are insulated and no exposed live components remain?
-            alignment: left
-        }
-        settings {
-            noOfCols: 3
-        }
-        lov {
-            type: sharedComponent
-            lov: @control-measures-lov
-            displayExtraValues: false
-            displayNullValue: false
-        }
-        layout {
-            sequence: 90
-            region: @control-measures-checklist
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/optional-above
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tristate-item
-        }
-        help {
-            helpText: Confirm that if any section of the equipment is still live it is covered in a suitable insulating material and that there are no exposed live parts.
-        }
-    )
-
-    pageItem P3_CM_10 (
-        type: radioGroup
-        label {
-            label: 10. Confirm that sufficient measures are in place to ensure that no live equipment is worked on.
-            alignment: left
-        }
-        settings {
-            noOfCols: 3
-        }
-        lov {
-            type: sharedComponent
-            lov: @control-measures-lov
-            displayExtraValues: false
-            displayNullValue: false
+            valueProtected: false
         }
         layout {
             sequence: 100
-            region: @control-measures-checklist
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/optional-above
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tristate-item
-        }
-    )
-
-    pageItem P3_CM_11 (
-        type: radioGroup
-        label {
-            label: 11. Confirm there are first aid facilities available.
-            alignment: left
-        }
-        settings {
-            noOfCols: 3
-        }
-        lov {
-            type: sharedComponent
-            lov: @control-measures-lov
-            displayExtraValues: false
-            displayNullValue: false
-        }
-        layout {
-            sequence: 110
-            region: @control-measures-checklist
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/optional-above
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tristate-item
-        }
-    )
-
-    pageItem P3_CM_12 (
-        type: radioGroup
-        label {
-            label: 12. Confirm that suitable barriers have been used to clearly identify the working area.
-            alignment: left
-        }
-        settings {
-            noOfCols: 3
-        }
-        lov {
-            type: sharedComponent
-            lov: @control-measures-lov
-            displayExtraValues: false
-            displayNullValue: false
-        }
-        layout {
-            sequence: 120
-            region: @control-measures-checklist
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/optional-above
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tristate-item
-        }
-    )
-
-    pageItem P3_CM_13 (
-        type: radioGroup
-        label {
-            label: 13. Confirm there is unrestricted access and egress to the working area.
-            alignment: left
-        }
-        settings {
-            noOfCols: 3
-        }
-        lov {
-            type: sharedComponent
-            lov: @control-measures-lov
-            displayExtraValues: false
-            displayNullValue: false
-        }
-        layout {
-            sequence: 130
-            region: @control-measures-checklist
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/optional-above
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tristate-item
-        }
-    )
-
-    pageItem P3_CM_14 (
-        type: radioGroup
-        label {
-            label: 14. Confirm there is suitable insulated matting available.
-            alignment: left
-        }
-        settings {
-            noOfCols: 3
-        }
-        lov {
-            type: sharedComponent
-            lov: @control-measures-lov
-            displayExtraValues: false
-            displayNullValue: false
-        }
-        layout {
-            sequence: 140
-            region: @control-measures-checklist
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/optional-above
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tristate-item
-        }
-    )
-
-    pageItem P3_CM_15 (
-        type: radioGroup
-        label {
-            label: 15. Confirm that the calibration of the test equipment is current.
-            alignment: left
-        }
-        settings {
-            noOfCols: 3
-        }
-        lov {
-            type: sharedComponent
-            lov: @control-measures-lov
-            displayExtraValues: false
-            displayNullValue: false
-        }
-        layout {
-            sequence: 150
-            region: @control-measures-checklist
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/optional-above
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tristate-item
-        }
-    )
-
-    pageItem P3_CM_16 (
-        type: radioGroup
-        label {
-            label: 16. Danger signs have been applied to adjacent live equipment.
-            alignment: left
-        }
-        settings {
-            noOfCols: 3
-        }
-        lov {
-            type: sharedComponent
-            lov: @control-measures-lov
-            displayExtraValues: false
-            displayNullValue: false
-        }
-        layout {
-            sequence: 160
-            region: @control-measures-checklist
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/optional-above
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tristate-item
+            slot: body
         }
     )
 
@@ -956,260 +425,6 @@ page 3 (
         layout {
             sequence: 50
             slot: body
-        }
-    )
-
-    pageItem P3_PPE_ARC_FLASH (
-        type: checkboxGroup
-        label {
-            label: Arc Flash PPE
-            alignment: left
-        }
-        lov {
-            type: staticValues
-            staticValues: STATIC:Yes;Y
-            displayExtraValues: false
-        }
-        layout {
-            sequence: 20
-            region: @ppe-requirements
-            slot: regionBody
-            alignment: left
-            startNewRow: false
-            columnSpan: 6
-        }
-        appearance {
-            template: @/optional-floating
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tick-item
-        }
-    )
-
-    pageItem P3_PPE_EAR_DEFENDERS (
-        type: checkboxGroup
-        label {
-            label: Ear Defenders/Plugs
-            alignment: left
-        }
-        lov {
-            type: staticValues
-            staticValues: STATIC:Yes;Y
-            displayExtraValues: false
-        }
-        layout {
-            sequence: 90
-            region: @ppe-requirements
-            slot: regionBody
-            alignment: left
-            columnSpan: 6
-        }
-        appearance {
-            template: @/optional-floating
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tick-item
-        }
-    )
-
-    pageItem P3_PPE_FALL_ARREST (
-        type: checkboxGroup
-        label {
-            label: Fall Arrest Harness
-            alignment: left
-        }
-        lov {
-            type: staticValues
-            staticValues: STATIC:Yes;Y
-            displayExtraValues: false
-        }
-        layout {
-            sequence: 80
-            region: @ppe-requirements
-            slot: regionBody
-            alignment: left
-            startNewRow: false
-            columnSpan: 6
-        }
-        appearance {
-            template: @/optional-floating
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tick-item
-        }
-    )
-
-    pageItem P3_PPE_FALL_RESTRAINT (
-        type: checkboxGroup
-        label {
-            label: Fall Restraint Harness
-            alignment: left
-        }
-        lov {
-            type: staticValues
-            staticValues: STATIC:Yes;Y
-        }
-        layout {
-            sequence: 70
-            region: @ppe-requirements
-            slot: regionBody
-            alignment: left
-            columnSpan: 6
-        }
-        appearance {
-            template: @/optional-floating
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tick-item
-        }
-    )
-
-    pageItem P3_PPE_HI_VIS (
-        type: checkboxGroup
-        label {
-            label: Hi-Vis Vest/Jkt
-            alignment: left
-        }
-        lov {
-            type: staticValues
-            staticValues: STATIC:Yes;Y
-            displayExtraValues: false
-        }
-        layout {
-            sequence: 40
-            region: @ppe-requirements
-            slot: regionBody
-            alignment: left
-            startNewRow: false
-            columnSpan: 6
-        }
-        appearance {
-            template: @/optional-floating
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tick-item
-        }
-    )
-
-    pageItem P3_PPE_INSULATING_GLOVES (
-        type: checkboxGroup
-        label {
-            label: Electrical Insulating Gloves
-            alignment: left
-        }
-        lov {
-            type: staticValues
-            staticValues: STATIC:Yes;Y
-            displayExtraValues: false
-        }
-        layout {
-            sequence: 60
-            region: @ppe-requirements
-            slot: regionBody
-            alignment: left
-            startNewRow: false
-            columnSpan: 6
-        }
-        appearance {
-            template: @/optional-floating
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tick-item
-        }
-    )
-
-    pageItem P3_PPE_SAFETY_FOOTWEAR (
-        type: checkboxGroup
-        label {
-            label: Safety Footwear
-            alignment: left
-        }
-        lov {
-            type: staticValues
-            staticValues: STATIC:Yes;Y
-            displayExtraValues: false
-        }
-        layout {
-            sequence: 30
-            region: @ppe-requirements
-            slot: regionBody
-            alignment: left
-            columnSpan: 6
-        }
-        appearance {
-            template: @/optional-floating
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tick-item
-        }
-    )
-
-    pageItem P3_PPE_SAFETY_GLOVES (
-        type: checkboxGroup
-        label {
-            label: Safety Gloves
-            alignment: left
-        }
-        lov {
-            type: staticValues
-            staticValues: STATIC:Yes;Y
-            displayExtraValues: false
-        }
-        layout {
-            sequence: 100
-            region: @ppe-requirements
-            slot: regionBody
-            alignment: left
-            startNewRow: false
-            columnSpan: 6
-        }
-        appearance {
-            template: @/optional-floating
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tick-item
-        }
-    )
-
-    pageItem P3_PPE_SAFETY_GOGGLES (
-        type: checkboxGroup
-        label {
-            label: Safety Goggles
-            alignment: left
-        }
-        lov {
-            type: staticValues
-            staticValues: STATIC:Yes;Y
-            displayExtraValues: false
-        }
-        layout {
-            sequence: 50
-            region: @ppe-requirements
-            slot: regionBody
-            alignment: left
-            columnSpan: 6
-        }
-        appearance {
-            template: @/optional-floating
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tick-item
-        }
-    )
-
-    pageItem P3_PPE_SAFETY_HELMET (
-        type: checkboxGroup
-        label {
-            label: Safety Helmet (Hard Hat)
-            alignment: left
-        }
-        lov {
-            type: staticValues
-            staticValues: STATIC:Yes;Y
-            displayExtraValues: false
-        }
-        layout {
-            sequence: 10
-            region: @ppe-requirements
-            slot: regionBody
-            alignment: left
-            columnSpan: 6
-        }
-        appearance {
-            template: @/optional-floating
-            templateOptions: #DEFAULT#
-            cssClasses: cm-tick-item
         }
     )
 
@@ -1327,6 +542,7 @@ page 3 (
             settings {
                 jsCode:
                     ```javascript-browser
+                    apex.item('P3_CHECKLIST_JSON').setValue(JSON.stringify(PTW.checklist.collect()));
                     captureLocationThenSubmit('NEXT_STEP');
                     
                     ```
@@ -1357,7 +573,11 @@ page 3 (
         action native-javascript-code (
             action: executeJsCode
             settings {
-                jsCode: captureLocationThenSubmit('SAVE_DRAFT');
+                jsCode:
+                    ```javascript-browser
+                    apex.item('P3_CHECKLIST_JSON').setValue(JSON.stringify(PTW.checklist.collect()));
+                    captureLocationThenSubmit('SAVE_DRAFT');
+                    ```
             }
             execution {
                 sequence: 10
@@ -1376,21 +596,35 @@ page 3 (
             type: functionBodyReturningBoolean
             plsqlFunctionBody:
                 ```plsql
-                RETURN (
-                    :P3_CM_01 IS NOT NULL AND :P3_CM_02 IS NOT NULL AND
-                    :P3_CM_03 IS NOT NULL AND :P3_CM_04 IS NOT NULL AND
-                    :P3_CM_05 IS NOT NULL AND :P3_CM_06 IS NOT NULL AND
-                    :P3_CM_07 IS NOT NULL AND :P3_CM_08 IS NOT NULL AND
-                    :P3_CM_09 IS NOT NULL AND :P3_CM_10 IS NOT NULL AND
-                    :P3_CM_11 IS NOT NULL AND :P3_CM_12 IS NOT NULL AND
-                    :P3_CM_13 IS NOT NULL AND :P3_CM_14 IS NOT NULL AND
-                    :P3_CM_15 IS NOT NULL AND :P3_CM_16 IS NOT NULL
-                );
+                DECLARE
+                    l_unanswered_count NUMBER;
+                BEGIN
+                    SELECT COUNT(*)
+                    INTO   l_unanswered_count
+                    FROM   ptw_pro.ptw_checklist_items ci
+                    JOIN   ptw_pro.ptw_types t         ON t.type_id = ci.type_id
+                    JOIN   ptw_pro.ptw_lv_permits p    ON p.ptw_type = t.ptw_type
+                    WHERE  p.permit_id  = :P3_PERMIT_ID
+                    AND    ci.is_active = 'Y'
+                    AND    ci.section_code = 'CONTROL_MEASURES'
+                    AND    NOT EXISTS (
+                        SELECT 1
+                        FROM   JSON_TABLE(:P3_CHECKLIST_JSON, '$[*]'
+                                   COLUMNS (
+                                       checklist_item_id NUMBER      PATH '$.checklist_item_id',
+                                       response          VARCHAR2(2) PATH '$.response'
+                                   )) jt
+                        WHERE  jt.checklist_item_id = ci.checklist_item_id
+                        AND    jt.response IS NOT NULL
+                    );
+                
+                    RETURN l_unanswered_count = 0;
+                END;
                 ```
             alwaysExecute: true
         }
         error {
-            errorMessage: All 16 control measures must be confirmed before proceeding to the next step.
+            errorMessage: All control measures must be confirmed before proceeding to the next step.
         }
         serverSideCondition {
             type: request=Value
@@ -1471,6 +705,26 @@ page 3 (
         }
     )
 
+    process get-checklist (
+        name: GET_CHECKLIST
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                BEGIN
+                    htp.prn('{"items":' || ptw_pro.ptw_checklist_pkg.get_checklist_json(apex_application.g_x01) || '}');
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: ajaxCallback
+        }
+        advanced {
+            executionMappingIdentifier: 8880044332853349
+        }
+    )
+
     process load-control-measures-and-ppe-data (
         name: Load Control Measures and PPE Data
         type: executeCode
@@ -1482,81 +736,16 @@ page 3 (
                     :P3_CURRENT_STEP := 'CONTROL_MEASURES';
                     SELECT
                         permit_number,
-                        ppe_safety_helmet,
-                        ppe_arc_flash,
-                        ppe_safety_footwear,
-                        ppe_hi_vis,
-                        ppe_safety_goggles,
-                        ppe_insulating_gloves,
-                        ppe_fall_restraint,
-                        ppe_fall_arrest,
-                        ppe_ear_defenders,
-                        ppe_safety_gloves,
                         workflow_status,
                         ptw_type
                     INTO
                         :P3_PERMIT_NUMBER,
-                        :P3_PPE_SAFETY_HELMET,
-                        :P3_PPE_ARC_FLASH,
-                        :P3_PPE_SAFETY_FOOTWEAR,
-                        :P3_PPE_HI_VIS,
-                        :P3_PPE_SAFETY_GOGGLES,
-                        :P3_PPE_INSULATING_GLOVES,
-                        :P3_PPE_FALL_RESTRAINT,
-                        :P3_PPE_FALL_ARREST,
-                        :P3_PPE_EAR_DEFENDERS,
-                        :P3_PPE_SAFETY_GLOVES,
                         :P3_WORKFLOW_STATUS,
                         :P3_PTW_TYPE
                     FROM ptw_pro.ptw_lv_permits
                     WHERE permit_id = :P3_PERMIT_ID;
                 
                     :G_ACTIVE_PERMIT_ID := :P3_PERMIT_ID;
-                
-                    -- Load control measures if they exist
-                    BEGIN
-                        SELECT
-                            control_measures_id,
-                            cm_01_site_induction,
-                            cm_02_risk_assessment,
-                            cm_03_competence_checked,
-                            cm_04_hazards_aware,
-                            cm_05_ppe_identified,
-                            cm_06_sources_isolated,
-                            cm_07_proved_dead,
-                            cm_08_stored_energy,
-                            cm_09_live_covered,
-                            cm_10_no_live_work,
-                            cm_11_first_aid,
-                            cm_12_barriers,
-                            cm_13_access_egress,
-                            cm_14_insulated_matting,
-                            cm_15_calibration_current,
-                            cm_16_danger_signs
-                        INTO
-                            :P3_CONTROL_MEASURES_ID,
-                            :P3_CM_01,
-                            :P3_CM_02,
-                            :P3_CM_03,
-                            :P3_CM_04,
-                            :P3_CM_05,
-                            :P3_CM_06,
-                            :P3_CM_07,
-                            :P3_CM_08,
-                            :P3_CM_09,
-                            :P3_CM_10,
-                            :P3_CM_11,
-                            :P3_CM_12,
-                            :P3_CM_13,
-                            :P3_CM_14,
-                            :P3_CM_15,
-                            :P3_CM_16
-                        FROM ptw_pro.ptw_lv_control_measures
-                        WHERE permit_id = :P3_PERMIT_ID;
-                    EXCEPTION
-                        WHEN NO_DATA_FOUND THEN
-                            :P3_CONTROL_MEASURES_ID := NULL;
-                    END;
                 
                 EXCEPTION
                     WHEN NO_DATA_FOUND THEN
@@ -1588,95 +777,7 @@ page 3 (
                 ```plsql
                 BEGIN
                   IF :P3_WORKFLOW_STATUS = 'DRAFT' THEN
-                    -- PART 1: Save PPE to ptw_lv_permits (always UPDATE, record already exists)
-                    UPDATE ptw_pro.ptw_lv_permits
-                    SET    ppe_safety_helmet       = :P3_PPE_SAFETY_HELMET,
-                           ppe_arc_flash           = :P3_PPE_ARC_FLASH,
-                           ppe_safety_footwear     = :P3_PPE_SAFETY_FOOTWEAR,
-                           ppe_hi_vis              = :P3_PPE_HI_VIS,
-                           ppe_safety_goggles      = :P3_PPE_SAFETY_GOGGLES,
-                           ppe_insulating_gloves   = :P3_PPE_INSULATING_GLOVES,
-                           ppe_fall_restraint      = :P3_PPE_FALL_RESTRAINT,
-                           ppe_fall_arrest         = :P3_PPE_FALL_ARREST,
-                           ppe_ear_defenders       = :P3_PPE_EAR_DEFENDERS,
-                           ppe_safety_gloves       = :P3_PPE_SAFETY_GLOVES,
-                           ppe_latitude            = :APP_LATITUDE,
-                           ppe_longitude           = :APP_LONGITUDE,
-                           current_step            = :P3_CURRENT_STEP,
-                           workflow_status         = :P3_WORKFLOW_STATUS,
-                           modified_by             = NVL(V('APP_USER'), USER),
-                           modified_date           = CURRENT_TIMESTAMP
-                    WHERE  permit_id = :P3_PERMIT_ID;
-                
-                    -- PART 2: Save Control Measures using MERGE (INSERT or UPDATE)
-                    MERGE INTO ptw_pro.ptw_lv_control_measures tgt
-                    USING (SELECT :P3_PERMIT_ID AS permit_id FROM dual) src
-                    ON (tgt.permit_id = src.permit_id)
-                    WHEN MATCHED THEN
-                        UPDATE SET
-                            cm_01_site_induction      = :P3_CM_01,
-                            cm_02_risk_assessment     = :P3_CM_02,
-                            cm_03_competence_checked  = :P3_CM_03,
-                            cm_04_hazards_aware       = :P3_CM_04,
-                            cm_05_ppe_identified      = :P3_CM_05,
-                            cm_06_sources_isolated    = :P3_CM_06,
-                            cm_07_proved_dead         = :P3_CM_07,
-                            cm_08_stored_energy       = :P3_CM_08,
-                            cm_09_live_covered        = :P3_CM_09,
-                            cm_10_no_live_work        = :P3_CM_10,
-                            cm_11_first_aid           = :P3_CM_11,
-                            cm_12_barriers            = :P3_CM_12,
-                            cm_13_access_egress       = :P3_CM_13,
-                            cm_14_insulated_matting   = :P3_CM_14,
-                            cm_15_calibration_current = :P3_CM_15,
-                            cm_16_danger_signs        = :P3_CM_16,
-                            cm_latitude               = :APP_LATITUDE,
-                            cm_longitude              = :APP_LONGITUDE,
-                            modified_date             = CURRENT_TIMESTAMP
-                    WHEN NOT MATCHED THEN
-                        INSERT (
-                            permit_id,
-                            cm_01_site_induction,
-                            cm_02_risk_assessment,
-                            cm_03_competence_checked,
-                            cm_04_hazards_aware,
-                            cm_05_ppe_identified,
-                            cm_06_sources_isolated,
-                            cm_07_proved_dead,
-                            cm_08_stored_energy,
-                            cm_09_live_covered,
-                            cm_10_no_live_work,
-                            cm_11_first_aid,
-                            cm_12_barriers,
-                            cm_13_access_egress,
-                            cm_14_insulated_matting,
-                            cm_15_calibration_current,
-                            cm_16_danger_signs,
-                            cm_latitude,
-                            cm_longitude
-                        ) VALUES (
-                            :P3_PERMIT_ID,
-                            :P3_CM_01,
-                            :P3_CM_02,
-                            :P3_CM_03,
-                            :P3_CM_04,
-                            :P3_CM_05,
-                            :P3_CM_06,
-                            :P3_CM_07,
-                            :P3_CM_08,
-                            :P3_CM_09,
-                            :P3_CM_10,
-                            :P3_CM_11,
-                            :P3_CM_12,
-                            :P3_CM_13,
-                            :P3_CM_14,
-                            :P3_CM_15,
-                            :P3_CM_16,
-                            :APP_LATITUDE,
-                            :APP_LONGITUDE
-                        );
-                
-                    COMMIT;
+                    ptw_pro.ptw_checklist_pkg.save_checklist_responses(:P3_PERMIT_ID, :P3_CHECKLIST_JSON);
                   END IF;
                 
                 EXCEPTION

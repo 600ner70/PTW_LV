@@ -78,6 +78,16 @@ file offline-storage.min.js (
     charSet: utf-8
 )
 
+file ptw-checklist.js (
+    mimeType: text/javascript
+    charSet: utf-8
+)
+
+file ptw-checklist.min.js (
+    mimeType: text/javascript
+    charSet: utf-8
+)
+
 file ptw-global.css (
     mimeType: text/css
     charSet: utf-8

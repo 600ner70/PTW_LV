@@ -392,3 +392,191 @@ textarea[aria-readonly="true"],
     border-color: #1e7e34 !important;
     color: #fff !important;
 }
+
+/* Numbered, spaced, bordered rows - one per checklist question.
+   Numbering is done in pure CSS (counter), no JS change needed. */
+#cm-checklist-region,
+#ppe-checklist-region {
+    counter-reset: ptw-checklist-item;
+}
+
+.ptw-checklist-field {
+    counter-increment: ptw-checklist-item;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.ptw-checklist-field:last-child {
+    border-bottom: none;
+}
+
+.ptw-checklist-field:nth-child(even) {
+    background: #f8f9fa;
+}
+
+/* Question number + text, matching the old table's numbered
+   column look but as a simple inline prefix */
+.ptw-checklist-field .t-Form-labelContainer label {
+    display: block;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.ptw-checklist-field .t-Form-labelContainer label::before {
+    content: counter(ptw-checklist-item) ". ";
+    font-weight: 700;
+    color: #003366;
+}
+
+/* Badges sit on their own row below the question - matches the
+   original design's vertical stacking (cleaner on mobile than
+   badges wrapping awkwardly inline next to long question text) */
+.ptw-checklist-field .t-Form-inputContainer {
+    display: block;
+}
+
+/* PPE region specifically: 2-column grid, matching the old
+   .ppe-grid layout. Only the PPE region gets this - Control
+   Measures stays single-column since its questions run longer. */
+#ppe-checklist-region {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px 24px;
+}
+
+#ppe-checklist-region .ptw-checklist-field {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: none;
+    background: transparent;
+    padding: 10px 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+}
+
+#ppe-checklist-region .ptw-checklist-field:nth-child(even) {
+    background: transparent;
+}
+
+/* PPE items don't need the numbered prefix - "1. Dust
+   Respirator" reads oddly compared to Control Measures'
+   numbered questions, so suppress it just for this region */
+#ppe-checklist-region .t-Form-labelContainer label::before {
+    content: '';
+}
+
+/* Small screens: PPE drops back to one column, same breakpoint
+   already used elsewhere in this file for mobile */
+@media (max-width: 767px) {
+    #ppe-checklist-region {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* =====================================================
+   REPLACES the previous version of this file (the one that
+   produced the broken right-aligned/split layout) - that
+   attempt targeted Universal Theme's t-Form-* classes, which
+   have their own internal layout rules that fought the
+   override in unpredictable ways. This version targets
+   fully custom classes (ptw-cl-*) that ptw-checklist.js now
+   builds itself, with nothing inherited from the theme to
+   fight against.
+
+   REQUIRES the updated ptw-checklist.js (renderSection now
+   builds ptw-cl-item / ptw-cl-question / ptw-cl-badges
+   instead of t-Form-fieldContainer / t-Form-labelContainer /
+   t-Form-inputContainer) - this CSS alone does nothing without
+   that JS change also being uploaded.
+
+   Add to the end of ptw-global.css, same as before - if the
+   previous version of this block was already added, replace
+   it entirely with this one rather than appending both.
+   ===================================================== */
+
+#cm-checklist-region,
+#ppe-checklist-region {
+    counter-reset: ptw-checklist-item;
+}
+
+.ptw-cl-item {
+    counter-increment: ptw-checklist-item;
+    display: block;
+    padding: 14px 16px;
+    border-bottom: 1px solid #e0e0e0;
+    text-align: left !important;
+}
+
+.ptw-cl-item:last-child {
+    border-bottom: none;
+}
+
+.ptw-cl-item:nth-child(even) {
+    background: #f8f9fa;
+}
+
+.ptw-cl-question {
+    text-align: left !important;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.ptw-cl-question::before {
+    content: counter(ptw-checklist-item) ". ";
+    font-weight: 700;
+    color: #003366;
+}
+
+.ptw-cl-badges {
+    display: block;
+}
+
+/* PPE region: 2-column grid, question and badges side by side
+   on one line per item (short labels, unlike Control Measures'
+   longer questions) */
+#ppe-checklist-region {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px 24px;
+}
+
+#ppe-checklist-region .ptw-cl-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: none;
+    background: transparent;
+    padding: 10px 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+}
+
+#ppe-checklist-region .ptw-cl-item:nth-child(even) {
+    background: transparent;
+}
+
+#ppe-checklist-region .ptw-cl-question {
+    margin-bottom: 0;
+}
+
+/* PPE items don't get the numbered prefix - "1. Dust
+   Respirator" reads oddly next to Control Measures' numbered
+   questions, so suppress it just for this region */
+#ppe-checklist-region .ptw-cl-question::before {
+    content: '';
+}
+
+@media (max-width: 767px) {
+    #ppe-checklist-region {
+        grid-template-columns: 1fr;
+    }
+}
+/* =====================================================
+   END OF FILE
+   ===================================================== */

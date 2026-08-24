@@ -360,7 +360,7 @@ page 2 (
         name: Buttons
         type: staticContent
         layout {
-            sequence: 130
+            sequence: 140
             slot: body
         }
         appearance {
@@ -433,7 +433,7 @@ page 2 (
         title: Client Permission
         type: staticContent
         layout {
-            sequence: 120
+            sequence: 130
             slot: body
         }
         appearance {
@@ -458,7 +458,7 @@ page 2 (
         title: Permit Header Information
         type: staticContent
         layout {
-            sequence: 100
+            sequence: 110
             slot: body
         }
         appearance {
@@ -479,7 +479,7 @@ page 2 (
     )
 
     region permit-information-badge (
-        name: Permit Information Badge
+        name: Permit Type Badge
         type: dynamicContent
         source {
             plsqlFunctionBody:
@@ -500,12 +500,39 @@ page 2 (
         }
     )
 
+    region permit-number-badge (
+        name: Permit Number Badge
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                    <div style="margin-bottom: 20px;">
+                        <span class="apex-badge" style="background-color: #3ea055; color: white; padding: 6px 16px; border-radius: 20px; font-weight: 600;">
+                            Permit: &P2_PERMIT_NUMBER.
+                        </span>
+                    </div>
+                ```
+        }
+        layout {
+            sequence: 100
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P2_PERMIT_NUMBER
+        }
+    )
+
     region site-work-details (
         name: Site & Work Details
         title: Site & Work Details
         type: staticContent
         layout {
-            sequence: 110
+            sequence: 120
             slot: body
         }
         appearance {
@@ -1153,6 +1180,11 @@ page 2 (
             errorMessage: Please indicate if the client has granted permission.
             associatedItem: @P2_CLIENT_PERMISSION_GRANTED
         }
+        serverSideCondition {
+            type: item=value
+            item: P2_PTW_TYPE
+            value: LV ISOLATION
+        }
     )
 
     validation client-permission-validation (
@@ -1174,8 +1206,8 @@ page 2 (
             errorMessage: Both the mandatory Client Permission questions must be answered
         }
         serverSideCondition {
-            type: request=Value
-            value: NEXT_STEP
+            type: expression
+            plsqlExpression: :REQUEST = 'NEXT_STEP' AND :P2_PTW_TYPE = 'LV ISOLATION'
         }
     )
 
@@ -1376,7 +1408,7 @@ page 2 (
                             p_workflow_status             => :P2_WORKFLOW_STATUS,
                             p_safety_programme_ref_no     => :P2_SAFETY_PROGRAMME_REF_NO,
                             p_isolation_diagram_serial_no => :P2_ISOLATION_DIAGRAM_SERIAL_NO,
-                            p_site_id                     => :P2_SITE_DETAILS,
+                            p_site_id                     =>  CASE WHEN :P2_SITE_NEW_NAME IS NULL THEN :P2_SITE_DETAILS END,
                             p_site_new_name               => :P2_SITE_NEW_NAME,
                             p_area_of_works               => :P2_AREA_OF_WORKS,
                             p_work_description            => :P2_WORK_DESCRIPTION,
@@ -1386,6 +1418,7 @@ page 2 (
                             p_client_permission_granted   => :P2_CLIENT_PERMISSION_GRANTED,
                             p_affects_it_systems          => :P2_AFFECTS_IT_SYSTEMS,
                             p_it_permission_granted       => :P2_IT_PERMISSION_GRANTED,
+                            p_specialist_equipment_details => :P2_SPECIALIST_EQUIPMENT_DETAILS,
                             p_latitude                    => :APP_LATITUDE,
                             p_longitude                   => :APP_LONGITUDE,
                             p_resolved_site_id            => v_site_id,
@@ -1467,8 +1500,8 @@ page 2 (
                         p_workflow_status             => v_workflow_status,
                         p_safety_programme_ref_no     => l_json.get_string('P2_SAFETY_PROGRAMME_REF_NO'),
                         p_isolation_diagram_serial_no => l_json.get_string('P2_ISOLATION_DIAGRAM_SERIAL_NO'),
-                        p_site_id                     => CASE WHEN l_json.get_string('P2_SITE_DETAILS') IS NOT NULL
-                                                               THEN TO_NUMBER(l_json.get_string('P2_SITE_DETAILS')) END,
+                        p_site_id                     => CASE WHEN l_json.get_string('P2_SITE_NEW_NAME') IS NULL
+                                                           THEN TO_NUMBER(l_json.get_string('P2_SITE_DETAILS')) END,
                         p_site_new_name               => l_json.get_string('P2_SITE_NEW_NAME'),
                         p_area_of_works               => l_json.get_string('P2_AREA_OF_WORKS'),
                         p_work_description            => l_json.get_string('P2_WORK_DESCRIPTION'),
@@ -1478,6 +1511,7 @@ page 2 (
                         p_client_permission_granted   => l_json.get_string('P2_CLIENT_PERMISSION_GRANTED'),
                         p_affects_it_systems          => l_json.get_string('P2_AFFECTS_IT_SYSTEMS'),
                         p_it_permission_granted       => l_json.get_string('P2_IT_PERMISSION_GRANTED'),
+                        p_specialist_equipment_details => l_json.get_string('P2_SPECIALIST_EQUIPMENT_DETAILS'),
                         p_latitude                    => l_json.get_number('APP_LATITUDE'),
                         p_longitude                   => l_json.get_number('APP_LONGITUDE'),
                         p_resolved_site_id            => v_site_id,

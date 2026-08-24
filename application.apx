@@ -35,7 +35,10 @@ app PTW-PRO (
         timestampTimeZone: DS
     }
     javaScript {
-        fileUrls: #APP_FILES#ptw-utils#MIN#.js
+        fileUrls: [
+            #APP_FILES#ptw-utils#MIN#.js
+            #APP_FILES#ptw-checklist#MIN#.js
+        ]
     }
     css {
         fileUrls: #APP_FILES#ptw-global#MIN#.css

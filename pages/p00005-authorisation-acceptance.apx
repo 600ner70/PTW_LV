@@ -402,7 +402,7 @@ page 5 (
     )
 
     region permit-information-badge (
-        name: Permit Information Badge
+        name: Permit Number Badge
         type: staticContent
         source {
             htmlCode:
@@ -421,6 +421,28 @@ page 5 (
         serverSideCondition {
             type: itemIsNotNull
             item: P5_PERMIT_NUMBER
+        }
+    )
+
+    region permit-type-badge (
+        name: Permit Type Badge
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                RETURN ptw_pro.ptw_ui_pkg.get_permit_type_badge_html(
+                    p_permit_id => :P5_PERMIT_ID,
+                    p_ptw_type  => :P5_PTW_TYPE
+                );
+                ```
+        }
+        layout {
+            sequence: 190
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
         }
     )
 
@@ -504,7 +526,7 @@ page 5 (
                 ```
         }
         layout {
-            sequence: 180
+            sequence: 170
             slot: body
         }
         appearance {
@@ -544,7 +566,7 @@ page 5 (
                 ```
         }
         layout {
-            sequence: 190
+            sequence: 180
             slot: body
         }
         appearance {
@@ -877,6 +899,17 @@ page 5 (
         }
         layout {
             sequence: 80
+            slot: body
+        }
+    )
+
+    pageItem P5_PTW_TYPE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 160
             slot: body
         }
     )
@@ -1451,8 +1484,8 @@ page 5 (
                     :P5_CURRENT_STEP := 'AUTHORISATION';
                 
                     BEGIN
-                        SELECT permit_number, workflow_status
-                        INTO   :P5_PERMIT_NUMBER, :P5_WORKFLOW_STATUS
+                        SELECT permit_number, workflow_status, ptw_type
+                        INTO   :P5_PERMIT_NUMBER, :P5_WORKFLOW_STATUS, :P5_PTW_TYPE
                         FROM   ptw_pro.ptw_lv_permits
                         WHERE  permit_id = :P5_PERMIT_ID;
                     EXCEPTION
