@@ -1793,6 +1793,8 @@ page 4 (
                     FROM ptw_pro.ptw_lv_permits
                     WHERE permit_id = :P4_PERMIT_ID;
                 
+                    :G_ACTIVE_PERMIT_ID := :P4_PERMIT_ID;
+                
                     -- Load isolation rows (up to 4)
                     FOR r IN (
                         SELECT isolation_id, row_number, equipment_isolated, means_of_isolation, safety_lock_no

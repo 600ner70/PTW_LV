@@ -10,6 +10,9 @@ appItem APP_LATITUDE (
 appItem APP_LONGITUDE (
 )
 
+appItem G_ACTIVE_PERMIT_ID (
+)
+
 appItem G_OVERRIDE_COMPANY_ID (
 )
 

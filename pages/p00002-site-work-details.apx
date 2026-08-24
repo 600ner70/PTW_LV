@@ -1325,6 +1325,8 @@ page 2 (
                     FROM ptw_pro.ptw_lv_permits
                     WHERE permit_id = :P2_PERMIT_ID;
                 
+                    :G_ACTIVE_PERMIT_ID := :P2_PERMIT_ID;
+                
                 EXCEPTION
                     WHEN NO_DATA_FOUND THEN
                         :P2_PERMIT_ID := NULL;

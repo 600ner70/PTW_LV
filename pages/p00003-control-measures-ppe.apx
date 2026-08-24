@@ -1511,6 +1511,8 @@ page 3 (
                     FROM ptw_pro.ptw_lv_permits
                     WHERE permit_id = :P3_PERMIT_ID;
                 
+                    :G_ACTIVE_PERMIT_ID := :P3_PERMIT_ID;
+                
                     -- Load control measures if they exist
                     BEGIN
                         SELECT

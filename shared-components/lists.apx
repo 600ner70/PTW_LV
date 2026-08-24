@@ -310,6 +310,9 @@ list navigation-menu (
         link {
             target: {
                 page: 5
+                items: {
+                    P5_PERMIT_ID: &G_ACTIVE_PERMIT_ID.
+                }
                 clearCache: 5
             }
         }
@@ -356,6 +359,9 @@ list navigation-menu (
         link {
             target: {
                 page: 3
+                items: {
+                    P3_PERMIT_ID: &G_ACTIVE_PERMIT_ID.
+                }
                 clearCache: 3
             }
         }
@@ -379,6 +385,9 @@ list navigation-menu (
         link {
             target: {
                 page: 4
+                items: {
+                    P4_PERMIT_ID: &G_ACTIVE_PERMIT_ID.
+                }
                 clearCache: 4
             }
         }
@@ -392,7 +401,7 @@ list navigation-menu (
                          FROM   ptw_pro.ptw_lv_permits p
                          JOIN   ptw_pro.ptw_types t       ON t.ptw_type = p.ptw_type
                          JOIN   ptw_pro.ptw_type_sections ts ON ts.type_id = t.type_id
-                         WHERE  p.permit_id     = :P1_PERMIT_ID
+                         WHERE  p.permit_id     = :G_ACTIVE_PERMIT_ID
                          AND    ts.section_code = 'EQUIPMENT_ISOLATION'
                 )
                 ```
@@ -573,6 +582,9 @@ list navigation-menu (
         link {
             target: {
                 page: 2
+                items: {
+                    P2_PERMIT_ID: &G_ACTIVE_PERMIT_ID.
+                }
                 clearCache: 2
             }
         }

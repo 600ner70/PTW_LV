@@ -2154,6 +2154,21 @@ page 1 (
         }
     )
 
+    process new (
+        name: New
+        type: executeCode
+        source {
+            plsqlCode: :G_ACTIVE_PERMIT_ID := NULL;
+        }
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 8879290521853341
+        }
+    )
+
     process resume-permit (
         name: Resume Permit
         type: executeCode

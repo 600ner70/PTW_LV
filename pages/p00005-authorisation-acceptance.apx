@@ -1460,20 +1460,24 @@ page 5 (
                             :P5_WORKFLOW_STATUS := 'DRAFT';
                     END;
                 
+                    :G_ACTIVE_PERMIT_ID := :P5_PERMIT_ID;
+                
                     DECLARE
-                        v_auth_sig   BLOB;
-                        v_accept_sig BLOB;
-                        v_na_company ptw_pro.ptw_signatures.company_name%TYPE;
-                        v_auth_lat   ptw_pro.ptw_signatures.latitude%TYPE;
-                        v_auth_lng   ptw_pro.ptw_signatures.longitude%TYPE;
+                        v_auth_sig      BLOB;
+                        v_accept_sig    BLOB;
+                        v_na_company    ptw_pro.ptw_signatures.company_name%TYPE;
+                        v_auth_lat      ptw_pro.ptw_signatures.latitude%TYPE;
+                        v_auth_lng      ptw_pro.ptw_signatures.longitude%TYPE;
+                        v_auth_to_dt    ptw_pro.ptw_signatures.auth_to_datetime%TYPE;   -- NEW
+                        v_na_accept_to_dt ptw_pro.ptw_signatures.auth_to_datetime%TYPE; -- NEW
                     BEGIN
                         ptw_pro.ptw_signature_pkg.get_signature(:P5_PERMIT_ID, 'AUTH',
                             :P5_AUTH_PERSON_SELECT, v_auth_sig, :P5_AUTH_PERSON_MOBILE, v_na_company,
-                            :P5_AUTH_DATETIME, :P5_AUTH_LATITUDE, :P5_AUTH_LONGITUDE);
+                            :P5_AUTH_DATETIME, :P5_AUTH_LATITUDE, :P5_AUTH_LONGITUDE, v_auth_to_dt);
                 
                         ptw_pro.ptw_signature_pkg.get_signature(:P5_PERMIT_ID, 'ACCEPT',
                             :P5_ACCEPT_PERSON_NAME, v_accept_sig, :P5_ACCEPT_PERSON_MOBILE, :P5_ACCEPT_COMPANY,
-                            :P5_ACCEPT_DATETIME, :P5_ACCEPT_LATITUDE, :P5_ACCEPT_LONGITUDE);
+                            :P5_ACCEPT_DATETIME, :P5_ACCEPT_LATITUDE, :P5_ACCEPT_LONGITUDE, v_na_accept_to_dt);
                 
                         IF :P5_ACCEPT_DATETIME IS NULL THEN
                             :P5_ACCEPT_DATETIME := TO_CHAR(SYSDATE, 'DD-MON-YYYY HH24:MI');
