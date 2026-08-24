@@ -1,8 +1,8 @@
-CREATE OR REPLACE TRIGGER ptw_pro.trg_ptw_lv_mc_company
+
+  CREATE OR REPLACE EDITIONABLE TRIGGER "PTW_PRO"."TRG_PTW_LV_MC_COMPANY"
     BEFORE INSERT ON ptw_pro.ptw_lv_monitoring_concerns
     FOR EACH ROW
-    WHEN (NEW.company_id IS NULL)
-DECLARE
+     WHEN (NEW.company_id IS NULL) DECLARE
     v_company_id ptw_pro.ptw_lv_permits.company_id%TYPE;
 BEGIN
     SELECT p.company_id
@@ -13,4 +13,6 @@ BEGIN
 
     :NEW.company_id := v_company_id;
 END;
+
 /
+ALTER TRIGGER "PTW_PRO"."TRG_PTW_LV_MC_COMPANY" ENABLE;

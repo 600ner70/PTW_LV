@@ -382,6 +382,21 @@ list navigation-menu (
                 clearCache: 4
             }
         }
+        serverSideCondition {
+            type: expression
+            language: sql
+            sqlExpression:
+                ```sql
+                EXISTS (
+                         SELECT 1
+                         FROM   ptw_pro.ptw_lv_permits p
+                         JOIN   ptw_pro.ptw_types t       ON t.ptw_type = p.ptw_type
+                         JOIN   ptw_pro.ptw_type_sections ts ON ts.type_id = t.type_id
+                         WHERE  p.permit_id     = :P1_PERMIT_ID
+                         AND    ts.section_code = 'EQUIPMENT_ISOLATION'
+                )
+                ```
+        }
         security {
             authorizationScheme: @administration-rights
         }

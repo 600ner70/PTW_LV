@@ -219,6 +219,25 @@ authorization is-administrator (
     }
 )
 
+authorization permit-type-has-equipment-isolation (
+    name: Permit Type Has Equipment Isolation
+    type: existsSqlQuery
+    settings {
+        sqlQuery:
+            ```sql
+                 SELECT 1
+                 FROM   ptw_pro.ptw_lv_permits p
+                 JOIN   ptw_pro.ptw_types t          ON t.ptw_type = p.ptw_type
+                 JOIN   ptw_pro.ptw_type_sections ts ON ts.type_id = t.type_id
+                 WHERE  p.permit_id     = :P4_PERMIT_ID
+                 AND    ts.section_code = 'EQUIPMENT_ISOLATION'
+            ```
+    }
+    error {
+        errorMessage: This permit type does not use Equipment Isolation - access denied.
+    }
+)
+
 authorization reader-rights (
     name: Reader Rights
     type: plSqlFunctionBody

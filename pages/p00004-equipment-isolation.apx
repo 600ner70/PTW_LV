@@ -636,6 +636,7 @@ page 4 (
         value: DRAFT
     }
     security {
+        authorizationScheme: @permit-type-has-equipment-isolation
         pageAccessProtection: argumentsMustHaveChecksum
         formAutoComplete: false
     }
@@ -707,7 +708,7 @@ page 4 (
                 ```
         }
         layout {
-            sequence: 150
+            sequence: 160
             slot: body
         }
         serverSideCondition {
@@ -847,7 +848,7 @@ page 4 (
                 ```
         }
         layout {
-            sequence: 130
+            sequence: 140
             slot: body
         }
         appearance {
@@ -889,7 +890,7 @@ page 4 (
                 ```
         }
         layout {
-            sequence: 140
+            sequence: 150
             slot: body
         }
         appearance {
@@ -1339,6 +1340,17 @@ page 4 (
         }
     )
 
+    pageItem P4_PTW_TYPE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 130
+            slot: body
+        }
+    )
+
     pageItem P4_WORKFLOW_STATUS (
         type: hidden
         settings {
@@ -1776,8 +1788,8 @@ page 4 (
                 
                     :P4_CURRENT_STEP := 'EQUIP_ISOLATION';
                     -- Load permit info
-                    SELECT permit_number, comments, workflow_status
-                    INTO :P4_PERMIT_NUMBER, :P4_COMMENTS, :P4_WORKFLOW_STATUS
+                    SELECT permit_number, comments, workflow_status, ptw_type
+                    INTO :P4_PERMIT_NUMBER, :P4_COMMENTS, :P4_WORKFLOW_STATUS, :P4_PTW_TYPE
                     FROM ptw_pro.ptw_lv_permits
                     WHERE permit_id = :P4_PERMIT_ID;
                 

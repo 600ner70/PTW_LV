@@ -326,7 +326,7 @@ page 3 (
         name: Buttons
         type: staticContent
         layout {
-            sequence: 140
+            sequence: 150
             slot: body
         }
         appearance {
@@ -340,7 +340,7 @@ page 3 (
         title: Control Measures - must be in place before issuing a Permit to Work LV Electrical
         type: staticContent
         layout {
-            sequence: 120
+            sequence: 130
             slot: body
         }
         appearance {
@@ -370,7 +370,7 @@ page 3 (
                 ```
         }
         layout {
-            sequence: 110
+            sequence: 120
             slot: body
         }
         serverSideCondition {
@@ -384,7 +384,7 @@ page 3 (
         title: Identify Essential Personal Protective Equipment (PPE) Required To Be Worn
         type: staticContent
         layout {
-            sequence: 130
+            sequence: 140
             slot: body
         }
         appearance {
@@ -413,7 +413,7 @@ page 3 (
                 ```
         }
         layout {
-            sequence: 90
+            sequence: 100
             slot: body
         }
         appearance {
@@ -424,37 +424,18 @@ page 3 (
 
     region workflow-progress (
         name: Workflow Progress
-        type: staticContent
+        type: dynamicContent
         source {
-            htmlCode:
-                ```html
-                <div class="ptw-workflow-progress">
-                    <div class="workflow-step completed" data-step="1">
-                        <span class="step-icon">&#10003;</span>
-                        <span class="step-text">Site & Work Details</span>
-                    </div>
-                    <div class="workflow-step active" data-step="2">
-                        <span class="step-icon">2</span>
-                        <span class="step-text">Control Measures</span>
-                    </div>
-                    <div class="workflow-step" data-step="3">
-                        <span class="step-icon">3</span>
-                        <span class="step-text">Equipment Isolation</span>
-                    </div>
-                    <div class="workflow-step" data-step="4">
-                        <span class="step-icon">4</span>
-                        <span class="step-text">Authorisation</span>
-                    </div>
-                    <div class="workflow-step" data-step="5">
-                        <span class="step-icon">5</span>
-                        <span class="step-text">Clearance</span>
-                    </div>
-                </div>
-                
+            plsqlFunctionBody:
+                ```plsql
+                RETURN ptw_pro.ptw_ui_pkg.get_workflow_steps_html(
+                    p_permit_id => :P3_PERMIT_ID,
+                    p_ptw_type  => :P3_PTW_TYPE
+                );
                 ```
         }
         layout {
-            sequence: 100
+            sequence: 110
             slot: body
         }
         appearance {
@@ -1232,6 +1213,17 @@ page 3 (
         }
     )
 
+    pageItem P3_PTW_TYPE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 90
+            slot: body
+        }
+    )
+
     pageItem P3_WORKFLOW_STATUS (
         type: hidden
         settings {
@@ -1500,7 +1492,8 @@ page 3 (
                         ppe_fall_arrest,
                         ppe_ear_defenders,
                         ppe_safety_gloves,
-                        workflow_status
+                        workflow_status,
+                        ptw_type
                     INTO
                         :P3_PERMIT_NUMBER,
                         :P3_PPE_SAFETY_HELMET,
@@ -1513,7 +1506,8 @@ page 3 (
                         :P3_PPE_FALL_ARREST,
                         :P3_PPE_EAR_DEFENDERS,
                         :P3_PPE_SAFETY_GLOVES,
-                        :P3_WORKFLOW_STATUS
+                        :P3_WORKFLOW_STATUS,
+                        :P3_PTW_TYPE
                     FROM ptw_pro.ptw_lv_permits
                     WHERE permit_id = :P3_PERMIT_ID;
                 
@@ -1730,7 +1724,17 @@ page 3 (
         serverSideCondition {
             type: expression
             language: sql
-            sqlExpression: :REQUEST = 'NEXT_STEP' AND (SELECT ptw_type FROM ptw_pro.ptw_lv_permits WHERE permit_id = :P3_PERMIT_ID) != 'LV ISOLATION'
+            sqlExpression:
+                ```sql
+                :REQUEST = 'NEXT_STEP' AND NOT EXISTS (
+                    SELECT 1
+                    FROM   ptw_pro.ptw_lv_permits p
+                    JOIN   ptw_pro.ptw_types t       ON t.ptw_type = p.ptw_type
+                    JOIN   ptw_pro.ptw_type_sections ts ON ts.type_id = t.type_id
+                    WHERE  p.permit_id   = :P3_PERMIT_ID
+                    AND    ts.section_code = 'EQUIPMENT_ISOLATION'
+                )
+                ```
         }
     )
 
@@ -1752,7 +1756,17 @@ page 3 (
         serverSideCondition {
             type: expression
             language: sql
-            sqlExpression: :REQUEST = 'NEXT_STEP' AND (SELECT ptw_type FROM ptw_pro.ptw_lv_permits WHERE permit_id = :P3_PERMIT_ID) = 'LV ISOLATION'
+            sqlExpression:
+                ```sql
+                :REQUEST = 'NEXT_STEP' AND EXISTS (
+                    SELECT 1
+                    FROM   ptw_pro.ptw_lv_permits p
+                    JOIN   ptw_pro.ptw_types t       ON t.ptw_type = p.ptw_type
+                    JOIN   ptw_pro.ptw_type_sections ts ON ts.type_id = t.type_id
+                    WHERE  p.permit_id   = :P3_PERMIT_ID
+                    AND    ts.section_code = 'EQUIPMENT_ISOLATION'
+                )
+                ```
         }
     )
 

@@ -344,9 +344,12 @@ page 2 (
             ```
     }
     readOnly {
-        type: item!=value
-        item: P2_WORKFLOW_STATUS
-        value: DRAFT
+        type: expression
+        plsqlExpression:
+            ```plsql
+            :P2_WORKFLOW_STATUS != 'DRAFT'
+            OR ptw_pro.ptw_lv_is_contract_support(V('APP_USER')) = 'Y'
+            ```
     }
     security {
         pageAccessProtection: argumentsMustHaveChecksum
@@ -442,6 +445,11 @@ page 2 (
                 t-Region--scrollBody
             ]
             icon: fa-check-square
+        }
+        serverSideCondition {
+            type: item=value
+            item: P2_PTW_TYPE
+            value: LV ISOLATION
         }
     )
 
@@ -583,10 +591,6 @@ page 2 (
             templateOptions: #DEFAULT#
             cssClasses: cm-binary-item
         }
-        readOnly {
-            type: expression
-            plsqlExpression: ptw_pro.ptw_lv_is_contract_support(V('APP_USER')) = 'Y'
-        }
     )
 
     pageItem P2_AREA_OF_WORKS (
@@ -635,10 +639,6 @@ page 2 (
             templateOptions: #DEFAULT#
             cssClasses: cm-binary-item
         }
-        readOnly {
-            type: expression
-            plsqlExpression: ptw_pro.ptw_lv_is_contract_support(V('APP_USER')) = 'Y'
-        }
     )
 
     pageItem P2_CURRENT_STEP (
@@ -672,10 +672,6 @@ page 2 (
         }
         validation {
             maxLength: 100
-        }
-        readOnly {
-            type: expression
-            plsqlExpression: ptw_pro.ptw_lv_is_contract_support(V('APP_USER')) = 'Y'
         }
     )
 
@@ -716,10 +712,6 @@ page 2 (
             templateOptions: #DEFAULT#
             cssClasses: cm-binary-item
         }
-        readOnly {
-            type: expression
-            plsqlExpression: ptw_pro.ptw_lv_is_contract_support(V('APP_USER')) = 'Y'
-        }
     )
 
     pageItem P2_OTHER_PERSONS_COUNT (
@@ -742,10 +734,6 @@ page 2 (
         }
         validation {
             valueRequired: true
-        }
-        readOnly {
-            type: expression
-            plsqlExpression: ptw_pro.ptw_lv_is_contract_support(V('APP_USER')) = 'Y'
         }
     )
 
@@ -790,10 +778,6 @@ page 2 (
             valueRequired: true
             maxLength: 200
         }
-        readOnly {
-            type: expression
-            plsqlExpression: ptw_pro.ptw_lv_is_contract_support(V('APP_USER')) = 'Y'
-        }
     )
 
     pageItem P2_PTW_TYPE (
@@ -827,10 +811,6 @@ page 2 (
         }
         validation {
             maxLength: 100
-        }
-        readOnly {
-            type: expression
-            plsqlExpression: ptw_pro.ptw_lv_is_contract_support(V('APP_USER')) = 'Y'
         }
     )
 
@@ -868,10 +848,6 @@ page 2 (
         validation {
             maxLength: 500
         }
-        readOnly {
-            type: expression
-            plsqlExpression: ptw_pro.ptw_lv_is_contract_support(V('APP_USER')) = 'Y'
-        }
     )
 
     pageItem P2_SITE_NEW_NAME (
@@ -883,6 +859,31 @@ page 2 (
             sequence: 30
             region: @site-work-details
             slot: regionBody
+        }
+    )
+
+    pageItem P2_SPECIALIST_EQUIPMENT_DETAILS (
+        type: textarea
+        label {
+            label: Specialist Equipment Details
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @site-work-details
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 5
+        }
+        serverSideCondition {
+            type: item=value
+            item: P2_PTW_TYPE
+            value: WORKING AT HEIGHT
         }
     )
 
@@ -907,10 +908,6 @@ page 2 (
         validation {
             valueRequired: true
             maxLength: 200
-        }
-        readOnly {
-            type: expression
-            plsqlExpression: ptw_pro.ptw_lv_is_contract_support(V('APP_USER')) = 'Y'
         }
     )
 
@@ -947,10 +944,6 @@ page 2 (
         validation {
             valueRequired: true
             maxLength: 2000
-        }
-        readOnly {
-            type: expression
-            plsqlExpression: ptw_pro.ptw_lv_is_contract_support(V('APP_USER')) = 'Y'
         }
     )
 
@@ -1309,7 +1302,9 @@ page 2 (
                         other_persons_count,
                         client_permission_granted,
                         affects_it_systems,
-                        it_permission_granted
+                        it_permission_granted,
+                        specialist_equipment_details,
+                        ptw_type
                     INTO
                         :P2_PERMIT_NUMBER,
                         :P2_CURRENT_STEP,
@@ -1324,7 +1319,9 @@ page 2 (
                         :P2_OTHER_PERSONS_COUNT,
                         :P2_CLIENT_PERMISSION_GRANTED,
                         :P2_AFFECTS_IT_SYSTEMS,
-                        :P2_IT_PERMISSION_GRANTED
+                        :P2_IT_PERMISSION_GRANTED,
+                        :P2_SPECIALIST_EQUIPMENT_DETAILS,
+                        :P2_PTW_TYPE
                     FROM ptw_pro.ptw_lv_permits
                     WHERE permit_id = :P2_PERMIT_ID;
                 
@@ -1364,158 +1361,52 @@ page 2 (
             plsqlCode:
                 ```plsql
                 DECLARE
-                    v_permit_id      NUMBER;
-                    v_permit_number  VARCHAR2(50);
                     v_site_id        ptw_pro.ptw_lv_sites.site_id%TYPE;
-                    v_company_id     NUMBER;
+                    v_permit_id      ptw_pro.ptw_lv_permits.permit_id%TYPE := :P2_PERMIT_ID;
+                    v_permit_number  ptw_pro.ptw_lv_permits.permit_number%TYPE;
+                    v_saved          BOOLEAN;
+                    v_message        VARCHAR2(4000);
                 BEGIN
-                
-                    -- Resolve site: existing selection wins; otherwise find-or-create from
-                    -- the typed value. Runs on every save (draft included) — see §1.
-                    IF :P2_SITE_DETAILS IS NOT NULL THEN
-                        v_site_id := :P2_SITE_DETAILS;  -- Combobox returned an existing site_id
-                    ELSIF :P2_SITE_NEW_NAME IS NOT NULL THEN
-                        v_company_id := ptw_pro.ptw_sec_pkg.get_effective_company_id;
-                        IF v_company_id IS NULL THEN
-                            apex_error.add_error(
-                                p_message => 'Unable to determine company for this site. '
-                                    || 'If you are a Super User, select an Active Company first.',
-                                p_display_location => apex_error.c_inline_in_notification);
-                        END IF;
-                
-                        BEGIN
-                            SELECT site_id INTO v_site_id
-                            FROM   ptw_pro.ptw_lv_sites
-                            WHERE  UPPER(site_name) = UPPER(:P2_SITE_NEW_NAME)
-                            AND    company_id = v_company_id;
-                        EXCEPTION
-                            WHEN NO_DATA_FOUND THEN
-                                INSERT INTO ptw_pro.ptw_lv_sites (company_id, site_name, created_by)
-                                VALUES (v_company_id, :P2_SITE_NEW_NAME, NVL(V('APP_USER'), USER))
-                                RETURNING site_id INTO v_site_id;
-                        END;
-                
-                        :P2_SITE_DETAILS := v_site_id;   -- so the rest of this process, and the
-                        :P2_SITE_NEW_NAME := NULL;       -- page on re-render, treat it as selected
-                    END IF;
-                    
-                  IF :P2_WORKFLOW_STATUS = 'DRAFT' THEN
-                    IF :P2_PERMIT_ID IS NULL THEN
-                        -- INSERT NEW PERMIT
-                        INSERT INTO ptw_pro.ptw_lv_permits (
-                            safety_programme_ref_no,
-                            ptw_type,
-                            isolation_diagram_serial_no,
-                            site_id,
-                            area_of_works,
-                            work_description,
-                            person_in_charge_name,
-                            supervising_company,
-                            other_persons_count,
-                            client_permission_granted,
-                            affects_it_systems,
-                            it_permission_granted,
-                            current_step,
-                            workflow_status,
-                            site_work_latitude,
-                            site_work_longitude,
-                            created_by
-                        ) VALUES (
-                            :P2_SAFETY_PROGRAMME_REF_NO,
-                            NVL(:P2_PTW_TYPE, 'LV ISOLATION'),
-                            :P2_ISOLATION_DIAGRAM_SERIAL_NO,
-                            v_site_id,
-                            :P2_AREA_OF_WORKS,
-                            :P2_WORK_DESCRIPTION,
-                            :P2_PERSON_IN_CHARGE_NAME,
-                            :P2_SUPERVISING_COMPANY,
-                            :P2_OTHER_PERSONS_COUNT,
-                            :P2_CLIENT_PERMISSION_GRANTED,
-                            :P2_AFFECTS_IT_SYSTEMS,
-                            :P2_IT_PERMISSION_GRANTED,
-                            'SITE_WORK_DETAILS',
-                            'DRAFT',
-                            :APP_LATITUDE,
-                            :APP_LONGITUDE,
-                            NVL(V('APP_USER'), USER)
-                        ) RETURNING permit_id, permit_number
-                          INTO v_permit_id, v_permit_number;
-                
-                        :P2_PERMIT_ID := v_permit_id;
-                        :P2_PERMIT_NUMBER := v_permit_number;
-                        :P2_CURRENT_STEP := 'SITE_WORK_DETAILS';
-                        :P2_WORKFLOW_STATUS := 'DRAFT';
-                
-                        apex_application.g_print_success_message :=
-                            'Permit ' || v_permit_number || ' created successfully.';
-                
-                    ELSE
-                        -- UPDATE EXISTING PERMIT (only if something has changed)
-                        UPDATE ptw_pro.ptw_lv_permits
-                        SET safety_programme_ref_no     = :P2_SAFETY_PROGRAMME_REF_NO,
-                            isolation_diagram_serial_no = :P2_ISOLATION_DIAGRAM_SERIAL_NO,
-                            site_id                     = v_site_id,
-                            area_of_works               = :P2_AREA_OF_WORKS,
-                            work_description            = :P2_WORK_DESCRIPTION,
-                            person_in_charge_name       = :P2_PERSON_IN_CHARGE_NAME,
-                            supervising_company         = :P2_SUPERVISING_COMPANY,
-                            other_persons_count         = :P2_OTHER_PERSONS_COUNT,
-                            client_permission_granted   = :P2_CLIENT_PERMISSION_GRANTED,
-                            affects_it_systems          = :P2_AFFECTS_IT_SYSTEMS,
-                            it_permission_granted       = :P2_IT_PERMISSION_GRANTED,
-                            site_work_latitude          = :APP_LATITUDE,
-                            site_work_longitude         = :APP_LONGITUDE,
-                            modified_by                 = NVL(V('APP_USER'), USER),
-                            modified_date               = CURRENT_TIMESTAMP
-                        WHERE permit_id = :P2_PERMIT_ID
-                        AND (
-                            NVL(safety_programme_ref_no,     'x') != NVL(:P2_SAFETY_PROGRAMME_REF_NO,     'x') OR
-                            NVL(isolation_diagram_serial_no, 'x') != NVL(:P2_ISOLATION_DIAGRAM_SERIAL_NO, 'x') OR
-                            NVL(site_id,                      -1) != NVL(v_site_id,                        -1)  OR
-                            NVL(area_of_works,               'x') != NVL(:P2_AREA_OF_WORKS,               'x') OR
-                            NVL(work_description,            'x') != NVL(:P2_WORK_DESCRIPTION,            'x') OR
-                            NVL(person_in_charge_name,       'x') != NVL(:P2_PERSON_IN_CHARGE_NAME,       'x') OR
-                            NVL(supervising_company,         'x') != NVL(:P2_SUPERVISING_COMPANY,         'x') OR
-                            NVL(TO_CHAR(other_persons_count),'x') != NVL(TO_CHAR(:P2_OTHER_PERSONS_COUNT),'x') OR
-                            NVL(client_permission_granted,   'x') != NVL(:P2_CLIENT_PERMISSION_GRANTED,   'x') OR
-                            NVL(affects_it_systems,          'x') != NVL(:P2_AFFECTS_IT_SYSTEMS,          'x') OR
-                            NVL(it_permission_granted,       'x') != NVL(:P2_IT_PERMISSION_GRANTED,       'x')
+                    IF :P2_WORKFLOW_STATUS = 'DRAFT' THEN
+                        ptw_pro.ptw_permit_save_pkg.save_permit_header(
+                            p_permit_id                   => v_permit_id,
+                            p_ptw_type                    => :P2_PTW_TYPE,
+                            p_workflow_status             => :P2_WORKFLOW_STATUS,
+                            p_safety_programme_ref_no     => :P2_SAFETY_PROGRAMME_REF_NO,
+                            p_isolation_diagram_serial_no => :P2_ISOLATION_DIAGRAM_SERIAL_NO,
+                            p_site_id                     => :P2_SITE_DETAILS,
+                            p_site_new_name               => :P2_SITE_NEW_NAME,
+                            p_area_of_works               => :P2_AREA_OF_WORKS,
+                            p_work_description            => :P2_WORK_DESCRIPTION,
+                            p_person_in_charge_name       => :P2_PERSON_IN_CHARGE_NAME,
+                            p_supervising_company         => :P2_SUPERVISING_COMPANY,
+                            p_other_persons_count         => :P2_OTHER_PERSONS_COUNT,
+                            p_client_permission_granted   => :P2_CLIENT_PERMISSION_GRANTED,
+                            p_affects_it_systems          => :P2_AFFECTS_IT_SYSTEMS,
+                            p_it_permission_granted       => :P2_IT_PERMISSION_GRANTED,
+                            p_latitude                    => :APP_LATITUDE,
+                            p_longitude                   => :APP_LONGITUDE,
+                            p_resolved_site_id            => v_site_id,
+                            p_permit_number               => v_permit_number,
+                            p_saved                       => v_saved,
+                            p_message                     => v_message
                         );
                 
-                        -- SQL%ROWCOUNT = 0 is fine here — means nothing changed, not an error
-                        IF SQL%ROWCOUNT > 0 THEN
-                            apex_application.g_print_success_message :=
-                                'Permit ' || :P2_PERMIT_NUMBER || ' updated successfully.';
+                        IF v_saved THEN
+                            :P2_PERMIT_ID       := v_permit_id;
+                            :P2_PERMIT_NUMBER   := v_permit_number;
+                            :P2_SITE_DETAILS    := v_site_id;
+                            :P2_SITE_NEW_NAME   := NULL;
+                            :P2_CURRENT_STEP    := 'SITE_WORK_DETAILS';
+                            :P2_WORKFLOW_STATUS := 'DRAFT';
+                            apex_application.g_print_success_message := v_message;
+                        ELSE
+                            apex_error.add_error(
+                                p_message          => v_message,
+                                p_display_location => apex_error.c_inline_in_notification);
+                            RAISE_APPLICATION_ERROR(-20063, v_message);
                         END IF;
                     END IF;
-                
-                    COMMIT;
-                  END IF;
-                
-                EXCEPTION
-                    WHEN DUP_VAL_ON_INDEX THEN
-                        -- Race condition: two users typed the same new site name for the same
-                        -- company at the same moment. Re-select rather than fail the permit save.
-                        BEGIN
-                            SELECT site_id INTO v_site_id
-                            FROM   ptw_pro.ptw_lv_sites
-                            WHERE  UPPER(site_name) = UPPER(:P2_SITE_NEW_NAME)
-                            AND    company_id = ptw_pro.ptw_sec_pkg.get_effective_company_id;
-                            :P2_SITE_DETAILS := v_site_id;
-                        EXCEPTION WHEN OTHERS THEN
-                            ROLLBACK;
-                            apex_error.add_error(
-                                p_message => 'Error saving permit: ' || SQLERRM,
-                                p_display_location => apex_error.c_inline_in_notification);
-                            RAISE;
-                        END;
-                    WHEN OTHERS THEN
-                        ROLLBACK;
-                        apex_error.add_error(
-                            p_message => 'Error saving permit: ' || SQLERRM,
-                            p_display_location => apex_error.c_inline_in_notification
-                        );
-                        RAISE;
                 END;
                 ```
         }
@@ -1544,120 +1435,59 @@ page 2 (
             plsqlCode:
                 ```plsql
                 DECLARE
-                    l_data_json  CLOB := apex_application.g_x01;
-                    l_page_id    VARCHAR2(100) := apex_application.g_x02;
-                    l_record_id  NUMBER := apex_application.g_x03;  -- NULL = INSERT, value = UPDATE
-                    l_json       JSON_OBJECT_T;
-                    l_success    BOOLEAN := TRUE;
-                    l_message    VARCHAR2(4000);
-                    v_site_id        ptw_pro.ptw_lv_sites.site_id%TYPE;
-                    v_company_id     NUMBER;
+                    l_data_json     CLOB := apex_application.g_x01;
+                    l_record_id_in  NUMBER := apex_application.g_x03;  -- NULL = INSERT, value = UPDATE
+                    l_json          JSON_OBJECT_T;
+                    v_permit_id     ptw_pro.ptw_lv_permits.permit_id%TYPE := l_record_id_in;
+                    v_site_id       ptw_pro.ptw_lv_sites.site_id%TYPE;
+                    v_permit_number ptw_pro.ptw_lv_permits.permit_number%TYPE;
+                    v_workflow_status ptw_pro.ptw_lv_permits.workflow_status%TYPE;
+                    v_saved         BOOLEAN;
+                    v_message       VARCHAR2(4000);
                 BEGIN
-                    -- Parse JSON data
                     l_json := JSON_OBJECT_T.parse(l_data_json);
                 
-                        IF l_json.get_string('P2_SITE_DETAILS') IS NOT NULL THEN
-                            v_site_id := TO_NUMBER(l_json.get_string('P2_SITE_DETAILS'));
-                        ELSIF l_json.get_string('P2_SITE_NEW_NAME') IS NOT NULL THEN
-                            v_company_id := ptw_pro.ptw_sec_pkg.get_effective_company_id;
-                            IF v_company_id IS NULL THEN
-                                RAISE_APPLICATION_ERROR(-20020,
-                                    'Unable to determine company for this site.');
-                            END IF;
-                            BEGIN
-                                SELECT site_id INTO v_site_id
-                                FROM   ptw_pro.ptw_lv_sites
-                                WHERE  UPPER(site_name) = UPPER(l_json.get_string('P2_SITE_NEW_NAME'))
-                                AND    company_id = v_company_id;
-                            EXCEPTION
-                                WHEN NO_DATA_FOUND THEN
-                                    INSERT INTO ptw_pro.ptw_lv_sites (company_id, site_name, created_by)
-                                    VALUES (v_company_id, l_json.get_string('P2_SITE_NEW_NAME'),
-                                            NVL(V('APP_USER'), USER))
-                                    RETURNING site_id INTO v_site_id;
-                            END;
-                        END IF;
-                    
-                    BEGIN
-                        IF l_record_id IS NULL THEN
-                            -- INSERT new record
-                            INSERT INTO ptw_pro.ptw_lv_permits (
-                              safety_programme_ref_no,
-                              isolation_diagram_serial_no,
-                              site_id,
-                              area_of_works,
-                              work_description,
-                              person_in_charge_name,
-                              supervising_company,
-                              other_persons_count,
-                              client_permission_granted,
-                              affects_it_systems,
-                              it_permission_granted,
-                              current_step,
-                              workflow_status,
-                              site_work_latitude,
-                              site_work_longitude,
-                              created_by,
-                              created_date
-                            ) VALUES (
-                                l_json.get_string('P2_SAFETY_PROGRAMME_REF_NO'),
-                                l_json.get_string('P2_ISOLATION_DIAGRAM_SERIAL_NO'),
-                                v_site_id,
-                                l_json.get_string('P2_AREA_OF_WORKS'),
-                                l_json.get_string('P2_WORK_DESCRIPTION'),
-                                l_json.get_string('P2_PERSON_IN_CHARGE_NAME'),
-                                l_json.get_string('P2_SUPERVISING_COMPANY'),
-                                l_json.get_number('P2_OTHER_PERSONS_COUNT'),
-                                l_json.get_string('P2_CLIENT_PERMISSION_GRANTED'),
-                                l_json.get_string('P2_AFFECTS_IT_SYSTEMS'),
-                                l_json.get_string('P2_IT_PERMISSION_GRANTED'),
-                                'SITE_WORK_DETAILS',
-                                'DRAFT',
-                                l_json.get_number('APP_LATITUDE'),
-                                l_json.get_number('APP_LONGITUDE'),
-                                NVL(V('APP_USER'), USER),
-                                SYSDATE
-                            );
-                            
-                            l_message := 'Record created successfully';
-                            
-                        ELSE
-                            -- UPDATE existing record
-                            UPDATE ptw_pro.ptw_lv_permits
-                            SET safety_programme_ref_no      = l_json.get_string('P2_SAFETY_PROGRAMME_REF_NO'),
-                                isolation_diagram_serial_no  = l_json.get_string('P2_ISOLATION_DIAGRAM_SERIAL_NO'),
-                                site_id                      = v_site_id,
-                                area_of_works                = l_json.get_string('P2_AREA_OF_WORKS'),
-                                work_description             = l_json.get_string('P2_WORK_DESCRIPTION'),
-                                person_in_charge_name        = l_json.get_string('P2_PERSON_IN_CHARGE_NAME'),
-                                supervising_company          = l_json.get_string('P2_SUPERVISING_COMPANY'),
-                                other_persons_count          = l_json.get_number('P2_OTHER_PERSONS_COUNT'),
-                                client_permission_granted    = l_json.get_string('P2_CLIENT_PERMISSION_GRANTED'),
-                                affects_it_systems           = l_json.get_string('P2_AFFECTS_IT_SYSTEMS'),
-                                it_permission_granted        = l_json.get_string('P2_IT_PERMISSION_GRANTED'),
-                                site_work_latitude           = l_json.get_number('APP_LATITUDE'),
-                                site_work_longitude          = l_json.get_number('APP_LONGITUDE'),
-                                modified_by                  = NVL(V('APP_USER'), USER),
-                                modified_date                = SYSDATE
-                            WHERE permit_id = l_record_id;
-                            
-                            l_message := 'Record updated successfully';
-                        END IF;
-                        
-                        COMMIT;
-                        
-                    EXCEPTION WHEN OTHERS THEN
-                        l_success := FALSE;
-                        l_message := SQLERRM;
-                        ROLLBACK;
-                    END;
-                    
-                    -- Return JSON response
+                    -- On an UPDATE, we must know the permit's CURRENT
+                    -- workflow_status from the database - NOT trust a
+                    -- possibly-stale value captured hours ago while offline -
+                    -- so the DRAFT guard inside save_permit_header is checked
+                    -- against live data, same as the online path always does.
+                    IF v_permit_id IS NOT NULL THEN
+                        SELECT workflow_status INTO v_workflow_status
+                        FROM   ptw_pro.ptw_lv_permits WHERE permit_id = v_permit_id;
+                    ELSE
+                        v_workflow_status := 'DRAFT';  -- new permit, always starts in draft
+                    END IF;
+                
+                    ptw_pro.ptw_permit_save_pkg.save_permit_header(
+                        p_permit_id                   => v_permit_id,
+                        p_ptw_type                    => l_json.get_string('P2_PTW_TYPE'),
+                        p_workflow_status             => v_workflow_status,
+                        p_safety_programme_ref_no     => l_json.get_string('P2_SAFETY_PROGRAMME_REF_NO'),
+                        p_isolation_diagram_serial_no => l_json.get_string('P2_ISOLATION_DIAGRAM_SERIAL_NO'),
+                        p_site_id                     => CASE WHEN l_json.get_string('P2_SITE_DETAILS') IS NOT NULL
+                                                               THEN TO_NUMBER(l_json.get_string('P2_SITE_DETAILS')) END,
+                        p_site_new_name               => l_json.get_string('P2_SITE_NEW_NAME'),
+                        p_area_of_works               => l_json.get_string('P2_AREA_OF_WORKS'),
+                        p_work_description            => l_json.get_string('P2_WORK_DESCRIPTION'),
+                        p_person_in_charge_name       => l_json.get_string('P2_PERSON_IN_CHARGE_NAME'),
+                        p_supervising_company         => l_json.get_string('P2_SUPERVISING_COMPANY'),
+                        p_other_persons_count         => l_json.get_number('P2_OTHER_PERSONS_COUNT'),
+                        p_client_permission_granted   => l_json.get_string('P2_CLIENT_PERMISSION_GRANTED'),
+                        p_affects_it_systems          => l_json.get_string('P2_AFFECTS_IT_SYSTEMS'),
+                        p_it_permission_granted       => l_json.get_string('P2_IT_PERMISSION_GRANTED'),
+                        p_latitude                    => l_json.get_number('APP_LATITUDE'),
+                        p_longitude                   => l_json.get_number('APP_LONGITUDE'),
+                        p_resolved_site_id            => v_site_id,
+                        p_permit_number               => v_permit_number,
+                        p_saved                       => v_saved,
+                        p_message                     => v_message
+                    );
+                
                     apex_json.open_object;
-                    apex_json.write('success', l_success);
-                    apex_json.write('message', l_message);
+                    apex_json.write('success', v_saved);
+                    apex_json.write('message', v_message);
                     apex_json.close_object;
-                    
                 END;
                 ```
         }
