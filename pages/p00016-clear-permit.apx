@@ -1,7 +1,7 @@
 page 16 (
-    name: Clear Permit
+    name: &P16_BANNER_TITLE.
     alias: CLEAR-PERMIT
-    title: Clear Permit
+    title: &P16_BANNER_TITLE.
     appearance {
         pageMode: modalDialog
         dialogTemplate: @/modal-dialog
@@ -45,17 +45,55 @@ page 16 (
                 }
             }
             
+            var p16EngSigPad = null;
+            
+            function p16InitEngSig() {
+                var canvas = document.getElementById('p16EngSigCanvas');
+                if (!canvas) return;
+                var wrapper = canvas.parentElement;
+                var w = Math.max((wrapper ? wrapper.offsetWidth - 24 : 400), 280);
+                canvas.width  = w;
+                canvas.height = 150;
+                canvas.style.width  = w + 'px';
+                canvas.style.height = '150px';
+                var ctx = canvas.getContext('2d');
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth   = 2;
+                ctx.lineCap     = 'round';
+                ctx.lineJoin    = 'round';
+                p16EngSigPad = new SignaturePad(canvas, ctx);
+            }
+            
+            function p16ClearEngSig() {
+                if (p16EngSigPad) { p16EngSigPad.clear(); }
+            }
+            
+            function p16SaveEngSig() {
+                if (!p16EngSigPad || p16EngSigPad.isEmpty) {
+                    apex.item('P16_CLEAR_ENG_SIGNATURE_DATA').setValue('');
+                } else {
+                    apex.item('P16_CLEAR_ENG_SIGNATURE_DATA').setValue(p16EngSigPad.getDataURL());
+                }
+            }
+            
             ```
         executeWhenPageLoads:
             ```javascript-browser
             // ── Shared state ──────────────────────────────────────────
             var p16Status  = apex.item('P16_WORKFLOW_STATUS').getValue();
             var isReadOnly = (p16Status !== 'STARTED');
+            var isGeneral = (apex.item('P16_PTW_TYPE').getValue() === 'GENERAL');
+            
+            if (isGeneral) {
+                $('#p16-decl-tidy-para').hide();
+                $('#p16-decl-isolations-para').show();
+            }
             
             // ── Signature pad init ────────────────────────────────────
             // ── Signature pad init ────────────────────────────────────
             setTimeout(function () {
                 p16InitSig();
+            
             
                 // Always clear first to prevent stale canvas from previous open
                 if (p16SigPad) { p16SigPad.clear(); }
@@ -87,19 +125,48 @@ page 16 (
                     }
                 }
             
+                if (isGeneral) {
+                    p16InitEngSig();
+                    if (p16EngSigPad) { p16EngSigPad.clear(); }
+                    var existingEngSig = apex.item('P16_CLEAR_ENG_SIGNATURE_DATA_URL').getValue();
+                    if (existingEngSig) {
+                        loadSignature(p16EngSigPad, document.getElementById('p16EngSigCanvas'), existingEngSig);
+            
+                        if (isReadOnly) {
+                            var engCanvas = document.getElementById('p16EngSigCanvas');
+                            if (engCanvas) {
+                                engCanvas.style.pointerEvents = 'none';
+                                engCanvas.style.opacity       = '0.85';
+                                engCanvas.style.cursor        = 'not-allowed';
+                                engCanvas.title               = 'Signature locked';
+                            }
+                            var engClearBtn = document.getElementById('p16EngClearSigBtn');
+                            if (engClearBtn) engClearBtn.style.display = 'none';
+                        }
+                    } else if (isReadOnly) {
+                        var engCanvas2 = document.getElementById('p16EngSigCanvas');
+                        if (engCanvas2) {
+                            engCanvas2.style.pointerEvents = 'none';
+                            engCanvas2.style.opacity       = '0.85';
+                            engCanvas2.style.cursor        = 'not-allowed';
+                        }
+                    }
+                }
+            
             }, 350);
             
             // ── Save signature before submit ──────────────────────────
             apex.jQuery(document).on('apexbeforepagesubmit', function () {
                 p16SaveSig();
+                if (isGeneral) { p16SaveEngSig(); }
             });
-            
             // ── Binary Y/N badges ─────────────────────────────────────
             (function () {
             
                 var BINARY_ITEMS = [
                     'P16_CLEAR_WORK_COMPLETE',
-                    'P16_CLEAR_AREA_SAFE'
+                    'P16_CLEAR_AREA_SAFE',
+                    'P16_CLEAR_ISOLATIONS_REMOVED'
                 ];
             
                 var BADGES = [
@@ -153,13 +220,62 @@ page 16 (
             
             }());
             
+            (function () {
+                var itemName = 'P16_CLEAR_SYSTEM_REACTIVATED';
+                var $fc = $('#' + itemName).closest('.t-Form-fieldContainer');
+                if ($fc.length === 0) return;
+            
+                var TRISTATE_BADGES = [
+                    { val: 'NA', cls: 'cm-badge-na',  label: 'N/A' },
+                    { val: 'Y',  cls: 'cm-badge-yes', label: '\u2713' },
+                    { val: 'N',  cls: 'cm-badge-no',  label: '\u2717' }
+                ];
+            
+                $fc.find('.cm-badge-row').remove();
+            
+                var currentVal = '';
+                if (!isReadOnly) {
+                    currentVal = $('input[name="' + itemName + '"]:checked').val() || '';
+                } else {
+                    currentVal = apex.item(itemName).getValue() || '';
+                }
+            
+                var $row = $('<div class="cm-badge-row"></div>').attr('data-item', itemName);
+            
+                TRISTATE_BADGES.forEach(function (b) {
+                    $('<span></span>')
+                        .addClass('cm-badge ' + b.cls)
+                        .toggleClass('cm-active', currentVal === b.val)
+                        .toggleClass('cm-badge-readonly', isReadOnly)
+                        .attr('data-value', b.val)
+                        .text(b.label)
+                        .appendTo($row);
+                });
+            
+                $fc.find('.t-Form-inputContainer').append($row);
+                $('.cm-tristate-item .apex-item-grid').hide();
+            
+                $(document).off('click.p16tristate').on('click.p16tristate', '.cm-badge:not(.cm-badge-readonly)', function () {
+                    var $badge = $(this);
+                    var $row2  = $badge.closest('.cm-badge-row');
+                    var name   = $row2.attr('data-item');
+                    var val    = $badge.attr('data-value');
+            
+                    $('input[name="' + name + '"][value="' + val + '"]').prop('checked', true).trigger('change');
+            
+                    $row2.find('.cm-badge').removeClass('cm-active');
+                    $badge.addClass('cm-active');
+                });
+            }());
+            
             // ── Lock text fields in read-only mode ────────────────────
             if (isReadOnly) {
                 var readOnlyItems = [
                     'P16_CLEAR_PERSON_NAME',
                     'P16_CLEAR_PERSON_MOBILE',
                     'P16_CLEAR_COMPANY',
-                    'P16_CLEAR_DATETIME'
+                    'P16_CLEAR_DATETIME',
+                    'P16_CLEAR_ENG_PERSON_NAME'
                 ];
                 readOnlyItems.forEach(function (itemName) {
                     var $el = $('#' + itemName);
@@ -213,6 +329,16 @@ page 16 (
                     $safe.text('is / is not').css('color', '#344B5C');
                     $tidy.text('has / has not').css('color', '#344B5C');
                 }
+            
+                var isoVal = apex.item('P16_CLEAR_ISOLATIONS_REMOVED').getValue();
+                var $iso = $('#p16-decl-isolations');
+                if (isoVal === 'Y') {
+                    $iso.text('been').css('color', '#1e7e34');
+                } else if (isoVal === 'N') {
+                    $iso.text('not been').css('color', '#a71d2a');
+                } else {
+                    $iso.text('been / not been').css('color', '#344B5C');
+                }
             }
             
             // Run on load then on every badge click
@@ -257,7 +383,7 @@ page 16 (
         name: Buttons
         type: staticContent
         layout {
-            sequence: 90
+            sequence: 150
             slot: contentBody
         }
         appearance {
@@ -283,16 +409,19 @@ page 16 (
                     I confirm that it <strong id="p16-decl-area-safe">is / is not</strong> safe to reinstate the plant and
                     equipment which has been worked on under this Permit to Work.
                   </p>
-                  <p style="margin:0;">
+                  <p id="p16-decl-tidy-para" style="margin:0;">
                     The work area <strong id="p16-decl-area-tidy">has / has not</strong> been left in a safe and tidy condition,
                     all temporary measures have been removed, and all waste has been cleared from site.
                     This Permit to Work is hereby surrendered and closed.
+                  </p>
+                  <p id="p16-decl-isolations-para" style="margin:0 0 10px 0; display:none;">
+                    I confirm that my personal isolations have <strong id="p16-decl-isolations">been / not been</strong> removed.
                   </p>
                 </div>
                 ```
         }
         layout {
-            sequence: 60
+            sequence: 100
             slot: contentBody
         }
         appearance {
@@ -307,30 +436,80 @@ page 16 (
         }
     )
 
-    region permit-info-banner (
-        name: Permit Info Banner
+    region engineer (
+        name: Engineer
+        title: Engineer
+        type: staticContent
+        layout {
+            sequence: 130
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+        }
+        serverSideCondition {
+            type: item=value
+            item: P16_PTW_TYPE
+            value: GENERAL
+        }
+    )
+
+    region engineer-signature (
+        name: Engineer Signature
+        title: Signature – Engineer
         type: staticContent
         source {
             htmlCode:
                 ```html
-                <div class="t-Alert t-Alert--info t-Alert--horizontal" role="region" style="margin-bottom:8px;">
-                  <div class="t-Alert-wrap">
-                    <div class="t-Alert-icon"><span class="t-Icon fa fa-check-circle-o"></span></div>
-                    <div class="t-Alert-content">
-                      <div class="t-Alert-header">
-                        <h2 class="t-Alert-title">Clearance of Permit to Work</h2>
-                      </div>
-                      <div class="t-Alert-body">
-                        Permit: <strong>&P16_PERMIT_NUMBER.</strong>
-                      </div>
-                    </div>
-                  </div>
+                <div class="p16-sig-wrapper">
+                   <label class="t-Form-label" style="display:block;margin-bottom:6px;">
+                     Signature <span style="color:#C0392B;" aria-hidden="true">*</span>
+                   </label>
+                  <canvas id="p16EngSigCanvas"></canvas>
+                  <button type="button"
+                          class="t-Button t-Button--small t-Button--simple"
+                          id="p16EngClearSigBtn"
+                          style="margin-top:6px;"
+                          onclick="p16ClearEngSig()">
+                    <span class="fa fa-eraser" aria-hidden="true"></span> Clear Signature
+                  </button>
                 </div>
-                
                 ```
         }
         layout {
-            sequence: 50
+            sequence: 140
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-pencil
+        }
+        serverSideCondition {
+            type: item=value
+            item: P16_PTW_TYPE
+            value: GENERAL
+        }
+    )
+
+    region permit-info-banner (
+        name: Permit Info Banner
+        type: staticContent
+        source {
+            htmlCode: <h2 class="t-Alert-title">&P16_BANNER_TITLE.</h2>
+        }
+        layout {
+            sequence: 90
             slot: contentBody
         }
         appearance {
@@ -344,7 +523,7 @@ page 16 (
         title: Person in Charge of Works
         type: staticContent
         layout {
-            sequence: 70
+            sequence: 110
             slot: contentBody
         }
         appearance {
@@ -383,7 +562,7 @@ page 16 (
                 ```
         }
         layout {
-            sequence: 80
+            sequence: 120
             slot: contentBody
         }
         appearance {
@@ -395,6 +574,17 @@ page 16 (
                 t-Region--scrollBody
             ]
             icon: fa-pencil
+        }
+    )
+
+    pageItem P16_BANNER_TITLE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 70
+            slot: contentBody
         }
     )
 
@@ -435,6 +625,17 @@ page 16 (
             template: @/optional-floating
             templateOptions: #DEFAULT#
             cssClasses: cm-binary-item
+        }
+    )
+
+    pageItem P16_CLEAR_BUTTON_LABEL (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 80
+            slot: contentBody
         }
     )
 
@@ -482,6 +683,91 @@ page 16 (
         appearance {
             template: @/required-floating
             templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P16_CLEAR_ENG_PERSON_NAME (
+        type: textField
+        label {
+            label: Engineer Name
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @engineer
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        serverSideCondition {
+            type: item=value
+            item: P16_PTW_TYPE
+            value: GENERAL
+        }
+    )
+
+    pageItem P16_CLEAR_ENG_SIGNATURE_DATA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 10
+            region: @engineer-signature
+            slot: regionBody
+        }
+    )
+
+    pageItem P16_CLEAR_ENG_SIGNATURE_DATA_URL (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 50
+            slot: contentBody
+        }
+        serverSideCondition {
+            type: item=value
+            item: P16_PTW_TYPE
+            value: GENERAL
+        }
+    )
+
+    pageItem P16_CLEAR_ISOLATIONS_REMOVED (
+        type: radioGroup
+        label {
+            label: Isolations Removed
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes;Y,No;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 30
+            region: @declaration
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            cssClasses: cm-binary-item
+        }
+        serverSideCondition {
+            type: item=value
+            item: P16_PTW_TYPE
+            value: GENERAL
         }
     )
 
@@ -557,6 +843,39 @@ page 16 (
         }
     )
 
+    pageItem P16_CLEAR_SYSTEM_REACTIVATED (
+        type: radioGroup
+        label {
+            label: System(s) are reactivated/serviceable?
+            alignment: left
+        }
+        settings {
+            noOfCols: 3
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes;Y,No;N,N/A;NA
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 40
+            region: @declaration
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            cssClasses: cm-tristate-item
+        }
+        serverSideCondition {
+            type: item=value
+            item: P16_PTW_TYPE
+            value: GENERAL
+        }
+    )
+
     pageItem P16_CLEAR_WORK_COMPLETE (
         type: radioGroup
         label {
@@ -609,6 +928,17 @@ page 16 (
         }
     )
 
+    pageItem P16_PTW_TYPE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 60
+            slot: contentBody
+        }
+    )
+
     pageItem P16_WORKFLOW_STATUS (
         type: hidden
         settings {
@@ -639,7 +969,7 @@ page 16 (
 
     button clear-permit (
         buttonName: CLEAR_PERMIT
-        label: Clear Permit
+        label: &P16_CLEAR_BUTTON_LABEL.
         layout {
             sequence: 20
             region: @buttons
@@ -724,10 +1054,50 @@ page 16 (
         }
     )
 
+    validation engineers-signature-required (
+        name: Engineers signature required
+        execution {
+            sequence: 50
+        }
+        validation {
+            type: itemIsNotNull
+            item: P16_CLEAR_ENG_SIGNATURE_DATA
+        }
+        error {
+            errorMessage: A signature is required from the Engineer to clear the permit.
+        }
+        serverSideCondition {
+            whenButtonPressed: @clear-permit
+            type: item=value
+            item: P16_PTW_TYPE
+            value: GENERAL
+        }
+    )
+
+    validation isolations-removed-required (
+        name: Isolations Removed Required
+        execution {
+            sequence: 70
+        }
+        validation {
+            type: itemIsNotNull
+            item: P16_CLEAR_ISOLATIONS_REMOVED
+        }
+        error {
+            errorMessage: Please indicate whether personal isolations have been removed.
+        }
+        serverSideCondition {
+            whenButtonPressed: @clear-permit
+            type: item=value
+            item: P16_PTW_TYPE
+            value: GENERAL
+        }
+    )
+
     validation permit-still-valid (
         name: Permit Still Valid
         execution {
-            sequence: 50
+            sequence: 60
         }
         validation {
             type: functionBodyReturningBoolean
@@ -828,8 +1198,12 @@ page 16 (
                     UPDATE ptw_pro.ptw_lv_permits
                     SET    clear_work_complete = :P16_CLEAR_WORK_COMPLETE,
                            clear_area_safe     = :P16_CLEAR_AREA_SAFE,
+                           clear_isolations_removed = :P16_CLEAR_ISOLATIONS_REMOVED,
+                           clear_system_reactivated = :P16_CLEAR_SYSTEM_REACTIVATED,
                            workflow_status     = 'COMPLETED',
                            current_step        = 'CLEARANCE',
+                           clear_latitude      = TO_NUMBER(:APP_LATITUDE),
+                           clear_longitude     = TO_NUMBER(:APP_LONGITUDE),
                            completion_date     = v_now,
                            modified_by         = V('APP_USER'),
                            modified_date       = v_now
@@ -854,6 +1228,28 @@ page 16 (
                         p_latitude       => TO_NUMBER(:APP_LATITUDE),
                         p_longitude      => TO_NUMBER(:APP_LONGITUDE)
                     );
+                
+                    IF :P16_CLEAR_ENG_SIGNATURE_DATA IS NOT NULL OR :P16_CLEAR_ENG_PERSON_NAME IS NOT NULL THEN
+                        DECLARE
+                            v_eng_sig_blob BLOB;
+                            v_eng_clob     CLOB;
+                        BEGIN
+                            IF :P16_CLEAR_ENG_SIGNATURE_DATA IS NOT NULL THEN
+                                v_eng_clob     := REPLACE(:P16_CLEAR_ENG_SIGNATURE_DATA, 'data:image/png;base64,', '');
+                                v_eng_sig_blob := apex_web_service.clobbase642blob(v_eng_clob);
+                            END IF;
+                
+                            ptw_pro.ptw_signature_pkg.save_signature(
+                                p_permit_id      => :P16_PERMIT_ID,
+                                p_stage          => 'CLR_ENG',
+                                p_person_name    => UPPER(TRIM(:P16_CLEAR_ENG_PERSON_NAME)),
+                                p_signature_blob => v_eng_sig_blob,
+                                p_event_datetime => v_now,
+                                p_latitude       => TO_NUMBER(:APP_LATITUDE),
+                                p_longitude      => TO_NUMBER(:APP_LONGITUDE)
+                            );
+                        END;
+                    END IF;
                 
                     COMMIT;
                     :P16_CLEARED := 'Y';
@@ -909,19 +1305,35 @@ page 16 (
             plsqlCode:
                 ```plsql
                 DECLARE
-                    v_status   VARCHAR2(20);
-                    v_ended    DATE;
-                    v_sig      BLOB;
-                    v_na_lat   ptw_pro.ptw_signatures.latitude%TYPE;
-                    v_na_lng   ptw_pro.ptw_signatures.longitude%TYPE;
+                    v_status        VARCHAR2(20);
+                    v_ended         DATE;
+                    v_sig           BLOB;
+                    v_eng_sig       BLOB;
+                    v_na_lat        ptw_pro.ptw_signatures.latitude%TYPE;
+                    v_na_lng        ptw_pro.ptw_signatures.longitude%TYPE;
+                    v_na_mobile     ptw_pro.ptw_signatures.mobile_no%TYPE;
+                    v_na_company    ptw_pro.ptw_signatures.company_name%TYPE;
+                    v_na_dt         DATE;
+                    v_na_auth_to_dt  ptw_pro.ptw_signatures.auth_to_datetime%TYPE; 
                 BEGIN
+                
                     SELECT workflow_status, ended_datetime, permit_number,
-                           person_in_charge_name, supervising_company
+                           person_in_charge_name, supervising_company, ptw_type
                     INTO   v_status, v_ended, :P16_PERMIT_NUMBER,
-                           :P16_CLEAR_PERSON_NAME, :P16_CLEAR_COMPANY
+                           :P16_CLEAR_PERSON_NAME, :P16_CLEAR_COMPANY, :P16_PTW_TYPE
                     FROM   ptw_pro.ptw_lv_permits
                     WHERE  permit_id = :P16_PERMIT_ID;
                 
+                    :P16_BANNER_TITLE := CASE WHEN :P16_PTW_TYPE = 'GENERAL'
+                                              THEN 'Completion of Works'
+                                              ELSE 'Clearance of Permit to Work'
+                                         END;
+                
+                    :P16_CLEAR_BUTTON_LABEL := CASE WHEN :P16_PTW_TYPE = 'GENERAL'
+                                                    THEN 'Complete'
+                                                    ELSE 'Clear Permit'
+                                               END;
+                                               
                     IF v_status NOT IN ('STARTED', 'COMPLETED') THEN
                         apex_error.add_error(
                             p_message          => 'This permit cannot be viewed here. Current status: ' || v_status,
@@ -946,33 +1358,35 @@ page 16 (
                     IF v_status = 'COMPLETED' THEN
                         ptw_pro.ptw_signature_pkg.get_signature(:P16_PERMIT_ID, 'CLEAR',
                             :P16_CLEAR_PERSON_NAME, v_sig, :P16_CLEAR_PERSON_MOBILE, :P16_CLEAR_COMPANY,
-                            :P16_CLEAR_DATETIME, v_na_lat, v_na_lng);
+                            :P16_CLEAR_DATETIME, v_na_lat, v_na_lng, v_na_auth_to_dt);
                 
-                        SELECT clear_work_complete, clear_area_safe
-                        INTO   :P16_CLEAR_WORK_COMPLETE, :P16_CLEAR_AREA_SAFE
+                        SELECT clear_work_complete, clear_area_safe,
+                               clear_isolations_removed, clear_system_reactivated
+                        INTO   :P16_CLEAR_WORK_COMPLETE, :P16_CLEAR_AREA_SAFE,
+                               :P16_CLEAR_ISOLATIONS_REMOVED, :P16_CLEAR_SYSTEM_REACTIVATED
                         FROM   ptw_pro.ptw_lv_permits
                         WHERE  permit_id = :P16_PERMIT_ID;
                 
                         IF v_sig IS NOT NULL AND DBMS_LOB.GETLENGTH(v_sig) > 0 THEN
                             :P16_CLEAR_SIGNATURE_DATA_URL := 'data:image/png;base64,'
                                 || apex_web_service.blob2clobbase64(v_sig);
-                        ELSE
-                            :P16_CLEAR_SIGNATURE_DATA_URL := NULL;
+                        END IF;
+                
+                        IF :P16_PTW_TYPE = 'GENERAL' THEN
+                            BEGIN
+                                ptw_pro.ptw_signature_pkg.get_signature(:P16_PERMIT_ID, 'CLR_ENG',
+                                    :P16_CLEAR_ENG_PERSON_NAME, v_eng_sig, v_na_mobile, v_na_company,
+                                    v_na_dt, v_na_lat, v_na_lng, v_na_auth_to_dt);
+                                IF v_eng_sig IS NOT NULL AND DBMS_LOB.GETLENGTH(v_eng_sig) > 0 THEN
+                                    :P16_CLEAR_ENG_SIGNATURE_DATA_URL := 'data:image/png;base64,'
+                                        || apex_web_service.blob2clobbase64(v_eng_sig);
+                                END IF;
+                            EXCEPTION
+                                WHEN NO_DATA_FOUND THEN NULL; -- Engineer signature is optional
+                            END;
                         END IF;
                     END IF;
-                
-                EXCEPTION
-                    WHEN NO_DATA_FOUND THEN
-                        apex_error.add_error(
-                            p_message => 'Permit not found.', p_display_location => apex_error.c_on_error_page
-                        );
-                    WHEN OTHERS THEN
-                        apex_error.add_error(
-                            p_message => 'Error loading permit data: ' || SQLERRM,
-                            p_display_location => apex_error.c_on_error_page
-                        );
                 END;
-                
                 ```
         }
         execution {

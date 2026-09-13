@@ -348,7 +348,8 @@ page 3 (
                 ```plsql
                 RETURN ptw_pro.ptw_ui_pkg.get_workflow_steps_html(
                     p_permit_id => :P3_PERMIT_ID,
-                    p_ptw_type  => :P3_PTW_TYPE
+                    p_ptw_type  => :P3_PTW_TYPE,
+                    p_current_step => 'CONTROL_MEASURES'
                 );
                 ```
         }
@@ -496,7 +497,7 @@ page 3 (
             icon: fa-arrow-right
         }
         behavior {
-            warnOnUnsavedChanges: doNotCheck
+            action: definedByDynamicAction
         }
         advanced {
             htmlDomId: BTN_NEXT_STEP_P3
@@ -776,9 +777,14 @@ page 3 (
             plsqlCode:
                 ```plsql
                 BEGIN
-                  IF :P3_WORKFLOW_STATUS = 'DRAFT' THEN
-                    ptw_pro.ptw_checklist_pkg.save_checklist_responses(:P3_PERMIT_ID, :P3_CHECKLIST_JSON);
-                  END IF;
+                    IF :P3_WORKFLOW_STATUS = 'DRAFT' THEN
+                        ptw_pro.ptw_checklist_pkg.save_checklist_responses(
+                            :P3_PERMIT_ID,
+                            :P3_CHECKLIST_JSON,
+                            TO_NUMBER(:APP_LATITUDE),
+                            TO_NUMBER(:APP_LONGITUDE)
+                        );
+                    END IF;
                 
                 EXCEPTION
                     WHEN OTHERS THEN

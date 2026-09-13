@@ -246,7 +246,7 @@ page 5 (
                 ```
         }
         layout {
-            sequence: 210
+            sequence: 220
             slot: body
         }
         appearance {
@@ -265,7 +265,7 @@ page 5 (
         title: Person in Charge of Works Details
         type: staticContent
         layout {
-            sequence: 220
+            sequence: 230
             slot: body
         }
         appearance {
@@ -328,7 +328,7 @@ page 5 (
                 ```
         }
         layout {
-            sequence: 230
+            sequence: 240
             slot: body
         }
         appearance {
@@ -347,7 +347,7 @@ page 5 (
         title: Authorised Person Details
         type: staticContent
         layout {
-            sequence: 240
+            sequence: 250
             slot: body
         }
         appearance {
@@ -392,7 +392,7 @@ page 5 (
         name: Buttons
         type: staticContent
         layout {
-            sequence: 250
+            sequence: 260
             slot: body
         }
         appearance {
@@ -415,7 +415,7 @@ page 5 (
                 ```
         }
         layout {
-            sequence: 200
+            sequence: 210
             slot: body
         }
         serverSideCondition {
@@ -437,7 +437,7 @@ page 5 (
                 ```
         }
         layout {
-            sequence: 190
+            sequence: 200
             slot: body
         }
         appearance {
@@ -526,7 +526,7 @@ page 5 (
                 ```
         }
         layout {
-            sequence: 170
+            sequence: 180
             slot: body
         }
         appearance {
@@ -537,36 +537,19 @@ page 5 (
 
     region workflow-progress (
         name: Workflow Progress
-        type: staticContent
+        type: dynamicContent
         source {
-            htmlCode:
-                ```html
-                <div class="ptw-workflow-progress">
-                    <div class="workflow-step completed" data-step="1">
-                        <span class="step-icon">&#10003;</span>
-                        <span class="step-text">Site &amp; Work Details</span>
-                    </div>
-                    <div class="workflow-step completed" data-step="2">
-                        <span class="step-icon">&#10003;</span>
-                        <span class="step-text">Control Measures</span>
-                    </div>
-                    <div class="workflow-step completed" data-step="3">
-                        <span class="step-icon">&#10003;</span>
-                        <span class="step-text">Equipment Isolation</span>
-                    </div>
-                    <div class="workflow-step active" data-step="4">
-                        <span class="step-icon">4</span>
-                        <span class="step-text">Authorisation</span>
-                    </div>
-                    <div class="workflow-step" data-step="5">
-                        <span class="step-icon">5</span>
-                        <span class="step-text">Clearance</span>
-                    </div>
-                </div>
+            plsqlFunctionBody:
+                ```plsql
+                   RETURN ptw_pro.ptw_ui_pkg.get_workflow_steps_html(
+                       p_permit_id => :P5_PERMIT_ID,
+                       p_ptw_type  => :P5_PTW_TYPE,
+                       p_current_step => 'AUTHORISATION'
+                   );
                 ```
         }
         layout {
-            sequence: 180
+            sequence: 190
             slot: body
         }
         appearance {
@@ -859,6 +842,17 @@ page 5 (
         }
     )
 
+    pageItem P5_BACK_URL (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 170
+            slot: body
+        }
+    )
+
     pageItem P5_CURRENT_STEP (
         type: hidden
         settings {
@@ -990,15 +984,7 @@ page 5 (
             templateOptions: #DEFAULT#
         }
         behavior {
-            action: redirectThisApp
-            target: {
-                page: 4
-                items: {
-                    P4_PERMIT_ID: &P5_PERMIT_ID.
-                }
-                clearCache: 4
-            }
-            warnOnUnsavedChanges: doNotCheck
+            action: definedByDynamicAction
         }
         advanced {
             htmlDomId: BTN_BACK_P5
@@ -1074,6 +1060,30 @@ page 5 (
             }
             execution {
                 sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction back-button-click (
+        name: Back Button Click
+        execution {
+            sequence: 130
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @back
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: apex.navigation.redirect($v('P5_BACK_URL'));
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
             }
         )
 
@@ -1306,12 +1316,7 @@ page 5 (
                     $('#BTN_CLEAR_AUTH_SIG_P5, #BTN_CLEAR_ACCEPT_SIG_P5').hide();
                     // Hide Save Draft and Authorise buttons when read-only
                     //$('#BTN_SAVE_DRAFT_P5, #BTN_START_PERMIT_P5').hide();
-                    // Disable all editable items via APEX API
-                    apex.item('P5_AUTH_PERSON_SELECT').disable();
-                    apex.item('P5_AUTH_DATETIME').disable();
-                    apex.item('P5_ACCEPT_PERSON_NAME').disable();
-                    apex.item('P5_ACCEPT_PERSON_COMPANY').disable();
-                    apex.item('P5_ACCEPT_DATETIME').disable();
+                    
                     
                     ```
             }
@@ -1474,6 +1479,33 @@ page 5 (
         }
     )
 
+    process compute-back-url (
+        name: Compute Back URL
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE 
+                  l_target_page NUMBER; 
+                BEGIN 
+                  IF :P5_PTW_TYPE IN ('LV ISOLATION', 'WORKING AT HEIGHT') THEN 
+                    l_target_page := 4; -- Equipment Isolation 
+                  ELSE l_target_page := 3; -- Control Measures 
+                  END IF; 
+                  
+                  :P5_BACK_URL := apex_page.get_url( p_page => l_target_page, p_items => 'P' || l_target_page || '_PERMIT_ID', p_values => :P5_PERMIT_ID ); 
+                END; 
+                ```
+        }
+        execution {
+            sequence: 20
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 24588919001992905
+        }
+    )
+
     process load-authorisation-and-acceptance-data (
         name: Load Authorisation and Acceptance Data
         type: executeCode
@@ -1496,27 +1528,34 @@ page 5 (
                     :G_ACTIVE_PERMIT_ID := :P5_PERMIT_ID;
                 
                     DECLARE
-                        v_auth_sig      BLOB;
-                        v_accept_sig    BLOB;
-                        v_na_company    ptw_pro.ptw_signatures.company_name%TYPE;
-                        v_auth_lat      ptw_pro.ptw_signatures.latitude%TYPE;
-                        v_auth_lng      ptw_pro.ptw_signatures.longitude%TYPE;
-                        v_auth_to_dt    ptw_pro.ptw_signatures.auth_to_datetime%TYPE;   -- NEW
-                        v_na_accept_to_dt ptw_pro.ptw_signatures.auth_to_datetime%TYPE; -- NEW
+                        v_auth_sig        BLOB;
+                        v_accept_sig      BLOB;
+                        v_na_company      ptw_pro.ptw_signatures.company_name%TYPE;
+                        v_auth_lat        ptw_pro.ptw_signatures.latitude%TYPE;
+                        v_auth_lng        ptw_pro.ptw_signatures.longitude%TYPE;
+                        v_auth_to_dt      ptw_pro.ptw_signatures.auth_to_datetime%TYPE;
+                        v_na_accept_to_dt ptw_pro.ptw_signatures.auth_to_datetime%TYPE;
+                        v_auth_dt         ptw_pro.ptw_signatures.event_datetime%TYPE;
+                        v_accept_dt       ptw_pro.ptw_signatures.event_datetime%TYPE;
                     BEGIN
                         ptw_pro.ptw_signature_pkg.get_signature(:P5_PERMIT_ID, 'AUTH',
                             :P5_AUTH_PERSON_SELECT, v_auth_sig, :P5_AUTH_PERSON_MOBILE, v_na_company,
-                            :P5_AUTH_DATETIME, :P5_AUTH_LATITUDE, :P5_AUTH_LONGITUDE, v_auth_to_dt);
+                            v_auth_dt, :P5_AUTH_LATITUDE, :P5_AUTH_LONGITUDE, v_auth_to_dt);
                 
                         ptw_pro.ptw_signature_pkg.get_signature(:P5_PERMIT_ID, 'ACCEPT',
                             :P5_ACCEPT_PERSON_NAME, v_accept_sig, :P5_ACCEPT_PERSON_MOBILE, :P5_ACCEPT_COMPANY,
-                            :P5_ACCEPT_DATETIME, :P5_ACCEPT_LATITUDE, :P5_ACCEPT_LONGITUDE, v_na_accept_to_dt);
+                            v_accept_dt, :P5_ACCEPT_LATITUDE, :P5_ACCEPT_LONGITUDE, v_na_accept_to_dt);
                 
-                        IF :P5_ACCEPT_DATETIME IS NULL THEN
+                        IF v_accept_dt IS NULL THEN
                             :P5_ACCEPT_DATETIME := TO_CHAR(SYSDATE, 'DD-MON-YYYY HH24:MI');
+                        ELSE
+                            :P5_ACCEPT_DATETIME := TO_CHAR(v_accept_dt, 'DD-MON-YYYY HH24:MI');
                         END IF;
-                        IF :P5_AUTH_DATETIME IS NULL THEN
+                
+                        IF v_auth_dt IS NULL THEN
                             :P5_AUTH_DATETIME := TO_CHAR(SYSDATE, 'DD-MON-YYYY HH24:MI');
+                        ELSE
+                            :P5_AUTH_DATETIME := TO_CHAR(v_auth_dt, 'DD-MON-YYYY HH24:MI');
                         END IF;
                 
                         IF :P5_ACCEPT_COMPANY IS NULL AND :P5_ACCEPT_PERSON_NAME IS NULL THEN
@@ -1534,21 +1573,20 @@ page 5 (
                             :P5_AUTH_SIGNATURE_DATA := 'data:image/png;base64,'
                                 || apex_web_service.blob2clobbase64(v_auth_sig);
                         END IF;
+                
                         IF v_accept_sig IS NOT NULL THEN
                             :P5_ACCEPT_SIGNATURE_DATA := 'data:image/png;base64,'
                                 || apex_web_service.blob2clobbase64(v_accept_sig);
                         END IF;
-                    EXCEPTION
-                        WHEN OTHERS THEN NULL;
                     END;
+                
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        apex_error.add_error(
+                            p_message => 'Error loading authorisation data: ' || SQLERRM,
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
                 END;
-                
-                
-                
-                
-                
-                
-                
                 ```
         }
         execution {
@@ -1630,6 +1668,10 @@ page 5 (
                     UPDATE ptw_pro.ptw_lv_permits
                     SET    workflow_status = 'AUTHORISED',
                            current_step    = 'AUTHORISATION',
+                           auth_latitude      = TO_NUMBER(:APP_LATITUDE),
+                           auth_longitude     = TO_NUMBER(:APP_LONGITUDE),
+                           accept_latitude      = TO_NUMBER(:APP_LATITUDE),
+                           accept_longitude     = TO_NUMBER(:APP_LONGITUDE),
                            modified_by     = NVL(V('APP_USER'), USER),
                            modified_date   = CURRENT_TIMESTAMP
                     WHERE  permit_id = :P5_PERMIT_ID;

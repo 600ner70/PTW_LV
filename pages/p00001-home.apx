@@ -579,7 +579,8 @@ page 1 (
                           END
                     END ||
                     CASE
-                        WHEN p.workflow_status = 'STARTED' AND :APP_IS_ENGINEER = 'Y'
+                        WHEN p.workflow_status = 'STARTED' AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y')
+                          AND EXISTS (SELECT 1 FROM ptw_pro.ptw_types t WHERE t.ptw_type = p.ptw_type AND t.has_monitoring = 'Y')
                         THEN '<a href="' || apex_page.get_url(
                                                 p_page   => 15,
                                                 p_items  => 'P15_PERMIT_ID,P15_PTW_TYPE,P15_PERMIT_NUMBER',
@@ -591,6 +592,7 @@ page 1 (
                                  <span class="t-Icon fa fa-dial-gauge-chart" aria-hidden="true"></span>
                               </a>'
                         WHEN p.workflow_status = 'COMPLETED' AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y')
+                          AND EXISTS (SELECT 1 FROM ptw_pro.ptw_types t WHERE t.ptw_type = p.ptw_type AND t.has_monitoring = 'Y')
                         THEN '<a href="' || apex_page.get_url(
                                                 p_page   => 15,
                                                 p_items  => 'P15_PERMIT_ID,P15_PTW_TYPE,P15_PERMIT_NUMBER',
@@ -621,6 +623,24 @@ page 1 (
                                  title="Clear Permit">
                                  <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>
                               </a>'
+                        WHEN p.workflow_status = 'STARTED'
+                        AND  SYSDATE < p.ended_datetime
+                        AND  EXISTS (
+                                SELECT 1
+                                FROM   ptw_pro.ptw_types ty
+                                WHERE  ty.ptw_type = p.ptw_type
+                                AND    ty.has_monitoring = 'N'
+                             )
+                        THEN '<a href="' || apex_page.get_url(
+                                                p_page   => 16,
+                                                p_items  => 'P16_PERMIT_ID,P16_PERMIT_NUMBER,P16_WORKFLOW_STATUS',
+                                                p_values => p.permit_id || ',' || p.permit_number || ',STARTED',
+                                                p_clear_cache => 16
+                                            ) || '"
+                                 class="t-Button t-Button--noLabel t-Button--icon t-Button--success ptw-action-btn"
+                                 title="Complete Works">
+                                 <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>
+                              </a>'        
                         WHEN p.workflow_status = 'COMPLETED'
                             AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y')
                         THEN '<a href="' || apex_page.get_url(
@@ -633,6 +653,24 @@ page 1 (
                              title="View Clearance">
                              <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>
                           </a>'
+                        WHEN p.workflow_status = 'COMPLETED'
+                          AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y')
+                          AND  EXISTS (
+                                  SELECT 1
+                                  FROM   ptw_pro.ptw_types ty
+                                  WHERE  ty.ptw_type = p.ptw_type
+                                  AND    ty.has_monitoring = 'N'
+                               )
+                          THEN '<a href="' || apex_page.get_url(
+                                              p_page   => 16,
+                                              p_items  => 'P16_PERMIT_ID,P16_PERMIT_NUMBER,P16_WORKFLOW_STATUS',
+                                              p_values => p.permit_id || ',' || p.permit_number || ',COMPLETED',
+                                              p_clear_cache => 16
+                                         ) || '"
+                                class="t-Button t-Button--noLabel t-Button--icon t-Button--purple ptw-action-btn"
+                                title="View Completion">
+                                <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>
+                           </a>'    
                     END ||
                     CASE
                         WHEN p.workflow_status = 'CANCELLED'
@@ -1257,7 +1295,8 @@ page 1 (
                 
                     -- Monitoring button (STARTED + engineer only)
                     CASE
-                        WHEN p.workflow_status = 'STARTED' AND :APP_IS_ENGINEER = 'Y' THEN
+                        WHEN p.workflow_status = 'STARTED' AND :APP_IS_ENGINEER = 'Y' 
+                          AND EXISTS (SELECT 1 FROM ptw_pro.ptw_types t WHERE t.ptw_type = p.ptw_type AND t.has_monitoring = 'Y') THEN
                             '<a href="' || apex_page.get_url(
                                                 p_page   => 15,
                                                 p_items  => 'P15_PERMIT_ID,P15_PTW_TYPE,P15_PERMIT_NUMBER',
@@ -1267,7 +1306,8 @@ page 1 (
                                 title="Monitoring">
                                 <span class="t-Icon fa fa-dial-gauge-chart" aria-hidden="true"></span>
                              </a>'
-                        WHEN p.workflow_status = 'COMPLETED' AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y') THEN
+                        WHEN p.workflow_status = 'COMPLETED' AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y') 
+                          AND EXISTS (SELECT 1 FROM ptw_pro.ptw_types t WHERE t.ptw_type = p.ptw_type AND t.has_monitoring = 'Y') THEN
                             '<a href="' || apex_page.get_url(
                                                 p_page   => 15,
                                                 p_items  => 'P15_PERMIT_ID,P15_PTW_TYPE,P15_PERMIT_NUMBER',
@@ -1300,6 +1340,24 @@ page 1 (
                                  title="Clear Permit">
                                  <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>
                               </a>'
+                        WHEN p.workflow_status = 'STARTED'
+                        AND  SYSDATE < p.ended_datetime
+                        AND  EXISTS (
+                                SELECT 1
+                                FROM   ptw_pro.ptw_types ty
+                                WHERE  ty.ptw_type = p.ptw_type
+                                AND    ty.has_monitoring = 'N'
+                             )
+                        THEN '<a href="' || apex_page.get_url(
+                                                p_page   => 16,
+                                                p_items  => 'P16_PERMIT_ID,P16_PERMIT_NUMBER,P16_WORKFLOW_STATUS',
+                                                p_values => p.permit_id || ',' || p.permit_number || ',STARTED',
+                                                p_clear_cache => 16
+                                            ) || '"
+                                 class="t-Button t-Button--noLabel t-Button--icon t-Button--success ptw-action-btn"
+                                 title="Complete Works">
+                                 <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>
+                              </a>'
                         WHEN p.workflow_status = 'COMPLETED'
                              AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y') THEN
                             '<a href="' || apex_page.get_url(
@@ -1312,6 +1370,24 @@ page 1 (
                                 title="View Clearance">
                                 <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>
                              </a>'
+                        WHEN p.workflow_status = 'COMPLETED'
+                          AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y')
+                          AND  EXISTS (
+                                  SELECT 1
+                                  FROM   ptw_pro.ptw_types ty
+                                  WHERE  ty.ptw_type = p.ptw_type
+                                  AND    ty.has_monitoring = 'N'
+                               )
+                          THEN '<a href="' || apex_page.get_url(
+                                              p_page   => 16,
+                                              p_items  => 'P16_PERMIT_ID,P16_PERMIT_NUMBER,P16_WORKFLOW_STATUS',
+                                              p_values => p.permit_id || ',' || p.permit_number || ',COMPLETED',
+                                              p_clear_cache => 16
+                                         ) || '"
+                                class="t-Button t-Button--noLabel t-Button--icon t-Button--purple ptw-action-btn"
+                                title="View Completion">
+                                <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>
+                           </a>'  
                         ELSE NULL
                     END AS clearance_html,
                     -- Cancel button (AUTHORISED or STARTED permits only)

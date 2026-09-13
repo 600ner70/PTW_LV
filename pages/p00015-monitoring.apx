@@ -49,16 +49,7 @@ page 15 (
                        monitor_date,
                        monitoring_status,
                        CASE monitoring_status
-                           WHEN 'IN_PROGRESS' THEN
-                               '<a href="' 
-                               || apex_page.get_url(
-                                    p_page        => 10,
-                                    p_clear_cache => '10',
-                                    p_items       => 'P10_PERMIT_ID,P10_MONITORING_ID',
-                                    p_values      => permit_id || ',' || monitoring_id
-                                  )
-                               || '"><span class="fa fa-pencil" title="Edit"></span></a>'
-                           ELSE
+                           WHEN 'COMPLETED' THEN
                                '<a href="'
                                || apex_page.get_url(
                                     p_page        => 10,
@@ -67,6 +58,15 @@ page 15 (
                                     p_values      => permit_id || ',' || monitoring_id
                                   )
                                || '"><span class="fa fa-eye" title="View"></span></a>'
+                           ELSE
+                               '<a href="' 
+                               || apex_page.get_url(
+                                    p_page        => 10,
+                                    p_clear_cache => '10',
+                                    p_items       => 'P10_PERMIT_ID,P10_MONITORING_ID',
+                                    p_values      => permit_id || ',' || monitoring_id
+                                  )
+                               || '"><span class="fa fa-pencil" title="Edit"></span></a>'
                        END AS action_link
                 FROM   ptw_pro.ptw_lv_monitoring
                 WHERE  permit_id = :P15_PERMIT_ID
@@ -333,9 +333,13 @@ page 15 (
             warnOnUnsavedChanges: doNotCheck
         }
         serverSideCondition {
-            type: item=value
-            item: P15_WORKFLOW_STATUS
-            value: STARTED
+            type: expression
+            language: sql
+            sqlExpression:
+                ```sql
+                :P15_WORKFLOW_STATUS = 'STARTED'
+                AND EXISTS (SELECT 1 FROM ptw_pro.ptw_types t WHERE t.ptw_type = :P15_PTW_TYPE AND t.has_monitoring = 'Y')
+                ```
         }
     )
 

@@ -1270,6 +1270,8 @@ page 17 (
                            workflow_status      = 'CANCELLED',
                            current_step         = 'CANCELLED',
                            completion_date      = SYSDATE,
+                           cancel_latitude      = TO_NUMBER(:APP_LATITUDE),
+                           cancel_longitude     = TO_NUMBER(:APP_LONGITUDE),
                            modified_by          = NVL(V('APP_USER'), USER),
                            modified_date        = CURRENT_TIMESTAMP
                     WHERE  permit_id            = :P17_PERMIT_ID
@@ -1475,12 +1477,13 @@ page 17 (
             plsqlCode:
                 ```plsql
                 DECLARE
-                    v_clob CLOB;
-                    v_sig  BLOB;
-                    v_na_mobile  ptw_pro.ptw_signatures.mobile_no%TYPE;
-                    v_na_company ptw_pro.ptw_signatures.company_name%TYPE;
-                    v_na_lat     ptw_pro.ptw_signatures.latitude%TYPE;
-                    v_na_lng     ptw_pro.ptw_signatures.longitude%TYPE;
+                   v_clob CLOB;
+                   v_sig  BLOB;
+                   v_na_mobile     ptw_pro.ptw_signatures.mobile_no%TYPE;
+                   v_na_company    ptw_pro.ptw_signatures.company_name%TYPE;
+                   v_na_lat        ptw_pro.ptw_signatures.latitude%TYPE;
+                   v_na_lng        ptw_pro.ptw_signatures.longitude%TYPE;
+                   v_na_auth_to_dt ptw_pro.ptw_signatures.auth_to_datetime%TYPE;  -- NEW
                 BEGIN
                     SELECT permit_number, workflow_status
                     INTO   :P17_PERMIT_NUMBER, :P17_WORKFLOW_STATUS
@@ -1491,7 +1494,7 @@ page 17 (
                 
                         ptw_pro.ptw_signature_pkg.get_signature(:P17_PERMIT_ID, 'CANCEL',
                             :P17_CANCEL_PERSON_NAME, v_sig, v_na_mobile, v_na_company,
-                            :P17_CANCEL_DATETIME, v_na_lat, v_na_lng);
+                            :P17_CANCEL_DATETIME, v_na_lat, v_na_lng, v_na_auth_to_dt);   -- CHANGED
                 
                         SELECT cancel_work_complete
                         INTO   :P17_CANCEL_WORK_COMPLETE

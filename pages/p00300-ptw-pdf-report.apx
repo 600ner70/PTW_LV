@@ -583,7 +583,7 @@ page 300 (
         name: Print Buttons
         type: staticContent
         layout {
-            sequence: 40
+            sequence: 50
             slot: body
         }
         appearance {
@@ -615,13 +615,14 @@ page 300 (
             ]
         }
         layout {
-            sequence: 50
+            sequence: 60
             slot: body
         }
         appearance {
             template: @/standard
             templateOptions: [
                 #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
                 t-Region--scrollBody
             ]
         }
@@ -665,6 +666,17 @@ page 300 (
             type: item=value
             item: P300_RETURN_PAGE
             value: 50
+        }
+    )
+
+    pageItem P300_PDF_FILENAME (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: body
         }
     )
 
@@ -752,7 +764,12 @@ page 300 (
         action native-javascript-code (
             action: executeJsCode
             settings {
-                jsCode: window.print()
+                jsCode:
+                    ```javascript-browser
+                    //window.print()
+                    document.title = $v('P300_PDF_FILENAME'); 
+                    window.print(); 
+                    ```
             }
             execution {
                 sequence: 10
@@ -784,6 +801,23 @@ page 300 (
             }
         )
 
+    )
+
+    computation p300-pdf-filename (
+        itemName: P300_PDF_FILENAME
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT REPLACE(t.ptw_type, ' ', '_') || '_' || REPLACE(p.permit_number, '/', '-') 
+                FROM   ptw_pro.ptw_lv_permits p 
+                JOIN   ptw_pro.ptw_types t ON t.ptw_type = p.ptw_type
+                WHERE  p.permit_id = :P300_PERMIT_ID
+                ```
+        }
     )
 
 )

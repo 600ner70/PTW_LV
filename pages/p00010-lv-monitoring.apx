@@ -47,10 +47,9 @@ page 10 (
             
                         if (existingDataUrl) {
                             loadSignature(pad, canvas, existingDataUrl);
-                            lockCanvas(canvas);
-                            var clearBtn = document.querySelector('.signature-controls button');
-                            if (clearBtn) clearBtn.style.display = 'none';
-                        } else if (workflowStatus !== 'STARTED') {
+                        }
+            
+                        if (existingDataUrl || isMonitoringReadOnly()) {
                             lockCanvas(canvas);
                             var clearBtn = document.querySelector('.signature-controls button');
                             if (clearBtn) clearBtn.style.display = 'none';
@@ -85,6 +84,31 @@ page 10 (
                 var canvas = document.getElementById('monitorSignaturePad');
                 setCanvasBackground(canvas);
             }
+            
+            function isMonitoringReadOnly() {
+                    var status = apex.item('P10_MONITORING_STATUS').getValue();
+                    return status !== 'IN_PROGRESS';
+                }
+            
+                function openConcernDialog(checkNumber, dialogTitle) {
+                    apex.server.process('GET_CONCERN_DIALOG_URL', {
+                        x01: apex.item('P10_PERMIT_ID').getValue(),
+                        x02: apex.item('P10_PERMIT_NUMBER').getValue(),
+                        x03: apex.item('P10_MONITORING_ID').getValue(),
+                        x04: String(checkNumber)
+                    }, {
+                        success: function (data) {
+                            apex.item('P10_MONITORING_ID').setValue(data.monitoringId, null, true);
+                            apex.navigation.dialog(
+                                data.url,
+                                { title: dialogTitle, height: '650', width: '550', modal: true },
+                                '',
+                                $('#P10_MS_CHECK' + checkNumber + '_IN_ORDER')
+                            );
+                        }
+                    });
+                }
+            
             ```
         executeWhenPageLoads:
             ```javascript-browser
@@ -120,9 +144,7 @@ page 10 (
                 ];
             
                 // Read-only when not STARTED, OR when viewing an existing monitoring record
-                var isReadOnly = (apex.item('P10_WORKFLOW_STATUS').getValue() !== 'STARTED') ||
-                                 (apex.item('P10_MONITORING_ID').getValue() !== '' && 
-                                  apex.item('P10_MONITORING_STATUS').getValue() === 'COMPLETED');
+                var isReadOnly = isMonitoringReadOnly();
             
                 function buildBadgeRow(itemName, badges) {
                     // apex.item().getValue() works in both edit and read-only mode
@@ -179,6 +201,33 @@ page 10 (
             
                     $row.find('.cm-badge').removeClass('cm-active');
                     $badge.addClass('cm-active');
+                });
+            
+                // View Concern links - only shown when a concern actually exists for
+                // that check. Uses the same dialog Page 30 already opens elsewhere,
+                // so read-only vs editable is decided by P30_RESOLVED once the dialog
+                // loads - no separate "view mode" needed here.
+                var CONCERN_ITEMS = [
+                    { item: 'P10_MS_CHECK1_IN_ORDER', hasConcernItem: 'P10_CHECK1_HAS_CONCERN', checkNum: 1 },
+                    { item: 'P10_MS_CHECK2_IN_ORDER', hasConcernItem: 'P10_CHECK2_HAS_CONCERN', checkNum: 2 },
+                    { item: 'P10_MS_CHECK3_IN_ORDER', hasConcernItem: 'P10_CHECK3_HAS_CONCERN', checkNum: 3 }
+                ];
+             
+                CONCERN_ITEMS.forEach(function (c) {
+                    var hasConcern = apex.item(c.hasConcernItem).getValue() === 'Y';
+                    if (!hasConcern) return;
+             
+                    var $fc = $('#' + c.item).closest('.t-Form-fieldContainer');
+                    if ($fc.length === 0) return;
+             
+                    $fc.find('.view-concern-link').remove();
+             
+                    $('<a href="#" class="view-concern-link" style="margin-left:10px;font-size:0.85rem;">View Concern</a>')
+                        .on('click', function (e) {
+                            e.preventDefault();
+                            openConcernDialog(c.checkNum, 'Concern - Check ' + c.checkNum + ' Not In Order');
+                        })
+                        .appendTo($fc.find('.cm-badge-row'));
                 });
             
             }());
@@ -280,7 +329,7 @@ page 10 (
     }
     readOnly {
         type: expression
-        plsqlExpression: :P10_MONITORING_ID IS NOT NULL AND :P10_MONITORING_STATUS = 'COMPLETED'
+        plsqlExpression: NVL(:P10_MONITORING_STATUS, 'IN_PROGRESS') != 'IN_PROGRESS'
     }
     security {
         pageAccessProtection: argumentsMustHaveChecksum
@@ -291,7 +340,7 @@ page 10 (
         name: Buttons
         type: staticContent
         layout {
-            sequence: 260
+            sequence: 290
             slot: body
         }
         appearance {
@@ -320,7 +369,7 @@ page 10 (
                 ```
         }
         layout {
-            sequence: 120
+            sequence: 150
             slot: body
         }
         appearance {
@@ -349,7 +398,7 @@ page 10 (
                 ```
         }
         layout {
-            sequence: 100
+            sequence: 130
             slot: body
         }
         appearance {
@@ -363,7 +412,7 @@ page 10 (
         title: Monitoring Sign-Off
         type: staticContent
         layout {
-            sequence: 250
+            sequence: 280
             slot: body
         }
         appearance {
@@ -413,7 +462,7 @@ page 10 (
         title: Site Monitoring Checks
         type: staticContent
         layout {
-            sequence: 110
+            sequence: 140
             slot: body
         }
         appearance {
@@ -425,6 +474,39 @@ page 10 (
                 t-Region--scrollBody
             ]
             icon: fa-check-circle
+        }
+    )
+
+    pageItem P10_CHECK1_HAS_CONCERN (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 100
+            slot: body
+        }
+    )
+
+    pageItem P10_CHECK2_HAS_CONCERN (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 110
+            slot: body
+        }
+    )
+
+    pageItem P10_CHECK3_HAS_CONCERN (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 120
+            slot: body
         }
     )
 
@@ -699,7 +781,7 @@ page 10 (
             alignment: left
         }
         layout {
-            sequence: 160
+            sequence: 190
             slot: body
             alignment: left
             startNewRow: false
@@ -724,7 +806,7 @@ page 10 (
             alignment: left
         }
         layout {
-            sequence: 130
+            sequence: 160
             slot: body
             alignment: left
             columnSpan: 6
@@ -753,7 +835,7 @@ page 10 (
             displayNullValue: false
         }
         layout {
-            sequence: 140
+            sequence: 170
             slot: body
             alignment: left
             startNewRow: false
@@ -773,7 +855,7 @@ page 10 (
             alignment: left
         }
         layout {
-            sequence: 150
+            sequence: 180
             slot: body
             alignment: left
             columnSpan: 3
@@ -796,7 +878,7 @@ page 10 (
             alignment: left
         }
         layout {
-            sequence: 200
+            sequence: 230
             slot: body
             alignment: left
             startNewRow: false
@@ -818,7 +900,7 @@ page 10 (
             alignment: left
         }
         layout {
-            sequence: 170
+            sequence: 200
             slot: body
             alignment: left
             columnSpan: 6
@@ -847,7 +929,7 @@ page 10 (
             displayNullValue: false
         }
         layout {
-            sequence: 180
+            sequence: 210
             slot: body
             alignment: left
             startNewRow: false
@@ -867,7 +949,7 @@ page 10 (
             alignment: left
         }
         layout {
-            sequence: 190
+            sequence: 220
             slot: body
             alignment: left
             columnSpan: 3
@@ -890,7 +972,7 @@ page 10 (
             alignment: left
         }
         layout {
-            sequence: 240
+            sequence: 270
             slot: body
             alignment: left
             startNewRow: false
@@ -912,7 +994,7 @@ page 10 (
             alignment: left
         }
         layout {
-            sequence: 210
+            sequence: 240
             slot: body
             alignment: left
             columnSpan: 6
@@ -941,7 +1023,7 @@ page 10 (
             displayNullValue: false
         }
         layout {
-            sequence: 220
+            sequence: 250
             slot: body
             alignment: left
             startNewRow: false
@@ -961,7 +1043,7 @@ page 10 (
             alignment: left
         }
         layout {
-            sequence: 230
+            sequence: 260
             slot: body
             alignment: left
             columnSpan: 3
@@ -1063,7 +1145,7 @@ page 10 (
 
     button save-monitoring (
         buttonName: SAVE_MONITORING
-        label: Save Monitoring
+        label: Save
         layout {
             sequence: 10
             region: @buttons
@@ -1224,7 +1306,7 @@ page 10 (
                                             if (okPressed) {
                                                 apex.server.process('DELETE_MONITORING_CONCERN', {
                                                     x01: apex.item('P10_MONITORING_ID').getValue(),
-                                                    x02: '1'
+                                                    x02: '2'
                                                 }, {
                                                     success: function () {
                                                         apex.message.showPageSuccess('Concern information removed.');
@@ -1303,7 +1385,7 @@ page 10 (
                                             if (okPressed) {
                                                 apex.server.process('DELETE_MONITORING_CONCERN', {
                                                     x01: apex.item('P10_MONITORING_ID').getValue(),
-                                                    x02: '1'
+                                                    x02: '3'
                                                 }, {
                                                     success: function () {
                                                         apex.message.showPageSuccess('Concern information removed.');
@@ -1318,6 +1400,105 @@ page 10 (
                             }
                         });
                     }
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction cleanup-empty-concern-check-1 (
+        name: Cleanup Empty Concern — Check 1
+        execution {
+            sequence: 70
+        }
+        when {
+            event: apexafterclosecanceldialog
+            selectionType: items
+            items: P10_MS_CHECK1_IN_ORDER
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    apex.server.process('CLEANUP_EMPTY_CONCERN', {
+                        x01: apex.item('P10_MONITORING_ID').getValue(),
+                        x02: '1'
+                    }, {
+                        dataType: 'text',
+                        loadingIndicator: apex.jQuery()   // no visible spinner for this housekeeping call
+                    });
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction cleanup-empty-concern-check-2 (
+        name: Cleanup Empty Concern — Check 2
+        execution {
+            sequence: 80
+        }
+        when {
+            event: apexafterclosecanceldialog
+            selectionType: items
+            items: P10_MS_CHECK2_IN_ORDER
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    apex.server.process('CLEANUP_EMPTY_CONCERN', {
+                        x01: apex.item('P10_MONITORING_ID').getValue(),
+                        x02: '2'
+                    }, {
+                        dataType: 'text',
+                        loadingIndicator: apex.jQuery()   // no visible spinner for this housekeeping call
+                    });
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction cleanup-empty-concern-check-3 (
+        name: Cleanup Empty Concern — Check 3
+        execution {
+            sequence: 90
+        }
+        when {
+            event: apexafterclosecanceldialog
+            selectionType: items
+            items: P10_MS_CHECK3_IN_ORDER
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    apex.server.process('CLEANUP_EMPTY_CONCERN', {
+                        x01: apex.item('P10_MONITORING_ID').getValue(),
+                        x02: '3'
+                    }, {
+                        dataType: 'text',
+                        loadingIndicator: apex.jQuery()   // no visible spinner for this housekeeping call
+                    });
                     ```
             }
             execution {
@@ -1394,8 +1575,19 @@ page 10 (
             settings {
                 jsCode:
                     ```javascript-browser
-                    apex.jQuery("#P10_CHK_PERMIT_TIME, #P10_CHK_ACCESS_TIME, #P10_CHK_WARNING_TIME, #P10_MS_CHECK1_TIME, #P10_MS_CHECK2_TIME")
-                        .attr("type", "time");
+                        var $timeFields = apex.jQuery(
+                            "#P10_CHK_PERMIT_TIME, #P10_CHK_ACCESS_TIME, #P10_CHK_WARNING_TIME, " +
+                            "#P10_MS_CHECK1_TIME, #P10_MS_CHECK2_TIME, #P10_MS_CHECK3_TIME"
+                        );
+                     
+                        $timeFields.attr("type", "time");
+                     
+                        if (isMonitoringReadOnly()) {
+                            // disabled (not just readonly) is the only attribute that reliably
+                            // blocks the native time-picker's interactive scroller in Chrome -
+                            // readonly alone still lets the picker UI be used in some versions.
+                            $timeFields.prop("disabled", true);
+                        }
                     ```
             }
             execution {
@@ -1459,19 +1651,10 @@ page 10 (
                 BEGIN
                     SELECT COUNT(*)
                     INTO   l_unresolved
-                    FROM   (SELECT 1 AS check_number FROM dual WHERE :P10_MS_CHECK1_IN_ORDER = 'N'
-                            UNION ALL
-                            SELECT 2 FROM dual WHERE :P10_MS_CHECK2_IN_ORDER = 'N'
-                            UNION ALL
-                            SELECT 3 FROM dual WHERE :P10_MS_CHECK3_IN_ORDER = 'N') failing
-                    WHERE NOT EXISTS (
-                        SELECT 1
-                        FROM   ptw_pro.ptw_lv_monitoring_concerns mc
-                        WHERE  mc.monitoring_id     = :P10_MONITORING_ID
-                        AND    mc.check_number      = failing.check_number
-                        AND    mc.happy_to_continue IS NOT NULL
-                        AND    mc.concern_signature IS NOT NULL
-                    );
+                    FROM   ptw_pro.ptw_lv_monitoring_concerns mc
+                    WHERE  mc.monitoring_id = :P10_MONITORING_ID
+                    AND    NVL(mc.happy_to_continue, 'X') != 'Y'
+                    AND    mc.concern_signature IS NULL;
                 
                     RETURN l_unresolved = 0;
                 END;
@@ -1523,6 +1706,81 @@ page 10 (
         }
     )
 
+    validation monitor-signature-required (
+        name: Monitor Signature Required
+        execution {
+            sequence: 60
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                RETURN :P10_MONITOR_SIGNATURE_HIDDEN IS NOT NULL
+                  AND LENGTH(:P10_MONITOR_SIGNATURE_HIDDEN) > 22;
+                ```
+        }
+        error {
+            errorMessage: Signature is required to complete this monitoring visit.
+        }
+        serverSideCondition {
+            whenButtonPressed: @save-monitoring
+        }
+    )
+
+    validation not-in-order-requires-concern (
+        name: Not In Order Requires Concern
+        execution {
+            sequence: 70
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    l_resolved NUMBER;
+                BEGIN
+                    IF :P10_MS_CHECK1_IN_ORDER = 'N' THEN
+                        SELECT COUNT(*) INTO l_resolved
+                        FROM   ptw_pro.ptw_lv_monitoring_concerns
+                        WHERE  monitoring_id = :P10_MONITORING_ID
+                        AND    check_number  = 1
+                        AND    (happy_to_continue = 'Y'
+                                OR (happy_to_continue = 'N' AND concern_signature IS NOT NULL));
+                        IF l_resolved = 0 THEN RETURN FALSE; END IF;
+                    END IF;
+                
+                    IF :P10_MS_CHECK2_IN_ORDER = 'N' THEN
+                        SELECT COUNT(*) INTO l_resolved
+                        FROM   ptw_pro.ptw_lv_monitoring_concerns
+                        WHERE  monitoring_id = :P10_MONITORING_ID
+                        AND    check_number  = 2
+                        AND    (happy_to_continue = 'Y'
+                                OR (happy_to_continue = 'N' AND concern_signature IS NOT NULL));
+                        IF l_resolved = 0 THEN RETURN FALSE; END IF;
+                    END IF;
+                
+                    IF :P10_MS_CHECK3_IN_ORDER = 'N' THEN
+                        SELECT COUNT(*) INTO l_resolved
+                        FROM   ptw_pro.ptw_lv_monitoring_concerns
+                        WHERE  monitoring_id = :P10_MONITORING_ID
+                        AND    check_number  = 3
+                        AND    (happy_to_continue = 'Y'
+                                OR (happy_to_continue = 'N' AND concern_signature IS NOT NULL));
+                        IF l_resolved = 0 THEN RETURN FALSE; END IF;
+                    END IF;
+                
+                    RETURN TRUE;
+                END;
+                ```
+        }
+        error {
+            errorMessage: One or more checks are marked "not in order" but have no concern recorded. Please complete and sign off the concern for each affected check before completing this monitoring visit.
+        }
+        serverSideCondition {
+            whenButtonPressed: @save-monitoring
+        }
+    )
+
     process check-concern-exists (
         name: CHECK_CONCERN_EXISTS
         type: executeCode
@@ -1561,6 +1819,38 @@ page 10 (
         }
         advanced {
             executionMappingIdentifier: 8747926801520322
+        }
+    )
+
+    process cleanup-empty-concern (
+        name: CLEANUP_EMPTY_CONCERN
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                BEGIN
+                    DELETE FROM ptw_pro.ptw_lv_monitoring_concerns mc
+                    WHERE  mc.monitoring_id       = TO_NUMBER(apex_application.g_x01)
+                    AND    mc.check_number        = TO_NUMBER(apex_application.g_x02)
+                    AND    mc.concern_description IS NULL
+                    AND    mc.actions_taken       IS NULL
+                    AND    mc.happy_to_continue   IS NULL
+                    AND    mc.concern_signature   IS NULL
+                    AND    NOT EXISTS (
+                        SELECT 1 FROM ptw_pro.ptw_lv_permit_photos p
+                        WHERE  p.concern_id = mc.concern_id
+                    );
+                    COMMIT;
+                END;
+                
+                ```
+        }
+        execution {
+            sequence: 40
+            point: ajaxCallback
+        }
+        advanced {
+            executionMappingIdentifier: 24590786153992923
         }
     )
 
@@ -1691,6 +1981,28 @@ page 10 (
                         :P10_MONITORING_STATUS     := v_mon.monitoring_status;
                         :P10_MONITOR_DATE          := TO_CHAR(v_mon.monitor_date, 'DD-MON-YYYY');
                 
+                        SELECT NVL(MAX(CASE WHEN check_number = 1 THEN 'Y' END), 'N'),
+                               NVL(MAX(CASE WHEN check_number = 2 THEN 'Y' END), 'N'),
+                               NVL(MAX(CASE WHEN check_number = 3 THEN 'Y' END), 'N')
+                        INTO   :P10_CHECK1_HAS_CONCERN,
+                               :P10_CHECK2_HAS_CONCERN,
+                               :P10_CHECK3_HAS_CONCERN
+                        FROM   ptw_pro.ptw_lv_monitoring_concerns mc
+                        WHERE  mc.monitoring_id = :P10_MONITORING_ID
+                        AND    (mc.concern_description IS NOT NULL
+                                OR mc.happy_to_continue IS NOT NULL);
+                
+                        -- Site Monitoring Checks (top of page) — previously fetched into
+                        -- v_mon by SELECT * but never actually copied into their page
+                        -- items, so a completed/existing record always displayed these
+                        -- three questions and their times as blank.
+                        :P10_CHK_PERMIT_ON_DISPLAY := v_mon.chk_permit_on_display;
+                        :P10_CHK_PERMIT_TIME       := v_mon.chk_permit_time;
+                        :P10_CHK_ACCESS_EGRESS     := v_mon.chk_access_egress;
+                        :P10_CHK_ACCESS_TIME       := v_mon.chk_access_time;
+                        :P10_CHK_WARNING_SIGNS     := v_mon.chk_warning_signs;
+                        :P10_CHK_WARNING_TIME      := v_mon.chk_warning_time;
+                
                         IF v_mon.monitor_signature IS NOT NULL
                            AND DBMS_LOB.GETLENGTH(v_mon.monitor_signature) > 0
                         THEN
@@ -1705,6 +2017,10 @@ page 10 (
                         :P10_MONITOR_DATE               := TO_CHAR(SYSDATE, 'DD-MON-YYYY');
                         :P10_MONITOR_SIGNATURE_DATA_URL := NULL;
                         :P10_MONITORING_STATUS := 'IN_PROGRESS';
+                
+                        :P10_CHECK1_HAS_CONCERN := 'N';
+                        :P10_CHECK2_HAS_CONCERN := 'N';
+                        :P10_CHECK3_HAS_CONCERN := 'N';
                     END IF;
                 
                 EXCEPTION
@@ -1760,37 +2076,6 @@ page 10 (
                     -- -----------------------------------------------
                     IF :P10_MONITORING_ID IS NOT NULL THEN
                 
-                        -- Check 1 always saved, even if blank (matches original "always shown")
-                        ptw_pro.ptw_monitoring_pkg.save_check(
-                            p_monitoring_id => :P10_MONITORING_ID,
-                            p_check_seq     => 1,
-                            p_detail        => :P10_MS_CHECK1_DETAIL,
-                            p_check_time    => :P10_MS_CHECK1_TIME,
-                            p_in_order      => :P10_MS_CHECK1_IN_ORDER,
-                            p_comments      => :P10_MS_CHECK1_COMMENTS
-                        );
-                
-                        IF :P10_MS_CHECK2_DETAIL IS NOT NULL THEN
-                            ptw_pro.ptw_monitoring_pkg.save_check(
-                                p_monitoring_id => :P10_MONITORING_ID,
-                                p_check_seq     => 2,
-                                p_detail        => :P10_MS_CHECK2_DETAIL,
-                                p_check_time    => :P10_MS_CHECK2_TIME,
-                                p_in_order      => :P10_MS_CHECK2_IN_ORDER,
-                                p_comments      => :P10_MS_CHECK2_COMMENTS
-                            );
-                        END IF;
-                
-                        IF :P10_MS_CHECK3_DETAIL IS NOT NULL THEN
-                            ptw_pro.ptw_monitoring_pkg.save_check(
-                                p_monitoring_id => :P10_MONITORING_ID,
-                                p_check_seq     => 3,
-                                p_detail        => :P10_MS_CHECK3_DETAIL,
-                                p_check_time    => :P10_MS_CHECK3_TIME,
-                                p_in_order      => :P10_MS_CHECK3_IN_ORDER,
-                                p_comments      => :P10_MS_CHECK3_COMMENTS
-                            );
-                        END IF;
                         -- UPDATE
                         UPDATE ptw_pro.ptw_lv_monitoring
                         SET
@@ -1800,20 +2085,21 @@ page 10 (
                             chk_access_time        = :P10_CHK_ACCESS_TIME,
                             chk_warning_signs      = :P10_CHK_WARNING_SIGNS,
                             chk_warning_time       = :P10_CHK_WARNING_TIME,
-                            monitor_name           = :P10_MONITOR_NAME,
-                            monitor_date           = TO_DATE(:P10_MONITOR_DATE, 'DD-MON-YYYY'),
-                            monitor_latitude       = :APP_LATITUDE,
-                            monitor_longitude      = :APP_LONGITUDE,
-                            monitor_signature      = CASE WHEN v_sig IS NOT NULL THEN v_sig
-                                                          ELSE monitor_signature END,
-                            monitoring_status      = CASE WHEN :REQUEST = 'SAVE_DRAFT' THEN
-                                                         'IN_PROGRESS'
-                                                     ELSE 
-                                                         'COMPLETED'
-                                                     END,
-                            modified_date          = CURRENT_TIMESTAMP,
-                            modified_by            = NVL(V('APP_USER'), USER)
+                            monitor_name            = :P10_MONITOR_NAME,
+                            monitor_date            = TO_DATE(:P10_MONITOR_DATE, 'DD-MON-YYYY'),
+                            monitor_latitude        = :APP_LATITUDE,
+                            monitor_longitude       = :APP_LONGITUDE,
+                            monitor_signature       = CASE WHEN v_sig IS NOT NULL THEN v_sig
+                                                            ELSE monitor_signature END,
+                            monitoring_status       = CASE WHEN :REQUEST = 'SAVE_DRAFT' THEN
+                                                           'IN_PROGRESS'
+                                                       ELSE
+                                                           'COMPLETED'
+                                                       END,
+                            modified_date           = CURRENT_TIMESTAMP,
+                            modified_by             = NVL(V('APP_USER'), USER)
                         WHERE monitoring_id = :P10_MONITORING_ID;
+                
                     ELSE
                         -- INSERT
                         INSERT INTO ptw_pro.ptw_lv_monitoring (
@@ -1830,18 +2116,56 @@ page 10 (
                             :P10_CHK_PERMIT_ON_DISPLAY,  :P10_CHK_PERMIT_TIME,
                             :P10_CHK_ACCESS_EGRESS,      :P10_CHK_ACCESS_TIME,
                             :P10_CHK_WARNING_SIGNS,      :P10_CHK_WARNING_TIME,
-                            :P10_MONITOR_NAME,           
+                            :P10_MONITOR_NAME,
                             TO_DATE(:P10_MONITOR_DATE, 'DD-MON-YYYY'),
                             :APP_LATITUDE,               :APP_LONGITUDE,
                             v_sig,
                             CASE WHEN :REQUEST = 'SAVE_DRAFT' THEN
                                 'IN_PROGRESS'
-                            ELSE 
+                            ELSE
                                 'COMPLETED'
                             END,
                             CURRENT_TIMESTAMP,           NVL(V('APP_USER'), USER)
                         )
                         RETURNING monitoring_id INTO :P10_MONITORING_ID;
+                    END IF;
+                
+                    -- Check 1 always saved, even if blank (matches original "always shown")
+                    ptw_pro.ptw_monitoring_pkg.save_check(
+                        p_monitoring_id => :P10_MONITORING_ID,
+                        p_check_seq     => 1,
+                        p_detail        => :P10_MS_CHECK1_DETAIL,
+                        p_check_time    => :P10_MS_CHECK1_TIME,
+                        p_in_order      => :P10_MS_CHECK1_IN_ORDER,
+                        p_comments      => :P10_MS_CHECK1_COMMENTS
+                    );
+                
+                    IF :P10_MS_CHECK2_DETAIL IS NOT NULL
+                        OR :P10_MS_CHECK2_IN_ORDER IS NOT NULL
+                        OR :P10_MS_CHECK2_TIME     IS NOT NULL
+                        OR :P10_MS_CHECK2_COMMENTS IS NOT NULL THEN
+                        ptw_pro.ptw_monitoring_pkg.save_check(
+                            p_monitoring_id => :P10_MONITORING_ID,
+                            p_check_seq     => 2,
+                            p_detail        => :P10_MS_CHECK2_DETAIL,
+                            p_check_time    => :P10_MS_CHECK2_TIME,
+                            p_in_order      => :P10_MS_CHECK2_IN_ORDER,
+                            p_comments      => :P10_MS_CHECK2_COMMENTS
+                        );
+                    END IF;
+                
+                    IF :P10_MS_CHECK3_DETAIL IS NOT NULL
+                        OR :P10_MS_CHECK3_IN_ORDER IS NOT NULL
+                        OR :P10_MS_CHECK3_TIME     IS NOT NULL
+                        OR :P10_MS_CHECK3_COMMENTS IS NOT NULL THEN
+                        ptw_pro.ptw_monitoring_pkg.save_check(
+                            p_monitoring_id => :P10_MONITORING_ID,
+                            p_check_seq     => 3,
+                            p_detail        => :P10_MS_CHECK3_DETAIL,
+                            p_check_time    => :P10_MS_CHECK3_TIME,
+                            p_in_order      => :P10_MS_CHECK3_IN_ORDER,
+                            p_comments      => :P10_MS_CHECK3_COMMENTS
+                        );
                     END IF;
                 
                     apex_application.g_print_success_message :=

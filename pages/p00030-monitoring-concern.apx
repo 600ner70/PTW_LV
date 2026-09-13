@@ -1344,8 +1344,10 @@ page 30 (
                                happy_to_continue,
                                concern_person_name,
                                concern_signature,
-                               CASE WHEN happy_to_continue IS NOT NULL
-                                     AND concern_signature IS NOT NULL THEN 'Y' ELSE 'N' END
+                               CASE WHEN happy_to_continue = 'Y' THEN 'Y'
+                                 WHEN happy_to_continue = 'N' AND concern_signature IS NOT NULL THEN 'Y'
+                                 ELSE 'N' 
+                               END
                         INTO   :P30_CONCERN_ID,
                                :P30_CONCERN_DESCRIPTION,
                                :P30_ACTIONS_TAKEN,
@@ -1396,15 +1398,27 @@ page 30 (
         source {
             plsqlCode:
                 ```plsql
-                UPDATE ptw_pro.ptw_lv_monitoring_concerns
-                SET    concern_description = :P30_CONCERN_DESCRIPTION,
-                       actions_taken       = :P30_ACTIONS_TAKEN,
-                       happy_to_continue   = :P30_HAPPY_TO_CONTINUE,
-                       concern_person_name = :P30_CONCERN_PERSON_NAME,
-                       modified_date       = SYSTIMESTAMP,
-                       modified_by         = :APP_USER
-                WHERE  concern_id = :P30_CONCERN_ID;
-                COMMIT;
+                    UPDATE ptw_pro.ptw_lv_monitoring_concerns
+                    SET    concern_description = :P30_CONCERN_DESCRIPTION,
+                           actions_taken       = :P30_ACTIONS_TAKEN,
+                           happy_to_continue   = :P30_HAPPY_TO_CONTINUE,
+                           concern_person_name = :P30_CONCERN_PERSON_NAME,
+                           concern_datetime    = SYSDATE,
+                           concern_latitude    = :APP_LATITUDE,
+                           concern_longitude   = :APP_LONGITUDE,
+                           modified_date       = SYSTIMESTAMP,
+                           modified_by         = :APP_USER
+                    WHERE  concern_id = :P30_CONCERN_ID;
+                 
+                    INSERT INTO ptw_pro.ptw_stage_locations (
+                        permit_id, permit_stage, latitude, longitude,
+                        created_date, created_by, company_id
+                    ) VALUES (
+                        :P30_PERMIT_ID, 'MONITORING_CONCERN', :APP_LATITUDE, :APP_LONGITUDE,
+                        SYSDATE, NVL(:APP_USER, USER),
+                        (SELECT company_id FROM ptw_pro.ptw_lv_permits WHERE permit_id = :P30_PERMIT_ID)
+                    );
+                    COMMIT;
                 ```
         }
         execution {
@@ -1471,6 +1485,15 @@ page 30 (
                                modified_date      = CURRENT_TIMESTAMP,
                                modified_by        = NVL(V('APP_USER'), USER)
                         WHERE  monitoring_id      = :P30_MONITORING_ID;
+                
+                        INSERT INTO ptw_pro.ptw_stage_locations (
+                            permit_id, permit_stage, latitude, longitude,
+                            created_date, created_by, company_id
+                        ) VALUES (
+                            l_permit_id, 'MONITORING_CONCERN', :APP_LATITUDE, :APP_LONGITUDE,
+                            SYSDATE, NVL(:APP_USER, USER),
+                            (SELECT company_id FROM ptw_pro.ptw_lv_permits WHERE permit_id = l_permit_id)
+                        );
                 
                         :P30_PERMIT_CANCELLED := 'Y';
                 

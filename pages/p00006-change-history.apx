@@ -91,14 +91,15 @@ page 6 (
                   )
                 select sl.PERMIT_ID,
                        CASE sl.PERMIT_STAGE
-                        WHEN 'SITE_WORK_DETAILS' THEN 'Step 1: Site and Work Details'
-                        WHEN 'CONTROL_MEASURES'  THEN 'Step 2: Control Measures'
-                        WHEN 'EQUIP_ISOLATION'   THEN 'Step 3: Equipment Isolation'
-                        WHEN 'AUTHORISATION'     THEN 'Step 4: Authorisation'
-                        WHEN 'LIVE'              THEN 'Step 5: Live'
-                        WHEN 'MONITORING'        THEN 'Step 6: Monitoring'
-                        WHEN 'CLEARANCE'         THEN 'Step 7: Clearance'
-                        WHEN 'CANCELLED'         THEN 'Cancelled'
+                        WHEN 'SITE_WORK_DETAILS'  THEN 'Site and Work Details'
+                        WHEN 'CONTROL_MEASURES'   THEN 'Control Measures'
+                        WHEN 'EQUIP_ISOLATION'    THEN 'Equipment Isolation'
+                        WHEN 'AUTHORISATION'      THEN 'Authorisation'
+                        WHEN 'LIVE'               THEN 'Live'
+                        WHEN 'MONITORING'         THEN 'Monitoring'
+                        WHEN 'MONITORING_CONCERN' THEN 'Monitoring Concern'
+                        WHEN 'CLEARANCE'          THEN 'Clearance'
+                        WHEN 'CANCELLED'          THEN 'Cancelled'
                        ELSE sl.PERMIT_STAGE
                        END as step_display,
                        sl.LATITUDE,

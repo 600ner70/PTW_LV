@@ -578,7 +578,8 @@ page 2 (
                 ```plsql
                 RETURN ptw_pro.ptw_ui_pkg.get_workflow_steps_html(
                     p_permit_id => :P2_PERMIT_ID,
-                    p_ptw_type  => :P2_PTW_TYPE
+                    p_ptw_type  => :P2_PTW_TYPE,
+                    p_current_step => 'SITE_WORK_DETAILS'
                 );
                 ```
         }
