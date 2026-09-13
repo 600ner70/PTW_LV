@@ -30,7 +30,7 @@ BEGIN
     v_logo_b64 := ptw_pro.ptw_pdf_lib_pkg.get_company_logo_b64(v_company_id);
 
     v_html := ptw_pro.ptw_pdf_lib_pkg.get_document_head(
-        'Permit to Work Working at Height - ' || ptw_pro.ptw_pdf_lib_pkg.safe_val(v_permit_number));
+        'Permit to Work Working at Height - ' || ptw_pro.ptw_pdf_lib_pkg.safe_val(v_permit_number), 'WORKING AT HEIGHT');
 
     -- ============================================================
     -- HEADER (WAH-specific: no Safety Programme Ref, no Isolation
@@ -59,10 +59,18 @@ BEGIN
     </div>';
 
     -- ============================================================
+    -- SHARED SECTIONS
+    -- ============================================================
+    v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_site_work_details_html(p_permit_id);
+
+    -- ============================================================
     -- WAH-SPECIFIC: Specialist Equipment (no equivalent on LV or
     -- General - printed as its own paragraph, not crammed into
-    -- the short-reference header-refs box above, since it's
-    -- free-text and can run to a few sentences)
+    -- the short-reference header-refs box above, since it is
+    -- free-text and can run to a few sentences). Position matches
+    -- the real form: after Site & Work Details, before Control
+    -- Measures - not before Site & Work Details as originally
+    -- placed.
     -- ============================================================
     IF v_specialist_eq IS NOT NULL THEN
         v_html := v_html || '
@@ -74,10 +82,6 @@ BEGIN
         </div>';
     END IF;
 
-    -- ============================================================
-    -- SHARED SECTIONS
-    -- ============================================================
-    v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_site_work_details_html(p_permit_id);
     v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_control_measures_html(p_permit_id);
     v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_ppe_html(p_permit_id);
 
@@ -90,10 +94,10 @@ BEGIN
     -- ============================================================
     -- SHARED SECTIONS
     -- ============================================================
-    v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_authorisation_html(p_permit_id);
-    v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_acceptance_html(p_permit_id);
-    v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_clearance_html(p_permit_id);
-    v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_cancellation_html(p_permit_id);
+    v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_authorisation_html(p_permit_id, 'WORKING AT HEIGHT');
+    v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_acceptance_html(p_permit_id, 'WORKING AT HEIGHT');
+    v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_clearance_html(p_permit_id, 'WORKING AT HEIGHT');
+    v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_cancellation_html(p_permit_id, 'WORKING AT HEIGHT');
 
     -- ============================================================
     -- FOOTER (5-year retention - confirmed word-for-word match to
@@ -112,10 +116,14 @@ BEGIN
 
     -- ============================================================
     -- MONITORING PAGES (shared, WAH-flavoured heading - WAH has
-    -- monitoring per Phase 3's ptw_type_sections seed)
+    -- monitoring per Phase 3's ptw_type_sections seed). Gated on
+    -- PTW_TYPES.HAS_MONITORING for consistency with General/LV, even
+    -- though WAH's real form confirms this should currently be Y.
     -- ============================================================
-    v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_monitoring_pages_html(
-        p_permit_id, 'Working at Height Monitoring');
+    IF ptw_pro.ptw_pdf_lib_pkg.type_has_monitoring('WORKING AT HEIGHT') = 'Y' THEN
+        v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_monitoring_pages_html(
+            p_permit_id, 'Working at Height Monitoring');
+    END IF;
 
     -- ============================================================
     -- STAGE HISTORY (shared, only when requested)

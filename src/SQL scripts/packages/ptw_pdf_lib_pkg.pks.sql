@@ -29,7 +29,7 @@
     -- ---- Document chrome -------------------------------------------------
     -- Returns <!DOCTYPE html>...<style>...</style></head><body><div class="ptw-lv-report-container">
     -- Shared CSS, single source of truth for the visual look and feel.
-    FUNCTION get_document_head (p_document_title VARCHAR2) RETURN CLOB;
+    FUNCTION get_document_head (p_document_title VARCHAR2, p_ptw_type VARCHAR2 DEFAULT 'LV ISOLATION') RETURN CLOB;
 
     -- Returns </div></body></html>
     FUNCTION get_document_close RETURN CLOB;
@@ -37,15 +37,21 @@
     -- Base64 company logo, or NULL if this company has none uploaded.
     FUNCTION get_company_logo_b64 (p_company_id NUMBER) RETURN CLOB;
 
+    -- Looks up PTW_TYPES.HAS_MONITORING for the given type code. Defaults to
+    -- 'Y' if the type isn't found, so a missing/unrecognised type fails open
+    -- (shows monitoring) rather than silently hiding a section that should
+    -- be there.
+    FUNCTION type_has_monitoring (p_ptw_type VARCHAR2) RETURN VARCHAR2;
+
     -- ---- Sections identical across permit types --------------------------
     FUNCTION get_site_work_details_html (p_permit_id NUMBER) RETURN CLOB;
     FUNCTION get_control_measures_html  (p_permit_id NUMBER) RETURN CLOB;
     FUNCTION get_ppe_html               (p_permit_id NUMBER) RETURN CLOB;
     FUNCTION get_equipment_isolation_html (p_permit_id NUMBER) RETURN CLOB;
-    FUNCTION get_authorisation_html     (p_permit_id NUMBER) RETURN CLOB;
-    FUNCTION get_acceptance_html        (p_permit_id NUMBER) RETURN CLOB;
-    FUNCTION get_clearance_html         (p_permit_id NUMBER) RETURN CLOB;
-    FUNCTION get_cancellation_html      (p_permit_id NUMBER) RETURN CLOB;
+    FUNCTION get_authorisation_html     (p_permit_id NUMBER, p_ptw_type VARCHAR2 DEFAULT 'LV ISOLATION') RETURN CLOB;
+    FUNCTION get_acceptance_html        (p_permit_id NUMBER, p_ptw_type VARCHAR2 DEFAULT 'LV ISOLATION') RETURN CLOB;
+    FUNCTION get_clearance_html         (p_permit_id NUMBER, p_ptw_type VARCHAR2 DEFAULT 'LV ISOLATION') RETURN CLOB;
+    FUNCTION get_cancellation_html      (p_permit_id NUMBER, p_ptw_type VARCHAR2 DEFAULT 'LV ISOLATION') RETURN CLOB;
 
     -- All monitoring visit pages, including the trailing "Generated" stamp
     -- when there are none. p_page_heading lets a type use different wording
@@ -180,8 +186,34 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
     -- DOCUMENT CHROME
     --------------------------------------------------------------------------
 
-    FUNCTION get_document_head (p_document_title VARCHAR2) RETURN CLOB IS
+    FUNCTION get_document_head (p_document_title VARCHAR2, p_ptw_type VARCHAR2 DEFAULT 'LV ISOLATION') RETURN CLOB IS
+        -- Per-type theme colours, sampled directly from each source form:
+        --   LV ISOLATION: pale blue-grey page wash (BGIS form)
+        --   WORKING AT HEIGHT: pale mint page wash (Vantage form)
+        --   GENERAL: plain white, no wash (Smart form has none)
+        -- All three real forms use dark text on white/pale sections, never
+        -- white-on-solid-colour bars — so header/section text is dark here
+        -- too, not the previous white-on-navy treatment.
+        v_page_bg    VARCHAR2(10);   -- page margin wash
+        v_tint       VARCHAR2(10);   -- pale fill for section/table headers
+        v_accent     VARCHAR2(10);   -- stronger accent for the declaration-box stripe
+        v_text       VARCHAR2(10) := '#1a1a1a';
     BEGIN
+        CASE p_ptw_type
+            WHEN 'WORKING AT HEIGHT' THEN
+                v_page_bg := '#c9ece5';
+                v_tint    := '#e7f6f3';
+                v_accent  := '#5fa89c'; -- page wash alone is too pale to read as a border stripe
+            WHEN 'GENERAL' THEN
+                v_page_bg := '#ffffff';
+                v_tint    := '#f0f0f0';
+                v_accent  := '#444444'; -- no wash colour exists to reuse; real form's rules are plain dark grey/black
+            ELSE -- LV ISOLATION (default)
+                v_page_bg := '#789abd';
+                v_tint    := '#c9d7e5';
+                v_accent  := v_page_bg;
+        END CASE;
+
         RETURN '<!DOCTYPE html>
 <html>
 <head>
@@ -192,12 +224,14 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
     body {
         font-family: Arial, Helvetica, sans-serif;
         font-size: 9pt; color: #333; margin: 0; padding: 0;
+        background: ' || v_page_bg || ';
     }
-    .ptw-lv-report-container { max-width: 780px; margin: 0 auto; }
+    .ptw-lv-report-container { max-width: 780px; margin: 0 auto; background: #fff; }
 
     .ptw-lv-header {
-        background: #003366; color: white;
+        background: ' || v_tint || '; color: ' || v_text || ';
         padding: 12px 16px; border-radius: 4px 4px 0 0;
+        border-bottom: 2px solid ' || v_page_bg || ';
     }
     .ptw-lv-header h1 {
         margin: 0 0 6px 0; font-size: 13pt;
@@ -205,19 +239,20 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
     }
     .header-refs {
         display: flex; gap: 10px; font-size: 8pt;
-        border-top: 1px solid rgba(255,255,255,0.3);
+        border-top: 1px solid rgba(0,0,0,0.12);
         padding-top: 6px; margin-top: 4px;
     }
     .header-refs div { flex: 1; }
 
     .ptw-lv-section { border: 1px solid #c0c0c0; border-top: none; }
     .ptw-lv-section-title {
-        background: #003366; color: white;
+        background: ' || v_tint || '; color: ' || v_text || ';
         padding: 5px 12px; font-weight: 700; font-size: 8.5pt;
         text-transform: uppercase; letter-spacing: 0.3px;
+        border-bottom: 1px solid #c0c0c0;
     }
     .ptw-lv-section-subtitle {
-        background: #dce6f0; color: #003366;
+        background: ' || v_tint || '; color: ' || v_text || ';
         padding: 4px 12px; font-weight: 700; font-size: 8pt;
         border-bottom: 1px solid #c0c0c0;
     }
@@ -233,7 +268,7 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
 
     .ptw-lv-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
     .ptw-lv-table th {
-        background: #dce6f0; color: #003366;
+        background: ' || v_tint || '; color: ' || v_text || ';
         padding: 5px 8px; text-align: left; font-weight: 700;
         border: 1px solid #c0c0c0; font-size: 8pt;
     }
@@ -260,7 +295,7 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
 
     .declaration-box {
         padding: 7px 12px; background: #f8f9fa;
-        border-left: 3px solid #003366;
+        border-left: 3px solid ' || v_accent || ';
         font-size: 8pt; line-height: 1.6; margin: 0; font-style: italic;
     }
 
@@ -279,10 +314,10 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
     }
 
     .history-section { border: 1px solid #c0c0c0; border-top: none; margin-top: 0; }
-    .history-section .ptw-lv-section-title { background: #1a3a5c; }
+    .history-section .ptw-lv-section-title { background: #e0e0e0; color: #1a1a1a; }
     .history-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
     .history-table th {
-        background: #dce6f0; color: #003366;
+        background: #e8e8e8; color: #1a1a1a;
         padding: 5px 8px; text-align: left; font-weight: 700;
         border: 1px solid #c0c0c0; font-size: 8pt;
     }
@@ -291,7 +326,7 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
     }
     .history-table tr:nth-child(even) td { background: #f7f9fc; }
     .history-step-badge {
-        display: inline-block; background: #003366; color: #fff;
+        display: inline-block; background: #555; color: #fff;
         padding: 2px 8px; border-radius: 10px;
         font-size: 7.5pt; font-weight: 700; white-space: nowrap;
     }
@@ -304,6 +339,13 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
         body { font-size: 8pt; }
         .ptw-lv-section { page-break-inside: avoid; }
         .history-section { page-break-inside: avoid; }
+        /* Long table sections (Control Measures, PPE, Equipment Isolation,
+           Monitoring) are allowed to split across a page boundary instead
+           of being pushed whole onto the next page, avoiding the large
+           blank gap that "avoid" causes when a tall section does not fit in
+           the remaining space. Table rows paginate cleanly on their own. */
+        .ptw-lv-section.section-flow { page-break-inside: auto; }
+        .ptw-lv-table thead { display: table-header-group; }
     }
 </style>
 </head>
@@ -334,6 +376,18 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
         WHEN OTHERS THEN
             RETURN NULL; -- no logo for this company - render PDF without one
     END get_company_logo_b64;
+
+    FUNCTION type_has_monitoring (p_ptw_type VARCHAR2) RETURN VARCHAR2 IS
+        l_has_monitoring ptw_pro.ptw_types.has_monitoring%TYPE;
+    BEGIN
+        SELECT has_monitoring INTO l_has_monitoring
+        FROM   ptw_pro.ptw_types
+        WHERE  ptw_type = p_ptw_type;
+        RETURN NVL(l_has_monitoring, 'Y');
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RETURN 'Y'; -- unrecognised type - fail open, don't hide a section that should show
+    END type_has_monitoring;
 
     --------------------------------------------------------------------------
     -- SECTIONS IDENTICAL ACROSS PERMIT TYPES
@@ -396,7 +450,7 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
     BEGIN
         DBMS_LOB.CREATETEMPORARY(v_html, TRUE, DBMS_LOB.CALL);
         v_html := '
-    <div class="ptw-lv-section">
+    <div class="ptw-lv-section section-flow">
         <div class="ptw-lv-section-title">Control Measures</div>
         <table class="ptw-lv-table">
             <thead>
@@ -444,7 +498,7 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
     BEGIN
         DBMS_LOB.CREATETEMPORARY(v_html, TRUE, DBMS_LOB.CALL);
         v_html := '
-    <div class="ptw-lv-section">
+    <div class="ptw-lv-section section-flow">
         <div class="ptw-lv-section-title">Identify Essential PPE Required To Be Worn</div>
         <div style="font-size:7.5pt;color:#555;padding:4px 12px;font-style:italic;
                     border-bottom:1px solid #eee;">
@@ -492,7 +546,7 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
     BEGIN
         DBMS_LOB.CREATETEMPORARY(v_html, TRUE, DBMS_LOB.CALL);
         v_html := '
-    <div class="ptw-lv-section">
+    <div class="ptw-lv-section section-flow">
         <div class="ptw-lv-section-title">Equipment Isolation</div>
         <table class="ptw-lv-table">
             <thead>
@@ -540,7 +594,7 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
     END get_equipment_isolation_html;
 
 
-    FUNCTION get_authorisation_html (p_permit_id NUMBER) RETURN CLOB IS
+    FUNCTION get_authorisation_html (p_permit_id NUMBER, p_ptw_type VARCHAR2 DEFAULT 'LV ISOLATION') RETURN CLOB IS
         v_auth_name    ptw_pro.ptw_signatures.person_name%TYPE;
         v_auth_sig     ptw_pro.ptw_signatures.signature_blob%TYPE;
         v_auth_mobile  ptw_pro.ptw_signatures.mobile_no%TYPE;
@@ -551,9 +605,11 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
         v_fullname     VARCHAR2(200);
         v_started      DATE;
         v_ended        DATE;
+        v_declaration  VARCHAR2(1000);
+        v_auth_to_dt   ptw_pro.ptw_signatures.auth_to_datetime%TYPE;
     BEGIN
         ptw_pro.ptw_signature_pkg.get_signature(p_permit_id, 'AUTH',
-            v_auth_name, v_auth_sig, v_auth_mobile, v_na_company, v_auth_dt, v_na_lat, v_na_lng);
+            v_auth_name, v_auth_sig, v_auth_mobile, v_na_company, v_auth_dt, v_na_lat, v_na_lng, v_auth_to_dt);
 
         SELECT started_datetime, ended_datetime INTO v_started, v_ended
         FROM   ptw_pro.ptw_lv_permits WHERE permit_id = p_permit_id;
@@ -566,15 +622,26 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
             WHEN OTHERS THEN v_fullname := v_auth_name;
         END;
 
+        -- Declaration text verified verbatim against each type's source form.
+        -- LV Isolation and General genuinely say different things here.
+        IF p_ptw_type = 'GENERAL' THEN
+            v_declaration :=
+                'I am satisfied that those involved in the activity are competent and a safe
+                system of work, including controls, is sufficient and adequate. The
+                authorising person is responsible for monitoring the work/activity to ensure,
+                so far as reasonable practicable, that safe working practices are adhered to.';
+        ELSE
+            v_declaration :=
+                'I have reviewed all aspects of the task/activity and I am satisfied with the
+                arrangements as detailed within the relevant risk assessment and method statement
+                that have been put in place and certify that this activity detailed is authorised
+                to proceed.';
+        END IF;
+
         RETURN '
     <div class="ptw-lv-section">
         <div class="ptw-lv-section-title">Authorisation of this Permit to Work</div>
-        <div class="declaration-box">
-            I have reviewed all aspects of the task/activity and I am satisfied with the
-            arrangements as detailed within the relevant risk assessment and method statement
-            that have been put in place and certify that this activity detailed is authorised
-            to proceed.
-        </div>
+        <div class="declaration-box">' || v_declaration || '</div>
         <div class="ptw-lv-row">
             <div class="ptw-lv-label">Authorised Person:</div>
             <div class="ptw-lv-value">' || safe_val(v_fullname) || '</div>
@@ -601,7 +668,7 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
     END get_authorisation_html;
 
 
-    FUNCTION get_acceptance_html (p_permit_id NUMBER) RETURN CLOB IS
+    FUNCTION get_acceptance_html (p_permit_id NUMBER, p_ptw_type VARCHAR2 DEFAULT 'LV ISOLATION') RETURN CLOB IS
         v_name    ptw_pro.ptw_signatures.person_name%TYPE;
         v_sig     ptw_pro.ptw_signatures.signature_blob%TYPE;
         v_mobile  ptw_pro.ptw_signatures.mobile_no%TYPE;
@@ -609,20 +676,39 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
         v_dt      ptw_pro.ptw_signatures.event_datetime%TYPE;
         v_na_lat  ptw_pro.ptw_signatures.latitude%TYPE;
         v_na_lng  ptw_pro.ptw_signatures.longitude%TYPE;
+        v_declaration VARCHAR2(1000);
+        v_person_label VARCHAR2(100);
+        v_na_auth_to_dt ptw_pro.ptw_signatures.auth_to_datetime%TYPE;
     BEGIN
         ptw_pro.ptw_signature_pkg.get_signature(p_permit_id, 'ACCEPT',
-            v_name, v_sig, v_mobile, v_company, v_dt, v_na_lat, v_na_lng);
+            v_name, v_sig, v_mobile, v_company, v_dt, v_na_lat, v_na_lng, v_na_auth_to_dt);
+
+        -- General's real form labels this signatory "Competent Person" (and also
+        -- has a separate "Engineer" signatory the app does not currently capture
+        -- at this stage — flagging, not fabricating, that second signature).
+        IF p_ptw_type = 'GENERAL' THEN
+            v_declaration :=
+                'I have had this document explained to me and accept responsibility for
+                ensuring that each person under my control understands its conditions. I
+                accept responsibility for the safety of the work, personnel and equipment. I
+                confirm that all personnel are adequately trained and will access/work only
+                on/in the area/job/equipment specified. This permit is not transferrable and
+                must be cancelled on completion of the works.';
+            v_person_label := 'Competent Person:';
+        ELSE
+            v_declaration :=
+                'I certify that I am competent to supervise and undertake the works detailed within
+                this Permit to Work and have read and fully understand the documentation associated
+                with this work activity.';
+            v_person_label := 'Person in Charge of Works:';
+        END IF;
 
         RETURN '
     <div class="ptw-lv-section">
         <div class="ptw-lv-section-title">Acceptance of this Permit to Work</div>
-        <div class="declaration-box">
-            I certify that I am competent to supervise and undertake the works detailed within
-            this Permit to Work and have read and fully understand the documentation associated
-            with this work activity.
-        </div>
+        <div class="declaration-box">' || v_declaration || '</div>
         <div class="ptw-lv-row">
-            <div class="ptw-lv-label">Person in Charge of Works:</div>
+            <div class="ptw-lv-label">' || v_person_label || '</div>
             <div class="ptw-lv-value">' || safe_val(v_name) || '</div>
         </div>
         <div class="ptw-lv-row">
@@ -647,7 +733,7 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
     END get_acceptance_html;
 
 
-    FUNCTION get_clearance_html (p_permit_id NUMBER) RETURN CLOB IS
+    FUNCTION get_clearance_html (p_permit_id NUMBER, p_ptw_type VARCHAR2 DEFAULT 'LV ISOLATION') RETURN CLOB IS
         v_name    ptw_pro.ptw_signatures.person_name%TYPE;
         v_sig     ptw_pro.ptw_signatures.signature_blob%TYPE;
         v_mobile  ptw_pro.ptw_signatures.mobile_no%TYPE;
@@ -657,24 +743,54 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
         v_na_lng  ptw_pro.ptw_signatures.longitude%TYPE;
         v_work_complete ptw_pro.ptw_lv_permits.clear_work_complete%TYPE;
         v_area_safe     ptw_pro.ptw_lv_permits.clear_area_safe%TYPE;
+        v_section_title VARCHAR2(100);
+        v_declaration   VARCHAR2(1500);
+        v_person_label  VARCHAR2(100);
+        v_na_auth_to_dt ptw_pro.ptw_signatures.auth_to_datetime%TYPE;
     BEGIN
         ptw_pro.ptw_signature_pkg.get_signature(p_permit_id, 'CLEAR',
-            v_name, v_sig, v_mobile, v_company, v_dt, v_na_lat, v_na_lng);
+            v_name, v_sig, v_mobile, v_company, v_dt, v_na_lat, v_na_lng, v_na_auth_to_dt);
 
         SELECT clear_work_complete, clear_area_safe
         INTO   v_work_complete, v_area_safe
         FROM   ptw_pro.ptw_lv_permits WHERE permit_id = p_permit_id;
 
+        -- General's real form calls this stage "Completion of Works" and talks
+        -- about reinstating "the system", not "the plant and equipment". It also
+        -- asserts personal isolations were removed — the app has no field for
+        -- that today, so that clause is deliberately omitted rather than
+        -- asserted without data behind it.
+        IF p_ptw_type = 'GENERAL' THEN
+            v_section_title := 'Completion of Works';
+            v_declaration :=
+                'I confirm that all personnel and equipment have been withdrawn from the area,
+                which is tidy, and that the work/activity is <strong>' || get_yn_label(v_work_complete) || '</strong>.
+                I confirm it is <strong>' || get_safe_label(v_area_safe) || '</strong> to reinstate the system.';
+            v_person_label := 'Competent Person:';
+        ELSE
+            -- Verified word-for-word identical on both the LV and Working at
+            -- Height source forms. The previous version here dropped "which
+            -- has been worked on under this Permit to Work and that all
+            -- personnel have vacated the place of works" and reordered the
+            -- remaining sentences — a pre-existing bug, not something WAH
+            -- introduced; it just surfaced when WAH's real form was checked
+            -- against this same shared branch.
+            v_section_title := 'Clearance of this Permit to Work';
+            v_declaration :=
+                'I certify that the works detailed within this Permit to Work are
+                <strong>' || get_yn_label(v_work_complete) || '</strong>.
+                I certify that it is <strong>' || get_safe_label(v_area_safe) || '</strong>
+                to reinstate the plant and equipment which has been worked on under this
+                Permit to Work and that all personnel have vacated the place of works.
+                The area [has]/[has not] been left in a safe and tidy condition and all
+                waste has been removed from site.';
+            v_person_label := 'Person in Charge of Works:';
+        END IF;
+
         RETURN '
     <div class="ptw-lv-section">
-        <div class="ptw-lv-section-title">Clearance of this Permit to Work</div>
-        <div class="declaration-box">
-            I certify that the works detailed within this Permit to Work are
-            <strong>' || get_yn_label(v_work_complete) || '</strong>.
-            The area [has]/[has not] been left in a safe and tidy condition and all waste has
-            been removed from site. It is <strong>' || get_safe_label(v_area_safe) || '</strong>
-            to reinstate the plant and equipment.
-        </div>
+        <div class="ptw-lv-section-title">' || v_section_title || '</div>
+        <div class="declaration-box">' || v_declaration || '</div>
         <div class="ptw-lv-row">
             <div class="ptw-lv-label">Works complete:</div>
             <div class="ptw-lv-value">' || get_yn(v_work_complete) || '</div>
@@ -690,7 +806,7 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
             </div>
         </div>
         <div class="ptw-lv-row">
-            <div class="ptw-lv-label">Person in Charge of Works:</div>
+            <div class="ptw-lv-label">' || v_person_label || '</div>
             <div class="ptw-lv-value">' || safe_val(v_name) || '</div>
         </div>
         <div class="ptw-lv-row">
@@ -715,7 +831,7 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
     END get_clearance_html;
 
 
-    FUNCTION get_cancellation_html (p_permit_id NUMBER) RETURN CLOB IS
+    FUNCTION get_cancellation_html (p_permit_id NUMBER, p_ptw_type VARCHAR2 DEFAULT 'LV ISOLATION') RETURN CLOB IS
         v_name    ptw_pro.ptw_signatures.person_name%TYPE;
         v_sig     ptw_pro.ptw_signatures.signature_blob%TYPE;
         v_na_mobile  ptw_pro.ptw_signatures.mobile_no%TYPE;
@@ -726,11 +842,12 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
         v_work_complete ptw_pro.ptw_lv_permits.cancel_work_complete%TYPE;
         v_html    CLOB;
         r         ptw_pro.ptw_lv_cancellation_reason_v%ROWTYPE;
+        v_na_auth_to_dt ptw_pro.ptw_signatures.auth_to_datetime%TYPE;
     BEGIN
         DBMS_LOB.CREATETEMPORARY(v_html, TRUE, DBMS_LOB.CALL);
 
         ptw_pro.ptw_signature_pkg.get_signature(p_permit_id, 'CANCEL',
-            v_name, v_sig, v_na_mobile, v_na_company, v_dt, v_na_lat, v_na_lng);
+            v_name, v_sig, v_na_mobile, v_na_company, v_dt, v_na_lat, v_na_lng, v_na_auth_to_dt);
 
         SELECT cancel_work_complete INTO v_work_complete
         FROM   ptw_pro.ptw_lv_permits WHERE permit_id = p_permit_id;
@@ -761,6 +878,71 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
         EXCEPTION
             WHEN NO_DATA_FOUND THEN NULL;
         END;
+
+        -- General's real form has no certification paragraph at this final
+        -- stage at all — it's titled "Permit Closure" and is just a plain
+        -- signature block (Authorising Person + From + Signature). Rather
+        -- than invent legal text that was never on the form, this branch
+        -- drops the declaration-box and the "Works complete" row (that
+        -- question was already asked one stage earlier, at Completion of
+        -- Works) and keeps only what the real form actually asks for here.
+        IF p_ptw_type = 'GENERAL' THEN
+            v_html := v_html || '
+    <div class="ptw-lv-section">
+        <div class="ptw-lv-section-title">Permit Closure</div>
+        <div class="ptw-lv-row">
+            <div class="ptw-lv-label">Authorising Person:</div>
+            <div class="ptw-lv-value">' || safe_val(v_name) || '</div>
+        </div>
+        <div class="ptw-lv-row">
+            <div class="ptw-lv-label">Date &amp; Time:</div>
+            <div class="ptw-lv-value">' || fmt_datetime(v_dt) || '</div>
+        </div>
+        <div class="ptw-lv-row">
+            <div class="ptw-lv-label">Signature:</div>
+            <div class="ptw-lv-value">
+                <div class="signature-box">' || get_signature_img(v_sig) || '</div>
+            </div>
+        </div>
+    </div>';
+            RETURN v_html;
+        END IF;
+
+        -- Working at Height's real form has a genuinely shorter Cancellation
+        -- clause than LV's — no [completed]/[not complete] bracket, and no
+        -- "further Permit may be required" sentence. Verified by rasterizing
+        -- the source form directly, not assumed from the shared LV wording.
+        IF p_ptw_type = 'WORKING AT HEIGHT' THEN
+            v_html := v_html || '
+    <div class="ptw-lv-section">
+        <div class="ptw-lv-section-title">Cancellation of this Permit to Work</div>
+        <div class="declaration-box">
+            I confirm that these works have been
+            <strong>' || get_yn_label(v_work_complete) || '</strong>
+            and that I have checked that the place of works has been left in a safe and
+            tidy condition.
+        </div>
+        <div class="ptw-lv-row">
+            <div class="ptw-lv-label">Works complete:</div>
+            <div class="ptw-lv-value">' || get_yn(v_work_complete) || '</div>
+        </div>
+        <div class="ptw-lv-row">
+            <div class="ptw-lv-label">Authorised Person:</div>
+            <div class="ptw-lv-value">' || safe_val(v_name) || '</div>
+        </div>
+        <div class="ptw-lv-row">
+            <div class="ptw-lv-label">Date &amp; Time:</div>
+            <div class="ptw-lv-value">' || fmt_datetime(v_dt) || '</div>
+        </div>
+        <div class="ptw-lv-row">
+            <div class="ptw-lv-label">Signature:</div>
+            <div class="ptw-lv-value">
+                <div class="signature-box">' || get_signature_img(v_sig) || '</div>
+            </div>
+        </div>
+    </div>';
+            RETURN v_html;
+        END IF;
 
         v_html := v_html || '
     <div class="ptw-lv-section">
@@ -831,7 +1013,7 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
                              || 'The following checks are to be undertaken by the issuer of this permit.'
                              || '</div></div>';
 
-            v_html := v_html || '<div class="ptw-lv-section">'
+            v_html := v_html || '<div class="ptw-lv-section section-flow">'
                              || '<div class="ptw-lv-section-title">Site Monitoring Checks</div>'
                              || '<table class="ptw-lv-table"><thead><tr>'
                              || '<th>Check</th>'
@@ -861,7 +1043,7 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
 
             v_html := v_html || '</tbody></table></div>';
 
-            v_html := v_html || '<div class="ptw-lv-section">'
+            v_html := v_html || '<div class="ptw-lv-section section-flow">'
                              || '<div class="ptw-lv-section-title">Checks Against Work Processes &amp; Method Statement</div>'
                              || '<div style="font-size:7.5pt;color:#555;padding:5px 12px;'
                              || 'font-style:italic;border-bottom:1px solid #eee;">'
@@ -999,20 +1181,18 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
                     GROUP  BY permit_id, permit_stage
                 )
                 SELECT CASE sl.permit_stage
-                           WHEN 'SITE_WORK_DETAILS' THEN 'Step 1: Site &amp; Work Details'
-                           WHEN 'CONTROL_MEASURES'  THEN 'Step 2: Control Measures'
-                           WHEN 'EQUIP_ISOLATION'   THEN 'Step 3: Equipment Isolation'
-                           WHEN 'AUTHORISATION'     THEN 'Step 4: Authorisation'
-                           WHEN 'LIVE'              THEN 'Step 5: Live'
+                           WHEN 'SITE_WORK_DETAILS'   THEN 'Step 1: Site &amp; Work Details'
+                           WHEN 'CONTROL_MEASURES'    THEN 'Step 2: Control Measures'
+                           WHEN 'EQUIP_ISOLATION'     THEN 'Step 3: Equipment Isolation'
+                           WHEN 'AUTHORISATION'       THEN 'Step 4: Authorisation'
+                           WHEN 'LIVE'                THEN 'Step 5: Live'
+                           WHEN 'MONITORING_CONCERN'  THEN 'Monitoring Concern Raised'
                            ELSE NVL(SUBSTR(sl.permit_stage, 1, 100), '-')
                        END AS step_display,
                        TO_CHAR(sl.created_date, 'DD-MON-YYYY HH24:MI') AS created_date,
                        NVL(REPLACE(REPLACE(SUBSTR(sl.created_by, 1, 200), '<', '&lt;'), '>', '&gt;'), '-') AS created_by,
-                       CASE
-                           WHEN sl.latitude IS NOT NULL AND sl.longitude IS NOT NULL
-                           THEN TO_CHAR(ROUND(sl.latitude, 5)) || ', ' || TO_CHAR(ROUND(sl.longitude, 5))
-                           ELSE 'Not recorded'
-                       END AS location_display
+                       sl.latitude,
+                       sl.longitude
                 FROM   ptw_pro.ptw_stage_locations sl
                 JOIN   max_row mr ON mr.permit_id = sl.permit_id
                                  AND mr.permit_stage = sl.permit_stage
@@ -1020,13 +1200,34 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
                 WHERE  sl.permit_id = p_permit_id
                 ORDER  BY sl.created_date ASC
             ) LOOP
-                v_html := v_html || '
+                DECLARE
+                    l_location_display VARCHAR2(500);
+                    l_place            VARCHAR2(500);
+                BEGIN
+                    IF r.latitude IS NOT NULL AND r.longitude IS NOT NULL THEN
+                        -- Reverse-geocode for the PDF history table specifically
+                        -- (not used on Page 7's live map). Falls back to raw
+                        -- coordinates if the lookup fails or returns nothing -
+                        -- get_place_name never raises, so this is just a NULL
+                        -- check, not exception handling.
+                        l_place := ptw_pro.ptw_geocode_pkg.get_place_name(r.latitude, r.longitude);
+                        IF l_place IS NOT NULL THEN
+                            l_location_display := safe_val(l_place);
+                        ELSE
+                            l_location_display := TO_CHAR(ROUND(r.latitude, 5)) || ', ' || TO_CHAR(ROUND(r.longitude, 5));
+                        END IF;
+                    ELSE
+                        l_location_display := 'Not recorded';
+                    END IF;
+
+                    v_html := v_html || '
                 <tr>
                     <td><span class="history-step-badge">' || r.step_display || '</span></td>
                     <td>' || r.created_date  || '</td>
                     <td>' || r.created_by    || '</td>
-                    <td>' || r.location_display || '</td>
+                    <td>' || l_location_display || '</td>
                 </tr>';
+                END;
             END LOOP;
 
             v_html := v_html || '

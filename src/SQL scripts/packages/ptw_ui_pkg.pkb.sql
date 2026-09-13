@@ -13,38 +13,64 @@
         );
         TYPE t_step_tab IS TABLE OF t_step_rec INDEX BY PLS_INTEGER;
 
-        l_steps        t_step_tab;
-        l_ptw_type     ptw_pro.ptw_lv_permits.ptw_type%TYPE     := p_ptw_type;
-        l_current_step ptw_pro.ptw_lv_permits.current_step%TYPE := p_current_step;
-        l_current_idx  PLS_INTEGER := 0;
-        l_html         CLOB := '<div class="ptw-workflow-progress">';
-        l_class        VARCHAR2(30);
-        l_icon         VARCHAR2(20);
+        l_steps         t_step_tab;
+        l_ptw_type      ptw_pro.ptw_lv_permits.ptw_type%TYPE := p_ptw_type;
+        l_furthest_step ptw_pro.ptw_lv_permits.current_step%TYPE;  -- DB progress only
+        l_active_step   ptw_pro.ptw_lv_permits.current_step%TYPE;  -- page being viewed
+        l_active_idx    PLS_INTEGER := 0;
+        l_furthest_idx  PLS_INTEGER := 0;
+        l_html          CLOB := '<div class="ptw-workflow-progress">';
+        l_class         VARCHAR2(30);
+        l_icon          VARCHAR2(20);
+        l_has_equip_iso PLS_INTEGER := 0;
 
     BEGIN
-        -- Existing permit: DB values win. New/unsaved permit (permit_id
-        -- NULL, or not yet inserted): fall back to what was passed in.
+        -- Existing permit: DB values win for type + furthest progress.
+        -- New/unsaved permit (permit_id NULL, or not yet inserted): fall
+        -- back to what was passed in.
         IF p_permit_id IS NOT NULL THEN
             BEGIN
                 SELECT ptw_type, current_step
-                INTO   l_ptw_type, l_current_step
+                INTO   l_ptw_type, l_furthest_step
                 FROM   ptw_pro.ptw_lv_permits
                 WHERE  permit_id = p_permit_id;
             EXCEPTION
                 WHEN NO_DATA_FOUND THEN
-                    l_ptw_type     := p_ptw_type;
-                    l_current_step := p_current_step;
+                    l_ptw_type      := p_ptw_type;
+                    l_furthest_step := p_current_step;
             END;
+        ELSE
+            l_furthest_step := p_current_step;
         END IF;
 
-        -- New permit, first ever load: no current_step yet, always step 1.
-        l_current_step := NVL(l_current_step, 'SITE_WORK_DETAILS');
+        -- The step actually being viewed comes from the caller (each page
+        -- passes its own literal via P{n}_CURRENT_STEP), falling back to
+        -- furthest progress, then to step 1, if the caller didn't supply one.
+        l_active_step   := NVL(p_current_step, NVL(l_furthest_step, 'SITE_WORK_DETAILS'));
+        l_furthest_step := NVL(l_furthest_step, l_active_step);
 
         IF l_ptw_type IS NULL THEN
             RETURN NULL;   -- genuinely nothing to render (no type chosen at all)
         END IF;
 
-        IF l_ptw_type = 'LV ISOLATION' THEN
+        -- Does this permit type include the Equipment Isolation section?
+        -- Driven by ptw_type_sections (the real source of truth), not a
+        -- hardcoded ptw_type string — matches the branch logic Page 3
+        -- already uses to decide whether to route to Page 4.
+        BEGIN
+            SELECT 1
+            INTO   l_has_equip_iso
+            FROM   ptw_pro.ptw_types t
+            JOIN   ptw_pro.ptw_type_sections ts ON ts.type_id = t.type_id
+            WHERE  t.ptw_type      = l_ptw_type
+            AND    ts.section_code = 'EQUIPMENT_ISOLATION'
+            AND    ROWNUM = 1;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                l_has_equip_iso := 0;
+        END;
+
+        IF l_has_equip_iso = 1 THEN
             l_steps(1).step_code := 'SITE_WORK_DETAILS'; l_steps(1).step_label := 'Site & Work Details';
             l_steps(2).step_code := 'CONTROL_MEASURES';  l_steps(2).step_label := 'Control Measures';
             l_steps(3).step_code := 'EQUIP_ISOLATION';   l_steps(3).step_label := 'Equipment Isolation';
@@ -58,21 +84,27 @@
         END IF;
 
         FOR i IN 1 .. l_steps.COUNT LOOP
-            IF l_steps(i).step_code = l_current_step THEN
-                l_current_idx := i;
+            IF l_steps(i).step_code = l_active_step THEN
+                l_active_idx := i;
+            END IF;
+            IF l_steps(i).step_code = l_furthest_step THEN
+                l_furthest_idx := i;
             END IF;
         END LOOP;
 
+        -- Active step is whichever page rendered this call (blue).
+        -- Completed = reached before either the active step or the
+        -- furthest DB progress, whichever index is greater — so
+        -- navigating back to review an earlier page doesn't wipe the
+        -- checkmarks off later, already-completed steps. Everything else
+        -- is upcoming.
         FOR i IN 1 .. l_steps.COUNT LOOP
-            IF l_current_idx = 0 THEN
-                l_class := NULL;
-                l_icon  := TO_CHAR(i);
-            ELSIF i < l_current_idx THEN
-                l_class := 'completed';
-                l_icon  := '&#10003;';
-            ELSIF i = l_current_idx THEN
+            IF i = l_active_idx THEN
                 l_class := 'active';
                 l_icon  := TO_CHAR(i);
+            ELSIF i < GREATEST(l_active_idx, l_furthest_idx) THEN
+                l_class := 'completed';
+                l_icon  := '&#10003;';
             ELSE
                 l_class := NULL;
                 l_icon  := TO_CHAR(i);

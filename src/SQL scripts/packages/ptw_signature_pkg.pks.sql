@@ -49,7 +49,7 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_SIGNATURE_PKG" AS
     ) IS
         l_company_id ptw_pro.ptw_lv_permits.company_id%TYPE;
     BEGIN
-        IF p_stage NOT IN ('AUTH','ACCEPT','CLEAR','CANCEL','CLOSE') THEN
+        IF p_stage NOT IN ('AUTH','ACCEPT','CLEAR','CANCEL','CLOSE','CLR_ENG') THEN
             RAISE_APPLICATION_ERROR(-20060, 'Invalid signature stage: ' || p_stage);
         END IF;
 

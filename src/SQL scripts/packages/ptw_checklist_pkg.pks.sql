@@ -22,10 +22,21 @@
     -- can be round-tripped straight back in)
     --
     -- company_id is derived from the permit, never taken from the payload.
+    --
+    -- p_latitude/p_longitude are new, optional (default NULL so any other
+    -- existing caller doesn't break). A CONTROL_MEASURES entry is logged to
+    -- PTW_STAGE_LOCATIONS from here directly when this save actually
+    -- changes something - ptw_lv_control_measures_stage_loc_trg, which used
+    -- to own this, fires on the old fixed-column ptw_lv_control_measures
+    -- table that nothing writes to anymore since this checklist refactor,
+    -- so it's been permanently dormant and Control Measures has never
+    -- appeared in permit history since.
     --------------------------------------------------------------------------
     PROCEDURE save_checklist_responses(
         p_permit_id IN ptw_pro.ptw_lv_permits.permit_id%TYPE,
-        p_json      IN CLOB
+        p_json      IN CLOB,
+        p_latitude  IN NUMBER DEFAULT NULL,
+        p_longitude IN NUMBER DEFAULT NULL
     );
 
 END ptw_checklist_pkg;
@@ -91,7 +102,9 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_CHECKLIST_PKG" AS
 
     PROCEDURE save_checklist_responses(
         p_permit_id IN ptw_pro.ptw_lv_permits.permit_id%TYPE,
-        p_json      IN CLOB
+        p_json      IN CLOB,
+        p_latitude  IN NUMBER DEFAULT NULL,
+        p_longitude IN NUMBER DEFAULT NULL
     )
     IS
         l_company_id ptw_pro.ptw_lv_permits.company_id%TYPE;
@@ -123,6 +136,24 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_CHECKLIST_PKG" AS
             INSERT (permit_id, checklist_item_id, response, company_id, created_by)
             VALUES (p_permit_id, src.checklist_item_id, src.response, l_company_id,
                      NVL(V('APP_USER'), USER));
+
+        -- Stage-location logging, moved here from ptw_lv_control_measures_
+        -- stage_loc_trg. That trigger fires on ptw_lv_control_measures, the
+        -- old fixed-column table this checklist refactor stopped writing
+        -- to — a table trigger can't watch a table nothing writes to, so
+        -- it's been permanently dormant and CONTROL_MEASURES has never
+        -- appeared in permit history since this refactor shipped. Only log
+        -- when the MERGE actually changed something, same "real changes
+        -- only" rule the other stage triggers already follow.
+        IF SQL%ROWCOUNT > 0 THEN
+            INSERT INTO ptw_pro.ptw_stage_locations (
+                permit_id, permit_stage, latitude, longitude,
+                created_date, created_by, company_id
+            ) VALUES (
+                p_permit_id, 'CONTROL_MEASURES', p_latitude, p_longitude,
+                SYSDATE, NVL(V('APP_USER'), USER), l_company_id
+            );
+        END IF;
 
     EXCEPTION
         WHEN NO_DATA_FOUND THEN

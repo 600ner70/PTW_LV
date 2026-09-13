@@ -5,7 +5,6 @@
 ) RETURN CLOB
 IS
     v_permit_number ptw_pro.ptw_lv_permits.permit_number%TYPE;
-    v_safety_ref    ptw_pro.ptw_lv_permits.safety_programme_ref_no%TYPE;
     v_company_id    ptw_pro.ptw_lv_permits.company_id%TYPE;
     v_logo_b64      CLOB;
     v_html          CLOB;
@@ -17,8 +16,8 @@ BEGIN
     END IF;
 
     BEGIN
-        SELECT permit_number, safety_programme_ref_no, company_id
-        INTO   v_permit_number, v_safety_ref, v_company_id
+        SELECT permit_number, company_id
+        INTO   v_permit_number, v_company_id
         FROM   ptw_pro.ptw_lv_permits
         WHERE  permit_id = p_permit_id;
     EXCEPTION
@@ -30,10 +29,15 @@ BEGIN
     v_logo_b64 := ptw_pro.ptw_pdf_lib_pkg.get_company_logo_b64(v_company_id);
 
     v_html := ptw_pro.ptw_pdf_lib_pkg.get_document_head(
-        'Permit to Work General - ' || ptw_pro.ptw_pdf_lib_pkg.safe_val(v_permit_number));
+        'Permit to Work General - ' || ptw_pro.ptw_pdf_lib_pkg.safe_val(v_permit_number), 'GENERAL');
 
     -- ============================================================
-    -- HEADER (General-specific: no isolation reference field)
+    -- HEADER (General-specific)
+    -- Removed: "Safety Programme Reference No." — that's an LV-only
+    -- field (isolation/earthing diagram tracking); General's real form
+    -- has no equivalent field at all.
+    -- Added: the compliance banner that sits directly under the title
+    -- on the real form, previously dropped entirely.
     -- ============================================================
     v_html := v_html || '
     <div class="ptw-lv-header">
@@ -49,9 +53,13 @@ BEGIN
 
     v_html := v_html || '
         </div>
-        <div class="header-refs">
-            <div>Safety Programme Reference No.:<br><strong>'
-        || ptw_pro.ptw_pdf_lib_pkg.safe_val(v_safety_ref) || '</strong></div>
+        <div style="font-size:7.5pt;font-style:italic;font-weight:700;
+                    border-top:1px solid rgba(0,0,0,0.15);
+                    padding-top:6px;margin-top:4px;">
+            All sections of this Permit MUST BE completed and all risk measures fully
+            complied with. Permits can only be issued by an authorised person.
+        </div>
+        <div class="header-refs" style="margin-top:6px;">
             <div>Permit to Work No.:<br><strong>'
         || ptw_pro.ptw_pdf_lib_pkg.safe_val(v_permit_number) || '</strong></div>
         </div>
@@ -64,10 +72,10 @@ BEGIN
     v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_site_work_details_html(p_permit_id);
     v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_control_measures_html(p_permit_id);
     v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_ppe_html(p_permit_id);
-    v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_authorisation_html(p_permit_id);
-    v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_acceptance_html(p_permit_id);
-    v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_clearance_html(p_permit_id);
-    v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_cancellation_html(p_permit_id);
+    v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_authorisation_html(p_permit_id, 'GENERAL');
+    v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_acceptance_html(p_permit_id, 'GENERAL');
+    v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_clearance_html(p_permit_id, 'GENERAL');
+    v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_cancellation_html(p_permit_id, 'GENERAL');
 
     -- ============================================================
     -- FOOTER (General-specific: conditional 1/6-year retention —
@@ -83,10 +91,15 @@ BEGIN
     </div>';
 
     -- ============================================================
-    -- MONITORING PAGES (shared, generic heading — not LV-specific)
+    -- MONITORING PAGES — only if this permit type has monitoring at all.
+    -- GENERAL's real form has no monitoring page (confirmed against the
+    -- source PDF), so this section is skipped for GENERAL now that
+    -- PTW_TYPES.HAS_MONITORING controls it rather than being unconditional.
     -- ============================================================
-    v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_monitoring_pages_html(
-        p_permit_id, 'Site Monitoring');
+    IF ptw_pro.ptw_pdf_lib_pkg.type_has_monitoring('GENERAL') = 'Y' THEN
+        v_html := v_html || ptw_pro.ptw_pdf_lib_pkg.get_monitoring_pages_html(
+            p_permit_id, 'Site Monitoring');
+    END IF;
 
     -- ============================================================
     -- STAGE HISTORY (shared, only when requested)

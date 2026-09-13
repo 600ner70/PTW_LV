@@ -21,7 +21,18 @@ BEGIN
       l_latitude := :NEW.site_work_latitude;
       l_longitude := :NEW.site_work_longitude;
     END IF;
-    IF NVL(:NEW.site_details,'NULL') != NVL(:OLD.site_details,'NULL') THEN
+    -- Replaced: site_details is a legacy column ptw_permit_save_pkg no
+    -- longer writes to - it uses site_id (a proper FK to ptw_lv_sites)
+    -- instead. Watching site_details meant changing which site a permit
+    -- is assigned to was never detected here.
+    IF NVL(:NEW.site_id,-999999) != NVL(:OLD.site_id,-999999) THEN
+      v_changed := TRUE;
+      l_latitude := :NEW.site_work_latitude;
+      l_longitude := :NEW.site_work_longitude;
+    END IF;
+    -- Added: actively written by save_permit_header, was never checked
+    -- here at all - editing only this field left no audit trail.
+    IF NVL(:NEW.area_of_works,'NULL') != NVL(:OLD.area_of_works,'NULL') THEN
       v_changed := TRUE;
       l_latitude := :NEW.site_work_latitude;
       l_longitude := :NEW.site_work_longitude;
@@ -57,6 +68,14 @@ BEGIN
       l_longitude := :NEW.site_work_longitude;
     END IF;
     IF NVL(:NEW.it_permission_granted,'NULL') != NVL(:OLD.it_permission_granted,'NULL') THEN
+      v_changed := TRUE;
+      l_latitude := :NEW.site_work_latitude;
+      l_longitude := :NEW.site_work_longitude;
+    END IF;
+    -- Added: actively written by save_permit_header, was never checked
+    -- here at all (this is the WAH specialist-equipment field, but the
+    -- column is shared/available across types).
+    IF NVL(:NEW.specialist_equipment_details,'NULL') != NVL(:OLD.specialist_equipment_details,'NULL') THEN
       v_changed := TRUE;
       l_latitude := :NEW.site_work_latitude;
       l_longitude := :NEW.site_work_longitude;
@@ -197,5 +216,6 @@ BEGIN
     END IF;
 
 END ptw_lv_permits_stage_loc_trg;
+
 /
 ALTER TRIGGER "PTW_PRO"."PTW_LV_PERMITS_STAGE_LOC_TRG" ENABLE;
