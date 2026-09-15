@@ -1599,7 +1599,7 @@ page 1 (
                 ```
         }
         layout {
-            sequence: 80
+            sequence: 90
             slot: body
         }
         appearance {
@@ -2040,7 +2040,7 @@ page 1 (
             valueProtected: false
         }
         layout {
-            sequence: 120
+            sequence: 130
             slot: body
         }
     )
@@ -2051,7 +2051,7 @@ page 1 (
             valueProtected: false
         }
         layout {
-            sequence: 90
+            sequence: 100
             slot: body
         }
     )
@@ -2062,7 +2062,7 @@ page 1 (
             valueProtected: false
         }
         layout {
-            sequence: 100
+            sequence: 110
             slot: body
         }
     )
@@ -2073,7 +2073,7 @@ page 1 (
             valueProtected: false
         }
         layout {
-            sequence: 110
+            sequence: 120
             slot: body
         }
     )
@@ -2082,7 +2082,7 @@ page 1 (
         buttonName: CREATE_NEW_PERMIT
         label: Create New Permit
         layout {
-            sequence: 10
+            sequence: 20
             region: @quick-actions
             slot: regionBody
             columnSpan: 6
@@ -2122,7 +2122,7 @@ page 1 (
         buttonName: DOWNLOAD_JOBS
         label: Download Jobs
         layout {
-            sequence: 20
+            sequence: 40
             region: @quick-actions
             slot: regionBody
             startNewRow: false
@@ -2147,6 +2147,28 @@ page 1 (
         }
     )
 
+    button ptwEnableNotificationsBtn (
+        buttonName: ENABLE_NOTIFICATIONS
+        label: Enable Notifications
+        layout {
+            sequence: 50
+            region: @quick-actions
+            slot: regionBody
+            columnSpan: 6
+        }
+        appearance {
+            buttonTemplate: @/text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        advanced {
+            htmlDomId: ptwEnableNotificationsBtn
+        }
+    )
+
     button refresh-mobile-permits (
         buttonName: REFRESH_MOBILE_PERMITS
         label: Refresh Permits
@@ -2167,13 +2189,16 @@ page 1 (
         behavior {
             action: definedByDynamicAction
         }
+        advanced {
+            htmlDomId: refresh-mobile-permits
+        }
     )
 
     button refresh-permits (
         buttonName: REFRESH_PERMITS
         label: Refresh Permits
         layout {
-            sequence: 10
+            sequence: 30
             region: @recent-permits
             slot: rightOfInteractiveReportSearchBar
         }
@@ -2195,6 +2220,51 @@ page 1 (
         advanced {
             htmlDomId: btn-refresh-permits
         }
+    )
+
+    dynamicAction enable-notifications (
+        name: Enable notifications
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @ptwEnableNotificationsBtn
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: ptwEnablePushNotifications();
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction enable-notifications-on-page-load (
+        name: Enable notifications on page load
+        execution {
+            sequence: 40
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: ptwRefreshNotificationButton();
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
     )
 
     dynamicAction refresh-mobile-cards (

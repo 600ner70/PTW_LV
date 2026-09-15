@@ -1,0 +1,83 @@
+automation permit-expiry-warning (
+    name: Permit Expiry Warning
+    execution {
+        scheduleExpression: FREQ=MINUTELY;INTERVAL=15
+        scheduleStatus: active
+        actionsInitiatedOn: always
+    }
+    actionExecution {
+        actionErrorHandling: terminate
+    }
+
+    action new-action (
+        name: Send expiry warning push notifications
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                                -- Window is a full hour wide, run every 15 min, so a permit
+                                -- entering the last-hour window is always caught on the next
+                                -- run even if it slips past the exact 60-minute mark.
+                                DECLARE
+                                    CURSOR c_expiring IS
+                                        SELECT p.permit_id,
+                                               p.permit_number,
+                                               p.created_by,
+                                               p.ended_datetime
+                                        FROM   ptw_pro.ptw_lv_permits p
+                                        WHERE  p.workflow_status = 'STARTED'
+                                        AND    p.ended_datetime BETWEEN SYSDATE AND SYSDATE + (1/24)
+                                        AND    NOT EXISTS (
+                                                 SELECT 1
+                                                 FROM   ptw_pro.ptw_push_notification_log l
+                                                 WHERE  l.permit_id        = p.permit_id
+                                                 AND    l.notification_key = 'EXPIRY_1HR'
+                                               );
+                                BEGIN
+                                    apex_session.create_session(
+                                        p_app_id   => 105,
+                                        p_page_id  => 0,
+                                        p_username => 'SYSTEM_AUTOMATION'
+                                    );
+                
+                                    FOR r IN c_expiring LOOP
+                                        BEGIN
+                                            apex_pwa.send_push_notification(
+                                                p_application_id => 105,
+                                                p_user_name      => r.created_by,
+                                                p_title          => 'Permit Expiring Soon',
+                                                p_body           => 'Permit ' || r.permit_number ||
+                                                                     ' expires at ' ||
+                                                                     TO_CHAR(r.ended_datetime, 'DD-MON-YYYY HH24:MI') ||
+                                                                     '. Please renew or close it.'
+                                            );
+                
+                                            INSERT INTO ptw_pro.ptw_push_notification_log
+                                                (permit_id, notification_key, sent_to_username)
+                                            VALUES
+                                                (r.permit_id, 'EXPIRY_1HR', r.created_by);
+                                        EXCEPTION
+                                            -- Per-row handling: one bad/unsubscribed user must not
+                                            -- stop the rest of the batch from being notified.
+                                            WHEN OTHERS THEN
+                                                apex_automation.log_error(
+                                                    'Expiry push failed for permit ' || r.permit_number ||
+                                                    ': ' || SQLERRM
+                                                );
+                                        END;
+                                    END LOOP;
+                
+                                    COMMIT;
+                                END;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        error {
+            errorMessage: Error sending permit expiry push notifications. Please contact support.
+        }
+    )
+
+)
+

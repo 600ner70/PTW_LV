@@ -439,3 +439,49 @@ function ptwShowAuthoriseDeclaration() {
     });
 
 }());
+
+// =============================================================
+// PUSH NOTIFICATIONS - append this block to the existing
+// shared-components/static-files/ptw-utils.js
+// (do NOT create a new file - Rule 4 in DEVELOPER_NOTES.md:
+//  reusable JS goes in the shared static file, referenced on
+//  Page 0, loaded globally.)
+// =============================================================
+
+/**
+ * ptwEnablePushNotifications()
+ * Triggers the browser permission prompt and subscribes the current
+ * user via APEX's native PWA API. Call from a button's Dynamic Action.
+ */
+function ptwEnablePushNotifications() {
+    if (!apex.pwa || !apex.pwa.subscribePushNotifications) {
+        apex.message.alert('Push notifications are not supported on this device or browser.');
+        return;
+    }
+    apex.pwa.subscribePushNotifications()
+        .then(function() {
+            apex.message.showPageSuccess('Notifications enabled.');
+            ptwRefreshNotificationButton();
+        })
+        .catch(function(err) {
+            console.error('Push subscription failed:', err);
+            apex.message.alert('Could not enable notifications. Check your browser/device notification permissions.');
+        });
+}
+
+/**
+ * ptwRefreshNotificationButton()
+ * Hides the "Enable Notifications" button once the current device is
+ * already subscribed. Call on page load (Page 1) and after subscribing.
+ */
+function ptwRefreshNotificationButton() {
+    if (!apex.pwa || !apex.pwa.hasPushSubscription) {
+        return;
+    }
+    apex.pwa.hasPushSubscription().then(function(isSubscribed) {
+        var $btn = apex.jQuery('#ptwEnableNotificationsBtn');
+        if ($btn.length) {
+            $btn.toggle(!isSubscribed);
+        }
+    });
+}
