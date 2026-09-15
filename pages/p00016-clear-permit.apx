@@ -1074,6 +1074,40 @@ page 16 (
         }
     )
 
+    validation hot-work-fire-watch-must-be-complete (
+        name: Hot Work Fire Watch Must Be Complete
+        execution {
+            sequence: 80
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                            DECLARE
+                                l_count NUMBER;
+                            BEGIN
+                                IF :P16_PTW_TYPE != 'HOT WORK' THEN
+                                    RETURN TRUE;
+                                END IF;
+                
+                                SELECT COUNT(*) INTO l_count
+                                FROM   ptw_pro.ptw_hotwork_fire_watch
+                                WHERE  permit_id = :P16_PERMIT_ID
+                                AND    milestone_code = 'FIRE_CHECKS_COMPLETE';
+                
+                                RETURN l_count > 0;
+                            END;
+                ```
+        }
+        error {
+            errorMessage: All fire watch checks must be signed off before this permit can be cleared.
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'CLEAR_PERMIT' AND :P16_PTW_TYPE = 'HOT WORK'
+        }
+    )
+
     validation isolations-removed-required (
         name: Isolations Removed Required
         execution {

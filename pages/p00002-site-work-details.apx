@@ -84,7 +84,9 @@ page 2 (
                 var BINARY_ITEMS = [
                     'P2_CLIENT_PERMISSION_GRANTED',
                     'P2_AFFECTS_IT_SYSTEMS',
-                    'P2_IT_PERMISSION_GRANTED'
+                    'P2_IT_PERMISSION_GRANTED',
+                    'P2_FIRE_SYSTEMS_AFFECTED',
+                    'P2_FIRE_SYSTEMS_ISOLATED'
                 ];
             
                 var BADGES = [
@@ -360,7 +362,7 @@ page 2 (
         name: Buttons
         type: staticContent
         layout {
-            sequence: 140
+            sequence: 150
             slot: body
         }
         appearance {
@@ -450,6 +452,31 @@ page 2 (
             type: item=value
             item: P2_PTW_TYPE
             value: LV ISOLATION
+        }
+    )
+
+    region fire-smoke-systems (
+        name: Fire & Smoke Systems
+        title: Fire & Smoke Systems
+        type: staticContent
+        layout {
+            sequence: 140
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-fire
+        }
+        serverSideCondition {
+            type: item=value
+            item: P2_PTW_TYPE
+            value: HOT WORK
         }
     )
 
@@ -677,6 +704,151 @@ page 2 (
         layout {
             sequence: 20
             slot: body
+        }
+    )
+
+    pageItem P2_FIRE_ALARM_ARRANGEMENTS (
+        type: textarea
+        label {
+            label: Fire alarm arrangements
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @fire-smoke-systems
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 5
+        }
+        help {
+            inlineHelpText: Details of adequate means of raising the fire alarm during the works and/or during the period when smoke/fire detection and/or suppression systems are inhibited
+        }
+    )
+
+    pageItem P2_FIRE_PRECAUTIONS_DETAILS (
+        type: textarea
+        label {
+            label: Fire precaution details
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @fire-smoke-systems
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 5
+        }
+        help {
+            inlineHelpText: Details of adequate fire precautions taken when smoke/fire detection and/or suppression systems have been isolated (fire extinguishers, blankets, etc.)
+        }
+    )
+
+    pageItem P2_FIRE_SYSTEMS_AFFECTED (
+        type: radioGroup
+        label {
+            label: Will any fixed smoke/fire detection or suppression systems be affected by these works?
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes;Y,No;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 10
+            region: @fire-smoke-systems
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-above
+            templateOptions: #DEFAULT#
+            cssClasses: cm-binary-item
+        }
+    )
+
+    pageItem P2_FIRE_SYSTEMS_ISOLATED (
+        type: radioGroup
+        label {
+            label: If 'Yes' have they been isolated or impeded?
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes;Y,No;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 20
+            region: @fire-smoke-systems
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-above
+            templateOptions: #DEFAULT#
+            cssClasses: cm-binary-item
+        }
+    )
+
+    pageItem P2_INSURER_INFORMED_DATETIME (
+        type: datePicker
+        label {
+            label: Insurer Informed Datetime
+            alignment: left
+        }
+        settings {
+            showTime: true
+        }
+        layout {
+            sequence: 30
+            region: @fire-smoke-systems
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            formatMask: DD-MON-YYYY HH24:MI
+            width: 30
+        }
+    )
+
+    pageItem P2_ISOLATION_COMMENTS (
+        type: textarea
+        label {
+            label: Comments relating to isolations
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @fire-smoke-systems
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 5
         }
     )
 
@@ -1212,6 +1384,53 @@ page 2 (
         }
     )
 
+    validation fire-systems-affected (
+        name: Fire Systems Affected
+        execution {
+            sequence: 60
+        }
+        validation {
+            type: itemIsNotNull
+            item: P2_FIRE_SYSTEMS_AFFECTED
+        }
+        error {
+            errorMessage:
+                ```
+                You must say whether Fire system are affected.
+                
+                ```
+        }
+        serverSideCondition {
+            type: item=value
+            item: P2_PTW_TYPE
+            value: HOT WORK
+        }
+    )
+
+    validation fire-systems-isolated (
+        name: Fire Systems Isolated
+        execution {
+            sequence: 70
+        }
+        validation {
+            type: itemIsNotNull
+            item: P2_FIRE_SYSTEMS_ISOLATED
+        }
+        error {
+            errorMessage:
+                ```
+                You must say whether Fire system are isolated.
+                
+                
+                ```
+        }
+        serverSideCondition {
+            type: item=value
+            item: P2_PTW_TYPE
+            value: HOT WORK
+        }
+    )
+
     validation person-in-charge-required (
         name: Person in Charge Required
         execution {
@@ -1321,43 +1540,32 @@ page 2 (
                 
                   :P2_CURRENT_STEP := 'SITE_WORK_DETAILS';
                   
-                    SELECT
-                        permit_number,
-                        current_step,
-                        workflow_status,
-                        safety_programme_ref_no,
-                        isolation_diagram_serial_no,
-                        site_id,
-                        area_of_works,
-                        work_description,
-                        person_in_charge_name,
-                        supervising_company,
-                        other_persons_count,
-                        client_permission_granted,
-                        affects_it_systems,
-                        it_permission_granted,
-                        specialist_equipment_details,
-                        ptw_type
-                    INTO
-                        :P2_PERMIT_NUMBER,
-                        :P2_CURRENT_STEP,
-                        :P2_WORKFLOW_STATUS,
-                        :P2_SAFETY_PROGRAMME_REF_NO,
-                        :P2_ISOLATION_DIAGRAM_SERIAL_NO,
-                        :P2_SITE_DETAILS,
-                        :P2_AREA_OF_WORKS,
-                        :P2_WORK_DESCRIPTION,
-                        :P2_PERSON_IN_CHARGE_NAME,
-                        :P2_SUPERVISING_COMPANY,
-                        :P2_OTHER_PERSONS_COUNT,
-                        :P2_CLIENT_PERMISSION_GRANTED,
-                        :P2_AFFECTS_IT_SYSTEMS,
-                        :P2_IT_PERMISSION_GRANTED,
-                        :P2_SPECIALIST_EQUIPMENT_DETAILS,
-                        :P2_PTW_TYPE
-                    FROM ptw_pro.ptw_lv_permits
-                    WHERE permit_id = :P2_PERMIT_ID;
+                    DECLARE
+                        v_insurer_informed_dt DATE;
+                    BEGIN
+                        SELECT
+                            permit_number, current_step, workflow_status, safety_programme_ref_no,
+                            isolation_diagram_serial_no, site_id, area_of_works, work_description,
+                            person_in_charge_name, supervising_company, other_persons_count,
+                            client_permission_granted, affects_it_systems, it_permission_granted,
+                            specialist_equipment_details, ptw_type,
+                            fire_systems_affected, fire_systems_isolated, insurer_informed_datetime, isolation_comments,
+                            fire_precautions_details, fire_alarm_arrangements
+                        INTO
+                            :P2_PERMIT_NUMBER, :P2_CURRENT_STEP, :P2_WORKFLOW_STATUS, :P2_SAFETY_PROGRAMME_REF_NO,
+                            :P2_ISOLATION_DIAGRAM_SERIAL_NO, :P2_SITE_DETAILS, :P2_AREA_OF_WORKS, :P2_WORK_DESCRIPTION,
+                            :P2_PERSON_IN_CHARGE_NAME, :P2_SUPERVISING_COMPANY, :P2_OTHER_PERSONS_COUNT,
+                            :P2_CLIENT_PERMISSION_GRANTED, :P2_AFFECTS_IT_SYSTEMS, :P2_IT_PERMISSION_GRANTED,
+                            :P2_SPECIALIST_EQUIPMENT_DETAILS, :P2_PTW_TYPE,
+                            :P2_FIRE_SYSTEMS_AFFECTED, :P2_FIRE_SYSTEMS_ISOLATED, v_insurer_informed_dt, :P2_ISOLATION_COMMENTS,
+                            :P2_FIRE_PRECAUTIONS_DETAILS, :P2_FIRE_ALARM_ARRANGEMENTS
+                        FROM ptw_pro.ptw_lv_permits
+                        WHERE permit_id = :P2_PERMIT_ID;
                 
+                        IF v_insurer_informed_dt IS NOT NULL THEN
+                            :P2_INSURER_INFORMED_DATETIME := TO_CHAR(v_insurer_informed_dt, 'DD-MON-YYYY HH24:MI');
+                        END IF;
+                    END;
                     :G_ACTIVE_PERMIT_ID := :P2_PERMIT_ID;
                 
                 EXCEPTION
@@ -1419,6 +1627,12 @@ page 2 (
                             p_client_permission_granted   => :P2_CLIENT_PERMISSION_GRANTED,
                             p_affects_it_systems          => :P2_AFFECTS_IT_SYSTEMS,
                             p_it_permission_granted       => :P2_IT_PERMISSION_GRANTED,
+                            p_fire_systems_affected       => :P2_FIRE_SYSTEMS_AFFECTED,
+                            p_fire_systems_isolated       => :P2_FIRE_SYSTEMS_ISOLATED,
+                            p_insurer_informed_datetime   => TO_DATE(:P2_INSURER_INFORMED_DATETIME, 'DD-MON-YYYY HH24:MI'),
+                            p_isolation_comments          => :P2_ISOLATION_COMMENTS,
+                            p_fire_precautions_details    => :P2_FIRE_PRECAUTIONS_DETAILS,
+                            p_fire_alarm_arrangements     => :P2_FIRE_ALARM_ARRANGEMENTS,
                             p_specialist_equipment_details => :P2_SPECIALIST_EQUIPMENT_DETAILS,
                             p_latitude                    => :APP_LATITUDE,
                             p_longitude                   => :APP_LONGITUDE,
@@ -1513,6 +1727,12 @@ page 2 (
                         p_affects_it_systems          => l_json.get_string('P2_AFFECTS_IT_SYSTEMS'),
                         p_it_permission_granted       => l_json.get_string('P2_IT_PERMISSION_GRANTED'),
                         p_specialist_equipment_details => l_json.get_string('P2_SPECIALIST_EQUIPMENT_DETAILS'),
+                        p_fire_systems_affected       => l_json.get_string('P2_FIRE_SYSTEMS_AFFECTED'),
+                        p_fire_systems_isolated       => l_json.get_string('P2_FIRE_SYSTEMS_ISOLATED'),
+                        p_insurer_informed_datetime   => TO_DATE(l_json.get_string('P2_INSURER_INFORMED_DATETIME'), 'DD-MON-YYYY HH24:MI'),
+                        p_isolation_comments          => l_json.get_string('P2_ISOLATION_COMMENTS'),
+                        p_fire_precautions_details    => l_json.get_string('P2_FIRE_PRECAUTIONS_DETAILS'),
+                        p_fire_alarm_arrangements     => l_json.get_string('P2_FIRE_ALARM_ARRANGEMENTS'),
                         p_latitude                    => l_json.get_number('APP_LATITUDE'),
                         p_longitude                   => l_json.get_number('APP_LONGITUDE'),
                         p_resolved_site_id            => v_site_id,

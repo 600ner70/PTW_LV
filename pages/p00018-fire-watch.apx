@@ -1,0 +1,719 @@
+page 18 (
+    name: Fire Watch
+    alias: FIRE-WATCH
+    title: Fire Watch
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @/modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            var p18SigPad = null;
+            
+            function p18InitSig() {
+                var canvas = document.getElementById('p18SigCanvas');
+                if (!canvas) return;
+                var wrapper = canvas.parentElement;
+                var w = Math.max((wrapper ? wrapper.offsetWidth - 24 : 400), 280);
+                canvas.width  = w;
+                canvas.height = 150;
+                canvas.style.width  = w + 'px';
+                canvas.style.height = '150px';
+                var ctx = canvas.getContext('2d');
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth   = 2;
+                ctx.lineCap     = 'round';
+                ctx.lineJoin    = 'round';
+                p18SigPad = new SignaturePad(canvas, ctx);
+            }
+            
+            function p18ClearSig() {
+                if (p18SigPad) { p18SigPad.clear(); }
+            }
+            
+            function p18SaveSig() {
+                if (!p18SigPad || p18SigPad.isEmpty) {
+                    apex.item('P18_SIGNATURE_DATA').setValue('');
+                } else {
+                    apex.item('P18_SIGNATURE_DATA').setValue(p18SigPad.getDataURL());
+                }
+            }
+            
+            apex.jQuery(document).on('apexbeforepagesubmit', function () {
+                p18SaveSig();
+            });
+            
+            var p18ResizeTimer = null;
+            window.addEventListener('resize', function () {
+                if (p18ResizeTimer) { clearTimeout(p18ResizeTimer); }
+                p18ResizeTimer = setTimeout(function () {
+                    var hadContent = p18SigPad && !p18SigPad.isEmpty;
+                    var existingData = hadContent ? p18SigPad.getDataURL() : null;
+                    p18InitSig();
+                    if (existingData) {
+                        loadSignature(p18SigPad, document.getElementById('p18SigCanvas'), existingData);
+                    }
+                }, 200);
+            });
+            
+            ```
+    }
+    css {
+        inline:
+            ```css
+            @media (max-width: 768px) {
+                .ui-dialog {
+                    width: 96vw !important;
+                    max-width: 96vw !important;
+                    height: 92vh !important;
+                    max-height: 92vh !important;
+                    top: 4vh !important;
+                    left: 2vw !important;
+                    margin: 0 !important;
+                }
+                .ui-dialog-content {
+                    max-height: calc(92vh - 110px) !important;
+                    overflow-y: auto !important;
+                    -webkit-overflow-scrolling: touch;
+                }
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region all-complete (
+        name: All Complete
+        title: All Complete
+        type: staticContent
+        source {
+            htmlCode: All fire watch checks complete
+        }
+        layout {
+            sequence: 140
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P18_MILESTONE_CODE
+        }
+    )
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 150
+            slot: contentBody
+        }
+        appearance {
+            template: @/buttons-container
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region current-check (
+        name: Current Check
+        title: Current Check
+        type: staticContent
+        layout {
+            sequence: 130
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P18_MILESTONE_CODE IS NOT NULL AND :P18_WORKFLOW_STATUS = 'STARTED'
+        }
+    )
+
+    region history (
+        name: History
+        title: History
+        type: cards
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT m.seq, m.label,
+                       CASE
+                           WHEN fw.milestone_code IS NOT NULL THEN
+                               '<span style="display:inline-flex;align-items:center;gap:8px;">'
+                               || '<span style="display:inline-flex;align-items:center;justify-content:center;'
+                               || 'width:22px;height:22px;border-radius:50%;background:#28a745;color:#fff;'
+                               || 'font-size:13px;flex-shrink:0;">&#10003;</span>'
+                               || '<span style="font-weight:600;">' || m.label || '</span></span>'
+                           ELSE
+                               '<span style="display:inline-flex;align-items:center;gap:8px;">'
+                               || '<span style="display:inline-flex;align-items:center;justify-content:center;'
+                               || 'width:22px;height:22px;border-radius:50%;background:#e9ecef;color:#6c757d;'
+                               || 'font-size:12px;font-weight:700;flex-shrink:0;">' || m.seq || '</span>'
+                               || '<span style="color:#6c757d;">' || m.label || '</span></span>'
+                       END AS title_html,
+                       CASE
+                           WHEN fw.milestone_code IS NOT NULL THEN
+                               '<div style="display:flex;gap:12px;align-items:center;'
+                               || 'border-left:3px solid #28a745;padding:4px 0 4px 10px;">'
+                               || '<img src="data:image/png;base64,'
+                               || APEX_WEB_SERVICE.BLOB2CLOBBASE64(fw.signature_blob)
+                               || '" style="height:48px;max-width:130px;border:1px solid #dee2e6;'
+                               || 'border-radius:6px;background:#fff;padding:2px;flex-shrink:0;" alt="Signature" />'
+                               || '<div style="font-size:12.5px;line-height:1.4;">'
+                               || '<div style="font-weight:600;color:#343a40;">' || APEX_ESCAPE.HTML(fw.signed_by) || '</div>'
+                               || '<div style="color:#868e96;">' || TO_CHAR(fw.signed_datetime, 'DD Mon YYYY HH24:MI') || '</div>'
+                               || '</div></div>'
+                           ELSE
+                               TO_CLOB(
+                               '<div style="border-left:3px dashed #dee2e6;padding:8px 0 8px 10px;'
+                               || 'color:#adb5bd;font-style:italic;font-size:12.5px;">Awaiting sign-off</div>')
+                       END AS body_html
+                FROM   (SELECT 1 seq, 'HW_COMPLETE' code, 'Hot Works Completed' label FROM dual UNION ALL
+                        SELECT 2, 'ATTEND_1ST_HR', '100% Attendance — First Hour' FROM dual UNION ALL
+                        SELECT 3, 'CHECK_15MIN_2ND_HR', 'Checked Every 15 Min — Second Hour' FROM dual UNION ALL
+                        SELECT 4, 'CHECK_30MIN_3RD_HR', 'Checked Every 30 Min — Third Hour' FROM dual UNION ALL
+                        SELECT 5, 'REINSTATE_4TH_HR', 'Reinstate Fire Isolation — Fourth Hour' FROM dual UNION ALL
+                        SELECT 6, 'FIRE_CHECKS_COMPLETE', 'Completion of Fire Checks' FROM dual) m
+                LEFT JOIN ptw_pro.ptw_hotwork_fire_watch fw
+                       ON fw.permit_id = :P18_PERMIT_ID AND fw.milestone_code = m.code
+                ORDER BY m.seq
+                ```
+            pageItemsToSubmit: P18_PERMIT_ID
+        }
+        layout {
+            sequence: 120
+            slot: contentBody
+        }
+        appearance {
+            template: @/cards-container
+            templateOptions: [
+                #DEFAULT#
+                t-CardsRegion--hideHeader js-addHiddenHeadingRoleDesc
+            ]
+        }
+        title {
+            advancedFormatting: true
+            htmlExpression: &TITLE_HTML!RAW.
+        }
+        body {
+            advancedFormatting: true
+            htmlExpression: &BODY_HTML!RAW.
+        }
+    )
+
+    region page-title (
+        name: Page Title
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                    <div style="margin-bottom: 20px;">
+                        <span class="apex-badge" style="background-color: #3ea055; color: white; padding: 6px 16px; border-radius: 20px; font-weight: 600;">
+                            Permit: &P18_PERMIT_NUMBER.
+                        </span>
+                    </div>
+                ```
+        }
+        layout {
+            sequence: 110
+            slot: contentBody
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region signature (
+        name: Signature
+        title: Signature
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="p18-sig-wrapper">
+                  <label class="t-Form-label" style="display:block;margin-bottom:6px;">
+                    Signing: &P18_MILESTONE_LABEL. <span style="color:#C0392B;" aria-hidden="true">*</span>
+                  </label>
+                  <canvas id="p18SigCanvas"></canvas>
+                  <button type="button" class="t-Button t-Button--small t-Button--simple"
+                          id="p18ClearSigBtn" style="margin-top:6px;" onclick="p18ClearSig()">
+                    <span class="fa fa-eraser" aria-hidden="true"></span> Clear Signature
+                  </button>
+                </div>
+                ```
+        }
+        layout {
+            sequence: 20
+            parentRegion: @current-check
+            slot: regionBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-pencil-square-o
+        }
+    )
+
+    pageItem P18_MILESTONE_CODE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 60
+            slot: contentBody
+        }
+    )
+
+    pageItem P18_MILESTONE_LABEL (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 70
+            slot: contentBody
+        }
+    )
+
+    pageItem P18_MILESTONE_PERSON_NAME (
+        type: textField
+        label {
+            label: Fire check by
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @current-check
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P18_PERMIT_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+    )
+
+    pageItem P18_PERMIT_NUMBER (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 50
+            slot: contentBody
+        }
+    )
+
+    pageItem P18_PTW_TYPE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: contentBody
+        }
+    )
+
+    pageItem P18_SIGNATURE_DATA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 80
+            slot: contentBody
+        }
+    )
+
+    pageItem P18_WORKFLOW_STATUS (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 100
+            slot: contentBody
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancel
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 1
+                clearCache: 1
+            }
+        }
+    )
+
+    button sign-milestone (
+        buttonName: SIGN_MILESTONE
+        label: Sign Milestone
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @/text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P18_MILESTONE_CODE IS NOT NULL AND :P18_WORKFLOW_STATUS = 'STARTED'
+        }
+    )
+
+    dynamicAction load-signatures (
+        name: Load signatures
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    setTimeout(function () {
+                        p18InitSig();
+                    }, 350);
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction sign-milestone-capture-location-and-submit (
+        name: Sign Milestone - Capture Location and Submit
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @sign-milestone
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: captureLocationThenSubmit('SIGN_MILESTONE');
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    validation name-required (
+        name: Name required
+        execution {
+            sequence: 10
+        }
+        validation {
+            type: itemIsNotNull
+            item: P18_MILESTONE_PERSON_NAME
+        }
+        error {
+            errorMessage:
+                ```
+                Person's name doing fire check must be entered.
+                
+                ```
+        }
+    )
+
+    process load-process (
+        name: Load process
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    CURSOR c_milestones IS
+                        SELECT 1 seq, 'HW_COMPLETE' code, 'Hot Works Completed' label FROM dual UNION ALL
+                        SELECT 2, 'ATTEND_1ST_HR', '100% Attendance — First Hour' FROM dual UNION ALL
+                        SELECT 3, 'CHECK_15MIN_2ND_HR', 'Checked Every 15 Min — Second Hour' FROM dual UNION ALL
+                        SELECT 4, 'CHECK_30MIN_3RD_HR', 'Checked Every 30 Min — Third Hour' FROM dual UNION ALL
+                        SELECT 5, 'REINSTATE_4TH_HR', 'Reinstate Fire Isolation — Fourth Hour' FROM dual UNION ALL
+                        SELECT 6, 'FIRE_CHECKS_COMPLETE', 'Completion of Fire Checks' FROM dual;
+                    l_count PLS_INTEGER;
+                BEGIN
+                
+                    :P18_MILESTONE_CODE  := NULL;
+                    :P18_MILESTONE_LABEL := NULL;
+                
+                    FOR m IN c_milestones LOOP
+                        SELECT COUNT(*) INTO l_count
+                        FROM   ptw_pro.ptw_hotwork_fire_watch
+                        WHERE  permit_id = :P18_PERMIT_ID AND milestone_code = m.code;
+                
+                        IF l_count = 0 THEN
+                            :P18_MILESTONE_CODE  := m.code;
+                            :P18_MILESTONE_LABEL := m.label;
+                            EXIT;
+                        END IF;
+                    END LOOP;
+                    -- Both stay NULL if all six are already signed — the "current check"
+                    -- region's server-side condition hides itself in that case.
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: beforeRegions
+        }
+        advanced {
+            executionMappingIdentifier: 42194849397924501
+        }
+    )
+
+    process sign (
+        name: Sign
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    l_company_id ptw_pro.ptw_lv_permits.company_id%TYPE;
+                    l_this_idx   PLS_INTEGER;
+                    l_prev_code  VARCHAR2(30);
+                    l_prev_count NUMBER := 0;
+                    l_sig_blob   BLOB;
+                    l_clob       CLOB;
+                BEGIN
+                    SELECT company_id INTO l_company_id
+                    FROM   ptw_pro.ptw_lv_permits WHERE permit_id = :P18_PERMIT_ID;
+                
+                    l_this_idx := CASE :P18_MILESTONE_CODE
+                        WHEN 'HW_COMPLETE'          THEN 1
+                        WHEN 'ATTEND_1ST_HR'        THEN 2
+                        WHEN 'CHECK_15MIN_2ND_HR'   THEN 3
+                        WHEN 'CHECK_30MIN_3RD_HR'   THEN 4
+                        WHEN 'REINSTATE_4TH_HR'     THEN 5
+                        WHEN 'FIRE_CHECKS_COMPLETE' THEN 6
+                    END;
+                
+                    l_prev_code := CASE :P18_MILESTONE_CODE
+                        WHEN 'ATTEND_1ST_HR'        THEN 'HW_COMPLETE'
+                        WHEN 'CHECK_15MIN_2ND_HR'   THEN 'ATTEND_1ST_HR'
+                        WHEN 'CHECK_30MIN_3RD_HR'   THEN 'CHECK_15MIN_2ND_HR'
+                        WHEN 'REINSTATE_4TH_HR'     THEN 'CHECK_30MIN_3RD_HR'
+                        WHEN 'FIRE_CHECKS_COMPLETE' THEN 'REINSTATE_4TH_HR'
+                        -- HW_COMPLETE has no predecessor — stays NULL, so the check below is skipped
+                    END;
+                
+                    IF l_prev_code IS NOT NULL THEN
+                        SELECT COUNT(*) INTO l_prev_count
+                        FROM   ptw_pro.ptw_hotwork_fire_watch
+                        WHERE  permit_id = :P18_PERMIT_ID AND milestone_code = l_prev_code;
+                    END IF;
+                
+                    IF l_prev_code IS NOT NULL AND l_prev_count = 0 THEN
+                        apex_error.add_error(
+                            p_message => 'The previous fire watch check must be signed first.',
+                            p_display_location => apex_error.c_inline_in_notification);
+                        RAISE_APPLICATION_ERROR(-20064, 'Fire watch milestones must be signed in order.');
+                    END IF;
+                
+                    IF :P18_SIGNATURE_DATA IS NOT NULL AND :P18_MILESTONE_PERSON_NAME IS NOT NULL THEN
+                        l_clob     := REPLACE(:P18_SIGNATURE_DATA, 'data:image/png;base64,', '');
+                        l_sig_blob := apex_web_service.clobbase642blob(l_clob);
+                    ELSE
+                        apex_error.add_error(
+                            p_message => 'A name and signature are both required.',
+                            p_display_location => apex_error.c_inline_in_notification);
+                        RAISE_APPLICATION_ERROR(-20066, 'Name and signature are required to sign a fire watch check.');
+                    END IF;
+                
+                    BEGIN
+                        INSERT INTO ptw_pro.ptw_hotwork_fire_watch (
+                            permit_id, milestone_code, milestone_seq, signed_by,
+                            signed_datetime, signature_blob, latitude, longitude, company_id
+                        ) VALUES (
+                            :P18_PERMIT_ID, :P18_MILESTONE_CODE, l_this_idx,
+                            UPPER(TRIM(:P18_MILESTONE_PERSON_NAME)),
+                            SYSDATE, l_sig_blob, TO_NUMBER(:APP_LATITUDE), TO_NUMBER(:APP_LONGITUDE), l_company_id
+                        );
+                    EXCEPTION
+                        WHEN DUP_VAL_ON_INDEX THEN
+                            RAISE_APPLICATION_ERROR(-20065, 'This fire watch check has already been signed.');
+                    END;
+                
+                    -- Every milestone also drops its own entry into the general permit
+                    -- history table — PTW_STAGE_LOCATIONS records where key lifecycle
+                    -- events happened, and each fire watch check is one of those, not
+                    -- just the final sign-off.
+                    INSERT INTO ptw_pro.ptw_stage_locations (
+                        permit_id, permit_stage, latitude, longitude, created_date, created_by, company_id
+                    ) VALUES (
+                        :P18_PERMIT_ID, 'FIREWATCH_' || :P18_MILESTONE_CODE,
+                        TO_NUMBER(:APP_LATITUDE), TO_NUMBER(:APP_LONGITUDE),
+                        SYSDATE, NVL(V('APP_USER'), USER), l_company_id
+                    );
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 42196065422924513
+        }
+        serverSideCondition {
+            whenButtonPressed: @sign-milestone
+        }
+    )
+
+    process sign-action (
+        name: SIGN_ACTION
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    l_company_id ptw_pro.ptw_lv_permits.company_id%TYPE;
+                    l_this_idx   PLS_INTEGER;
+                    l_prev_code  VARCHAR2(30);
+                    l_prev_ok    VARCHAR2(1) := 'Y';
+                BEGIN
+                    SELECT company_id INTO l_company_id
+                    FROM   ptw_pro.ptw_lv_permits WHERE permit_id = :PNN_PERMIT_ID;
+                
+                    l_this_idx := CASE :PNN_MILESTONE_CODE
+                        WHEN 'HW_COMPLETE'          THEN 1
+                        WHEN 'ATTEND_1ST_HR'        THEN 2
+                        WHEN 'CHECK_15MIN_2ND_HR'   THEN 3
+                        WHEN 'CHECK_30MIN_3RD_HR'   THEN 4
+                        WHEN 'REINSTATE_4TH_HR'     THEN 5
+                        WHEN 'FIRE_CHECKS_COMPLETE' THEN 6
+                    END;
+                
+                    l_prev_code := CASE :PNN_MILESTONE_CODE
+                        WHEN 'ATTEND_1ST_HR'        THEN 'HW_COMPLETE'
+                        WHEN 'CHECK_15MIN_2ND_HR'   THEN 'ATTEND_1ST_HR'
+                        WHEN 'CHECK_30MIN_3RD_HR'   THEN 'CHECK_15MIN_2ND_HR'
+                        WHEN 'REINSTATE_4TH_HR'     THEN 'CHECK_30MIN_3RD_HR'
+                        WHEN 'FIRE_CHECKS_COMPLETE' THEN 'REINSTATE_4TH_HR'
+                        -- HW_COMPLETE has no predecessor — stays NULL, so the check below is skipped
+                    END;
+                
+                    IF l_prev_code IS NOT NULL THEN
+                        SELECT NVL(MAX('Y'), 'N') INTO l_prev_ok
+                        FROM   ptw_pro.ptw_hotwork_fire_watch
+                        WHERE  permit_id = :PNN_PERMIT_ID
+                        AND    milestone_code = l_prev_code;
+                    END IF;
+                
+                    IF l_prev_ok != 'Y' THEN
+                        apex_error.add_error(
+                            p_message => 'The previous fire watch check must be signed first.',
+                            p_display_location => apex_error.c_inline_in_notification);
+                        RAISE_APPLICATION_ERROR(-20064, 'Fire watch milestones must be signed in order.');
+                    END IF;
+                
+                    BEGIN
+                        INSERT INTO ptw_pro.ptw_hotwork_fire_watch (
+                            permit_id, milestone_code, milestone_seq, signed_by,
+                            signed_datetime, latitude, longitude, company_id
+                        ) VALUES (
+                            :PNN_PERMIT_ID, :PNN_MILESTONE_CODE, l_this_idx, NVL(V('APP_USER'), USER),
+                            SYSDATE, :APP_LATITUDE, :APP_LONGITUDE, l_company_id
+                        );
+                    EXCEPTION
+                        WHEN DUP_VAL_ON_INDEX THEN
+                            RAISE_APPLICATION_ERROR(-20065, 'This fire watch check has already been signed.');
+                    END;
+                
+                    -- Every milestone also drops its own entry into the general permit
+                    -- history table — PTW_STAGE_LOCATIONS records where key lifecycle
+                    -- events happened, and each fire watch check is one of those, not
+                    -- just the final sign-off.
+                    INSERT INTO ptw_pro.ptw_stage_locations (
+                        permit_id, permit_stage, latitude, longitude, created_date, created_by, company_id
+                    ) VALUES (
+                        :PNN_PERMIT_ID, 'FIREWATCH_' || :PNN_MILESTONE_CODE, :APP_LATITUDE, :APP_LONGITUDE,
+                        SYSDATE, NVL(V('APP_USER'), USER), l_company_id
+                    );
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: ajaxCallback
+        }
+        advanced {
+            executionMappingIdentifier: 24592918276992945
+        }
+    )
+
+)
+

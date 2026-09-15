@@ -18,6 +18,12 @@
         p_affects_it_systems          IN     ptw_pro.ptw_lv_permits.affects_it_systems%TYPE,
         p_it_permission_granted       IN     ptw_pro.ptw_lv_permits.it_permission_granted%TYPE,
         p_specialist_equipment_details IN     ptw_pro.ptw_lv_permits.specialist_equipment_details%TYPE,
+        p_fire_systems_affected       IN     ptw_pro.ptw_lv_permits.fire_systems_affected%TYPE       DEFAULT NULL,
+        p_fire_systems_isolated       IN     ptw_pro.ptw_lv_permits.fire_systems_isolated%TYPE       DEFAULT NULL,
+        p_insurer_informed_datetime   IN     ptw_pro.ptw_lv_permits.insurer_informed_datetime%TYPE   DEFAULT NULL,
+        p_isolation_comments          IN     ptw_pro.ptw_lv_permits.isolation_comments%TYPE          DEFAULT NULL,
+        p_fire_precautions_details    IN ptw_pro.ptw_lv_permits.fire_precautions_details%TYPE    DEFAULT NULL,
+        p_fire_alarm_arrangements     IN ptw_pro.ptw_lv_permits.fire_alarm_arrangements%TYPE     DEFAULT NULL,
         p_latitude                    IN     ptw_pro.ptw_lv_permits.site_work_latitude%TYPE,
         p_longitude                   IN     ptw_pro.ptw_lv_permits.site_work_longitude%TYPE,
         p_resolved_site_id            OUT    ptw_pro.ptw_lv_sites.site_id%TYPE,
@@ -91,6 +97,12 @@
                 affects_it_systems,
                 it_permission_granted,
                 specialist_equipment_details,
+                fire_systems_affected,
+                fire_systems_isolated,
+                insurer_informed_datetime,
+                isolation_comments,
+                fire_precautions_details,
+                fire_alarm_arrangements,
                 current_step,
                 workflow_status,
                 site_work_latitude,
@@ -111,6 +123,12 @@
                 p_affects_it_systems,
                 p_it_permission_granted,
                 p_specialist_equipment_details,
+                p_fire_systems_affected,
+                p_fire_systems_isolated,
+                p_insurer_informed_datetime,
+                p_isolation_comments,
+                p_fire_precautions_details,
+                p_fire_alarm_arrangements,
                 'SITE_WORK_DETAILS',
                 'DRAFT',
                 p_latitude,
@@ -139,6 +157,12 @@
                 affects_it_systems          = p_affects_it_systems,
                 it_permission_granted       = p_it_permission_granted,
                 specialist_equipment_details = p_specialist_equipment_details,
+                fire_systems_affected      = p_fire_systems_affected,
+                fire_systems_isolated      = p_fire_systems_isolated,
+                insurer_informed_datetime  = p_insurer_informed_datetime,
+                isolation_comments         = p_isolation_comments,
+                fire_precautions_details   = p_fire_precautions_details,
+                fire_alarm_arrangements    = p_fire_alarm_arrangements,
                 site_work_latitude          = p_latitude,
                 site_work_longitude         = p_longitude,
                 modified_by                 = NVL(V('APP_USER'), USER),
@@ -157,7 +181,13 @@
                 NVL(client_permission_granted,    'x') != NVL(p_client_permission_granted,      'x')            OR
                 NVL(affects_it_systems,           'x') != NVL(p_affects_it_systems,             'x')            OR
                 NVL(it_permission_granted,        'x') != NVL(p_it_permission_granted,          'x')            OR
-                NVL(specialist_equipment_details, 'x') != NVL(p_specialist_equipment_details,   'x')
+                NVL(specialist_equipment_details, 'x') != NVL(p_specialist_equipment_details,   'x')            OR
+                NVL(fire_systems_affected,        'x') != NVL(p_fire_systems_affected,          'x')            OR
+                NVL(fire_systems_isolated,        'x') != NVL(p_fire_systems_isolated,          'x')            OR
+                NVL(insurer_informed_datetime,    'x') != NVL(p_insurer_informed_datetime,      'x')            OR
+                NVL(isolation_comments,           'x') != NVL(p_isolation_comments,             'x')            OR
+                NVL(fire_precautions_details,     'x') != NVL(p_fire_precautions_details,       'x')            OR
+                NVL(fire_alarm_arrangements,      'x') != NVL(p_fire_alarm_arrangements,        'x')
             )
             RETURNING permit_number INTO p_permit_number;
 

@@ -232,6 +232,12 @@ page 1 (
                 border-color: #1a6cb5 !important;
             }
             
+            .ptw-action-btn--firewatch {
+                background-color: #e67e22 !important;
+                color: #fff !important;
+                border-color: #e67e22 !important;
+            }
+            
             /* Purple action button — view completed clearance */
             .t-Button--purple {
                 --a-button-background-color: #6f42c1;
@@ -441,7 +447,7 @@ page 1 (
                            || '      Permit to Work'
                            || '    </h1>'
                            || '    <p style="color:#666;font-size:1rem;">'
-                           || '      Low Voltage Electrical Permit Management'
+                           || '      Permit to Work Management'
                            || '    </p>'
                            || '  </div>';
                 
@@ -579,6 +585,32 @@ page 1 (
                           END
                     END ||
                     CASE
+                        WHEN p.workflow_status = 'STARTED' AND p.ptw_type = 'HOT WORK'
+                            AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y')
+                        THEN '<a href="' || apex_page.get_url(
+                                        p_page   => 18,
+                                        p_items  => 'P18_PERMIT_ID,P18_PTW_TYPE,P18_PERMIT_NUMBER,P18_WORKFLOW_STATUS',
+                                        p_values => p.permit_id || ',' || p.ptw_type || ',' || p.permit_number || ',' || p.workflow_status,
+                                        p_clear_cache => 18
+                                    ) || '"
+                         class="t-Button t-Button--noLabel t-Button--icon t-Button--info ptw-action-btn ptw-action-btn--firewatch"
+                         title="Fire Watch">
+                         <span class="t-Icon fa fa-fire" aria-hidden="true"></span>
+                      </a>'
+                        WHEN p.workflow_status IN ('COMPLETED','LAPSED') AND p.ptw_type = 'HOT WORK'
+                            AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y')
+                        THEN '<a href="' || apex_page.get_url(
+                                        p_page   => 18,
+                                        p_items  => 'P18_PERMIT_ID,P18_PTW_TYPE,P18_PERMIT_NUMBER,P18_WORKFLOW_STATUS',
+                                        p_values => p.permit_id || ',' || p.ptw_type || ',' || p.permit_number || ',' || p.workflow_status,
+                                        p_clear_cache => 18
+                                    ) || '"
+                         class="t-Button t-Button--noLabel t-Button--icon t-Button--purple ptw-action-btn ptw-action-btn--firewatch"
+                         title="View Fire Watch">
+                         <span class="t-Icon fa fa-fire" aria-hidden="true"></span>
+                      </a>'
+                    END ||
+                    CASE
                         WHEN p.workflow_status = 'STARTED' AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y')
                           AND EXISTS (SELECT 1 FROM ptw_pro.ptw_types t WHERE t.ptw_type = p.ptw_type AND t.has_monitoring = 'Y')
                         THEN '<a href="' || apex_page.get_url(
@@ -591,7 +623,7 @@ page 1 (
                                  title="Monitoring">
                                  <span class="t-Icon fa fa-dial-gauge-chart" aria-hidden="true"></span>
                               </a>'
-                        WHEN p.workflow_status = 'COMPLETED' AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y')
+                        WHEN p.workflow_status IN ('COMPLETED','LAPSED') AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y')
                           AND EXISTS (SELECT 1 FROM ptw_pro.ptw_types t WHERE t.ptw_type = p.ptw_type AND t.has_monitoring = 'Y')
                         THEN '<a href="' || apex_page.get_url(
                                                 p_page   => 15,
@@ -1293,9 +1325,39 @@ page 1 (
                         ELSE NULL
                     END AS workflow_action_html,
                 
-                    -- Monitoring button (STARTED + engineer only)
+                    -- Fire Watch button (STARTED, Hot Work only) — its own column now,
+                    -- independent of Monitoring, matching the desktop report's structure
+                    -- where both can render together for the same permit
                     CASE
-                        WHEN p.workflow_status = 'STARTED' AND :APP_IS_ENGINEER = 'Y' 
+                        WHEN p.workflow_status = 'STARTED' AND p.ptw_type = 'HOT WORK'
+                            AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y')
+                        THEN '<a href="' || apex_page.get_url(
+                                        p_page   => 18,
+                                        p_items  => 'P18_PERMIT_ID,P18_PTW_TYPE,P18_PERMIT_NUMBER,P18_WORKFLOW_STATUS',
+                                        p_values => p.permit_id || ',' || p.ptw_type || ',' || p.permit_number || ',' || p.workflow_status,
+                                        p_clear_cache => 18
+                                    ) || '"
+                         class="t-Button t-Button--noLabel t-Button--icon t-Button--info ptw-action-btn ptw-action-btn--firewatch"
+                         title="Fire Watch">
+                         <span class="t-Icon fa fa-fire" aria-hidden="true"></span>
+                      </a>'
+                        WHEN p.workflow_status IN ('COMPLETED','LAPSED') AND p.ptw_type = 'HOT WORK'
+                            AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y')
+                        THEN '<a href="' || apex_page.get_url(
+                                        p_page   => 18,
+                                        p_items  => 'P18_PERMIT_ID,P18_PTW_TYPE,P18_PERMIT_NUMBER,P18_WORKFLOW_STATUS',
+                                        p_values => p.permit_id || ',' || p.ptw_type || ',' || p.permit_number || ',' || p.workflow_status,
+                                        p_clear_cache => 18
+                                    ) || '"
+                         class="t-Button t-Button--noLabel t-Button--icon t-Button--purple ptw-action-btn ptw-action-btn--firewatch"
+                         title="View Fire Watch">
+                         <span class="t-Icon fa fa-fire" aria-hidden="true"></span>
+                      </a>'
+                    END AS firewatch_html,
+                
+                    -- Monitoring button (STARTED or COMPLETED, any type with HAS_MONITORING = 'Y')
+                    CASE
+                        WHEN p.workflow_status = 'STARTED' AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y')
                           AND EXISTS (SELECT 1 FROM ptw_pro.ptw_types t WHERE t.ptw_type = p.ptw_type AND t.has_monitoring = 'Y') THEN
                             '<a href="' || apex_page.get_url(
                                                 p_page   => 15,
@@ -1306,7 +1368,7 @@ page 1 (
                                 title="Monitoring">
                                 <span class="t-Icon fa fa-dial-gauge-chart" aria-hidden="true"></span>
                              </a>'
-                        WHEN p.workflow_status = 'COMPLETED' AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y') 
+                        WHEN p.workflow_status IN ('COMPLETED','LAPSED') AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y')
                           AND EXISTS (SELECT 1 FROM ptw_pro.ptw_types t WHERE t.ptw_type = p.ptw_type AND t.has_monitoring = 'Y') THEN
                             '<a href="' || apex_page.get_url(
                                                 p_page   => 15,
@@ -1578,7 +1640,7 @@ page 1 (
         )
 
         column CANCELLATION_HTML (
-            reportColumnQueryId: 18
+            reportColumnQueryId: 19
             derivedColumn: N
             type: hidden
             layout {
@@ -1602,7 +1664,7 @@ page 1 (
         )
 
         column CLEARANCE_HTML (
-            reportColumnQueryId: 17
+            reportColumnQueryId: 18
             derivedColumn: N
             type: hidden
             layout {
@@ -1637,8 +1699,20 @@ page 1 (
             }
         )
 
-        column MONITORING_HTML (
+        column FIREWATCH_HTML (
             reportColumnQueryId: 16
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 210
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column MONITORING_HTML (
+            reportColumnQueryId: 17
             derivedColumn: N
             type: hidden
             layout {
@@ -1711,6 +1785,7 @@ page 1 (
                       <div class="ptw-card-actions ptw-action-btns">
                         #DELETE_HTML#
                         #WORKFLOW_ACTION_HTML#
+                        #FIREWATCH_HTML#
                         #MONITORING_HTML#
                         #CLEARANCE_HTML#
                         #CANCELLATION_HTML#
@@ -1802,7 +1877,7 @@ page 1 (
         )
 
         column VIEW_HISTORY_HTML (
-            reportColumnQueryId: 20
+            reportColumnQueryId: 21
             derivedColumn: N
             type: hidden
             layout {
@@ -1814,7 +1889,7 @@ page 1 (
         )
 
         column VIEW_PDF_HTML (
-            reportColumnQueryId: 19
+            reportColumnQueryId: 20
             derivedColumn: N
             type: hidden
             layout {

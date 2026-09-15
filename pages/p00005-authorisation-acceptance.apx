@@ -246,7 +246,7 @@ page 5 (
                 ```
         }
         layout {
-            sequence: 220
+            sequence: 260
             slot: body
         }
         appearance {
@@ -265,7 +265,7 @@ page 5 (
         title: Person in Charge of Works Details
         type: staticContent
         layout {
-            sequence: 230
+            sequence: 270
             slot: body
         }
         appearance {
@@ -392,7 +392,7 @@ page 5 (
         name: Buttons
         type: staticContent
         layout {
-            sequence: 260
+            sequence: 280
             slot: body
         }
         appearance {

@@ -33,18 +33,18 @@ prompt APPLICATION 105 - PTW_PRO
 -- Application Export:
 --   Application:     105
 --   Name:            PTW_PRO
---   Date and Time:   11:39 Sunday September 13, 2026
+--   Date and Time:   20:20 Tuesday September 15, 2026
 --   Exported By:     PTW_PRO
 --   Flashback:       0
 --   Export Type:     Application Export
---     Pages:                     32
---       Items:                  255
+--     Pages:                     33
+--       Items:                  269
 --       Computations:             1
---       Validations:             68
---       Processes:               77
---       Regions:                121
---       Buttons:                 56
---       Dynamic Actions:         55
+--       Validations:             72
+--       Processes:               80
+--       Regions:                128
+--       Buttons:                 58
+--       Dynamic Actions:         57
 --     Shared Components:
 --       Logic:
 --         Items:                  6
@@ -116,12 +116,12 @@ wwv_imp_workspace.create_flow(
 ,p_substitution_string_02=>'APP_ENV'
 ,p_substitution_value_02=>'DEV'
 ,p_created_on=>wwv_flow_imp.dz('20260207174826Z')
-,p_last_updated_on=>wwv_flow_imp.dz('20260906184156Z')
+,p_last_updated_on=>wwv_flow_imp.dz('20260914214402Z')
 ,p_created_by=>'PERMITPRO'
 ,p_last_updated_by=>'PTW_PRO'
 ,p_file_prefix=>nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_files_version=>2461277225051
-,p_version_scn=>'50507920291512'
+,p_version_scn=>'50546010690078'
 ,p_print_server_type=>'NATIVE'
 ,p_file_storage=>'DB'
 ,p_is_pwa=>'Y'
@@ -13120,6 +13120,12 @@ unistr('/* Title bar \2014 matches app nav colour */'),
 '    border-color: #1a6cb5 !important;',
 '}',
 '',
+'.ptw-action-btn--firewatch {',
+'    background-color: #e67e22 !important;',
+'    color: #fff !important;',
+'    border-color: #e67e22 !important;',
+'}',
+'',
 unistr('/* Purple action button \2014 view completed clearance */'),
 '.t-Button--purple {',
 '    --a-button-background-color: #6f42c1;',
@@ -13268,7 +13274,7 @@ unistr('/* Touch targets \2014 44px min per WCAG */'),
 ,p_protection_level=>'C'
 ,p_page_component_map=>'13'
 ,p_created_on=>wwv_flow_imp.dz('20260207174826Z')
-,p_last_updated_on=>wwv_flow_imp.dz('20260906184156Z')
+,p_last_updated_on=>wwv_flow_imp.dz('20260914200837Z')
 ,p_created_by=>'PERMITPRO'
 ,p_last_updated_by=>'PTW_PRO'
 );
@@ -13336,7 +13342,7 @@ wwv_flow_imp_page.create_page_plug(
 '           || ''      Permit to Work''',
 '           || ''    </h1>''',
 '           || ''    <p style="color:#666;font-size:1rem;">''',
-'           || ''      Low Voltage Electrical Permit Management''',
+'           || ''      Permit to Work Management''',
 '           || ''    </p>''',
 '           || ''  </div>'';',
 '',
@@ -13367,7 +13373,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_lazy_loading=>false
 ,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
 ,p_created_on=>wwv_flow_imp.dz('20260207175622Z')
-,p_updated_on=>wwv_flow_imp.dz('20260705100024Z')
+,p_updated_on=>wwv_flow_imp.dz('20260914193945Z')
 ,p_created_by=>'PTW_PRO'
 ,p_updated_by=>'PTW_PRO'
 );
@@ -13471,6 +13477,32 @@ wwv_flow_imp_page.create_page_plug(
 '          END',
 '    END ||',
 '    CASE',
+'        WHEN p.workflow_status = ''STARTED'' AND p.ptw_type = ''HOT WORK''',
+'            AND (:APP_IS_ENGINEER = ''Y'' OR :APP_IS_ADMIN = ''Y'')',
+'        THEN ''<a href="'' || apex_page.get_url(',
+'                        p_page   => 18,',
+'                        p_items  => ''P18_PERMIT_ID,P18_PTW_TYPE,P18_PERMIT_NUMBER,P18_WORKFLOW_STATUS'',',
+'                        p_values => p.permit_id || '','' || p.ptw_type || '','' || p.permit_number || '','' || p.workflow_status,',
+'                        p_clear_cache => 18',
+'                    ) || ''"',
+'         class="t-Button t-Button--noLabel t-Button--icon t-Button--info ptw-action-btn ptw-action-btn--firewatch"',
+'         title="Fire Watch">',
+'         <span class="t-Icon fa fa-fire" aria-hidden="true"></span>',
+'      </a>''',
+'        WHEN p.workflow_status IN (''COMPLETED'',''LAPSED'') AND p.ptw_type = ''HOT WORK''',
+'            AND (:APP_IS_ENGINEER = ''Y'' OR :APP_IS_ADMIN = ''Y'')',
+'        THEN ''<a href="'' || apex_page.get_url(',
+'                        p_page   => 18,',
+'                        p_items  => ''P18_PERMIT_ID,P18_PTW_TYPE,P18_PERMIT_NUMBER,P18_WORKFLOW_STATUS'',',
+'                        p_values => p.permit_id || '','' || p.ptw_type || '','' || p.permit_number || '','' || p.workflow_status,',
+'                        p_clear_cache => 18',
+'                    ) || ''"',
+'         class="t-Button t-Button--noLabel t-Button--icon t-Button--purple ptw-action-btn ptw-action-btn--firewatch"',
+'         title="View Fire Watch">',
+'         <span class="t-Icon fa fa-fire" aria-hidden="true"></span>',
+'      </a>''',
+'    END ||',
+'    CASE',
 '        WHEN p.workflow_status = ''STARTED'' AND (:APP_IS_ENGINEER = ''Y'' OR :APP_IS_ADMIN = ''Y'')',
 '          AND EXISTS (SELECT 1 FROM ptw_pro.ptw_types t WHERE t.ptw_type = p.ptw_type AND t.has_monitoring = ''Y'')',
 '        THEN ''<a href="'' || apex_page.get_url(',
@@ -13483,7 +13515,7 @@ wwv_flow_imp_page.create_page_plug(
 '                 title="Monitoring">',
 '                 <span class="t-Icon fa fa-dial-gauge-chart" aria-hidden="true"></span>',
 '              </a>''',
-'        WHEN p.workflow_status = ''COMPLETED'' AND (:APP_IS_ENGINEER = ''Y'' OR :APP_IS_ADMIN = ''Y'')',
+'        WHEN p.workflow_status IN (''COMPLETED'',''LAPSED'') AND (:APP_IS_ENGINEER = ''Y'' OR :APP_IS_ADMIN = ''Y'')',
 '          AND EXISTS (SELECT 1 FROM ptw_pro.ptw_types t WHERE t.ptw_type = p.ptw_type AND t.has_monitoring = ''Y'')',
 '        THEN ''<a href="'' || apex_page.get_url(',
 '                                p_page   => 15,',
@@ -13748,7 +13780,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_prn_border_color=>'#666666'
 ,p_ai_enabled=>false
 ,p_created_on=>wwv_flow_imp.dz('20260209195305Z')
-,p_updated_on=>wwv_flow_imp.dz('20260906184156Z')
+,p_updated_on=>wwv_flow_imp.dz('20260914200024Z')
 ,p_created_by=>'PTW_PRO'
 ,p_updated_by=>'PTW_PRO'
 );
@@ -14148,9 +14180,39 @@ wwv_flow_imp_page.create_report_region(
 '        ELSE NULL',
 '    END AS workflow_action_html,',
 '',
-'    -- Monitoring button (STARTED + engineer only)',
+unistr('    -- Fire Watch button (STARTED, Hot Work only) \2014 its own column now,'),
+'    -- independent of Monitoring, matching the desktop report''s structure',
+'    -- where both can render together for the same permit',
 '    CASE',
-'        WHEN p.workflow_status = ''STARTED'' AND :APP_IS_ENGINEER = ''Y'' ',
+'        WHEN p.workflow_status = ''STARTED'' AND p.ptw_type = ''HOT WORK''',
+'            AND (:APP_IS_ENGINEER = ''Y'' OR :APP_IS_ADMIN = ''Y'')',
+'        THEN ''<a href="'' || apex_page.get_url(',
+'                        p_page   => 18,',
+'                        p_items  => ''P18_PERMIT_ID,P18_PTW_TYPE,P18_PERMIT_NUMBER,P18_WORKFLOW_STATUS'',',
+'                        p_values => p.permit_id || '','' || p.ptw_type || '','' || p.permit_number || '','' || p.workflow_status,',
+'                        p_clear_cache => 18',
+'                    ) || ''"',
+'         class="t-Button t-Button--noLabel t-Button--icon t-Button--info ptw-action-btn ptw-action-btn--firewatch"',
+'         title="Fire Watch">',
+'         <span class="t-Icon fa fa-fire" aria-hidden="true"></span>',
+'      </a>''',
+'        WHEN p.workflow_status IN (''COMPLETED'',''LAPSED'') AND p.ptw_type = ''HOT WORK''',
+'            AND (:APP_IS_ENGINEER = ''Y'' OR :APP_IS_ADMIN = ''Y'')',
+'        THEN ''<a href="'' || apex_page.get_url(',
+'                        p_page   => 18,',
+'                        p_items  => ''P18_PERMIT_ID,P18_PTW_TYPE,P18_PERMIT_NUMBER,P18_WORKFLOW_STATUS'',',
+'                        p_values => p.permit_id || '','' || p.ptw_type || '','' || p.permit_number || '','' || p.workflow_status,',
+'                        p_clear_cache => 18',
+'                    ) || ''"',
+'         class="t-Button t-Button--noLabel t-Button--icon t-Button--purple ptw-action-btn ptw-action-btn--firewatch"',
+'         title="View Fire Watch">',
+'         <span class="t-Icon fa fa-fire" aria-hidden="true"></span>',
+'      </a>''',
+'    END AS firewatch_html,',
+'',
+'    -- Monitoring button (STARTED or COMPLETED, any type with HAS_MONITORING = ''Y'')',
+'    CASE',
+'        WHEN p.workflow_status = ''STARTED'' AND (:APP_IS_ENGINEER = ''Y'' OR :APP_IS_ADMIN = ''Y'')',
 '          AND EXISTS (SELECT 1 FROM ptw_pro.ptw_types t WHERE t.ptw_type = p.ptw_type AND t.has_monitoring = ''Y'') THEN',
 '            ''<a href="'' || apex_page.get_url(',
 '                                p_page   => 15,',
@@ -14161,7 +14223,7 @@ wwv_flow_imp_page.create_report_region(
 '                title="Monitoring">',
 '                <span class="t-Icon fa fa-dial-gauge-chart" aria-hidden="true"></span>',
 '             </a>''',
-'        WHEN p.workflow_status = ''COMPLETED'' AND (:APP_IS_ENGINEER = ''Y'' OR :APP_IS_ADMIN = ''Y'') ',
+'        WHEN p.workflow_status IN (''COMPLETED'',''LAPSED'') AND (:APP_IS_ENGINEER = ''Y'' OR :APP_IS_ADMIN = ''Y'')',
 '          AND EXISTS (SELECT 1 FROM ptw_pro.ptw_types t WHERE t.ptw_type = p.ptw_type AND t.has_monitoring = ''Y'') THEN',
 '            ''<a href="'' || apex_page.get_url(',
 '                                p_page   => 15,',
@@ -14402,7 +14464,7 @@ unistr('    -- History button (admin only \2014 matches IR)'),
 ,p_sort_null=>'L'
 ,p_plug_query_strip_html=>'N'
 ,p_created_on=>wwv_flow_imp.dz('20260506181023Z')
-,p_updated_on=>wwv_flow_imp.dz('20260830113452Z')
+,p_updated_on=>wwv_flow_imp.dz('20260914200837Z')
 ,p_created_by=>'PTW_PRO'
 ,p_updated_by=>'PTW_PRO'
 );
@@ -14419,13 +14481,13 @@ wwv_flow_imp_page.create_report_columns(
 );
 wwv_flow_imp_page.create_report_columns(
  p_id=>wwv_flow_imp.id(47751461247890036)
-,p_query_column_id=>18
+,p_query_column_id=>19
 ,p_column_alias=>'CANCELLATION_HTML'
 ,p_column_display_sequence=>170
 ,p_hidden_column=>'Y'
 ,p_display_as=>'WITHOUT_MODIFICATION'
 ,p_derived_column=>'N'
-,p_updated_on=>wwv_flow_imp.dz('20260728214744Z')
+,p_updated_on=>wwv_flow_imp.dz('20260914192444Z')
 ,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
@@ -14441,13 +14503,13 @@ wwv_flow_imp_page.create_report_columns(
 );
 wwv_flow_imp_page.create_report_columns(
  p_id=>wwv_flow_imp.id(45759230238782544)
-,p_query_column_id=>17
+,p_query_column_id=>18
 ,p_column_alias=>'CLEARANCE_HTML'
 ,p_column_display_sequence=>160
 ,p_hidden_column=>'Y'
 ,p_display_as=>'WITHOUT_MODIFICATION'
 ,p_derived_column=>'N'
-,p_updated_on=>wwv_flow_imp.dz('20260728214743Z')
+,p_updated_on=>wwv_flow_imp.dz('20260914192444Z')
 ,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
@@ -14473,14 +14535,25 @@ wwv_flow_imp_page.create_report_columns(
 ,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
- p_id=>wwv_flow_imp.id(45759164593782543)
+ p_id=>wwv_flow_imp.id(42196502464924518)
 ,p_query_column_id=>16
+,p_column_alias=>'FIREWATCH_HTML'
+,p_column_display_sequence=>210
+,p_hidden_column=>'Y'
+,p_display_as=>'WITHOUT_MODIFICATION'
+,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260914200837Z')
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_report_columns(
+ p_id=>wwv_flow_imp.id(45759164593782543)
+,p_query_column_id=>17
 ,p_column_alias=>'MONITORING_HTML'
 ,p_column_display_sequence=>150
 ,p_hidden_column=>'Y'
 ,p_display_as=>'WITHOUT_MODIFICATION'
 ,p_derived_column=>'N'
-,p_updated_on=>wwv_flow_imp.dz('20260728214743Z')
+,p_updated_on=>wwv_flow_imp.dz('20260914192443Z')
 ,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
@@ -14540,6 +14613,7 @@ wwv_flow_imp_page.create_report_columns(
 '  <div class="ptw-card-actions ptw-action-btns">',
 '    #DELETE_HTML#',
 '    #WORKFLOW_ACTION_HTML#',
+'    #FIREWATCH_HTML#',
 '    #MONITORING_HTML#',
 '    #CLEARANCE_HTML#',
 '    #CANCELLATION_HTML#',
@@ -14552,7 +14626,7 @@ wwv_flow_imp_page.create_report_columns(
 ,p_display_as=>'WITHOUT_MODIFICATION'
 ,p_derived_column=>'N'
 ,p_include_in_export=>'Y'
-,p_updated_on=>wwv_flow_imp.dz('20260824205701Z')
+,p_updated_on=>wwv_flow_imp.dz('20260914192443Z')
 ,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
@@ -14623,24 +14697,24 @@ wwv_flow_imp_page.create_report_columns(
 );
 wwv_flow_imp_page.create_report_columns(
  p_id=>wwv_flow_imp.id(45759419302782546)
-,p_query_column_id=>20
+,p_query_column_id=>21
 ,p_column_alias=>'VIEW_HISTORY_HTML'
 ,p_column_display_sequence=>190
 ,p_hidden_column=>'Y'
 ,p_display_as=>'WITHOUT_MODIFICATION'
 ,p_derived_column=>'N'
-,p_updated_on=>wwv_flow_imp.dz('20260728214744Z')
+,p_updated_on=>wwv_flow_imp.dz('20260914192444Z')
 ,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
  p_id=>wwv_flow_imp.id(45759369398782545)
-,p_query_column_id=>19
+,p_query_column_id=>20
 ,p_column_alias=>'VIEW_PDF_HTML'
 ,p_column_display_sequence=>180
 ,p_hidden_column=>'Y'
 ,p_display_as=>'WITHOUT_MODIFICATION'
 ,p_derived_column=>'N'
-,p_updated_on=>wwv_flow_imp.dz('20260728214744Z')
+,p_updated_on=>wwv_flow_imp.dz('20260914192444Z')
 ,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
@@ -15289,7 +15363,9 @@ unistr('                // URL is /ords/r/app/page-alias/permit-id \2014 replace
 '    var BINARY_ITEMS = [',
 '        ''P2_CLIENT_PERMISSION_GRANTED'',',
 '        ''P2_AFFECTS_IT_SYSTEMS'',',
-'        ''P2_IT_PERMISSION_GRANTED''',
+'        ''P2_IT_PERMISSION_GRANTED'',',
+'        ''P2_FIRE_SYSTEMS_AFFECTED'',',
+'        ''P2_FIRE_SYSTEMS_ISOLATED''',
 '    ];',
 '',
 '    var BADGES = [',
@@ -15551,7 +15627,7 @@ unistr('/* \2500\2500 Required asterisk on each item \2500\2500 */'),
 'OR ptw_pro.ptw_lv_is_contract_support(V(''APP_USER'')) = ''Y'''))
 ,p_read_only_when2=>'PLSQL'
 ,p_page_component_map=>'25'
-,p_last_updated_on=>wwv_flow_imp.dz('20260825202154Z')
+,p_last_updated_on=>wwv_flow_imp.dz('20260914214402Z')
 ,p_last_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_plug(
@@ -15560,14 +15636,14 @@ wwv_flow_imp_page.create_page_plug(
 ,p_static_id=>'buttons'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>2126429139436695430
-,p_plug_display_sequence=>140
+,p_plug_display_sequence=>150
 ,p_plug_item_display_point=>'ABOVE'
 ,p_location=>null
 ,p_plug_query_headings_type=>'COLON_DELMITED_LIST'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
-,p_updated_on=>wwv_flow_imp.dz('20260824212029Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913132349Z')
 ,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_plug(
@@ -15640,6 +15716,28 @@ wwv_flow_imp_page.create_page_plug(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
 ,p_updated_on=>wwv_flow_imp.dz('20260824212029Z')
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(24591595204992931)
+,p_plug_name=>'Fire & Smoke Systems'
+,p_static_id=>'fire-smoke-systems'
+,p_title=>'Fire & Smoke Systems'
+,p_icon_css_classes=>'fa-fire'
+,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
+,p_plug_template=>4072358936313175081
+,p_plug_display_sequence=>140
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_plug_display_condition_type=>'VAL_OF_ITEM_IN_COND_EQ_COND2'
+,p_plug_display_when_condition=>'P2_PTW_TYPE'
+,p_plug_display_when_cond2=>'HOT WORK'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'expand_shortcuts', 'N',
+  'output_as', 'HTML')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260913132349Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913132349Z')
+,p_created_by=>'PTW_PRO'
 ,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_plug(
@@ -15908,6 +16006,140 @@ wwv_flow_imp_page.create_page_item(
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(24592327833992939)
+,p_name=>'P2_FIRE_ALARM_ARRANGEMENTS'
+,p_item_sequence=>60
+,p_item_plug_id=>wwv_flow_imp.id(24591595204992931)
+,p_prompt=>'Fire alarm arrangements'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXTAREA'
+,p_cSize=>30
+,p_cHeight=>5
+,p_field_template=>1609121967514267634
+,p_item_template_options=>'#DEFAULT#'
+,p_inline_help_text=>'Details of adequate means of raising the fire alarm during the works and/or during the period when smoke/fire detection and/or suppression systems are inhibited'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'auto_height', 'N',
+  'character_counter', 'N',
+  'resizable', 'Y',
+  'trim_spaces', 'BOTH')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260913145950Z')
+,p_updated_on=>wwv_flow_imp.dz('20260914214402Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(24592293459992938)
+,p_name=>'P2_FIRE_PRECAUTIONS_DETAILS'
+,p_item_sequence=>50
+,p_item_plug_id=>wwv_flow_imp.id(24591595204992931)
+,p_prompt=>'Fire precaution details'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXTAREA'
+,p_cSize=>30
+,p_cHeight=>5
+,p_field_template=>1609121967514267634
+,p_item_template_options=>'#DEFAULT#'
+,p_inline_help_text=>'Details of adequate fire precautions taken when smoke/fire detection and/or suppression systems have been isolated (fire extinguishers, blankets, etc.)'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'auto_height', 'N',
+  'character_counter', 'N',
+  'resizable', 'Y',
+  'trim_spaces', 'BOTH')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260913145950Z')
+,p_updated_on=>wwv_flow_imp.dz('20260914214402Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(24591655283992932)
+,p_name=>'P2_FIRE_SYSTEMS_AFFECTED'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(24591595204992931)
+,p_prompt=>'Will any fixed smoke/fire detection or suppression systems be affected by these works?'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_lov=>'STATIC:Yes;Y,No;N'
+,p_field_template=>3031561666792084173
+,p_item_css_classes=>'cm-binary-item'
+,p_item_template_options=>'#DEFAULT#'
+,p_lov_display_extra=>'NO'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'number_of_columns', '2',
+  'page_action_on_selection', 'NONE')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260913132349Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913135117Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(24591799701992933)
+,p_name=>'P2_FIRE_SYSTEMS_ISOLATED'
+,p_item_sequence=>20
+,p_item_plug_id=>wwv_flow_imp.id(24591595204992931)
+,p_prompt=>'If ''Yes'' have they been isolated or impeded?'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_lov=>'STATIC:Yes;Y,No;N'
+,p_field_template=>3031561666792084173
+,p_item_css_classes=>'cm-binary-item'
+,p_item_template_options=>'#DEFAULT#'
+,p_lov_display_extra=>'NO'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'number_of_columns', '2',
+  'page_action_on_selection', 'NONE')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260913132804Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913135117Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(24591819584992934)
+,p_name=>'P2_INSURER_INFORMED_DATETIME'
+,p_item_sequence=>30
+,p_item_plug_id=>wwv_flow_imp.id(24591595204992931)
+,p_prompt=>'Insurer Informed Datetime'
+,p_format_mask=>'DD-MON-YYYY HH24:MI'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_DATE_PICKER_APEX'
+,p_cSize=>30
+,p_field_template=>1609121967514267634
+,p_item_template_options=>'#DEFAULT#'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'display_as', 'POPUP',
+  'max_date', 'NONE',
+  'min_date', 'NONE',
+  'multiple_months', 'N',
+  'show_time', 'Y',
+  'use_defaults', 'Y')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260913132804Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913135518Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(24591954850992935)
+,p_name=>'P2_ISOLATION_COMMENTS'
+,p_item_sequence=>40
+,p_item_plug_id=>wwv_flow_imp.id(24591595204992931)
+,p_prompt=>'Comments relating to isolations'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXTAREA'
+,p_cSize=>30
+,p_cHeight=>5
+,p_field_template=>1609121967514267634
+,p_item_template_options=>'#DEFAULT#'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'auto_height', 'N',
+  'character_counter', 'N',
+  'resizable', 'Y',
+  'trim_spaces', 'BOTH')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260913132804Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913132804Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(25230683508353146)
@@ -16227,6 +16459,45 @@ wwv_flow_imp_page.create_page_validation(
 ,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(24592097688992936)
+,p_validation_name=>'Fire Systems Affected'
+,p_static_id=>'fire-systems-affected'
+,p_validation_sequence=>60
+,p_validation=>'P2_FIRE_SYSTEMS_AFFECTED'
+,p_validation_type=>'ITEM_NOT_NULL'
+,p_error_message=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'You must say whether Fire system are affected.',
+''))
+,p_validation_condition=>'P2_PTW_TYPE'
+,p_validation_condition2=>'HOT WORK'
+,p_validation_condition_type=>'VAL_OF_ITEM_IN_COND_EQ_COND2'
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+,p_created_on=>wwv_flow_imp.dz('20260913140249Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913140249Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(24592167471992937)
+,p_validation_name=>'Fire Systems Isolated'
+,p_static_id=>'fire-systems-isolated'
+,p_validation_sequence=>70
+,p_validation=>'P2_FIRE_SYSTEMS_ISOLATED'
+,p_validation_type=>'ITEM_NOT_NULL'
+,p_error_message=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'You must say whether Fire system are isolated.',
+'',
+''))
+,p_validation_condition=>'P2_PTW_TYPE'
+,p_validation_condition2=>'HOT WORK'
+,p_validation_condition_type=>'VAL_OF_ITEM_IN_COND_EQ_COND2'
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+,p_created_on=>wwv_flow_imp.dz('20260913140249Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913140249Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_validation(
  p_id=>wwv_flow_imp.id(26944589701347716)
 ,p_validation_name=>'Person in Charge Required'
 ,p_static_id=>'person-in-charge-required'
@@ -16428,43 +16699,32 @@ wwv_flow_imp_page.create_page_process(
 '',
 '  :P2_CURRENT_STEP := ''SITE_WORK_DETAILS'';',
 '  ',
-'    SELECT',
-'        permit_number,',
-'        current_step,',
-'        workflow_status,',
-'        safety_programme_ref_no,',
-'        isolation_diagram_serial_no,',
-'        site_id,',
-'        area_of_works,',
-'        work_description,',
-'        person_in_charge_name,',
-'        supervising_company,',
-'        other_persons_count,',
-'        client_permission_granted,',
-'        affects_it_systems,',
-'        it_permission_granted,',
-'        specialist_equipment_details,',
-'        ptw_type',
-'    INTO',
-'        :P2_PERMIT_NUMBER,',
-'        :P2_CURRENT_STEP,',
-'        :P2_WORKFLOW_STATUS,',
-'        :P2_SAFETY_PROGRAMME_REF_NO,',
-'        :P2_ISOLATION_DIAGRAM_SERIAL_NO,',
-'        :P2_SITE_DETAILS,',
-'        :P2_AREA_OF_WORKS,',
-'        :P2_WORK_DESCRIPTION,',
-'        :P2_PERSON_IN_CHARGE_NAME,',
-'        :P2_SUPERVISING_COMPANY,',
-'        :P2_OTHER_PERSONS_COUNT,',
-'        :P2_CLIENT_PERMISSION_GRANTED,',
-'        :P2_AFFECTS_IT_SYSTEMS,',
-'        :P2_IT_PERMISSION_GRANTED,',
-'        :P2_SPECIALIST_EQUIPMENT_DETAILS,',
-'        :P2_PTW_TYPE',
-'    FROM ptw_pro.ptw_lv_permits',
-'    WHERE permit_id = :P2_PERMIT_ID;',
+'    DECLARE',
+'        v_insurer_informed_dt DATE;',
+'    BEGIN',
+'        SELECT',
+'            permit_number, current_step, workflow_status, safety_programme_ref_no,',
+'            isolation_diagram_serial_no, site_id, area_of_works, work_description,',
+'            person_in_charge_name, supervising_company, other_persons_count,',
+'            client_permission_granted, affects_it_systems, it_permission_granted,',
+'            specialist_equipment_details, ptw_type,',
+'            fire_systems_affected, fire_systems_isolated, insurer_informed_datetime, isolation_comments,',
+'            fire_precautions_details, fire_alarm_arrangements',
+'        INTO',
+'            :P2_PERMIT_NUMBER, :P2_CURRENT_STEP, :P2_WORKFLOW_STATUS, :P2_SAFETY_PROGRAMME_REF_NO,',
+'            :P2_ISOLATION_DIAGRAM_SERIAL_NO, :P2_SITE_DETAILS, :P2_AREA_OF_WORKS, :P2_WORK_DESCRIPTION,',
+'            :P2_PERSON_IN_CHARGE_NAME, :P2_SUPERVISING_COMPANY, :P2_OTHER_PERSONS_COUNT,',
+'            :P2_CLIENT_PERMISSION_GRANTED, :P2_AFFECTS_IT_SYSTEMS, :P2_IT_PERMISSION_GRANTED,',
+'            :P2_SPECIALIST_EQUIPMENT_DETAILS, :P2_PTW_TYPE,',
+'            :P2_FIRE_SYSTEMS_AFFECTED, :P2_FIRE_SYSTEMS_ISOLATED, v_insurer_informed_dt, :P2_ISOLATION_COMMENTS,',
+'            :P2_FIRE_PRECAUTIONS_DETAILS, :P2_FIRE_ALARM_ARRANGEMENTS',
+'        FROM ptw_pro.ptw_lv_permits',
+'        WHERE permit_id = :P2_PERMIT_ID;',
 '',
+'        IF v_insurer_informed_dt IS NOT NULL THEN',
+'            :P2_INSURER_INFORMED_DATETIME := TO_CHAR(v_insurer_informed_dt, ''DD-MON-YYYY HH24:MI'');',
+'        END IF;',
+'    END;',
 '    :G_ACTIVE_PERMIT_ID := :P2_PERMIT_ID;',
 '',
 'EXCEPTION',
@@ -16485,7 +16745,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_when=>'P2_PERMIT_ID'
 ,p_process_when_type=>'ITEM_IS_NOT_NULL'
 ,p_internal_uid=>26944769422347718
-,p_updated_on=>wwv_flow_imp.dz('20260824200800Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913155630Z')
 ,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_process(
@@ -16520,6 +16780,12 @@ wwv_flow_imp_page.create_page_process(
 '            p_client_permission_granted   => :P2_CLIENT_PERMISSION_GRANTED,',
 '            p_affects_it_systems          => :P2_AFFECTS_IT_SYSTEMS,',
 '            p_it_permission_granted       => :P2_IT_PERMISSION_GRANTED,',
+'            p_fire_systems_affected       => :P2_FIRE_SYSTEMS_AFFECTED,',
+'            p_fire_systems_isolated       => :P2_FIRE_SYSTEMS_ISOLATED,',
+'            p_insurer_informed_datetime   => TO_DATE(:P2_INSURER_INFORMED_DATETIME, ''DD-MON-YYYY HH24:MI''),',
+'            p_isolation_comments          => :P2_ISOLATION_COMMENTS,',
+'            p_fire_precautions_details    => :P2_FIRE_PRECAUTIONS_DETAILS,',
+'            p_fire_alarm_arrangements     => :P2_FIRE_ALARM_ARRANGEMENTS,',
 '            p_specialist_equipment_details => :P2_SPECIALIST_EQUIPMENT_DETAILS,',
 '            p_latitude                    => :APP_LATITUDE,',
 '            p_longitude                   => :APP_LONGITUDE,',
@@ -16553,7 +16819,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_success_message=>'Permit saved successfully.'
 ,p_security_scheme=>wwv_flow_imp.id(31533963716212424)
 ,p_internal_uid=>26944820115347719
-,p_updated_on=>wwv_flow_imp.dz('20260824214214Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913155630Z')
 ,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_process(
@@ -16607,6 +16873,12 @@ wwv_flow_imp_page.create_page_process(
 '        p_affects_it_systems          => l_json.get_string(''P2_AFFECTS_IT_SYSTEMS''),',
 '        p_it_permission_granted       => l_json.get_string(''P2_IT_PERMISSION_GRANTED''),',
 '        p_specialist_equipment_details => l_json.get_string(''P2_SPECIALIST_EQUIPMENT_DETAILS''),',
+'        p_fire_systems_affected       => l_json.get_string(''P2_FIRE_SYSTEMS_AFFECTED''),',
+'        p_fire_systems_isolated       => l_json.get_string(''P2_FIRE_SYSTEMS_ISOLATED''),',
+'        p_insurer_informed_datetime   => TO_DATE(l_json.get_string(''P2_INSURER_INFORMED_DATETIME''), ''DD-MON-YYYY HH24:MI''),',
+'        p_isolation_comments          => l_json.get_string(''P2_ISOLATION_COMMENTS''),',
+'        p_fire_precautions_details    => l_json.get_string(''P2_FIRE_PRECAUTIONS_DETAILS''),',
+'        p_fire_alarm_arrangements     => l_json.get_string(''P2_FIRE_ALARM_ARRANGEMENTS''),',
 '        p_latitude                    => l_json.get_number(''APP_LATITUDE''),',
 '        p_longitude                   => l_json.get_number(''APP_LONGITUDE''),',
 '        p_resolved_site_id            => v_site_id,',
@@ -16625,7 +16897,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_when_type=>'REQUEST_EQUALS_CONDITION'
 ,p_security_scheme=>wwv_flow_imp.id(31533963716212424)
 ,p_internal_uid=>27017024078886521
-,p_updated_on=>wwv_flow_imp.dz('20260824214214Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913155630Z')
 ,p_updated_by=>'PTW_PRO'
 );
 end;
@@ -19547,7 +19819,7 @@ wwv_flow_imp_page.create_page(
 ,p_read_only_when2=>'DRAFT'
 ,p_page_component_map=>'25'
 ,p_created_on=>wwv_flow_imp.dz('20260214110324Z')
-,p_last_updated_on=>wwv_flow_imp.dz('20260829150811Z')
+,p_last_updated_on=>wwv_flow_imp.dz('20260913141436Z')
 ,p_created_by=>'PTW_PRO'
 ,p_last_updated_by=>'PTW_PRO'
 );
@@ -19559,7 +19831,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_icon_css_classes=>'fa-handshake-o'
 ,p_region_template_options=>'#DEFAULT#:t-Region--accent15:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>220
+,p_plug_display_sequence=>260
 ,p_plug_item_display_point=>'ABOVE'
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -19581,7 +19853,7 @@ wwv_flow_imp_page.create_page_plug(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
 ,p_created_on=>wwv_flow_imp.dz('20260214113631Z')
-,p_updated_on=>wwv_flow_imp.dz('20260825205442Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913141436Z')
 ,p_created_by=>'PTW_PRO'
 ,p_updated_by=>'PTW_PRO'
 );
@@ -19593,14 +19865,14 @@ wwv_flow_imp_page.create_page_plug(
 ,p_icon_css_classes=>'fa-signature'
 ,p_region_template_options=>'#DEFAULT#:t-Region--accent15:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>230
+,p_plug_display_sequence=>270
 ,p_plug_item_display_point=>'ABOVE'
 ,p_location=>null
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
 ,p_created_on=>wwv_flow_imp.dz('20260214113631Z')
-,p_updated_on=>wwv_flow_imp.dz('20260825205442Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913141436Z')
 ,p_created_by=>'PTW_PRO'
 ,p_updated_by=>'PTW_PRO'
 );
@@ -19626,7 +19898,7 @@ wwv_flow_imp_page.create_page_plug(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
 ,p_created_on=>wwv_flow_imp.dz('20260214114442Z')
-,p_updated_on=>wwv_flow_imp.dz('20260408201951Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913141436Z')
 ,p_created_by=>'PTW_PRO'
 ,p_updated_by=>'PTW_PRO'
 );
@@ -19715,14 +19987,14 @@ wwv_flow_imp_page.create_page_plug(
 ,p_static_id=>'buttons'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>2126429139436695430
-,p_plug_display_sequence=>260
+,p_plug_display_sequence=>280
 ,p_plug_item_display_point=>'ABOVE'
 ,p_location=>null
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
 ,p_created_on=>wwv_flow_imp.dz('20260214114815Z')
-,p_updated_on=>wwv_flow_imp.dz('20260825205442Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913141436Z')
 ,p_created_by=>'PTW_PRO'
 ,p_updated_by=>'PTW_PRO'
 );
@@ -19981,7 +20253,7 @@ wwv_flow_imp_page.create_page_item(
   'send_on_page_submit', 'N',
   'show_line_breaks', 'Y')).to_clob
 ,p_created_on=>wwv_flow_imp.dz('20260214114442Z')
-,p_updated_on=>wwv_flow_imp.dz('20260621161024Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913141436Z')
 ,p_created_by=>'PTW_PRO'
 ,p_updated_by=>'PTW_PRO'
 );
@@ -20006,7 +20278,7 @@ wwv_flow_imp_page.create_page_item(
   'send_on_page_submit', 'N',
   'show_line_breaks', 'Y')).to_clob
 ,p_created_on=>wwv_flow_imp.dz('20260214114442Z')
-,p_updated_on=>wwv_flow_imp.dz('20260326203231Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913141436Z')
 ,p_created_by=>'PTW_PRO'
 ,p_updated_by=>'PTW_PRO'
 );
@@ -20056,7 +20328,7 @@ wwv_flow_imp_page.create_page_item(
   'subtype', 'TEXT',
   'trim_spaces', 'BOTH')).to_clob
 ,p_created_on=>wwv_flow_imp.dz('20260214114442Z')
-,p_updated_on=>wwv_flow_imp.dz('20260327202827Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913141436Z')
 ,p_created_by=>'PTW_PRO'
 ,p_updated_by=>'PTW_PRO'
 );
@@ -20078,7 +20350,7 @@ wwv_flow_imp_page.create_page_item(
   'send_on_page_submit', 'N',
   'show_line_breaks', 'Y')).to_clob
 ,p_created_on=>wwv_flow_imp.dz('20260214114442Z')
-,p_updated_on=>wwv_flow_imp.dz('20260326203231Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913141436Z')
 ,p_created_by=>'PTW_PRO'
 ,p_updated_by=>'PTW_PRO'
 );
@@ -21071,7 +21343,7 @@ wwv_flow_imp_page.create_page(
 ,p_protection_level=>'C'
 ,p_page_component_map=>'25'
 ,p_created_on=>wwv_flow_imp.dz('20260228101732Z')
-,p_last_updated_on=>wwv_flow_imp.dz('20260829161113Z')
+,p_last_updated_on=>wwv_flow_imp.dz('20260913164251Z')
 ,p_created_by=>'PTW_PRO'
 ,p_last_updated_by=>'PTW_PRO'
 );
@@ -21155,6 +21427,12 @@ wwv_flow_imp_page.create_page_plug(
 '        WHEN ''MONITORING_CONCERN'' THEN ''Monitoring Concern''',
 '        WHEN ''CLEARANCE''          THEN ''Clearance''',
 '        WHEN ''CANCELLED''          THEN ''Cancelled''',
+'        WHEN ''FIREWATCH_HW_COMPLETE''          THEN ''Fire Watch: Hot Works Completed''',
+'        WHEN ''FIREWATCH_ATTEND_1ST_HR''        THEN ''Fire Watch: 100% Attendance (1st Hour)''',
+'        WHEN ''FIREWATCH_CHECK_15MIN_2ND_HR''   THEN ''Fire Watch: Checked Every 15 Min (2nd Hour)''',
+'        WHEN ''FIREWATCH_CHECK_30MIN_3RD_HR''   THEN ''Fire Watch: Checked Every 30 Min (3rd Hour)''',
+'        WHEN ''FIREWATCH_REINSTATE_4TH_HR''     THEN ''Fire Watch: Reinstate Isolation (4th Hour)''',
+'        WHEN ''FIREWATCH_FIRE_CHECKS_COMPLETE'' THEN ''Fire Watch: Completion of Fire Checks''',
 '       ELSE sl.PERMIT_STAGE',
 '       END as step_display,',
 '       sl.LATITUDE,',
@@ -21200,7 +21478,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_prn_border_color=>'#666666'
 ,p_ai_enabled=>false
 ,p_created_on=>wwv_flow_imp.dz('20260228101732Z')
-,p_updated_on=>wwv_flow_imp.dz('20260829161113Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913164251Z')
 ,p_created_by=>'PTW_PRO'
 ,p_updated_by=>'PTW_PRO'
 );
@@ -27073,7 +27351,7 @@ wwv_flow_imp_page.create_page(
 ,p_protection_level=>'C'
 ,p_page_component_map=>'18'
 ,p_created_on=>wwv_flow_imp.dz('20260421200907Z')
-,p_last_updated_on=>wwv_flow_imp.dz('20260906182934Z')
+,p_last_updated_on=>wwv_flow_imp.dz('20260913142112Z')
 ,p_created_by=>'PTW_PRO'
 ,p_last_updated_by=>'PTW_PRO'
 );
@@ -27110,7 +27388,9 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'SELECT monitoring_id,',
 '       permit_id,',
-'       ''LV MONITORING'' AS ptw_type,',
+'       (SELECT t.type_desc',
+'        FROM   ptw_pro.ptw_types t',
+'        WHERE  t.ptw_type = :P15_PTW_TYPE) AS ptw_type,',
 '       monitor_name,',
 '       monitor_date,',
 '       monitoring_status,',
@@ -27170,7 +27450,7 @@ wwv_flow_imp_page.create_page_plug(
 ,p_prn_border_color=>'#666666'
 ,p_ai_enabled=>false
 ,p_created_on=>wwv_flow_imp.dz('20260421203130Z')
-,p_updated_on=>wwv_flow_imp.dz('20260906182934Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913142112Z')
 ,p_created_by=>'PTW_PRO'
 ,p_updated_by=>'PTW_PRO'
 );
@@ -27832,7 +28112,7 @@ unistr('// \2500\2500 Declaration text update \2500\2500\2500\2500\2500\2500\250
 ,p_protection_level=>'C'
 ,p_page_component_map=>'16'
 ,p_created_on=>wwv_flow_imp.dz('20260429191554Z')
-,p_last_updated_on=>wwv_flow_imp.dz('20260831152943Z')
+,p_last_updated_on=>wwv_flow_imp.dz('20260913165232Z')
 ,p_created_by=>'PTW_PRO'
 ,p_last_updated_by=>'PTW_PRO'
 );
@@ -28462,6 +28742,38 @@ wwv_flow_imp_page.create_page_validation(
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
 ,p_created_on=>wwv_flow_imp.dz('20260830175759Z')
 ,p_updated_on=>wwv_flow_imp.dz('20260830175759Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(24593071897992946)
+,p_validation_name=>'Hot Work Fire Watch Must Be Complete'
+,p_static_id=>'hot-work-fire-watch-must-be-complete'
+,p_validation_sequence=>80
+,p_validation=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'            DECLARE',
+'                l_count NUMBER;',
+'            BEGIN',
+'                IF :P16_PTW_TYPE != ''HOT WORK'' THEN',
+'                    RETURN TRUE;',
+'                END IF;',
+'',
+'                SELECT COUNT(*) INTO l_count',
+'                FROM   ptw_pro.ptw_hotwork_fire_watch',
+'                WHERE  permit_id = :P16_PERMIT_ID',
+'                AND    milestone_code = ''FIRE_CHECKS_COMPLETE'';',
+'',
+'                RETURN l_count > 0;',
+'            END;'))
+,p_validation2=>'PLSQL'
+,p_validation_type=>'FUNC_BODY_RETURNING_BOOLEAN'
+,p_error_message=>'All fire watch checks must be signed off before this permit can be cleared.'
+,p_validation_condition=>':REQUEST = ''CLEAR_PERMIT'' AND :P16_PTW_TYPE = ''HOT WORK'''
+,p_validation_condition2=>'PLSQL'
+,p_validation_condition_type=>'EXPRESSION'
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+,p_created_on=>wwv_flow_imp.dz('20260913165232Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913165232Z')
 ,p_created_by=>'PTW_PRO'
 ,p_updated_by=>'PTW_PRO'
 );
@@ -30459,6 +30771,726 @@ wwv_flow_imp_page.create_page_process(
 ,p_internal_uid=>47752004439890042
 ,p_created_on=>wwv_flow_imp.dz('20260511212834Z')
 ,p_updated_on=>wwv_flow_imp.dz('20260711131557Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+end;
+/
+prompt --application/pages/page_00018
+begin
+wwv_flow_imp_page.create_page(
+ p_id=>18
+,p_name=>'Fire Watch'
+,p_alias=>'FIRE-WATCH'
+,p_page_mode=>'MODAL'
+,p_step_title=>'Fire Watch'
+,p_autocomplete_on_off=>'OFF'
+,p_javascript_code=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'var p18SigPad = null;',
+'',
+'function p18InitSig() {',
+'    var canvas = document.getElementById(''p18SigCanvas'');',
+'    if (!canvas) return;',
+'    var wrapper = canvas.parentElement;',
+'    var w = Math.max((wrapper ? wrapper.offsetWidth - 24 : 400), 280);',
+'    canvas.width  = w;',
+'    canvas.height = 150;',
+'    canvas.style.width  = w + ''px'';',
+'    canvas.style.height = ''150px'';',
+'    var ctx = canvas.getContext(''2d'');',
+'    ctx.strokeStyle = ''#000000'';',
+'    ctx.lineWidth   = 2;',
+'    ctx.lineCap     = ''round'';',
+'    ctx.lineJoin    = ''round'';',
+'    p18SigPad = new SignaturePad(canvas, ctx);',
+'}',
+'',
+'function p18ClearSig() {',
+'    if (p18SigPad) { p18SigPad.clear(); }',
+'}',
+'',
+'function p18SaveSig() {',
+'    if (!p18SigPad || p18SigPad.isEmpty) {',
+'        apex.item(''P18_SIGNATURE_DATA'').setValue('''');',
+'    } else {',
+'        apex.item(''P18_SIGNATURE_DATA'').setValue(p18SigPad.getDataURL());',
+'    }',
+'}',
+'',
+'apex.jQuery(document).on(''apexbeforepagesubmit'', function () {',
+'    p18SaveSig();',
+'});',
+'',
+'var p18ResizeTimer = null;',
+'window.addEventListener(''resize'', function () {',
+'    if (p18ResizeTimer) { clearTimeout(p18ResizeTimer); }',
+'    p18ResizeTimer = setTimeout(function () {',
+'        var hadContent = p18SigPad && !p18SigPad.isEmpty;',
+'        var existingData = hadContent ? p18SigPad.getDataURL() : null;',
+'        p18InitSig();',
+'        if (existingData) {',
+'            loadSignature(p18SigPad, document.getElementById(''p18SigCanvas''), existingData);',
+'        }',
+'    }, 200);',
+'});',
+''))
+,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'@media (max-width: 768px) {',
+'    .ui-dialog {',
+'        width: 96vw !important;',
+'        max-width: 96vw !important;',
+'        height: 92vh !important;',
+'        max-height: 92vh !important;',
+'        top: 4vh !important;',
+'        left: 2vw !important;',
+'        margin: 0 !important;',
+'    }',
+'    .ui-dialog-content {',
+'        max-height: calc(92vh - 110px) !important;',
+'        overflow-y: auto !important;',
+'        -webkit-overflow-scrolling: touch;',
+'    }',
+'}'))
+,p_step_template=>2100407606326202693
+,p_page_template_options=>'#DEFAULT#'
+,p_dialog_resizable=>'Y'
+,p_protection_level=>'C'
+,p_page_component_map=>'23'
+,p_created_on=>wwv_flow_imp.dz('20260913161323Z')
+,p_last_updated_on=>wwv_flow_imp.dz('20260914202619Z')
+,p_created_by=>'PTW_PRO'
+,p_last_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(42195387780924506)
+,p_plug_name=>'All Complete'
+,p_static_id=>'all-complete'
+,p_title=>'All Complete'
+,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
+,p_plug_template=>4072358936313175081
+,p_plug_display_sequence=>140
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_plug_source=>'All fire watch checks complete'
+,p_plug_display_condition_type=>'ITEM_IS_NULL'
+,p_plug_display_when_condition=>'P18_MILESTONE_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'expand_shortcuts', 'N',
+  'output_as', 'HTML')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260913182946Z')
+,p_updated_on=>wwv_flow_imp.dz('20260914201614Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(42195615155924509)
+,p_plug_name=>'Buttons'
+,p_static_id=>'buttons'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>2126429139436695430
+,p_plug_display_sequence=>150
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'expand_shortcuts', 'N',
+  'output_as', 'HTML')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260913182946Z')
+,p_updated_on=>wwv_flow_imp.dz('20260914201614Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(42195126333924504)
+,p_plug_name=>'Current Check'
+,p_static_id=>'current-check'
+,p_title=>'Current Check'
+,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
+,p_plug_template=>4072358936313175081
+,p_plug_display_sequence=>130
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_plug_display_condition_type=>'EXPRESSION'
+,p_plug_display_when_condition=>':P18_MILESTONE_CODE IS NOT NULL AND :P18_WORKFLOW_STATUS = ''STARTED'''
+,p_plug_display_when_cond2=>'PLSQL'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'expand_shortcuts', 'N',
+  'output_as', 'HTML')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260913174455Z')
+,p_updated_on=>wwv_flow_imp.dz('20260914201614Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(42194928701924502)
+,p_plug_name=>'History'
+,p_static_id=>'history'
+,p_title=>'History'
+,p_region_template_options=>'#DEFAULT#:t-CardsRegion--hideHeader js-addHiddenHeadingRoleDesc'
+,p_plug_template=>2072724515482255512
+,p_plug_display_sequence=>120
+,p_plug_item_display_point=>'ABOVE'
+,p_query_type=>'SQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'SELECT m.seq, m.label,',
+'       CASE',
+'           WHEN fw.milestone_code IS NOT NULL THEN',
+'               ''<span style="display:inline-flex;align-items:center;gap:8px;">''',
+'               || ''<span style="display:inline-flex;align-items:center;justify-content:center;''',
+'               || ''width:22px;height:22px;border-radius:50%;background:#28a745;color:#fff;''',
+'               || ''font-size:13px;flex-shrink:0;">&#10003;</span>''',
+'               || ''<span style="font-weight:600;">'' || m.label || ''</span></span>''',
+'           ELSE',
+'               ''<span style="display:inline-flex;align-items:center;gap:8px;">''',
+'               || ''<span style="display:inline-flex;align-items:center;justify-content:center;''',
+'               || ''width:22px;height:22px;border-radius:50%;background:#e9ecef;color:#6c757d;''',
+'               || ''font-size:12px;font-weight:700;flex-shrink:0;">'' || m.seq || ''</span>''',
+'               || ''<span style="color:#6c757d;">'' || m.label || ''</span></span>''',
+'       END AS title_html,',
+'       CASE',
+'           WHEN fw.milestone_code IS NOT NULL THEN',
+'               ''<div style="display:flex;gap:12px;align-items:center;''',
+'               || ''border-left:3px solid #28a745;padding:4px 0 4px 10px;">''',
+'               || ''<img src="data:image/png;base64,''',
+'               || APEX_WEB_SERVICE.BLOB2CLOBBASE64(fw.signature_blob)',
+'               || ''" style="height:48px;max-width:130px;border:1px solid #dee2e6;''',
+'               || ''border-radius:6px;background:#fff;padding:2px;flex-shrink:0;" alt="Signature" />''',
+'               || ''<div style="font-size:12.5px;line-height:1.4;">''',
+'               || ''<div style="font-weight:600;color:#343a40;">'' || APEX_ESCAPE.HTML(fw.signed_by) || ''</div>''',
+'               || ''<div style="color:#868e96;">'' || TO_CHAR(fw.signed_datetime, ''DD Mon YYYY HH24:MI'') || ''</div>''',
+'               || ''</div></div>''',
+'           ELSE',
+'               TO_CLOB(',
+'               ''<div style="border-left:3px dashed #dee2e6;padding:8px 0 8px 10px;''',
+'               || ''color:#adb5bd;font-style:italic;font-size:12.5px;">Awaiting sign-off</div>'')',
+'       END AS body_html',
+'FROM   (SELECT 1 seq, ''HW_COMPLETE'' code, ''Hot Works Completed'' label FROM dual UNION ALL',
+unistr('        SELECT 2, ''ATTEND_1ST_HR'', ''100% Attendance \2014 First Hour'' FROM dual UNION ALL'),
+unistr('        SELECT 3, ''CHECK_15MIN_2ND_HR'', ''Checked Every 15 Min \2014 Second Hour'' FROM dual UNION ALL'),
+unistr('        SELECT 4, ''CHECK_30MIN_3RD_HR'', ''Checked Every 30 Min \2014 Third Hour'' FROM dual UNION ALL'),
+unistr('        SELECT 5, ''REINSTATE_4TH_HR'', ''Reinstate Fire Isolation \2014 Fourth Hour'' FROM dual UNION ALL'),
+'        SELECT 6, ''FIRE_CHECKS_COMPLETE'', ''Completion of Fire Checks'' FROM dual) m',
+'LEFT JOIN ptw_pro.ptw_hotwork_fire_watch fw',
+'       ON fw.permit_id = :P18_PERMIT_ID AND fw.milestone_code = m.code',
+'ORDER BY m.seq'))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_CARDS'
+,p_ajax_items_to_submit=>'P18_PERMIT_ID'
+,p_plug_query_num_rows_type=>'SCROLL'
+,p_show_total_row_count=>false
+,p_created_on=>wwv_flow_imp.dz('20260913174455Z')
+,p_updated_on=>wwv_flow_imp.dz('20260914201614Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_card(
+ p_id=>wwv_flow_imp.id(42195038625924503)
+,p_region_id=>wwv_flow_imp.id(42194928701924502)
+,p_layout_type=>'GRID'
+,p_title_adv_formatting=>true
+,p_title_html_expr=>'&TITLE_HTML!RAW.'
+,p_sub_title_adv_formatting=>false
+,p_body_adv_formatting=>true
+,p_body_html_expr=>'&BODY_HTML!RAW.'
+,p_second_body_adv_formatting=>false
+,p_media_adv_formatting=>false
+,p_updated_on=>wwv_flow_imp.dz('20260913184627Z')
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(42196744031924520)
+,p_plug_name=>'Page Title'
+,p_static_id=>'page-title'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4501440665235496320
+,p_plug_display_sequence=>110
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'    <div style="margin-bottom: 20px;">',
+'        <span class="apex-badge" style="background-color: #3ea055; color: white; padding: 6px 16px; border-radius: 20px; font-weight: 600;">',
+'            Permit: &P18_PERMIT_NUMBER.',
+'        </span>',
+'    </div>'))
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'expand_shortcuts', 'N',
+  'output_as', 'HTML')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260914201614Z')
+,p_updated_on=>wwv_flow_imp.dz('20260914201738Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(42196289010924515)
+,p_plug_name=>'Signature'
+,p_static_id=>'signature'
+,p_title=>'Signature'
+,p_parent_plug_id=>wwv_flow_imp.id(42195126333924504)
+,p_icon_css_classes=>'fa-pencil-square-o'
+,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
+,p_plug_template=>4072358936313175081
+,p_plug_display_sequence=>20
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<div class="p18-sig-wrapper">',
+'  <label class="t-Form-label" style="display:block;margin-bottom:6px;">',
+'    Signing: &P18_MILESTONE_LABEL. <span style="color:#C0392B;" aria-hidden="true">*</span>',
+'  </label>',
+'  <canvas id="p18SigCanvas"></canvas>',
+'  <button type="button" class="t-Button t-Button--small t-Button--simple"',
+'          id="p18ClearSigBtn" style="margin-top:6px;" onclick="p18ClearSig()">',
+'    <span class="fa fa-eraser" aria-hidden="true"></span> Clear Signature',
+'  </button>',
+'</div>'))
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'expand_shortcuts', 'N',
+  'output_as', 'HTML')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260913185304Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913185835Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(42196486936924517)
+,p_button_sequence=>20
+,p_button_plug_id=>wwv_flow_imp.id(42195615155924509)
+,p_button_name=>'CANCEL'
+,p_static_id=>'cancel'
+,p_button_action=>'REDIRECT_PAGE'
+,p_button_template_options=>'#DEFAULT#'
+,p_button_template_id=>4072362960822175091
+,p_button_image_alt=>'Cancel'
+,p_button_position=>'CLOSE'
+,p_button_redirect_url=>'f?p=&APP_ID.:1:&SESSION.::&DEBUG.:1::'
+,p_warn_on_unsaved_changes=>null
+,p_created_on=>wwv_flow_imp.dz('20260913185835Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913185835Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(42195725549924510)
+,p_button_sequence=>10
+,p_button_plug_id=>wwv_flow_imp.id(42195615155924509)
+,p_button_name=>'SIGN_MILESTONE'
+,p_static_id=>'sign-milestone'
+,p_button_action=>'DEFINED_BY_DA'
+,p_button_template_options=>'#DEFAULT#'
+,p_button_template_id=>4072362960822175091
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>'Sign Milestone'
+,p_button_position=>'CREATE'
+,p_warn_on_unsaved_changes=>null
+,p_button_condition=>':P18_MILESTONE_CODE IS NOT NULL AND :P18_WORKFLOW_STATUS = ''STARTED'''
+,p_button_condition2=>'PLSQL'
+,p_button_condition_type=>'EXPRESSION'
+,p_created_on=>wwv_flow_imp.dz('20260913182946Z')
+,p_updated_on=>wwv_flow_imp.dz('20260914195549Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(24593149418992947)
+,p_name=>'P18_MILESTONE_CODE'
+,p_item_sequence=>60
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260913174455Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913174455Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(24593239595992948)
+,p_name=>'P18_MILESTONE_LABEL'
+,p_item_sequence=>70
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260913174455Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913174455Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(42195208119924505)
+,p_name=>'P18_MILESTONE_PERSON_NAME'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(42195126333924504)
+,p_prompt=>'Fire check by'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>30
+,p_field_template=>1609122147107268652
+,p_item_template_options=>'#DEFAULT#'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'disabled', 'N',
+  'submit_when_enter_pressed', 'N',
+  'subtype', 'TEXT',
+  'trim_spaces', 'BOTH')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260913182946Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913185442Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(24592453787992940)
+,p_name=>'P18_PERMIT_ID'
+,p_item_sequence=>30
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260913161954Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913161954Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(24592666349992942)
+,p_name=>'P18_PERMIT_NUMBER'
+,p_item_sequence=>50
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260913161954Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913161954Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(24592575331992941)
+,p_name=>'P18_PTW_TYPE'
+,p_item_sequence=>40
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260913161954Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913163118Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(24593393571992949)
+,p_name=>'P18_SIGNATURE_DATA'
+,p_item_sequence=>80
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260913174455Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913174455Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(42196676363924519)
+,p_name=>'P18_WORKFLOW_STATUS'
+,p_item_sequence=>100
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260914195549Z')
+,p_updated_on=>wwv_flow_imp.dz('20260914195549Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(42196377938924516)
+,p_validation_name=>'Name required'
+,p_static_id=>'name-required'
+,p_validation_sequence=>10
+,p_validation=>'P18_MILESTONE_PERSON_NAME'
+,p_validation_type=>'ITEM_NOT_NULL'
+,p_error_message=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'Person''s name doing fire check must be entered.',
+''))
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+,p_created_on=>wwv_flow_imp.dz('20260913185548Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913185548Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(42195476234924507)
+,p_name=>'Load signatures'
+,p_static_id=>'load-signatures'
+,p_event_sequence=>10
+,p_bind_type=>'bind'
+,p_bind_event_type=>'ready'
+,p_created_on=>wwv_flow_imp.dz('20260913182947Z')
+,p_updated_on=>wwv_flow_imp.dz('20260914202311Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(42195540401924508)
+,p_event_id=>wwv_flow_imp.id(42195476234924507)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_static_id=>'native-javascript-code'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'js_code', wwv_flow_string.join(wwv_flow_t_varchar2(
+    'setTimeout(function () {',
+    '    p18InitSig();',
+    '}, 350);')))).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260913182947Z')
+,p_updated_on=>wwv_flow_imp.dz('20260914202311Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(42195800057924511)
+,p_name=>'Sign Milestone - Capture Location and Submit'
+,p_static_id=>'sign-milestone-capture-location-and-submit'
+,p_event_sequence=>20
+,p_triggering_element_type=>'BUTTON'
+,p_triggering_button_id=>wwv_flow_imp.id(42195725549924510)
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'click'
+,p_created_on=>wwv_flow_imp.dz('20260913182947Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913182947Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(42195942479924512)
+,p_event_id=>wwv_flow_imp.id(42195800057924511)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_static_id=>'native-javascript-code'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'js_code', 'captureLocationThenSubmit(''SIGN_MILESTONE'');')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260913182947Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913182947Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(42194849397924501)
+,p_process_sequence=>10
+,p_process_point=>'BEFORE_BOX_BODY'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Load process'
+,p_static_id=>'load-process'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'    CURSOR c_milestones IS',
+'        SELECT 1 seq, ''HW_COMPLETE'' code, ''Hot Works Completed'' label FROM dual UNION ALL',
+unistr('        SELECT 2, ''ATTEND_1ST_HR'', ''100% Attendance \2014 First Hour'' FROM dual UNION ALL'),
+unistr('        SELECT 3, ''CHECK_15MIN_2ND_HR'', ''Checked Every 15 Min \2014 Second Hour'' FROM dual UNION ALL'),
+unistr('        SELECT 4, ''CHECK_30MIN_3RD_HR'', ''Checked Every 30 Min \2014 Third Hour'' FROM dual UNION ALL'),
+unistr('        SELECT 5, ''REINSTATE_4TH_HR'', ''Reinstate Fire Isolation \2014 Fourth Hour'' FROM dual UNION ALL'),
+'        SELECT 6, ''FIRE_CHECKS_COMPLETE'', ''Completion of Fire Checks'' FROM dual;',
+'    l_count PLS_INTEGER;',
+'BEGIN',
+'',
+'    :P18_MILESTONE_CODE  := NULL;',
+'    :P18_MILESTONE_LABEL := NULL;',
+'',
+'    FOR m IN c_milestones LOOP',
+'        SELECT COUNT(*) INTO l_count',
+'        FROM   ptw_pro.ptw_hotwork_fire_watch',
+'        WHERE  permit_id = :P18_PERMIT_ID AND milestone_code = m.code;',
+'',
+'        IF l_count = 0 THEN',
+'            :P18_MILESTONE_CODE  := m.code;',
+'            :P18_MILESTONE_LABEL := m.label;',
+'            EXIT;',
+'        END IF;',
+'    END LOOP;',
+unistr('    -- Both stay NULL if all six are already signed \2014 the "current check"'),
+'    -- region''s server-side condition hides itself in that case.',
+'END;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>42194849397924501
+,p_created_on=>wwv_flow_imp.dz('20260913174455Z')
+,p_updated_on=>wwv_flow_imp.dz('20260914201830Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(42196065422924513)
+,p_process_sequence=>10
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Sign'
+,p_static_id=>'sign'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'    l_company_id ptw_pro.ptw_lv_permits.company_id%TYPE;',
+'    l_this_idx   PLS_INTEGER;',
+'    l_prev_code  VARCHAR2(30);',
+'    l_prev_count NUMBER := 0;',
+'    l_sig_blob   BLOB;',
+'    l_clob       CLOB;',
+'BEGIN',
+'    SELECT company_id INTO l_company_id',
+'    FROM   ptw_pro.ptw_lv_permits WHERE permit_id = :P18_PERMIT_ID;',
+'',
+'    l_this_idx := CASE :P18_MILESTONE_CODE',
+'        WHEN ''HW_COMPLETE''          THEN 1',
+'        WHEN ''ATTEND_1ST_HR''        THEN 2',
+'        WHEN ''CHECK_15MIN_2ND_HR''   THEN 3',
+'        WHEN ''CHECK_30MIN_3RD_HR''   THEN 4',
+'        WHEN ''REINSTATE_4TH_HR''     THEN 5',
+'        WHEN ''FIRE_CHECKS_COMPLETE'' THEN 6',
+'    END;',
+'',
+'    l_prev_code := CASE :P18_MILESTONE_CODE',
+'        WHEN ''ATTEND_1ST_HR''        THEN ''HW_COMPLETE''',
+'        WHEN ''CHECK_15MIN_2ND_HR''   THEN ''ATTEND_1ST_HR''',
+'        WHEN ''CHECK_30MIN_3RD_HR''   THEN ''CHECK_15MIN_2ND_HR''',
+'        WHEN ''REINSTATE_4TH_HR''     THEN ''CHECK_30MIN_3RD_HR''',
+'        WHEN ''FIRE_CHECKS_COMPLETE'' THEN ''REINSTATE_4TH_HR''',
+unistr('        -- HW_COMPLETE has no predecessor \2014 stays NULL, so the check below is skipped'),
+'    END;',
+'',
+'    IF l_prev_code IS NOT NULL THEN',
+'        SELECT COUNT(*) INTO l_prev_count',
+'        FROM   ptw_pro.ptw_hotwork_fire_watch',
+'        WHERE  permit_id = :P18_PERMIT_ID AND milestone_code = l_prev_code;',
+'    END IF;',
+'',
+'    IF l_prev_code IS NOT NULL AND l_prev_count = 0 THEN',
+'        apex_error.add_error(',
+'            p_message => ''The previous fire watch check must be signed first.'',',
+'            p_display_location => apex_error.c_inline_in_notification);',
+'        RAISE_APPLICATION_ERROR(-20064, ''Fire watch milestones must be signed in order.'');',
+'    END IF;',
+'',
+'    IF :P18_SIGNATURE_DATA IS NOT NULL AND :P18_MILESTONE_PERSON_NAME IS NOT NULL THEN',
+'        l_clob     := REPLACE(:P18_SIGNATURE_DATA, ''data:image/png;base64,'', '''');',
+'        l_sig_blob := apex_web_service.clobbase642blob(l_clob);',
+'    ELSE',
+'        apex_error.add_error(',
+'            p_message => ''A name and signature are both required.'',',
+'            p_display_location => apex_error.c_inline_in_notification);',
+'        RAISE_APPLICATION_ERROR(-20066, ''Name and signature are required to sign a fire watch check.'');',
+'    END IF;',
+'',
+'    BEGIN',
+'        INSERT INTO ptw_pro.ptw_hotwork_fire_watch (',
+'            permit_id, milestone_code, milestone_seq, signed_by,',
+'            signed_datetime, signature_blob, latitude, longitude, company_id',
+'        ) VALUES (',
+'            :P18_PERMIT_ID, :P18_MILESTONE_CODE, l_this_idx,',
+'            UPPER(TRIM(:P18_MILESTONE_PERSON_NAME)),',
+'            SYSDATE, l_sig_blob, TO_NUMBER(:APP_LATITUDE), TO_NUMBER(:APP_LONGITUDE), l_company_id',
+'        );',
+'    EXCEPTION',
+'        WHEN DUP_VAL_ON_INDEX THEN',
+'            RAISE_APPLICATION_ERROR(-20065, ''This fire watch check has already been signed.'');',
+'    END;',
+'',
+'    -- Every milestone also drops its own entry into the general permit',
+unistr('    -- history table \2014 PTW_STAGE_LOCATIONS records where key lifecycle'),
+'    -- events happened, and each fire watch check is one of those, not',
+'    -- just the final sign-off.',
+'    INSERT INTO ptw_pro.ptw_stage_locations (',
+'        permit_id, permit_stage, latitude, longitude, created_date, created_by, company_id',
+'    ) VALUES (',
+'        :P18_PERMIT_ID, ''FIREWATCH_'' || :P18_MILESTONE_CODE,',
+'        TO_NUMBER(:APP_LATITUDE), TO_NUMBER(:APP_LONGITUDE),',
+'        SYSDATE, NVL(V(''APP_USER''), USER), l_company_id',
+'    );',
+'END;'))
+,p_process_clob_language=>'PLSQL'
+,p_error_display_location=>'INLINE_IN_NOTIFICATION'
+,p_process_when_button_id=>wwv_flow_imp.id(42195725549924510)
+,p_internal_uid=>42196065422924513
+,p_created_on=>wwv_flow_imp.dz('20260913182947Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913182947Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(24592918276992945)
+,p_process_sequence=>10
+,p_process_point=>'ON_DEMAND'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'SIGN_ACTION'
+,p_static_id=>'sign-action'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'    l_company_id ptw_pro.ptw_lv_permits.company_id%TYPE;',
+'    l_this_idx   PLS_INTEGER;',
+'    l_prev_code  VARCHAR2(30);',
+'    l_prev_ok    VARCHAR2(1) := ''Y'';',
+'BEGIN',
+'    SELECT company_id INTO l_company_id',
+'    FROM   ptw_pro.ptw_lv_permits WHERE permit_id = :PNN_PERMIT_ID;',
+'',
+'    l_this_idx := CASE :PNN_MILESTONE_CODE',
+'        WHEN ''HW_COMPLETE''          THEN 1',
+'        WHEN ''ATTEND_1ST_HR''        THEN 2',
+'        WHEN ''CHECK_15MIN_2ND_HR''   THEN 3',
+'        WHEN ''CHECK_30MIN_3RD_HR''   THEN 4',
+'        WHEN ''REINSTATE_4TH_HR''     THEN 5',
+'        WHEN ''FIRE_CHECKS_COMPLETE'' THEN 6',
+'    END;',
+'',
+'    l_prev_code := CASE :PNN_MILESTONE_CODE',
+'        WHEN ''ATTEND_1ST_HR''        THEN ''HW_COMPLETE''',
+'        WHEN ''CHECK_15MIN_2ND_HR''   THEN ''ATTEND_1ST_HR''',
+'        WHEN ''CHECK_30MIN_3RD_HR''   THEN ''CHECK_15MIN_2ND_HR''',
+'        WHEN ''REINSTATE_4TH_HR''     THEN ''CHECK_30MIN_3RD_HR''',
+'        WHEN ''FIRE_CHECKS_COMPLETE'' THEN ''REINSTATE_4TH_HR''',
+unistr('        -- HW_COMPLETE has no predecessor \2014 stays NULL, so the check below is skipped'),
+'    END;',
+'',
+'    IF l_prev_code IS NOT NULL THEN',
+'        SELECT NVL(MAX(''Y''), ''N'') INTO l_prev_ok',
+'        FROM   ptw_pro.ptw_hotwork_fire_watch',
+'        WHERE  permit_id = :PNN_PERMIT_ID',
+'        AND    milestone_code = l_prev_code;',
+'    END IF;',
+'',
+'    IF l_prev_ok != ''Y'' THEN',
+'        apex_error.add_error(',
+'            p_message => ''The previous fire watch check must be signed first.'',',
+'            p_display_location => apex_error.c_inline_in_notification);',
+'        RAISE_APPLICATION_ERROR(-20064, ''Fire watch milestones must be signed in order.'');',
+'    END IF;',
+'',
+'    BEGIN',
+'        INSERT INTO ptw_pro.ptw_hotwork_fire_watch (',
+'            permit_id, milestone_code, milestone_seq, signed_by,',
+'            signed_datetime, latitude, longitude, company_id',
+'        ) VALUES (',
+'            :PNN_PERMIT_ID, :PNN_MILESTONE_CODE, l_this_idx, NVL(V(''APP_USER''), USER),',
+'            SYSDATE, :APP_LATITUDE, :APP_LONGITUDE, l_company_id',
+'        );',
+'    EXCEPTION',
+'        WHEN DUP_VAL_ON_INDEX THEN',
+'            RAISE_APPLICATION_ERROR(-20065, ''This fire watch check has already been signed.'');',
+'    END;',
+'',
+'    -- Every milestone also drops its own entry into the general permit',
+unistr('    -- history table \2014 PTW_STAGE_LOCATIONS records where key lifecycle'),
+'    -- events happened, and each fire watch check is one of those, not',
+'    -- just the final sign-off.',
+'    INSERT INTO ptw_pro.ptw_stage_locations (',
+'        permit_id, permit_stage, latitude, longitude, created_date, created_by, company_id',
+'    ) VALUES (',
+'        :PNN_PERMIT_ID, ''FIREWATCH_'' || :PNN_MILESTONE_CODE, :APP_LATITUDE, :APP_LONGITUDE,',
+'        SYSDATE, NVL(V(''APP_USER''), USER), l_company_id',
+'    );',
+'END;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>24592918276992945
+,p_created_on=>wwv_flow_imp.dz('20260913161954Z')
+,p_updated_on=>wwv_flow_imp.dz('20260913161954Z')
 ,p_created_by=>'PTW_PRO'
 ,p_updated_by=>'PTW_PRO'
 );

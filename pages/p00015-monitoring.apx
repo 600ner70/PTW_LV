@@ -44,7 +44,9 @@ page 15 (
                 ```sql
                 SELECT monitoring_id,
                        permit_id,
-                       'LV MONITORING' AS ptw_type,
+                       (SELECT t.type_desc
+                        FROM   ptw_pro.ptw_types t
+                        WHERE  t.ptw_type = :P15_PTW_TYPE) AS ptw_type,
                        monitor_name,
                        monitor_date,
                        monitoring_status,

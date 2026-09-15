@@ -100,6 +100,12 @@ page 6 (
                         WHEN 'MONITORING_CONCERN' THEN 'Monitoring Concern'
                         WHEN 'CLEARANCE'          THEN 'Clearance'
                         WHEN 'CANCELLED'          THEN 'Cancelled'
+                        WHEN 'FIREWATCH_HW_COMPLETE'          THEN 'Fire Watch: Hot Works Completed'
+                        WHEN 'FIREWATCH_ATTEND_1ST_HR'        THEN 'Fire Watch: 100% Attendance (1st Hour)'
+                        WHEN 'FIREWATCH_CHECK_15MIN_2ND_HR'   THEN 'Fire Watch: Checked Every 15 Min (2nd Hour)'
+                        WHEN 'FIREWATCH_CHECK_30MIN_3RD_HR'   THEN 'Fire Watch: Checked Every 30 Min (3rd Hour)'
+                        WHEN 'FIREWATCH_REINSTATE_4TH_HR'     THEN 'Fire Watch: Reinstate Isolation (4th Hour)'
+                        WHEN 'FIREWATCH_FIRE_CHECKS_COMPLETE' THEN 'Fire Watch: Completion of Fire Checks'
                        ELSE sl.PERMIT_STAGE
                        END as step_display,
                        sl.LATITUDE,
