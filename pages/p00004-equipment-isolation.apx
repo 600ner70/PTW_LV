@@ -644,7 +644,7 @@ page 4 (
         name: Buttons
         type: staticContent
         layout {
-            sequence: 200
+            sequence: 210
             slot: body
         }
         appearance {
@@ -658,7 +658,7 @@ page 4 (
         title: Comments and References
         type: staticContent
         layout {
-            sequence: 190
+            sequence: 200
             slot: body
         }
         appearance {
@@ -678,7 +678,7 @@ page 4 (
         title: Equipment Isolation Details
         type: staticContent
         layout {
-            sequence: 180
+            sequence: 190
             slot: body
         }
         appearance {
@@ -690,6 +690,9 @@ page 4 (
                 t-Region--scrollBody
             ]
             icon: fa-lock
+        }
+        advanced {
+            htmlDomId: equipment-isolation-table
         }
     )
 
@@ -707,7 +710,7 @@ page 4 (
                 ```
         }
         layout {
-            sequence: 170
+            sequence: 180
             slot: body
         }
         serverSideCondition {
@@ -785,7 +788,7 @@ page 4 (
                 <hr style="margin: 1rem 0; border-color: #e0e0e0;">
                 
                 <div class="photo-help">
-                    <strong>Attaching files to this permit:</strong>
+                    <strong>Attaching files to this &P4_DOC_TYPE.:</strong>
                     Tap <strong>Attach File</strong> to upload a PDF, Word or Excel document, or an image from your device.
                     Tap <strong>Take Photo</strong> to use your camera directly.
                     <br>
@@ -846,7 +849,7 @@ page 4 (
                 ```
         }
         layout {
-            sequence: 160
+            sequence: 170
             slot: body
         }
         appearance {
@@ -869,7 +872,7 @@ page 4 (
                 ```
         }
         layout {
-            sequence: 140
+            sequence: 150
             slot: body
         }
         appearance {
@@ -892,7 +895,7 @@ page 4 (
                 ```
         }
         layout {
-            sequence: 150
+            sequence: 160
             slot: body
         }
         appearance {
@@ -941,6 +944,17 @@ page 4 (
         }
         layout {
             sequence: 70
+            slot: body
+        }
+    )
+
+    pageItem P4_DOC_TYPE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 140
             slot: body
         }
     )
@@ -1523,6 +1537,63 @@ page 4 (
 
     )
 
+    dynamicAction relabel-for-fire-isolation (
+        name: relabel-for-fire-isolation
+        execution {
+            sequence: 40
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                         if (apex.item("P4_PTW_TYPE").getValue() === "FIRE SYSTEMS ISOLATION") {
+                             var relabel = {
+                                 P4_ISO_1_EQUIPMENT: "System Isolated (Row 1)",
+                                 P4_ISO_1_MEANS:     "Panel (Row 1)",
+                                 P4_ISO_1_LOCK_NO:   "Safety Lock Nos. (Row 1)",
+                                 P4_ISO_2_EQUIPMENT: "System Isolated (Row 2)",
+                                 P4_ISO_2_MEANS:     "Panel (Row 2)",
+                                 P4_ISO_2_LOCK_NO:   "Safety Lock Nos. (Row 2)",
+                                 P4_ISO_3_EQUIPMENT: "System Isolated (Row 3)",
+                                 P4_ISO_3_MEANS:     "Panel (Row 3)",
+                                 P4_ISO_3_LOCK_NO:   "Safety Lock Nos. (Row 3)",
+                                 P4_ISO_4_EQUIPMENT: "System Isolated (Row 4)",
+                                 P4_ISO_4_MEANS:     "Panel (Row 4)",
+                                 P4_ISO_4_LOCK_NO:   "Safety Lock Nos. (Row 4)"
+                             };
+                             Object.keys(relabel).forEach(function (itemName) {
+                                 var lbl = document.querySelector('label[for="' + itemName + '"]');
+                                 if (lbl) { lbl.textContent = relabel[itemName]; }
+                             });
+                    
+                             // Region title — same DOM-patch situation as the item labels
+                             // above (no documented apex.region API for title text either).
+                             // Matches by Static ID set in 6a, then a defensive multi-selector
+                             // for the heading element itself, since the exact tag Universal
+                             // Theme renders (h1/h2/h3, class t-Region-title) has varied
+                             // across versions - this covers the common cases rather than
+                             // hardcoding one.
+                             var $regionTitle = apex.jQuery('#equipment-isolation-table')
+                                 .find('.t-Region-title, .t-Region-header h1, .t-Region-header h2, .t-Region-header h3')
+                                 .first();
+                             if ($regionTitle.length) {
+                                 $regionTitle.text('Fire Isolation Details');
+                             }
+                         }
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
     validation permit-id-required (
         name: Permit ID Required
         execution {
@@ -1796,6 +1867,9 @@ page 4 (
                     WHERE permit_id = :P4_PERMIT_ID;
                 
                     :G_ACTIVE_PERMIT_ID := :P4_PERMIT_ID;
+                
+                    :P4_DOC_TYPE := CASE WHEN :P4_PTW_TYPE = 'LIMITATION OF ACCESS'
+                                    THEN 'Limitation of Access' ELSE 'Permit to Work' END;    
                 
                     -- Load isolation rows (up to 4)
                     FOR r IN (

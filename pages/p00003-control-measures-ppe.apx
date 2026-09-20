@@ -209,7 +209,7 @@ page 3 (
         name: Buttons
         type: staticContent
         layout {
-            sequence: 170
+            sequence: 180
             slot: body
         }
         appearance {
@@ -220,10 +220,10 @@ page 3 (
 
     region cm-checklist-region (
         name: Control Measures Checklist
-        title: Control Measures - must be in place before issuing a Permit to Work
+        title: &P3_SECTION_TITLE.
         type: staticContent
         layout {
-            sequence: 150
+            sequence: 160
             slot: body
         }
         appearance {
@@ -254,7 +254,7 @@ page 3 (
                 ```
         }
         layout {
-            sequence: 130
+            sequence: 140
             slot: body
         }
         appearance {
@@ -281,7 +281,7 @@ page 3 (
                 ```
         }
         layout {
-            sequence: 140
+            sequence: 150
             slot: body
         }
         appearance {
@@ -299,7 +299,7 @@ page 3 (
         title: Identify Essential Personal Protective Equipment (PPE) Required To Be Worn
         type: staticContent
         layout {
-            sequence: 160
+            sequence: 170
             slot: body
         }
         appearance {
@@ -331,7 +331,7 @@ page 3 (
                 ```
         }
         layout {
-            sequence: 110
+            sequence: 120
             slot: body
         }
         appearance {
@@ -354,7 +354,7 @@ page 3 (
                 ```
         }
         layout {
-            sequence: 120
+            sequence: 130
             slot: body
         }
         appearance {
@@ -436,6 +436,17 @@ page 3 (
         }
         layout {
             sequence: 90
+            slot: body
+        }
+    )
+
+    pageItem P3_SECTION_TITLE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 110
             slot: body
         }
     )
@@ -747,6 +758,11 @@ page 3 (
                     WHERE permit_id = :P3_PERMIT_ID;
                 
                     :G_ACTIVE_PERMIT_ID := :P3_PERMIT_ID;
+                
+                    :P3_SECTION_TITLE := CASE WHEN :P3_PTW_TYPE = 'LIMITATION OF ACCESS'
+                                          THEN 'Control Measures - must be in place before issuing this Limitation of Access'
+                                          ELSE 'Control Measures - must be in place before issuing a Permit to Work'
+                                         END;
                 
                 EXCEPTION
                     WHEN NO_DATA_FOUND THEN

@@ -2,34 +2,35 @@
   CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PERMIT_SAVE_PKG" AS
 
     PROCEDURE save_permit_header(
-        p_permit_id                   IN OUT ptw_pro.ptw_lv_permits.permit_id%TYPE,
-        p_ptw_type                    IN     ptw_pro.ptw_lv_permits.ptw_type%TYPE,
-        p_workflow_status             IN     ptw_pro.ptw_lv_permits.workflow_status%TYPE,
-        p_safety_programme_ref_no     IN     ptw_pro.ptw_lv_permits.safety_programme_ref_no%TYPE,
-        p_isolation_diagram_serial_no IN     ptw_pro.ptw_lv_permits.isolation_diagram_serial_no%TYPE,
-        p_site_id                     IN     ptw_pro.ptw_lv_permits.site_id%TYPE,
-        p_site_new_name               IN     ptw_pro.ptw_lv_sites.site_name%TYPE,
-        p_area_of_works               IN     ptw_pro.ptw_lv_permits.area_of_works%TYPE,
-        p_work_description            IN     ptw_pro.ptw_lv_permits.work_description%TYPE,
-        p_person_in_charge_name       IN     ptw_pro.ptw_lv_permits.person_in_charge_name%TYPE,
-        p_supervising_company         IN     ptw_pro.ptw_lv_permits.supervising_company%TYPE,
-        p_other_persons_count         IN     ptw_pro.ptw_lv_permits.other_persons_count%TYPE,
-        p_client_permission_granted   IN     ptw_pro.ptw_lv_permits.client_permission_granted%TYPE,
-        p_affects_it_systems          IN     ptw_pro.ptw_lv_permits.affects_it_systems%TYPE,
-        p_it_permission_granted       IN     ptw_pro.ptw_lv_permits.it_permission_granted%TYPE,
+        p_permit_id                    IN OUT ptw_pro.ptw_lv_permits.permit_id%TYPE,
+        p_ptw_type                     IN     ptw_pro.ptw_lv_permits.ptw_type%TYPE,
+        p_workflow_status               IN     ptw_pro.ptw_lv_permits.workflow_status%TYPE,
+        p_safety_programme_ref_no      IN     ptw_pro.ptw_lv_permits.safety_programme_ref_no%TYPE,
+        p_isolation_diagram_serial_no  IN     ptw_pro.ptw_lv_permits.isolation_diagram_serial_no%TYPE,
+        p_site_id                      IN     ptw_pro.ptw_lv_permits.site_id%TYPE,
+        p_site_new_name                IN     ptw_pro.ptw_lv_sites.site_name%TYPE,
+        p_area_of_works                IN     ptw_pro.ptw_lv_permits.area_of_works%TYPE,
+        p_work_description             IN     ptw_pro.ptw_lv_permits.work_description%TYPE,
+        p_person_in_charge_name        IN     ptw_pro.ptw_lv_permits.person_in_charge_name%TYPE,
+        p_supervising_company          IN     ptw_pro.ptw_lv_permits.supervising_company%TYPE,
+        p_other_persons_count          IN     ptw_pro.ptw_lv_permits.other_persons_count%TYPE,
+        p_client_permission_granted    IN     ptw_pro.ptw_lv_permits.client_permission_granted%TYPE,
+        p_affects_it_systems           IN     ptw_pro.ptw_lv_permits.affects_it_systems%TYPE,
+        p_it_permission_granted        IN     ptw_pro.ptw_lv_permits.it_permission_granted%TYPE,
         p_specialist_equipment_details IN     ptw_pro.ptw_lv_permits.specialist_equipment_details%TYPE,
-        p_fire_systems_affected       IN     ptw_pro.ptw_lv_permits.fire_systems_affected%TYPE       DEFAULT NULL,
-        p_fire_systems_isolated       IN     ptw_pro.ptw_lv_permits.fire_systems_isolated%TYPE       DEFAULT NULL,
-        p_insurer_informed_datetime   IN     ptw_pro.ptw_lv_permits.insurer_informed_datetime%TYPE   DEFAULT NULL,
-        p_isolation_comments          IN     ptw_pro.ptw_lv_permits.isolation_comments%TYPE          DEFAULT NULL,
-        p_fire_precautions_details    IN ptw_pro.ptw_lv_permits.fire_precautions_details%TYPE    DEFAULT NULL,
-        p_fire_alarm_arrangements     IN ptw_pro.ptw_lv_permits.fire_alarm_arrangements%TYPE     DEFAULT NULL,
-        p_latitude                    IN     ptw_pro.ptw_lv_permits.site_work_latitude%TYPE,
-        p_longitude                   IN     ptw_pro.ptw_lv_permits.site_work_longitude%TYPE,
-        p_resolved_site_id            OUT    ptw_pro.ptw_lv_sites.site_id%TYPE,
-        p_permit_number               OUT    ptw_pro.ptw_lv_permits.permit_number%TYPE,
-        p_saved                       OUT    BOOLEAN,
-        p_message                     OUT    VARCHAR2
+        p_fire_systems_affected        IN     ptw_pro.ptw_lv_permits.fire_systems_affected%TYPE       DEFAULT NULL,
+        p_fire_systems_isolated        IN     ptw_pro.ptw_lv_permits.fire_systems_isolated%TYPE       DEFAULT NULL,
+        p_insurer_informed_datetime    IN     ptw_pro.ptw_lv_permits.insurer_informed_datetime%TYPE   DEFAULT NULL,
+        p_isolation_comments           IN     ptw_pro.ptw_lv_permits.isolation_comments%TYPE          DEFAULT NULL,
+        p_fire_precautions_details     IN     ptw_pro.ptw_lv_permits.fire_precautions_details%TYPE    DEFAULT NULL,
+        p_fire_alarm_arrangements      IN     ptw_pro.ptw_lv_permits.fire_alarm_arrangements%TYPE     DEFAULT NULL,
+        p_insurance_necessary          IN     ptw_pro.ptw_lv_permits.insurance_necessary%TYPE         DEFAULT NULL,
+        p_latitude                     IN     ptw_pro.ptw_lv_permits.site_work_latitude%TYPE,
+        p_longitude                    IN     ptw_pro.ptw_lv_permits.site_work_longitude%TYPE,
+        p_resolved_site_id             OUT    ptw_pro.ptw_lv_sites.site_id%TYPE,
+        p_permit_number                OUT    ptw_pro.ptw_lv_permits.permit_number%TYPE,
+        p_saved                        OUT    BOOLEAN,
+        p_message                      OUT    VARCHAR2
     ) IS
         v_site_id    ptw_pro.ptw_lv_sites.site_id%TYPE;
         v_company_id NUMBER;
@@ -103,6 +104,7 @@
                 isolation_comments,
                 fire_precautions_details,
                 fire_alarm_arrangements,
+                insurance_necessary,
                 current_step,
                 workflow_status,
                 site_work_latitude,
@@ -129,6 +131,7 @@
                 p_isolation_comments,
                 p_fire_precautions_details,
                 p_fire_alarm_arrangements,
+                p_insurance_necessary,
                 'SITE_WORK_DETAILS',
                 'DRAFT',
                 p_latitude,
@@ -144,50 +147,52 @@
         ELSE
             -- UPDATE EXISTING PERMIT (only if something has changed)
             UPDATE ptw_pro.ptw_lv_permits
-            SET ptw_type                    = NVL(p_ptw_type, ptw_type),
-                safety_programme_ref_no     = p_safety_programme_ref_no,
-                isolation_diagram_serial_no = p_isolation_diagram_serial_no,
-                site_id                     = v_site_id,
-                area_of_works               = p_area_of_works,
-                work_description            = p_work_description,
-                person_in_charge_name       = p_person_in_charge_name,
-                supervising_company         = p_supervising_company,
-                other_persons_count         = p_other_persons_count,
-                client_permission_granted   = p_client_permission_granted,
-                affects_it_systems          = p_affects_it_systems,
-                it_permission_granted       = p_it_permission_granted,
+            SET ptw_type                     = NVL(p_ptw_type, ptw_type),
+                safety_programme_ref_no      = p_safety_programme_ref_no,
+                isolation_diagram_serial_no  = p_isolation_diagram_serial_no,
+                site_id                      = v_site_id,
+                area_of_works                = p_area_of_works,
+                work_description             = p_work_description,
+                person_in_charge_name        = p_person_in_charge_name,
+                supervising_company          = p_supervising_company,
+                other_persons_count          = p_other_persons_count,
+                client_permission_granted    = p_client_permission_granted,
+                affects_it_systems           = p_affects_it_systems,
+                it_permission_granted        = p_it_permission_granted,
                 specialist_equipment_details = p_specialist_equipment_details,
-                fire_systems_affected      = p_fire_systems_affected,
-                fire_systems_isolated      = p_fire_systems_isolated,
-                insurer_informed_datetime  = p_insurer_informed_datetime,
-                isolation_comments         = p_isolation_comments,
-                fire_precautions_details   = p_fire_precautions_details,
-                fire_alarm_arrangements    = p_fire_alarm_arrangements,
-                site_work_latitude          = p_latitude,
-                site_work_longitude         = p_longitude,
-                modified_by                 = NVL(V('APP_USER'), USER),
-                modified_date               = CURRENT_TIMESTAMP
+                fire_systems_affected        = p_fire_systems_affected,
+                fire_systems_isolated        = p_fire_systems_isolated,
+                insurer_informed_datetime    = p_insurer_informed_datetime,
+                isolation_comments           = p_isolation_comments,
+                fire_precautions_details     = p_fire_precautions_details,
+                fire_alarm_arrangements      = p_fire_alarm_arrangements,
+                insurance_necessary          = p_insurance_necessary,
+                site_work_latitude           = p_latitude,
+                site_work_longitude          = p_longitude,
+                modified_by                  = NVL(V('APP_USER'), USER),
+                modified_date                = CURRENT_TIMESTAMP
             WHERE permit_id = p_permit_id
             AND (
-                NVL(ptw_type,                     'x') != NVL(p_ptw_type,                     ptw_type)         OR
-                NVL(safety_programme_ref_no,      'x') != NVL(p_safety_programme_ref_no,       'x')             OR
-                NVL(isolation_diagram_serial_no,  'x') != NVL(p_isolation_diagram_serial_no,   'x')             OR
-                NVL(site_id,                       -1) != NVL(v_site_id,                        -1)            OR
-                NVL(area_of_works,                'x') != NVL(p_area_of_works,                 'x')             OR
-                NVL(work_description,             'x') != NVL(p_work_description,              'x')             OR
-                NVL(person_in_charge_name,        'x') != NVL(p_person_in_charge_name,          'x')            OR
-                NVL(supervising_company,          'x') != NVL(p_supervising_company,            'x')            OR
-                NVL(TO_CHAR(other_persons_count), 'x') != NVL(TO_CHAR(p_other_persons_count),   'x')            OR
-                NVL(client_permission_granted,    'x') != NVL(p_client_permission_granted,      'x')            OR
-                NVL(affects_it_systems,           'x') != NVL(p_affects_it_systems,             'x')            OR
-                NVL(it_permission_granted,        'x') != NVL(p_it_permission_granted,          'x')            OR
-                NVL(specialist_equipment_details, 'x') != NVL(p_specialist_equipment_details,   'x')            OR
-                NVL(fire_systems_affected,        'x') != NVL(p_fire_systems_affected,          'x')            OR
-                NVL(fire_systems_isolated,        'x') != NVL(p_fire_systems_isolated,          'x')            OR
-                NVL(insurer_informed_datetime,    'x') != NVL(p_insurer_informed_datetime,      'x')            OR
-                NVL(isolation_comments,           'x') != NVL(p_isolation_comments,             'x')            OR
-                NVL(fire_precautions_details,     'x') != NVL(p_fire_precautions_details,       'x')            OR
-                NVL(fire_alarm_arrangements,      'x') != NVL(p_fire_alarm_arrangements,        'x')
+                NVL(ptw_type,                          'x') != NVL(p_ptw_type,                          ptw_type)         OR
+                NVL(safety_programme_ref_no,           'x') != NVL(p_safety_programme_ref_no,            'x')             OR
+                NVL(isolation_diagram_serial_no,       'x') != NVL(p_isolation_diagram_serial_no,        'x')             OR
+                NVL(site_id,                            -1) != NVL(v_site_id,                             -1)            OR
+                NVL(area_of_works,                     'x') != NVL(p_area_of_works,                      'x')             OR
+                NVL(work_description,                  'x') != NVL(p_work_description,                   'x')             OR
+                NVL(person_in_charge_name,             'x') != NVL(p_person_in_charge_name,               'x')            OR
+                NVL(supervising_company,               'x') != NVL(p_supervising_company,                 'x')            OR
+                NVL(TO_CHAR(other_persons_count),      'x') != NVL(TO_CHAR(p_other_persons_count),        'x')            OR
+                NVL(client_permission_granted,         'x') != NVL(p_client_permission_granted,           'x')            OR
+                NVL(affects_it_systems,                'x') != NVL(p_affects_it_systems,                  'x')            OR
+                NVL(it_permission_granted,             'x') != NVL(p_it_permission_granted,               'x')            OR
+                NVL(specialist_equipment_details,      'x') != NVL(p_specialist_equipment_details,        'x')            OR
+                NVL(fire_systems_affected,             'x') != NVL(p_fire_systems_affected,               'x')            OR
+                NVL(fire_systems_isolated,             'x') != NVL(p_fire_systems_isolated,               'x')            OR
+                NVL(insurer_informed_datetime,  DATE '0001-01-01') != NVL(p_insurer_informed_datetime,  DATE '0001-01-01') OR
+                NVL(isolation_comments,                'x') != NVL(p_isolation_comments,                 'x')            OR
+                NVL(fire_precautions_details,          'x') != NVL(p_fire_precautions_details,            'x')            OR
+                NVL(fire_alarm_arrangements,           'x') != NVL(p_fire_alarm_arrangements,             'x')            OR
+                NVL(insurance_necessary,               'x') != NVL(p_insurance_necessary,                 'x')
             )
             RETURNING permit_number INTO p_permit_number;
 

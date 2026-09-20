@@ -731,7 +731,7 @@ page 17 (
                 ```
         }
         layout {
-            sequence: 130
+            sequence: 150
             slot: contentBody
         }
         appearance {
@@ -753,7 +753,7 @@ page 17 (
         name: Buttons
         type: staticContent
         layout {
-            sequence: 150
+            sequence: 170
             slot: contentBody
         }
         appearance {
@@ -767,7 +767,7 @@ page 17 (
         title: Cancellation Details
         type: staticContent
         layout {
-            sequence: 120
+            sequence: 140
             slot: contentBody
         }
         appearance {
@@ -805,7 +805,7 @@ page 17 (
                 ```
         }
         layout {
-            sequence: 110
+            sequence: 130
             slot: contentBody
         }
         appearance {
@@ -833,7 +833,7 @@ page 17 (
                     </div>
                     <div class="t-Alert-content">
                       <div class="t-Alert-header">
-                        <h2 class="t-Alert-title">Cancellation of Permit to Work</h2>
+                        <h2 class="t-Alert-title">Cancellation of &P17_CANCEL_TITLE.</h2>
                       </div>
                       <div class="t-Alert-body">
                         Permit: <strong>&P17_PERMIT_NUMBER.</strong>
@@ -844,7 +844,7 @@ page 17 (
                 ```
         }
         layout {
-            sequence: 100
+            sequence: 120
             slot: contentBody
         }
         appearance {
@@ -874,7 +874,7 @@ page 17 (
                 ```
         }
         layout {
-            sequence: 140
+            sequence: 160
             slot: contentBody
         }
         appearance {
@@ -984,6 +984,17 @@ page 17 (
         }
     )
 
+    pageItem P17_CANCEL_TITLE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 110
+            slot: contentBody
+        }
+    )
+
     pageItem P17_CANCEL_WORK_COMPLETE (
         type: radioGroup
         label {
@@ -1030,6 +1041,17 @@ page 17 (
         }
         layout {
             sequence: 40
+            slot: contentBody
+        }
+    )
+
+    pageItem P17_PTW_TYPE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 100
             slot: contentBody
         }
     )
@@ -1485,10 +1507,12 @@ page 17 (
                    v_na_lng        ptw_pro.ptw_signatures.longitude%TYPE;
                    v_na_auth_to_dt ptw_pro.ptw_signatures.auth_to_datetime%TYPE;  -- NEW
                 BEGIN
-                    SELECT permit_number, workflow_status
-                    INTO   :P17_PERMIT_NUMBER, :P17_WORKFLOW_STATUS
+                    SELECT permit_number, workflow_status, ptw_type
+                    INTO   :P17_PERMIT_NUMBER, :P17_WORKFLOW_STATUS, :P17_PTW_TYPE
                     FROM   ptw_pro.ptw_lv_permits
                     WHERE  permit_id = :P17_PERMIT_ID;
+                
+                    :P17_CANCEL_TITLE := CASE WHEN :P17_PTW_TYPE = 'LIMITATION OF ACCESS' THEN 'Limitation of Access' ELSE 'Permit to Work' END;
                 
                     IF :P17_WORKFLOW_STATUS = 'CANCELLED' THEN
                 

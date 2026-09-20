@@ -340,7 +340,7 @@ page 10 (
         name: Buttons
         type: staticContent
         layout {
-            sequence: 290
+            sequence: 300
             slot: body
         }
         appearance {
@@ -369,7 +369,7 @@ page 10 (
                 ```
         }
         layout {
-            sequence: 150
+            sequence: 160
             slot: body
         }
         appearance {
@@ -398,7 +398,7 @@ page 10 (
                 ```
         }
         layout {
-            sequence: 130
+            sequence: 140
             slot: body
         }
         appearance {
@@ -412,7 +412,7 @@ page 10 (
         title: Monitoring Sign-Off
         type: staticContent
         layout {
-            sequence: 280
+            sequence: 290
             slot: body
         }
         appearance {
@@ -462,7 +462,7 @@ page 10 (
         title: Site Monitoring Checks
         type: staticContent
         layout {
-            sequence: 140
+            sequence: 150
             slot: body
         }
         appearance {
@@ -483,7 +483,7 @@ page 10 (
             valueProtected: false
         }
         layout {
-            sequence: 100
+            sequence: 110
             slot: body
         }
     )
@@ -494,7 +494,7 @@ page 10 (
             valueProtected: false
         }
         layout {
-            sequence: 110
+            sequence: 120
             slot: body
         }
     )
@@ -505,7 +505,7 @@ page 10 (
             valueProtected: false
         }
         layout {
-            sequence: 120
+            sequence: 130
             slot: body
         }
     )
@@ -692,7 +692,7 @@ page 10 (
             valueProtected: false
         }
         layout {
-            sequence: 90
+            sequence: 100
             slot: body
         }
     )
@@ -781,7 +781,7 @@ page 10 (
             alignment: left
         }
         layout {
-            sequence: 190
+            sequence: 200
             slot: body
             alignment: left
             startNewRow: false
@@ -806,7 +806,7 @@ page 10 (
             alignment: left
         }
         layout {
-            sequence: 160
+            sequence: 170
             slot: body
             alignment: left
             columnSpan: 6
@@ -835,7 +835,7 @@ page 10 (
             displayNullValue: false
         }
         layout {
-            sequence: 170
+            sequence: 180
             slot: body
             alignment: left
             startNewRow: false
@@ -855,7 +855,7 @@ page 10 (
             alignment: left
         }
         layout {
-            sequence: 180
+            sequence: 190
             slot: body
             alignment: left
             columnSpan: 3
@@ -878,7 +878,7 @@ page 10 (
             alignment: left
         }
         layout {
-            sequence: 230
+            sequence: 240
             slot: body
             alignment: left
             startNewRow: false
@@ -900,7 +900,7 @@ page 10 (
             alignment: left
         }
         layout {
-            sequence: 200
+            sequence: 210
             slot: body
             alignment: left
             columnSpan: 6
@@ -929,7 +929,7 @@ page 10 (
             displayNullValue: false
         }
         layout {
-            sequence: 210
+            sequence: 220
             slot: body
             alignment: left
             startNewRow: false
@@ -949,7 +949,7 @@ page 10 (
             alignment: left
         }
         layout {
-            sequence: 220
+            sequence: 230
             slot: body
             alignment: left
             columnSpan: 3
@@ -972,7 +972,7 @@ page 10 (
             alignment: left
         }
         layout {
-            sequence: 270
+            sequence: 280
             slot: body
             alignment: left
             startNewRow: false
@@ -994,7 +994,7 @@ page 10 (
             alignment: left
         }
         layout {
-            sequence: 240
+            sequence: 250
             slot: body
             alignment: left
             columnSpan: 6
@@ -1023,7 +1023,7 @@ page 10 (
             displayNullValue: false
         }
         layout {
-            sequence: 250
+            sequence: 260
             slot: body
             alignment: left
             startNewRow: false
@@ -1043,7 +1043,7 @@ page 10 (
             alignment: left
         }
         layout {
-            sequence: 260
+            sequence: 270
             slot: body
             alignment: left
             columnSpan: 3
@@ -1077,6 +1077,17 @@ page 10 (
         }
         layout {
             sequence: 70
+            slot: body
+        }
+    )
+
+    pageItem P10_PTW_TYPE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 90
             slot: body
         }
     )
@@ -1561,6 +1572,33 @@ page 10 (
 
     )
 
+    dynamicAction relabel-for-fire-isolation (
+        name: relabel-for-fire-isolation
+        execution {
+            sequence: 100
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                         if (apex.item("P10_PTW_TYPE").getValue() === "FIRE SYSTEMS ISOLATION") {
+                             var lbl = document.querySelector('label[for="P10_CHK_PERMIT_ON_DISPLAY"]');
+                             if (lbl) { lbl.textContent = "Is Isolation on display?"; }
+                         }
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
     dynamicAction set-time-fields-to-native-time-input (
         name: Set Time Fields to Native Time Input
         execution {
@@ -1940,8 +1978,8 @@ page 10 (
                     v_clob   CLOB;
                 BEGIN
                     -- Always load permit number and workflow status
-                    SELECT permit_number, workflow_status
-                    INTO   :P10_PERMIT_NUMBER, :P10_WORKFLOW_STATUS
+                    SELECT permit_number, workflow_status, ptw_type
+                    INTO   :P10_PERMIT_NUMBER, :P10_WORKFLOW_STATUS, :P10_PTW_TYPE
                     FROM   ptw_pro.ptw_lv_permits
                     WHERE  permit_id = :P10_PERMIT_ID;
                 

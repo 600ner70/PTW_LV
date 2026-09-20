@@ -224,7 +224,7 @@ page 5 (
 
     region acceptance-declaration (
         name: Acceptance Declaration
-        title: Acceptance of this Permit to Work
+        title: Acceptance of this &P5_DOC_TERM.
         type: staticContent
         source {
             htmlCode:
@@ -232,9 +232,9 @@ page 5 (
                 <div class="ptw-section-card">
                     <div class="ptw-section-body">
                         <div class="declaration-box">
-                            <strong>Acceptance of this Permit to Work:</strong>
+                            <strong>Acceptance of this &P5_DOC_TERM.:</strong>
                             I certify that I am competent to supervise and undertake the works
-                            detailed within this Permit to Work and have read and fully understand
+                            detailed within this &P5_DOC_TERM. and have read and fully understand
                             the documentation associated with this work activity. I am satisfied
                             that those personnel who will be employed on the task are properly
                             equipped and understand the relevant safety and emergency procedures
@@ -246,7 +246,7 @@ page 5 (
                 ```
         }
         layout {
-            sequence: 260
+            sequence: 250
             slot: body
         }
         appearance {
@@ -265,7 +265,7 @@ page 5 (
         title: Person in Charge of Works Details
         type: staticContent
         layout {
-            sequence: 270
+            sequence: 260
             slot: body
         }
         appearance {
@@ -307,7 +307,7 @@ page 5 (
 
     region authorisation-declaration (
         name: Authorisation Declaration
-        title: Authorisation of this Permit to Work
+        title: Authorisation of this &P5_DOC_TERM.
         type: staticContent
         source {
             htmlCode:
@@ -315,7 +315,7 @@ page 5 (
                 <div class="ptw-section-card">
                     <div class="ptw-section-body">
                         <div class="declaration-box">
-                            <strong>Authorisation of this Permit to Work:</strong>
+                            <strong>Authorisation of this &P5_DOC_TERM.:</strong>
                             I have reviewed all aspects of the task/activity and I am satisfied
                             with the arrangements as detailed within the relevant risk assessment
                             and method statement that have been put in place and certify that
@@ -328,7 +328,7 @@ page 5 (
                 ```
         }
         layout {
-            sequence: 240
+            sequence: 230
             slot: body
         }
         appearance {
@@ -347,7 +347,7 @@ page 5 (
         title: Authorised Person Details
         type: staticContent
         layout {
-            sequence: 250
+            sequence: 240
             slot: body
         }
         appearance {
@@ -392,7 +392,7 @@ page 5 (
         name: Buttons
         type: staticContent
         layout {
-            sequence: 280
+            sequence: 270
             slot: body
         }
         appearance {
@@ -415,7 +415,7 @@ page 5 (
                 ```
         }
         layout {
-            sequence: 210
+            sequence: 220
             slot: body
         }
         serverSideCondition {
@@ -437,7 +437,7 @@ page 5 (
                 ```
         }
         layout {
-            sequence: 200
+            sequence: 210
             slot: body
         }
         appearance {
@@ -526,7 +526,7 @@ page 5 (
                 ```
         }
         layout {
-            sequence: 180
+            sequence: 190
             slot: body
         }
         appearance {
@@ -549,7 +549,7 @@ page 5 (
                 ```
         }
         layout {
-            sequence: 190
+            sequence: 200
             slot: body
         }
         appearance {
@@ -860,6 +860,17 @@ page 5 (
         }
         layout {
             sequence: 60
+            slot: body
+        }
+    )
+
+    pageItem P5_DOC_TERM (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 180
             slot: body
         }
     )
@@ -1526,6 +1537,8 @@ page 5 (
                     END;
                 
                     :G_ACTIVE_PERMIT_ID := :P5_PERMIT_ID;
+                
+                    :P5_DOC_TERM := CASE WHEN :P5_PTW_TYPE = 'LIMITATION OF ACCESS' THEN 'Limitation of Access' ELSE 'Permit to Work' END;
                 
                     DECLARE
                         v_auth_sig        BLOB;

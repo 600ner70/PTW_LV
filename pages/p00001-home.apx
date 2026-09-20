@@ -585,7 +585,7 @@ page 1 (
                           END
                     END ||
                     CASE
-                        WHEN p.workflow_status = 'STARTED' AND p.ptw_type = 'HOT WORK'
+                        WHEN p.workflow_status = 'STARTED' AND p.ptw_type IN ('HOT WORK', 'FIRE SYSTEMS ISOLATION')
                             AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y')
                         THEN '<a href="' || apex_page.get_url(
                                         p_page   => 18,
@@ -597,7 +597,7 @@ page 1 (
                          title="Fire Watch">
                          <span class="t-Icon fa fa-fire" aria-hidden="true"></span>
                       </a>'
-                        WHEN p.workflow_status IN ('COMPLETED','LAPSED') AND p.ptw_type = 'HOT WORK'
+                        WHEN p.workflow_status IN ('COMPLETED','LAPSED') AND p.ptw_type IN ('HOT WORK', 'FIRE SYSTEMS ISOLATION')
                             AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y')
                         THEN '<a href="' || apex_page.get_url(
                                         p_page   => 18,
@@ -770,6 +770,23 @@ page 1 (
                           title="Permit History">
                           <span class="t-Icon fa fa-book" aria-hidden="true"></span>
                         </a>' END ||
+                        '<a href="' || apex_page.get_url(
+                                        p_page   => 19,
+                                        p_items  => 'P19_PERMIT_ID,P19_PERMIT_NUMBER',
+                                        p_values => p.permit_id || ',' || p.permit_number,
+                                        p_clear_cache => 19
+                                    ) || '"
+                             class="t-Button t-Button--noLabel t-Button--icon ' ||
+                             CASE WHEN ptw_pro.ptw_permit_link_pkg.get_link_count(p.permit_id) > 0
+                                  THEN 't-Button--success' ELSE 't-Button--normal' END ||
+                             ' ptw-action-btn"
+                             title="' ||
+                             CASE WHEN ptw_pro.ptw_permit_link_pkg.get_link_count(p.permit_id) > 0
+                                  THEN 'Linked Permits (' || ptw_pro.ptw_permit_link_pkg.get_link_count(p.permit_id) || ')'
+                                  ELSE 'Link to Another Permit' END ||
+                             '">
+                             <span class="t-Icon fa fa-link" aria-hidden="true"></span>
+                         </a>' ||
                     '</div>' AS actions,
                     p.ptw_type,
                     CASE
@@ -1329,7 +1346,7 @@ page 1 (
                     -- independent of Monitoring, matching the desktop report's structure
                     -- where both can render together for the same permit
                     CASE
-                        WHEN p.workflow_status = 'STARTED' AND p.ptw_type = 'HOT WORK'
+                        WHEN p.workflow_status = 'STARTED' AND p.ptw_type IN ('HOT WORK', 'FIRE SYSTEMS ISOLATION')
                             AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y')
                         THEN '<a href="' || apex_page.get_url(
                                         p_page   => 18,
@@ -1341,7 +1358,7 @@ page 1 (
                          title="Fire Watch">
                          <span class="t-Icon fa fa-fire" aria-hidden="true"></span>
                       </a>'
-                        WHEN p.workflow_status IN ('COMPLETED','LAPSED') AND p.ptw_type = 'HOT WORK'
+                        WHEN p.workflow_status IN ('COMPLETED','LAPSED') AND p.ptw_type IN ('HOT WORK', 'FIRE SYSTEMS ISOLATION')
                             AND (:APP_IS_ENGINEER = 'Y' OR :APP_IS_ADMIN = 'Y')
                         THEN '<a href="' || apex_page.get_url(
                                         p_page   => 18,
@@ -1523,7 +1540,22 @@ page 1 (
                             title="Permit History">
                             <span class="t-Icon fa fa-book" aria-hidden="true"></span>
                          </a>'
-                    END AS view_history_html
+                    END AS view_history_html,
+                
+                            -- Link button — always available, colour/count reflect existing links
+                        '<a href="' || apex_page.get_url(
+                                        p_page   => 19,
+                                        p_items  => 'P19_PERMIT_ID,P19_PERMIT_NUMBER',
+                                        p_values => p.permit_id || ',' || p.permit_number,
+                                        p_clear_cache => 19
+                                    ) || '"
+                             class="t-Button t-Button--noLabel t-Button--icon ' ||
+                             CASE WHEN ptw_pro.ptw_permit_link_pkg.get_link_count(p.permit_id) > 0
+                                  THEN 't-Button--success' ELSE 't-Button--normal' END ||
+                             ' ptw-action-btn"
+                             title="Linked Permits">
+                             <span class="t-Icon fa fa-link" aria-hidden="true"></span>
+                         </a>' AS link_html
                 
                 FROM ptw_pro.ptw_lv_permits p
                 LEFT JOIN ptw_pro.ptw_lv_sites s ON s.site_id = p.site_id
@@ -1711,6 +1743,18 @@ page 1 (
             }
         )
 
+        column LINK_HTML (
+            reportColumnQueryId: 22
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 220
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
         column MONITORING_HTML (
             reportColumnQueryId: 17
             derivedColumn: N
@@ -1789,6 +1833,7 @@ page 1 (
                         #MONITORING_HTML#
                         #CLEARANCE_HTML#
                         #CANCELLATION_HTML#
+                        #LINK_HTML#
                         #VIEW_PDF_HTML#
                         #VIEW_HISTORY_HTML#
                       </div>

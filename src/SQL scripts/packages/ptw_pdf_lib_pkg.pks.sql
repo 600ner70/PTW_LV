@@ -1,15 +1,30 @@
 
   CREATE OR REPLACE EDITIONABLE PACKAGE "PTW_PRO"."PTW_PDF_LIB_PKG" AS
     --------------------------------------------------------------------------
+    -- STEP 2 of the run order.
     -- Shared PDF plumbing used by every per-type PDF function
     -- (GENERATE_PTW_LV_PDF, GENERATE_PTW_GENERAL_PDF, and whatever comes
     -- next). Nothing in here is permit-content that a customer would want
-    -- to customise — it's formatting helpers, signature rendering, and the
+    -- to customise - it's formatting helpers, signature rendering, and the
     -- sections that are genuinely identical regardless of permit type
     -- (site/work details, signature stages, monitoring, stage history).
     --
     -- A type's own PDF function stays free to skip any of these and write
-    -- bespoke HTML instead — nothing here is mandatory to call.
+    -- bespoke HTML instead - nothing here is mandatory to call.
+    --
+    -- VISUAL UPDATE (this version): restyled GET_DOCUMENT_HEAD (the page
+    -- background/header/section-title CSS, shared by every type) and
+    -- GET_SITE_WORK_DETAILS_HTML (shared by every type) to read more like
+    -- the original BGIS paper form and less like a web-app card: sharp
+    -- corners instead of rounded, a muted neutral page background instead
+    -- of a saturated colour wash, and Site & Work Details rendered as a
+    -- genuine bordered 2-field-pair grid (new .ptw-lv-detail-grid class)
+    -- instead of stacked single-column label:value rows. Nothing else in
+    -- this package changed - Control Measures, PPE, Equipment Isolation,
+    -- signatures, monitoring, history all render exactly as before.
+    -- FIRE_ISOLATION_IMPLEMENTATION.md has the matching change for that
+    -- type's own bespoke Client Permission section, which reuses the new
+    -- grid class for visual consistency with Site & Work Details.
     --------------------------------------------------------------------------
 
     -- ---- Formatting helpers -------------------------------------------
@@ -47,7 +62,14 @@
     FUNCTION get_site_work_details_html (p_permit_id NUMBER) RETURN CLOB;
     FUNCTION get_control_measures_html  (p_permit_id NUMBER) RETURN CLOB;
     FUNCTION get_ppe_html               (p_permit_id NUMBER) RETURN CLOB;
-    FUNCTION get_equipment_isolation_html (p_permit_id NUMBER) RETURN CLOB;
+    -- p_ptw_type controls the column headings only (data/table structure is
+    -- identical for every type - PTW_LV_EQUIPMENT_ISOLATION has no type-specific
+    -- columns). Defaults to the original LV Isolation / generic wording so
+    -- every existing caller is unaffected.
+    FUNCTION get_equipment_isolation_html (
+        p_permit_id NUMBER,
+        p_ptw_type  VARCHAR2 DEFAULT 'LV ISOLATION'
+    ) RETURN CLOB;
     FUNCTION get_authorisation_html     (p_permit_id NUMBER, p_ptw_type VARCHAR2 DEFAULT 'LV ISOLATION') RETURN CLOB;
     FUNCTION get_acceptance_html        (p_permit_id NUMBER, p_ptw_type VARCHAR2 DEFAULT 'LV ISOLATION') RETURN CLOB;
     FUNCTION get_clearance_html         (p_permit_id NUMBER, p_ptw_type VARCHAR2 DEFAULT 'LV ISOLATION') RETURN CLOB;
@@ -55,10 +77,15 @@
 
     -- All monitoring visit pages, including the trailing "Generated" stamp
     -- when there are none. p_page_heading lets a type use different wording
-    -- (e.g. "Low Voltage Monitoring" vs "Site Monitoring").
+    -- (e.g. "Low Voltage Monitoring" vs "Site Monitoring"). p_ptw_type
+    -- controls the individual check labels only (data/table structure is
+    -- identical for every type - PTW_LV_MONITORING has no type-specific
+    -- columns). Defaults to the original wording so every existing caller
+    -- is unaffected.
     FUNCTION get_monitoring_pages_html (
         p_permit_id    NUMBER,
-        p_page_heading VARCHAR2 DEFAULT 'Site Monitoring'
+        p_page_heading VARCHAR2 DEFAULT 'Site Monitoring',
+        p_ptw_type     VARCHAR2 DEFAULT 'LV ISOLATION'
     ) RETURN CLOB;
 
     FUNCTION get_stage_history_html (p_permit_id NUMBER) RETURN CLOB;
@@ -188,16 +215,27 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
 
     FUNCTION get_document_head (p_document_title VARCHAR2, p_ptw_type VARCHAR2 DEFAULT 'LV ISOLATION') RETURN CLOB IS
         -- Per-type theme colours, sampled directly from each source form:
-        --   LV ISOLATION: pale blue-grey page wash (BGIS form)
-        --   WORKING AT HEIGHT: pale mint page wash (Vantage form)
-        --   GENERAL: plain white, no wash (Smart form has none)
+        --   LV ISOLATION: pale blue-grey (BGIS form) - also used by FIRE
+        --     SYSTEMS ISOLATION, another BGIS-format form (falls into the
+        --     ELSE branch - no separate CASE needed, same source brand).
+        --   WORKING AT HEIGHT: pale mint (Vantage form)
+        --   GENERAL: plain white/grey (Smart form has no wash)
         -- All three real forms use dark text on white/pale sections, never
-        -- white-on-solid-colour bars — so header/section text is dark here
+        -- white-on-solid-colour bars - so header/section text is dark here
         -- too, not the previous white-on-navy treatment.
-        v_page_bg    VARCHAR2(10);   -- page margin wash
+        --
+        -- v_page_bg was previously used as a saturated full-page wash
+        -- behind the document (e.g. #789abd, a fairly strong blue) - on a
+        -- printed/PDF page that reads as a loud app-generated background
+        -- rather than an official form, so it's now only used for border/
+        -- accent colour, not filled behind the whole page. The page
+        -- background itself is a single, muted neutral grey for every
+        -- type - closer to what an actual printed form sits on.
+        v_page_bg    VARCHAR2(10);   -- border/accent colour (was: page wash fill)
         v_tint       VARCHAR2(10);   -- pale fill for section/table headers
         v_accent     VARCHAR2(10);   -- stronger accent for the declaration-box stripe
         v_text       VARCHAR2(10) := '#1a1a1a';
+        c_page_bg    CONSTANT VARCHAR2(10) := '#eef0f2'; -- neutral, same for every type
     BEGIN
         CASE p_ptw_type
             WHEN 'WORKING AT HEIGHT' THEN
@@ -208,7 +246,7 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
                 v_page_bg := '#ffffff';
                 v_tint    := '#f0f0f0';
                 v_accent  := '#444444'; -- no wash colour exists to reuse; real form's rules are plain dark grey/black
-            ELSE -- LV ISOLATION (default)
+            ELSE -- LV ISOLATION / FIRE SYSTEMS ISOLATION (default - both BGIS-format forms)
                 v_page_bg := '#789abd';
                 v_tint    := '#c9d7e5';
                 v_accent  := v_page_bg;
@@ -224,13 +262,16 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
     body {
         font-family: Arial, Helvetica, sans-serif;
         font-size: 9pt; color: #333; margin: 0; padding: 0;
-        background: ' || v_page_bg || ';
+        background: ' || c_page_bg || ';
     }
-    .ptw-lv-report-container { max-width: 780px; margin: 0 auto; background: #fff; }
+    .ptw-lv-report-container {
+        max-width: 780px; margin: 0 auto; background: #fff;
+        border: 1px solid #aab4bf;
+    }
 
     .ptw-lv-header {
         background: ' || v_tint || '; color: ' || v_text || ';
-        padding: 12px 16px; border-radius: 4px 4px 0 0;
+        padding: 12px 16px;
         border-bottom: 2px solid ' || v_page_bg || ';
     }
     .ptw-lv-header h1 {
@@ -239,32 +280,51 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
     }
     .header-refs {
         display: flex; gap: 10px; font-size: 8pt;
-        border-top: 1px solid rgba(0,0,0,0.12);
+        border-top: 1px solid rgba(0,0,0,0.25);
         padding-top: 6px; margin-top: 4px;
     }
     .header-refs div { flex: 1; }
 
-    .ptw-lv-section { border: 1px solid #c0c0c0; border-top: none; }
+    .ptw-lv-section { border: 1px solid #99a4b0; border-top: none; }
     .ptw-lv-section-title {
         background: ' || v_tint || '; color: ' || v_text || ';
         padding: 5px 12px; font-weight: 700; font-size: 8.5pt;
         text-transform: uppercase; letter-spacing: 0.3px;
-        border-bottom: 1px solid #c0c0c0;
+        border-bottom: 1px solid #99a4b0;
     }
     .ptw-lv-section-subtitle {
         background: ' || v_tint || '; color: ' || v_text || ';
         padding: 4px 12px; font-weight: 700; font-size: 8pt;
-        border-bottom: 1px solid #c0c0c0;
+        border-bottom: 1px solid #99a4b0;
     }
 
     .ptw-lv-row {
         display: flex; padding: 4px 12px;
-        border-bottom: 1px solid #eee; font-size: 8.5pt;
+        border-bottom: 1px solid #d7dce2; font-size: 8.5pt;
         align-items: flex-start;
     }
     .ptw-lv-row:last-child { border-bottom: none; }
     .ptw-lv-label { width: 42%; font-weight: 600; color: #333; padding-right: 8px; }
     .ptw-lv-value { width: 58%; }
+
+    /* Bordered 2-field-pair grid - matches the layout used on the source
+       paper form itself (e.g. "Site details..." | value | "Name of person..."
+       | value, all four cells fully bordered). Used by
+       GET_SITE_WORK_DETAILS_HTML and, in FIRE SYSTEMS ISOLATION, the
+       Client Permission section - not a drop-in replacement for
+       .ptw-lv-row everywhere, just where the source form itself uses a
+       real grid rather than a single-column list of questions. */
+    .ptw-lv-detail-grid { width: 100%; border-collapse: collapse; font-size: 8.5pt; table-layout: fixed; }
+    .ptw-lv-detail-grid td {
+        border: 1px solid #99a4b0; padding: 5px 10px; vertical-align: top;
+    }
+    .ptw-lv-detail-grid td.g-label {
+        background: ' || v_tint || '; color: ' || v_text || ';
+        font-weight: 700; width: 23%;
+    }
+    .ptw-lv-detail-grid td.g-value { width: 27%; }
+    .ptw-lv-detail-grid td.g-value-wide { width: 77%; }
+    .ptw-lv-detail-grid td.g-label-wide { width: 23%; }
 
     .ptw-lv-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
     .ptw-lv-table th {
@@ -417,29 +477,32 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
             WHEN NO_DATA_FOUND THEN v_site_name := v_site_details_txt;
         END;
 
+        -- Rendered as a bordered 2-field-pair grid, matching the source
+        -- form's own table layout - and, on the source form, "Name of
+        -- person" and "company responsible for supervising the works"
+        -- are ONE field, not two, so that pairing is reproduced here by
+        -- displaying both values in a single cell (two lines) rather
+        -- than splitting the grid into a 3rd row. No schema/data change -
+        -- PERSON_IN_CHARGE_NAME and SUPERVISING_COMPANY are still two
+        -- separate columns underneath, just presented together here.
         RETURN '
     <div class="ptw-lv-section">
         <div class="ptw-lv-section-title">Site &amp; Work Details</div>
-        <div class="ptw-lv-row">
-            <div class="ptw-lv-label">Site details and area of works:</div>
-            <div class="ptw-lv-value">' || safe_val(v_site_name || ' - ' || v_area_of_works) || '</div>
-        </div>
-        <div class="ptw-lv-row">
-            <div class="ptw-lv-label">Description of work activity:</div>
-            <div class="ptw-lv-value">' || safe_val(v_work_description) || '</div>
-        </div>
-        <div class="ptw-lv-row">
-            <div class="ptw-lv-label">Name of Person in Charge:</div>
-            <div class="ptw-lv-value">' || safe_val(v_pic_name) || '</div>
-        </div>
-        <div class="ptw-lv-row">
-            <div class="ptw-lv-label">Company responsible for supervising the works:</div>
-            <div class="ptw-lv-value">' || safe_val(v_company) || '</div>
-        </div>
-        <div class="ptw-lv-row">
-            <div class="ptw-lv-label">Number of other persons working under this Permit:</div>
-            <div class="ptw-lv-value">' || safe_num(v_other_persons) || '</div>
-        </div>
+        <table class="ptw-lv-detail-grid">
+            <tr>
+                <td class="g-label">Site details and area of works:</td>
+                <td class="g-value">' || safe_val(v_site_name || ' - ' || v_area_of_works) || '</td>
+                <td class="g-label">Name of person and company responsible for supervising the works:</td>
+                <td class="g-value">' || safe_val(v_pic_name) ||
+                    CASE WHEN v_company IS NOT NULL THEN '<br>' || safe_val(v_company) ELSE '' END || '</td>
+            </tr>
+            <tr>
+                <td class="g-label">Description of work activity:</td>
+                <td class="g-value">' || safe_val(v_work_description) || '</td>
+                <td class="g-label">Number of other persons working under this Permit:</td>
+                <td class="g-value">' || safe_num(v_other_persons) || '</td>
+            </tr>
+        </table>
     </div>';
     END get_site_work_details_html;
 
@@ -541,10 +604,30 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
     END get_ppe_html;
 
 
-    FUNCTION get_equipment_isolation_html (p_permit_id NUMBER) RETURN CLOB IS
-        v_html CLOB;
+    FUNCTION get_equipment_isolation_html (
+        p_permit_id NUMBER,
+        p_ptw_type  VARCHAR2 DEFAULT 'LV ISOLATION'
+    ) RETURN CLOB IS
+        v_html      CLOB;
+        v_col1      VARCHAR2(40);
+        v_col2      VARCHAR2(40);
+        v_col3      VARCHAR2(40);
     BEGIN
         DBMS_LOB.CREATETEMPORARY(v_html, TRUE, DBMS_LOB.CALL);
+
+        -- Column headings only - every other type keeps the original
+        -- "Equipment isolated / Means of isolation / Safety lock no."
+        -- wording exactly as before.
+        IF p_ptw_type = 'FIRE SYSTEMS ISOLATION' THEN
+            v_col1 := 'System isolated';
+            v_col2 := 'Panel';
+            v_col3 := 'Safety lock nos.';
+        ELSE
+            v_col1 := 'Equipment isolated';
+            v_col2 := 'Means of isolation';
+            v_col3 := 'Safety lock no.';
+        END IF;
+
         v_html := '
     <div class="ptw-lv-section section-flow">
         <div class="ptw-lv-section-title">Equipment Isolation</div>
@@ -552,9 +635,9 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
             <thead>
                 <tr>
                     <th style="width:28px;">No.</th>
-                    <th>Equipment isolated</th>
-                    <th>Means of isolation</th>
-                    <th style="width:95px;">Safety lock no.</th>
+                    <th>' || v_col1 || '</th>
+                    <th>' || v_col2 || '</th>
+                    <th style="width:95px;">' || v_col3 || '</th>
                 </tr>
             </thead>
             <tbody>';
@@ -685,7 +768,7 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
 
         -- General's real form labels this signatory "Competent Person" (and also
         -- has a separate "Engineer" signatory the app does not currently capture
-        -- at this stage — flagging, not fabricating, that second signature).
+        -- at this stage - flagging, not fabricating, that second signature).
         IF p_ptw_type = 'GENERAL' THEN
             v_declaration :=
                 'I have had this document explained to me and accept responsibility for
@@ -757,7 +840,7 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
 
         -- General's real form calls this stage "Completion of Works" and talks
         -- about reinstating "the system", not "the plant and equipment". It also
-        -- asserts personal isolations were removed — the app has no field for
+        -- asserts personal isolations were removed - the app has no field for
         -- that today, so that clause is deliberately omitted rather than
         -- asserted without data behind it.
         IF p_ptw_type = 'GENERAL' THEN
@@ -772,7 +855,7 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
             -- Height source forms. The previous version here dropped "which
             -- has been worked on under this Permit to Work and that all
             -- personnel have vacated the place of works" and reordered the
-            -- remaining sentences — a pre-existing bug, not something WAH
+            -- remaining sentences - a pre-existing bug, not something WAH
             -- introduced; it just surfaced when WAH's real form was checked
             -- against this same shared branch.
             v_section_title := 'Clearance of this Permit to Work';
@@ -880,7 +963,7 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
         END;
 
         -- General's real form has no certification paragraph at this final
-        -- stage at all — it's titled "Permit Closure" and is just a plain
+        -- stage at all - it's titled "Permit Closure" and is just a plain
         -- signature block (Authorising Person + From + Signature). Rather
         -- than invent legal text that was never on the form, this branch
         -- drops the declaration-box and the "Works complete" row (that
@@ -909,7 +992,7 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
         END IF;
 
         -- Working at Height's real form has a genuinely shorter Cancellation
-        -- clause than LV's — no [completed]/[not complete] bracket, and no
+        -- clause than LV's - no [completed]/[not complete] bracket, and no
         -- "further Permit may be required" sentence. Verified by rasterizing
         -- the source form directly, not assumed from the shared LV wording.
         IF p_ptw_type = 'WORKING AT HEIGHT' THEN
@@ -978,14 +1061,28 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
 
     FUNCTION get_monitoring_pages_html (
         p_permit_id    NUMBER,
-        p_page_heading VARCHAR2 DEFAULT 'Site Monitoring'
+        p_page_heading VARCHAR2 DEFAULT 'Site Monitoring',
+        p_ptw_type     VARCHAR2 DEFAULT 'LV ISOLATION'
     ) RETURN CLOB IS
         v_html      CLOB;
         v_mon_count NUMBER := 0;
         v_mon_num   NUMBER := 0;
         v_permit_number ptw_pro.ptw_lv_permits.permit_number%TYPE;
+        v_issuer_label  VARCHAR2(20);
+        v_display_label VARCHAR2(40);
     BEGIN
         DBMS_LOB.CREATETEMPORARY(v_html, TRUE, DBMS_LOB.CALL);
+
+        -- Wording only - the underlying data/table is identical for every
+        -- type. Source form for FIRE SYSTEMS ISOLATION says "Isolation"
+        -- throughout where every other type's form says "Permit".
+        IF p_ptw_type = 'FIRE SYSTEMS ISOLATION' THEN
+            v_issuer_label  := 'isolation';
+            v_display_label := 'Is Isolation on display?';
+        ELSE
+            v_issuer_label  := 'permit';
+            v_display_label := 'Is Permit on display?';
+        END IF;
 
         SELECT permit_number INTO v_permit_number
         FROM   ptw_pro.ptw_lv_permits WHERE permit_id = p_permit_id;
@@ -1010,7 +1107,7 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
 
             v_html := v_html || '<div class="ptw-lv-section">'
                              || '<div class="declaration-box" style="padding:6px 12px;">'
-                             || 'The following checks are to be undertaken by the issuer of this permit.'
+                             || 'The following checks are to be undertaken by the issuer of this ' || v_issuer_label || '.'
                              || '</div></div>';
 
             v_html := v_html || '<div class="ptw-lv-section section-flow">'
@@ -1023,7 +1120,7 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
                              || '<th style="width:90px;">Time of check</th>'
                              || '</tr></thead><tbody>';
 
-            v_html := v_html || '<tr><td>Is Permit on display?</td>'
+            v_html := v_html || '<tr><td>' || v_display_label || '</td>'
                 || '<td style="text-align:center;">' || CASE v_mon.chk_permit_on_display WHEN 'Y'  THEN '<span class="tick-mark">&#10003;</span>' ELSE '' END || '</td>'
                 || '<td style="text-align:center;">' || CASE v_mon.chk_permit_on_display WHEN 'N'  THEN '<span class="tick-mark" style="color:#c0392b;">&#10003;</span>' ELSE '' END || '</td>'
                 || '<td style="text-align:center;">' || CASE v_mon.chk_permit_on_display WHEN 'NA' THEN '<span class="na-mark">N/A</span>' ELSE '' END || '</td>'
@@ -1047,9 +1144,9 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
                              || '<div class="ptw-lv-section-title">Checks Against Work Processes &amp; Method Statement</div>'
                              || '<div style="font-size:7.5pt;color:#555;padding:5px 12px;'
                              || 'font-style:italic;border-bottom:1px solid #eee;">'
-                             || 'Considering the work involved under this Permit, on reading the method '
+                             || 'Considering the work involved under this ' || INITCAP(v_issuer_label) || ', on reading the method '
                              || 'statement detail below an element you wish to check for compliance. '
-                             || 'Note: the minimum is one check per task carried out under each Permit, '
+                             || 'Note: the minimum is one check per task carried out under each ' || INITCAP(v_issuer_label) || ', '
                              || 'but more are recommended dependent on activity complexity.</div>'
                              || '<table class="ptw-lv-table"><thead><tr>'
                              || '<th style="width:50%;">Column A &mdash; Detail the item or part of the '

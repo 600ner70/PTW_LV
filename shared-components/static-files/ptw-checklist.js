@@ -7,6 +7,13 @@
  * Static Application File — reference on Page 0 via File URLs, per
  * DEVELOPER_NOTES.md section 4 ("Reusable JavaScript Functions — USE
  * STATIC APPLICATION FILES").
+ *
+ * CHANGE (Fire Systems Isolation): added response_type 'TICK_NA' — a
+ * two-badge Tick/N-A row (no "No" badge), for checklist sections whose
+ * source form has a Tick/N-A layout rather than a Yes/No/N-A layout.
+ * Reuses the exact same cm-badge / cm-badge-row markup and the same
+ * click handler as TRISTATE, just with the 'N' badge left out — no CSS
+ * changes needed.
  */
 var PTW = window.PTW || {};
 
@@ -14,8 +21,8 @@ PTW.checklist = (function () {
     'use strict';
 
     var BADGES = [
-        { val: 'Y',  cls: 'cm-badge-yes', label: '\u2713' }, // check
-        { val: 'N',  cls: 'cm-badge-no',  label: '\u2717' }, // cross
+        { val: 'Y',  cls: 'cm-badge-yes', label: '✓' }, // check
+        { val: 'N',  cls: 'cm-badge-no',  label: '✗' }, // cross
         { val: 'NA', cls: 'cm-badge-na',  label: 'N/A' }
     ];
 
@@ -29,10 +36,11 @@ PTW.checklist = (function () {
         return null;
     }
 
-    function renderTristateRow($inputContainer, item, isReadOnly) {
+    // Shared by TRISTATE (all 3 badges) and TICK_NA (Y/NA only, no N).
+    function renderBadgeRow($inputContainer, item, isReadOnly, badgeList) {
         var $row = $('<div class="cm-badge-row"></div>').attr('data-item-id', item.checklist_item_id);
 
-        BADGES.forEach(function (b) {
+        badgeList.forEach(function (b) {
             $('<span></span>')
                 .addClass('cm-badge ' + b.cls)
                 .toggleClass('cm-active', item.response === b.val)
@@ -45,6 +53,16 @@ PTW.checklist = (function () {
         $inputContainer.append($row);
     }
 
+    function renderTristateRow($inputContainer, item, isReadOnly) {
+        renderBadgeRow($inputContainer, item, isReadOnly, BADGES);
+    }
+
+    // Tick/N-A only — same badges/handler as tristate, 'No' left out.
+    function renderTickNaRow($inputContainer, item, isReadOnly) {
+        var tickNaBadges = BADGES.filter(function (b) { return b.val !== 'N'; });
+        renderBadgeRow($inputContainer, item, isReadOnly, tickNaBadges);
+    }
+
     function renderTickRow($inputContainer, item, isReadOnly) {
         var isChecked = item.response === 'Y';
 
@@ -53,7 +71,7 @@ PTW.checklist = (function () {
             .toggleClass('ppe-active', isChecked)
             .toggleClass('ppe-readonly', isReadOnly)
             .attr('data-item-id', item.checklist_item_id)
-            .text('\u2713');
+            .text('✓');
 
         $inputContainer.append($('<div class="ppe-badge-row"></div>').append($badge));
     }
@@ -82,6 +100,8 @@ PTW.checklist = (function () {
 
                 if (item.response_type === 'TICK') {
                     renderTickRow($inputContainer, item, isReadOnly);
+                } else if (item.response_type === 'TICK_NA') {
+                    renderTickNaRow($inputContainer, item, isReadOnly);
                 } else {
                     renderTristateRow($inputContainer, item, isReadOnly);
                 }
@@ -94,7 +114,9 @@ PTW.checklist = (function () {
         if (boundOnce) { return; }
         boundOnce = true;
 
-        // Tristate badges (Control Measures)
+        // Badge-row items (TRISTATE and TICK_NA both use .cm-badge inside
+        // a .cm-badge-row — this handler works for either, since it just
+        // toggles active state within whichever badges are present).
         $(document).on('click.ptwCmTristate', '.cm-badge:not(.cm-badge-readonly)', function () {
             var $badge = $(this);
             var $row = $badge.closest('.cm-badge-row');

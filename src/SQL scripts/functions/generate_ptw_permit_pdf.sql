@@ -29,6 +29,10 @@ BEGIN
             RETURN ptw_pro.generate_ptw_wah_pdf(p_permit_id, p_include_history);
         WHEN 'HOT WORK' THEN
             RETURN ptw_pro.generate_ptw_hotwork_pdf(p_permit_id, p_include_history);
+        WHEN 'LIMITATION OF ACCESS' THEN
+            RETURN ptw_pro.generate_ptw_loa_pdf(p_permit_id, p_include_history);
+        WHEN 'FIRE SYSTEMS ISOLATION' THEN
+            RETURN ptw_pro.generate_ptw_fireisolation_pdf(p_permit_id, p_include_history);
         ELSE
             RETURN '<div class="ptw-lv-report-container">'
                 || '<h2 style="color:red;">No PDF template defined for permit type: '

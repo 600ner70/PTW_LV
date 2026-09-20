@@ -321,7 +321,7 @@ function ptwShowAuthoriseDeclaration() {
         '    <!-- Body -->' +
         '    <div style="padding:20px 24px;">' +
         '      <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#333;">' +
-        '        Before authorising this Permit to Work, you must confirm the following:' +
+        '        Before authorising, you must confirm the following:' +
         '      </p>' +
         '      <div style="background:#fdf3f2;border-left:4px solid #c0392b;padding:14px 16px;' +
         '                  border-radius:0 4px 4px 0;margin-bottom:18px;">' +

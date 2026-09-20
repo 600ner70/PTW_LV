@@ -1086,7 +1086,7 @@ page 16 (
                             DECLARE
                                 l_count NUMBER;
                             BEGIN
-                                IF :P16_PTW_TYPE != 'HOT WORK' THEN
+                                IF :P16_PTW_TYPE NOT IN ('HOT WORK', 'FIRE SYSTEMS ISOLATION') THEN
                                     RETURN TRUE;
                                 END IF;
                 
@@ -1104,7 +1104,7 @@ page 16 (
         }
         serverSideCondition {
             type: expression
-            plsqlExpression: :REQUEST = 'CLEAR_PERMIT' AND :P16_PTW_TYPE = 'HOT WORK'
+            plsqlExpression: "   :REQUEST = 'CLEAR_PERMIT' AND :P16_PTW_TYPE IN ('HOT WORK', 'FIRE SYSTEMS ISOLATION')"
         }
     )
 
@@ -1358,9 +1358,10 @@ page 16 (
                     FROM   ptw_pro.ptw_lv_permits
                     WHERE  permit_id = :P16_PERMIT_ID;
                 
-                    :P16_BANNER_TITLE := CASE WHEN :P16_PTW_TYPE = 'GENERAL'
-                                              THEN 'Completion of Works'
-                                              ELSE 'Clearance of Permit to Work'
+                    :P16_BANNER_TITLE := CASE :P16_PTW_TYPE
+                                          WHEN 'GENERAL'               THEN 'Completion of Works'
+                                          WHEN 'LIMITATION OF ACCESS'  THEN 'Clearance of this Limitation of Access'
+                                          ELSE 'Clearance of Permit to Work'
                                          END;
                 
                     :P16_CLEAR_BUTTON_LABEL := CASE WHEN :P16_PTW_TYPE = 'GENERAL'

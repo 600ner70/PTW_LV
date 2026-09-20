@@ -1,0 +1,541 @@
+page 19 (
+    name: Linked Permits
+    alias: LINKED-PERMITS
+    title: Linked Permits
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @/modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            function ptwRemoveLink(linkId, otherPermitNumber) {
+                apex.message.confirm('Remove the link to ' + otherPermitNumber + '?', function(ok) {
+                    if (ok) {
+                        apex.page.submit({ request: 'REMOVE_LINK_' + linkId });
+                    }
+                });
+            }
+            
+            ```
+    }
+    css {
+        inline:
+            ```css
+            @media (max-width: 768px) {
+                .ui-dialog {
+                    width: 96vw !important;
+                    max-width: 96vw !important;
+                    height: 92vh !important;
+                    max-height: 92vh !important;
+                    top: 4vh !important;
+                    left: 2vw !important;
+                    margin: 0 !important;
+                }
+                .ui-dialog-content {
+                    max-height: calc(92vh - 110px) !important;
+                    overflow-y: auto !important;
+                    -webkit-overflow-scrolling: touch;
+                }
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region add-links (
+        name: Add Link
+        title: Link to Another Permit
+        type: staticContent
+        layout {
+            sequence: 70
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-plus-circle
+        }
+    )
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 90
+            slot: contentBody
+        }
+        appearance {
+            template: @/buttons-container
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region currently-linked (
+        name: Currently Linked
+        title: Currently Linked
+        type: classicReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT lv.link_id, 
+                       lv.other_permit_id, 
+                       lv.link_note, 
+                       lv.created_by, 
+                       lv.created_date,
+                       op.permit_number, 
+                       t.type_desc, 
+                       op.workflow_status,
+                       '<button type="button"
+                           class="t-Button t-Button--noLabel t-Button--icon t-Button--danger ptw-action-btn"
+                           title="Remove Link"
+                           onclick="ptwRemoveLink(' || lv.link_id || ', ''' || op.permit_number || '''); return false;">
+                       <span class="t-Icon fa fa-unlink" aria-hidden="true"></span>
+                       </button>' AS remove_html
+                FROM   ptw_pro.ptw_permit_links_v lv
+                JOIN   ptw_pro.ptw_lv_permits op ON op.permit_id = lv.other_permit_id
+                JOIN   ptw_pro.ptw_types t       ON t.ptw_type   = op.ptw_type
+                WHERE  lv.permit_id = :P19_PERMIT_ID
+                ORDER  BY lv.created_date DESC
+                ```
+            pageItemsToSubmit: P19_PERMIT_ID
+        }
+        layout {
+            sequence: 60
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-link
+        }
+        componentAppearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Report--altRowsDefault
+                t-Report--rowHighlight
+            ]
+        }
+
+        column CREATED_BY (
+            reportColumnQueryId: 4
+            derivedColumn: N
+            heading {
+                heading: Linked By
+            }
+            layout {
+                sequence: 70
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+        column CREATED_DATE (
+            reportColumnQueryId: 5
+            derivedColumn: N
+            heading {
+                heading: Linked On
+            }
+            layout {
+                sequence: 80
+            }
+            appearance {
+                formatMask: DD-MON-YYYY HH24:MI
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+        column LINK_ID (
+            reportColumnQueryId: 1
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 10
+            }
+        )
+
+        column LINK_NOTE (
+            reportColumnQueryId: 3
+            derivedColumn: N
+            heading {
+                heading: Note
+            }
+            layout {
+                sequence: 60
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+        column OTHER_PERMIT_ID (
+            reportColumnQueryId: 2
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 20
+            }
+        )
+
+        column PERMIT_NUMBER (
+            reportColumnQueryId: 6
+            derivedColumn: N
+            heading {
+                heading: Permit Number
+            }
+            layout {
+                sequence: 30
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+        column REMOVE_HTML (
+            reportColumnQueryId: 9
+            derivedColumn: N
+            layout {
+                sequence: 90
+            }
+            sorting {
+                sortable: false
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column TYPE_DESC (
+            reportColumnQueryId: 7
+            derivedColumn: N
+            heading {
+                heading: Type
+            }
+            layout {
+                sequence: 40
+            }
+            columnFormatting {
+                htmlExpression: "  <span class=\"t-Badge #WORKFLOW_STATUS# t-Badge--lg\">#WORKFLOW_STATUS#</span>"
+            }
+            sorting {
+                sortable: false
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column WORKFLOW_STATUS (
+            reportColumnQueryId: 8
+            derivedColumn: N
+            heading {
+                heading: Status
+            }
+            layout {
+                sequence: 50
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+    )
+
+    region page-title (
+        name: Page Title
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                  <div style="margin-bottom: 20px;">
+                      <span class="apex-badge" style="background-color: #3ea055; color: white; padding: 6px 16px; border-radius: 20px; font-weight: 600;">
+                          Permit: &P19_PERMIT_NUMBER.
+                      </span>
+                  </div>
+                ```
+        }
+        layout {
+            sequence: 50
+            slot: contentBody
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P19_LINK_NOTE (
+        type: textField
+        label {
+            label: Link Note
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @add-links
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 200
+        }
+    )
+
+    pageItem P19_LINK_PERMIT_ID (
+        type: popupLov
+        label {
+            label: Permit to link
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT p.permit_number || ' — ' || p.type_desc || ' — ' || p.site_details AS d,
+                       p.permit_id AS r
+                FROM   (
+                    SELECT lp.permit_id, lp.permit_number, lp.site_details, t.type_desc
+                    FROM   ptw_pro.ptw_lv_permits lp
+                    JOIN   ptw_pro.ptw_types t ON t.ptw_type = lp.ptw_type
+                ) p
+                WHERE  p.permit_id != :P19_PERMIT_ID
+                AND    p.permit_id NOT IN (
+                           SELECT other_permit_id FROM ptw_pro.ptw_permit_links_v WHERE permit_id = :P19_PERMIT_ID
+                       )
+                ORDER  BY p.permit_number
+                ```
+            displayExtraValues: false
+            nullDisplayValue: -- Select a link --
+        }
+        layout {
+            sequence: 10
+            region: @add-links
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P19_PERMIT_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+    )
+
+    pageItem P19_PERMIT_NUMBER (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: contentBody
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancel
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 1
+                clearCache: 1
+            }
+        }
+    )
+
+    button save (
+        buttonName: ADD_LINK
+        label: Add Link
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @/text
+            hot: true
+            templateOptions: #DEFAULT#
+            icon: fa-link
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    process add-link (
+        name: Add Link
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    l_added   BOOLEAN;
+                    l_message VARCHAR2(4000);
+                BEGIN
+                    ptw_pro.ptw_permit_link_pkg.add_link(
+                        p_permit_id        => :P19_PERMIT_ID,
+                        p_linked_permit_id => :P19_LINK_PERMIT_ID,
+                        p_link_note        => :P19_LINK_NOTE,
+                        p_added            => l_added,
+                        p_message          => l_message
+                    );
+                
+                    IF l_added THEN
+                        apex_application.g_print_success_message := l_message;
+                        :P19_LINK_PERMIT_ID := NULL;
+                        :P19_LINK_NOTE      := NULL;
+                    ELSE
+                        apex_error.add_error(
+                            p_message          => l_message,
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                    END IF;
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        advanced {
+            executionMappingIdentifier: 43895807913698004
+        }
+        serverSideCondition {
+            whenButtonPressed: @save
+        }
+    )
+
+    process remove-link (
+        name: Remove Link
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                  DECLARE
+                      l_link_id  ptw_pro.ptw_permit_links.link_id%TYPE;
+                      l_removed  BOOLEAN;
+                      l_message  VARCHAR2(4000);
+                  BEGIN
+                      l_link_id := TO_NUMBER(REPLACE(:REQUEST, 'REMOVE_LINK_', ''));
+                
+                      ptw_pro.ptw_permit_link_pkg.remove_link(
+                          p_link_id => l_link_id,
+                          p_removed => l_removed,
+                          p_message => l_message
+                      );
+                
+                      IF l_removed THEN
+                          apex_application.g_print_success_message := l_message;
+                      ELSE
+                          apex_error.add_error(
+                              p_message          => l_message,
+                              p_display_location => apex_error.c_inline_in_notification
+                          );
+                      END IF;
+                  END;
+                ```
+        }
+        execution {
+            sequence: 20
+            point: afterSubmit
+        }
+        advanced {
+            executionMappingIdentifier: 43896193927698007
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST LIKE 'REMOVE_LINK_%'
+        }
+    )
+
+    branch (
+        name: Refresh after add
+        execution {
+            sequence: 10
+        }
+        behavior {
+            target: {
+                page: 19
+                items: {
+                    P19_PERMIT_ID: &P19_PERMIT_ID.
+                    P19_PERMIT_NUMBER: &P19_PERMIT_NUMBER.
+                }
+                clearCache: 19
+                successMessage: false
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @save
+        }
+    )
+
+    branch (
+        name: refresh-after-remove
+        execution {
+            sequence: 20
+        }
+        behavior {
+            target: {
+                page: 19
+                items: {
+                    P19_PERMIT_ID: &P19_PERMIT_ID.
+                }
+                clearCache: 19
+                successMessage: false
+            }
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: REMOVE_LINK
+        }
+    )
+
+)
+

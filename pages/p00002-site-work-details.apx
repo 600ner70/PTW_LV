@@ -86,9 +86,15 @@ page 2 (
                     'P2_AFFECTS_IT_SYSTEMS',
                     'P2_IT_PERMISSION_GRANTED',
                     'P2_FIRE_SYSTEMS_AFFECTED',
-                    'P2_FIRE_SYSTEMS_ISOLATED'
+                    'P2_FIRE_SYSTEMS_ISOLATED',
+                    'P2_FSI_CLIENT_PERMISSION_GRANTED',
+                    'P2_FSI_AFFECTS_IT_SYSTEMS',
+                    'P2_FSI_IT_PERMISSION_GRANTED',
+                    'P2_FSI_FIRE_SYSTEMS_AFFECTED',
+                    'P2_FSI_FIRE_SYSTEMS_ISOLATED',
+                    'P2_FSI_INSURANCE_NECESSARY'
                 ];
-            
+                
                 var BADGES = [
                     { val: 'Y', cls: 'binary-badge-yes', label: '✓' },
                     { val: 'N', cls: 'binary-badge-no',  label: '✗' }
@@ -362,7 +368,7 @@ page 2 (
         name: Buttons
         type: staticContent
         layout {
-            sequence: 150
+            sequence: 160
             slot: body
         }
         appearance {
@@ -449,9 +455,18 @@ page 2 (
             icon: fa-check-square
         }
         serverSideCondition {
-            type: item=value
-            item: P2_PTW_TYPE
-            value: LV ISOLATION
+            type: expression
+            language: sql
+            sqlExpression:
+                ```sql
+                EXISTS (
+                    SELECT 1
+                    FROM   ptw_pro.ptw_types t
+                    JOIN   ptw_pro.ptw_type_sections ts ON ts.type_id = t.type_id
+                    WHERE  t.ptw_type      = :P2_PTW_TYPE
+                    AND    ts.section_code = 'CLIENT_PERMISSION'
+                )
+                ```
         }
     )
 
@@ -477,6 +492,31 @@ page 2 (
             type: item=value
             item: P2_PTW_TYPE
             value: HOT WORK
+        }
+    )
+
+    region fire-systems-isolation-details (
+        name: Fire Systems Isolation Details
+        title: Fire Systems Isolation Details
+        type: staticContent
+        layout {
+            sequence: 150
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+            icon: fa-fire
+        }
+        serverSideCondition {
+            type: item=value
+            item: P2_PTW_TYPE
+            value: FIRE SYSTEMS ISOLATION
         }
     )
 
@@ -806,6 +846,266 @@ page 2 (
             template: @/optional-above
             templateOptions: #DEFAULT#
             cssClasses: cm-binary-item
+        }
+    )
+
+    pageItem P2_FSI_AFFECTS_IT_SYSTEMS (
+        type: radioGroup
+        label {
+            label: Will these works affect any IT or other business critical systems?
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes;Y,No;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 20
+            region: @fire-systems-isolation-details
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-above
+            templateOptions: #DEFAULT#
+            cssClasses: cm-binary-item
+        }
+    )
+
+    pageItem P2_FSI_CLIENT_PERMISSION_GRANTED (
+        type: radioGroup
+        label {
+            label: Has the client granted permission for these works to proceed?
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes;Y,No;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 10
+            region: @fire-systems-isolation-details
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-above
+            templateOptions: #DEFAULT#
+            cssClasses: cm-binary-item
+        }
+    )
+
+    pageItem P2_FSI_FIRE_ALARM_ARRANGEMENTS (
+        type: textarea
+        label {
+            label: Fire Alarm Arrangements
+            alignment: left
+        }
+        layout {
+            sequence: 90
+            region: @fire-systems-isolation-details
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 5
+        }
+        help {
+            inlineHelpText: Details of adequate means of raising the fire alarm during the works and/or during the period when smoke/fire detection and/or suppression systems are inhibited
+        }
+    )
+
+    pageItem P2_FSI_FIRE_PRECAUTIONS_DETAILS (
+        type: textarea
+        label {
+            label: Fire Precautions Details
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @fire-systems-isolation-details
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 5
+        }
+        help {
+            inlineHelpText: Details of adequate fire precautions taken when smoke/fire detection and/or suppression systems have been isolated (fire extinguishers, blankets, etc.)
+        }
+    )
+
+    pageItem P2_FSI_FIRE_SYSTEMS_AFFECTED (
+        type: radioGroup
+        label {
+            label: Will any fixed smoke/fire detection or suppression systems be affected by these works?
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes;Y,No;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 40
+            region: @fire-systems-isolation-details
+            slot: regionBody
+            alignment: left
+            columnCssClasses: cm-binary-item
+        }
+        appearance {
+            template: @/optional-above
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P2_FSI_FIRE_SYSTEMS_ISOLATED (
+        type: radioGroup
+        label {
+            label: If 'Yes' have they been isolated or impeded?
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes;Y,No;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 50
+            region: @fire-systems-isolation-details
+            slot: regionBody
+            alignment: left
+            columnCssClasses: cm-binary-item
+        }
+        appearance {
+            template: @/optional-above
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P2_FSI_INSURANCE_NECESSARY (
+        type: radioGroup
+        label {
+            label: Is it necessary to inform the insurance company of this activity?
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes;Y,No;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 60
+            region: @fire-systems-isolation-details
+            slot: regionBody
+            alignment: left
+            columnCssClasses: cm-binary-item
+        }
+        appearance {
+            template: @/optional-above
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P2_FSI_INSURER_INFORMED_DATETIME (
+        type: datePicker
+        label {
+            label: Date and time insurance company informed
+            alignment: left
+        }
+        settings {
+            showTime: true
+        }
+        layout {
+            sequence: 70
+            region: @fire-systems-isolation-details
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            formatMask: DD-MON-YYYY HH24:MI
+            width: 30
+        }
+    )
+
+    pageItem P2_FSI_ISOLATION_COMMENTS (
+        type: textarea
+        label {
+            label: Comments
+            alignment: left
+        }
+        layout {
+            sequence: 100
+            region: @fire-systems-isolation-details
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 5
+        }
+        help {
+            inlineHelpText: Comments and references to associated safety documentation
+        }
+    )
+
+    pageItem P2_FSI_IT_PERMISSION_GRANTED (
+        type: radioGroup
+        label {
+            label: If 'Yes' has permission been granted to proceed?
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes;Y,No;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 30
+            region: @fire-systems-isolation-details
+            slot: regionBody
+            alignment: left
+            columnCssClasses: cm-binary-item
+        }
+        appearance {
+            template: @/optional-above
+            templateOptions: #DEFAULT#
         }
     )
 
@@ -1275,6 +1575,106 @@ page 2 (
 
     )
 
+    dynamicAction show-hide-fsi-insurer-informed (
+        name: show-hide-fsi-insurer-informed
+        execution {
+            sequence: 50
+        }
+        when {
+            selectionType: items
+            items: P2_FSI_INSURANCE_NECESSARY
+        }
+        clientSideCondition {
+            type: item=value
+            item: P2_FSI_INSURANCE_NECESSARY
+            value: Y
+        }
+
+        action native-hide (
+            action: hide
+            affectedElements {
+                selectionType: items
+                items: P2_INSURER_INFORMED_DATETIME
+            }
+            execution {
+                sequence: 10
+                fireWhenEventResultIs: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P2_FSI_INSURANCE_NECESSARY
+                value: N
+            }
+        )
+
+        action native-show (
+            action: show
+            affectedElements {
+                selectionType: items
+                items: P2_FSI_INSURER_INFORMED_DATETIME
+            }
+            execution {
+                sequence: 10
+            }
+            clientSideCondition {
+                type: item=value
+                item: P2_FSI_INSURANCE_NECESSARY
+                value: Y
+            }
+        )
+
+    )
+
+    dynamicAction show-hide-fsi-it-permission-question (
+        name: show-hide-fsi-it-permission-question
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: items
+            items: P2_FSI_AFFECTS_IT_SYSTEMS
+        }
+        clientSideCondition {
+            type: item=value
+            item: P2_FSI_AFFECTS_IT_SYSTEMS
+            value: Y
+        }
+
+        action native-hide (
+            action: hide
+            affectedElements {
+                selectionType: items
+                items: P2_FSI_IT_PERMISSION_GRANTED
+            }
+            execution {
+                sequence: 10
+                fireWhenEventResultIs: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P2_FSI_AFFECTS_IT_SYSTEMS
+                value: N
+            }
+        )
+
+        action native-show (
+            action: show
+            affectedElements {
+                selectionType: items
+                items: P2_FSI_IT_PERMISSION_GRANTED
+            }
+            execution {
+                sequence: 10
+            }
+            clientSideCondition {
+                type: item=value
+                item: P2_FSI_INSURANCE_NECESSARY
+                value: Y
+            }
+        )
+
+    )
+
     dynamicAction show-hide-it-permission-question (
         name: Show/Hide IT Permission Question
         execution {
@@ -1346,8 +1746,17 @@ page 2 (
             sequence: 40
         }
         validation {
-            type: itemIsNotNull
-            item: P2_CLIENT_PERMISSION_GRANTED
+            language: sql
+            sqlExpression:
+                ```sql
+                :REQUEST = 'NEXT_STEP' AND EXISTS (
+                    SELECT 1
+                    FROM   ptw_pro.ptw_types t
+                    JOIN   ptw_pro.ptw_type_sections ts ON ts.type_id = t.type_id
+                    WHERE  t.ptw_type      = :P2_PTW_TYPE
+                    AND    ts.section_code = 'CLIENT_PERMISSION'
+                )
+                ```
         }
         error {
             errorMessage: Please indicate if the client has granted permission.
@@ -1366,13 +1775,16 @@ page 2 (
             sequence: 50
         }
         validation {
-            type: functionBodyReturningBoolean
-            plsqlFunctionBody:
-                ```plsql
-                RETURN (
-                    :P2_AFFECTS_IT_SYSTEMS IS NOT NULL
-                    AND :P2_CLIENT_PERMISSION_GRANTED IS NOT NULL
-                    );
+            language: sql
+            sqlExpression:
+                ```sql
+                :REQUEST = 'NEXT_STEP' AND EXISTS (
+                    SELECT 1
+                    FROM   ptw_pro.ptw_types t
+                    JOIN   ptw_pro.ptw_type_sections ts ON ts.type_id = t.type_id
+                    WHERE  t.ptw_type      = :P2_PTW_TYPE
+                    AND    ts.section_code = 'CLIENT_PERMISSION'
+                )
                 ```
         }
         error {
@@ -1539,7 +1951,7 @@ page 2 (
                 BEGIN
                 
                   :P2_CURRENT_STEP := 'SITE_WORK_DETAILS';
-                  
+                
                     DECLARE
                         v_insurer_informed_dt DATE;
                     BEGIN
@@ -1550,7 +1962,8 @@ page 2 (
                             client_permission_granted, affects_it_systems, it_permission_granted,
                             specialist_equipment_details, ptw_type,
                             fire_systems_affected, fire_systems_isolated, insurer_informed_datetime, isolation_comments,
-                            fire_precautions_details, fire_alarm_arrangements
+                            fire_precautions_details, fire_alarm_arrangements,
+                            insurance_necessary
                         INTO
                             :P2_PERMIT_NUMBER, :P2_CURRENT_STEP, :P2_WORKFLOW_STATUS, :P2_SAFETY_PROGRAMME_REF_NO,
                             :P2_ISOLATION_DIAGRAM_SERIAL_NO, :P2_SITE_DETAILS, :P2_AREA_OF_WORKS, :P2_WORK_DESCRIPTION,
@@ -1558,13 +1971,28 @@ page 2 (
                             :P2_CLIENT_PERMISSION_GRANTED, :P2_AFFECTS_IT_SYSTEMS, :P2_IT_PERMISSION_GRANTED,
                             :P2_SPECIALIST_EQUIPMENT_DETAILS, :P2_PTW_TYPE,
                             :P2_FIRE_SYSTEMS_AFFECTED, :P2_FIRE_SYSTEMS_ISOLATED, v_insurer_informed_dt, :P2_ISOLATION_COMMENTS,
-                            :P2_FIRE_PRECAUTIONS_DETAILS, :P2_FIRE_ALARM_ARRANGEMENTS
+                            :P2_FIRE_PRECAUTIONS_DETAILS, :P2_FIRE_ALARM_ARRANGEMENTS,
+                            :P2_FSI_INSURANCE_NECESSARY
                         FROM ptw_pro.ptw_lv_permits
                         WHERE permit_id = :P2_PERMIT_ID;
                 
                         IF v_insurer_informed_dt IS NOT NULL THEN
-                            :P2_INSURER_INFORMED_DATETIME := TO_CHAR(v_insurer_informed_dt, 'DD-MON-YYYY HH24:MI');
+                            :P2_INSURER_INFORMED_DATETIME     := TO_CHAR(v_insurer_informed_dt, 'DD-MON-YYYY HH24:MI');
+                            :P2_FSI_INSURER_INFORMED_DATETIME := :P2_INSURER_INFORMED_DATETIME;
                         END IF;
+                
+                        -- Fire Systems Isolation Details region reuses the same underlying
+                        -- columns as Client Permission / Fire & Smoke Systems (loaded into
+                        -- P2_CLIENT_PERMISSION_GRANTED etc. above) - mirror them into this
+                        -- region's own items so the screen shows the saved values.
+                        :P2_FSI_CLIENT_PERMISSION_GRANTED := :P2_CLIENT_PERMISSION_GRANTED;
+                        :P2_FSI_AFFECTS_IT_SYSTEMS        := :P2_AFFECTS_IT_SYSTEMS;
+                        :P2_FSI_IT_PERMISSION_GRANTED     := :P2_IT_PERMISSION_GRANTED;
+                        :P2_FSI_FIRE_SYSTEMS_AFFECTED     := :P2_FIRE_SYSTEMS_AFFECTED;
+                        :P2_FSI_FIRE_SYSTEMS_ISOLATED     := :P2_FIRE_SYSTEMS_ISOLATED;
+                        :P2_FSI_FIRE_PRECAUTIONS_DETAILS  := :P2_FIRE_PRECAUTIONS_DETAILS;
+                        :P2_FSI_FIRE_ALARM_ARRANGEMENTS   := :P2_FIRE_ALARM_ARRANGEMENTS;
+                        :P2_FSI_ISOLATION_COMMENTS        := :P2_ISOLATION_COMMENTS;
                     END;
                     :G_ACTIVE_PERMIT_ID := :P2_PERMIT_ID;
                 
@@ -1624,15 +2052,35 @@ page 2 (
                             p_person_in_charge_name       => :P2_PERSON_IN_CHARGE_NAME,
                             p_supervising_company         => :P2_SUPERVISING_COMPANY,
                             p_other_persons_count         => :P2_OTHER_PERSONS_COUNT,
-                            p_client_permission_granted   => :P2_CLIENT_PERMISSION_GRANTED,
-                            p_affects_it_systems          => :P2_AFFECTS_IT_SYSTEMS,
-                            p_it_permission_granted       => :P2_IT_PERMISSION_GRANTED,
-                            p_fire_systems_affected       => :P2_FIRE_SYSTEMS_AFFECTED,
-                            p_fire_systems_isolated       => :P2_FIRE_SYSTEMS_ISOLATED,
-                            p_insurer_informed_datetime   => TO_DATE(:P2_INSURER_INFORMED_DATETIME, 'DD-MON-YYYY HH24:MI'),
-                            p_isolation_comments          => :P2_ISOLATION_COMMENTS,
-                            p_fire_precautions_details    => :P2_FIRE_PRECAUTIONS_DETAILS,
-                            p_fire_alarm_arrangements     => :P2_FIRE_ALARM_ARRANGEMENTS,
+                            p_client_permission_granted   => CASE WHEN :P2_PTW_TYPE = 'FIRE SYSTEMS ISOLATION'
+                                                                  THEN :P2_FSI_CLIENT_PERMISSION_GRANTED
+                                                                  ELSE :P2_CLIENT_PERMISSION_GRANTED END,
+                            p_affects_it_systems          => CASE WHEN :P2_PTW_TYPE = 'FIRE SYSTEMS ISOLATION'
+                                                                  THEN :P2_FSI_AFFECTS_IT_SYSTEMS
+                                                                  ELSE :P2_AFFECTS_IT_SYSTEMS END,
+                            p_it_permission_granted       => CASE WHEN :P2_PTW_TYPE = 'FIRE SYSTEMS ISOLATION'
+                                                                  THEN :P2_FSI_IT_PERMISSION_GRANTED
+                                                                  ELSE :P2_IT_PERMISSION_GRANTED END,
+                            p_fire_systems_affected       => CASE WHEN :P2_PTW_TYPE = 'FIRE SYSTEMS ISOLATION'
+                                                                  THEN :P2_FSI_FIRE_SYSTEMS_AFFECTED
+                                                                  ELSE :P2_FIRE_SYSTEMS_AFFECTED END,
+                            p_fire_systems_isolated       => CASE WHEN :P2_PTW_TYPE = 'FIRE SYSTEMS ISOLATION'
+                                                                  THEN :P2_FSI_FIRE_SYSTEMS_ISOLATED
+                                                                  ELSE :P2_FIRE_SYSTEMS_ISOLATED END,
+                            p_insurer_informed_datetime   => TO_DATE(CASE WHEN :P2_PTW_TYPE = 'FIRE SYSTEMS ISOLATION'
+                                                                           THEN :P2_FSI_INSURER_INFORMED_DATETIME
+                                                                           ELSE :P2_INSURER_INFORMED_DATETIME END,
+                                                                      'DD-MON-YYYY HH24:MI'),
+                            p_isolation_comments          => CASE WHEN :P2_PTW_TYPE = 'FIRE SYSTEMS ISOLATION'
+                                                                  THEN :P2_FSI_ISOLATION_COMMENTS
+                                                                  ELSE :P2_ISOLATION_COMMENTS END,
+                            p_fire_precautions_details    => CASE WHEN :P2_PTW_TYPE = 'FIRE SYSTEMS ISOLATION'
+                                                                  THEN :P2_FSI_FIRE_PRECAUTIONS_DETAILS
+                                                                  ELSE :P2_FIRE_PRECAUTIONS_DETAILS END,
+                            p_fire_alarm_arrangements     => CASE WHEN :P2_PTW_TYPE = 'FIRE SYSTEMS ISOLATION'
+                                                                  THEN :P2_FSI_FIRE_ALARM_ARRANGEMENTS
+                                                                  ELSE :P2_FIRE_ALARM_ARRANGEMENTS END,
+                            p_insurance_necessary         => :P2_FSI_INSURANCE_NECESSARY,
                             p_specialist_equipment_details => :P2_SPECIALIST_EQUIPMENT_DETAILS,
                             p_latitude                    => :APP_LATITUDE,
                             p_longitude                   => :APP_LONGITUDE,
@@ -1692,10 +2140,12 @@ page 2 (
                     v_site_id       ptw_pro.ptw_lv_sites.site_id%TYPE;
                     v_permit_number ptw_pro.ptw_lv_permits.permit_number%TYPE;
                     v_workflow_status ptw_pro.ptw_lv_permits.workflow_status%TYPE;
+                    v_ptw_type      ptw_pro.ptw_lv_permits.ptw_type%TYPE;
                     v_saved         BOOLEAN;
                     v_message       VARCHAR2(4000);
                 BEGIN
                     l_json := JSON_OBJECT_T.parse(l_data_json);
+                    v_ptw_type := l_json.get_string('P2_PTW_TYPE');
                 
                     -- On an UPDATE, we must know the permit's CURRENT
                     -- workflow_status from the database - NOT trust a
@@ -1709,9 +2159,14 @@ page 2 (
                         v_workflow_status := 'DRAFT';  -- new permit, always starts in draft
                     END IF;
                 
+                    -- Same type-aware swap as the online save process: the offline
+                    -- device stores the Fire Isolation region's own P2_FSI_* item
+                    -- values in the JSON payload under their own keys, so this pulls
+                    -- from those keys when the permit being synced is a Fire Systems
+                    -- Isolation certificate, and from the generic keys otherwise.
                     ptw_pro.ptw_permit_save_pkg.save_permit_header(
                         p_permit_id                   => v_permit_id,
-                        p_ptw_type                    => l_json.get_string('P2_PTW_TYPE'),
+                        p_ptw_type                    => v_ptw_type,
                         p_workflow_status             => v_workflow_status,
                         p_safety_programme_ref_no     => l_json.get_string('P2_SAFETY_PROGRAMME_REF_NO'),
                         p_isolation_diagram_serial_no => l_json.get_string('P2_ISOLATION_DIAGRAM_SERIAL_NO'),
@@ -1723,16 +2178,36 @@ page 2 (
                         p_person_in_charge_name       => l_json.get_string('P2_PERSON_IN_CHARGE_NAME'),
                         p_supervising_company         => l_json.get_string('P2_SUPERVISING_COMPANY'),
                         p_other_persons_count         => l_json.get_number('P2_OTHER_PERSONS_COUNT'),
-                        p_client_permission_granted   => l_json.get_string('P2_CLIENT_PERMISSION_GRANTED'),
-                        p_affects_it_systems          => l_json.get_string('P2_AFFECTS_IT_SYSTEMS'),
-                        p_it_permission_granted       => l_json.get_string('P2_IT_PERMISSION_GRANTED'),
+                        p_client_permission_granted   => CASE WHEN v_ptw_type = 'FIRE SYSTEMS ISOLATION'
+                                                              THEN l_json.get_string('P2_FSI_CLIENT_PERMISSION_GRANTED')
+                                                              ELSE l_json.get_string('P2_CLIENT_PERMISSION_GRANTED') END,
+                        p_affects_it_systems          => CASE WHEN v_ptw_type = 'FIRE SYSTEMS ISOLATION'
+                                                              THEN l_json.get_string('P2_FSI_AFFECTS_IT_SYSTEMS')
+                                                              ELSE l_json.get_string('P2_AFFECTS_IT_SYSTEMS') END,
+                        p_it_permission_granted       => CASE WHEN v_ptw_type = 'FIRE SYSTEMS ISOLATION'
+                                                              THEN l_json.get_string('P2_FSI_IT_PERMISSION_GRANTED')
+                                                              ELSE l_json.get_string('P2_IT_PERMISSION_GRANTED') END,
                         p_specialist_equipment_details => l_json.get_string('P2_SPECIALIST_EQUIPMENT_DETAILS'),
-                        p_fire_systems_affected       => l_json.get_string('P2_FIRE_SYSTEMS_AFFECTED'),
-                        p_fire_systems_isolated       => l_json.get_string('P2_FIRE_SYSTEMS_ISOLATED'),
-                        p_insurer_informed_datetime   => TO_DATE(l_json.get_string('P2_INSURER_INFORMED_DATETIME'), 'DD-MON-YYYY HH24:MI'),
-                        p_isolation_comments          => l_json.get_string('P2_ISOLATION_COMMENTS'),
-                        p_fire_precautions_details    => l_json.get_string('P2_FIRE_PRECAUTIONS_DETAILS'),
-                        p_fire_alarm_arrangements     => l_json.get_string('P2_FIRE_ALARM_ARRANGEMENTS'),
+                        p_fire_systems_affected       => CASE WHEN v_ptw_type = 'FIRE SYSTEMS ISOLATION'
+                                                              THEN l_json.get_string('P2_FSI_FIRE_SYSTEMS_AFFECTED')
+                                                              ELSE l_json.get_string('P2_FIRE_SYSTEMS_AFFECTED') END,
+                        p_fire_systems_isolated       => CASE WHEN v_ptw_type = 'FIRE SYSTEMS ISOLATION'
+                                                              THEN l_json.get_string('P2_FSI_FIRE_SYSTEMS_ISOLATED')
+                                                              ELSE l_json.get_string('P2_FIRE_SYSTEMS_ISOLATED') END,
+                        p_insurer_informed_datetime   => TO_DATE(CASE WHEN v_ptw_type = 'FIRE SYSTEMS ISOLATION'
+                                                                       THEN l_json.get_string('P2_FSI_INSURER_INFORMED_DATETIME')
+                                                                       ELSE l_json.get_string('P2_INSURER_INFORMED_DATETIME') END,
+                                                                  'DD-MON-YYYY HH24:MI'),
+                        p_isolation_comments          => CASE WHEN v_ptw_type = 'FIRE SYSTEMS ISOLATION'
+                                                              THEN l_json.get_string('P2_FSI_ISOLATION_COMMENTS')
+                                                              ELSE l_json.get_string('P2_ISOLATION_COMMENTS') END,
+                        p_fire_precautions_details    => CASE WHEN v_ptw_type = 'FIRE SYSTEMS ISOLATION'
+                                                              THEN l_json.get_string('P2_FSI_FIRE_PRECAUTIONS_DETAILS')
+                                                              ELSE l_json.get_string('P2_FIRE_PRECAUTIONS_DETAILS') END,
+                        p_fire_alarm_arrangements     => CASE WHEN v_ptw_type = 'FIRE SYSTEMS ISOLATION'
+                                                              THEN l_json.get_string('P2_FSI_FIRE_ALARM_ARRANGEMENTS')
+                                                              ELSE l_json.get_string('P2_FIRE_ALARM_ARRANGEMENTS') END,
+                        p_insurance_necessary         => l_json.get_string('P2_FSI_INSURANCE_NECESSARY'),
                         p_latitude                    => l_json.get_number('APP_LATITUDE'),
                         p_longitude                   => l_json.get_number('APP_LONGITUDE'),
                         p_resolved_site_id            => v_site_id,
