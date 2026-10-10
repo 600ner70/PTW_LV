@@ -1,0 +1,349 @@
+page 13 (
+    name: Hazards & Controls
+    alias: DRA-HAZARDS-CONTROLS
+    title: Hazards & Controls
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            function ptwLoadDraStage1(isReadOnly) {
+                PTW.dra.load($v('P13_DRA_ID'), { stage1: 'dra-stage1-region' }, isReadOnly);
+            }
+            
+            function ptwLoadDraHazardsControls(isReadOnly) {
+                PTW.dra.load(
+                    $v('P13_DRA_ID'),
+                    { hazards: 'dra-hazards-region', controls: 'dra-controls-region' },
+                    isReadOnly
+                );
+            }
+            ```
+    }
+    readOnly {
+        type: item!=value
+        item: P13_WORKFLOW_STATUS
+        value: DRAFT
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region dra-number-type-badge (
+        name: DRA Number / Type Badge
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div style="margin-bottom: 20px;">
+                    <span class="apex-badge" style="background-color: #3ea055; color: white; padding: 6px 16px; border-radius: 20px; font-weight: 600;">
+                        DRA: &P13_DRA_NUMBER.
+                    </span>
+                </div>
+                ```
+        }
+        layout {
+            sequence: 80
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P13_DRA_NUMBER
+        }
+    )
+
+    region dra-stage1-region (
+        name: Stage 1 - Stop & Think
+        title: Stage 1 - Stop & Think
+        type: staticContent
+        layout {
+            sequence: 90
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--accent10
+                t-Region--scrollBody
+            ]
+            icon: fa-question-circle
+        }
+        advanced {
+            htmlDomId: dra-stage1-region
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P13_DRA_ID
+        }
+    )
+
+    region page-header (
+        name: Page Header
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    l_html       CLOB;
+                    l_company_id NUMBER;
+                    l_logo_url   VARCHAR2(500);
+                    l_logo_count NUMBER;
+                    l_override   VARCHAR2(50) := V('G_OVERRIDE_COMPANY_ID');
+                BEGIN
+                    -- Derive effective company_id for the current user
+                    IF l_override IS NOT NULL AND TRIM(l_override) IS NOT NULL THEN
+                        BEGIN
+                            l_company_id := TO_NUMBER(TRIM(l_override));
+                        EXCEPTION
+                            WHEN OTHERS THEN l_company_id := NULL;
+                        END;
+                    ELSE
+                        -- Normal user: their own company
+                        -- Super user with no override: NULL (no logo shown)
+                        BEGIN
+                            SELECT company_id
+                            INTO   l_company_id
+                            FROM   ptw_pro.ptw_lv_users
+                            WHERE  UPPER(username) = UPPER(:APP_USER)
+                            AND    is_super_user   = 'N'
+                            AND    is_active       = 'Y';
+                        EXCEPTION
+                            WHEN NO_DATA_FOUND THEN l_company_id := NULL;
+                        END;
+                    END IF;
+                 
+                    -- Check if a logo file exists for this company
+                    -- (graceful fallback - no broken image if file missing)
+                 
+                    IF l_company_id IS NOT NULL THEN
+                        SELECT COUNT(*) INTO l_logo_count
+                        FROM   apex_application_static_files
+                        WHERE  application_id = :APP_ID
+                        AND    file_name      = 'logo_' || l_company_id || '.png';
+                 
+                        IF l_logo_count > 0 THEN
+                            l_logo_url := V('APP_FILES') || 'logo_' || l_company_id || '.png';
+                        END IF;
+                    END IF;
+                 
+                    -- Build header
+                    l_html := '<div style="margin-bottom:30px;display:flex;'
+                           || 'justify-content:space-between;align-items:center;'
+                           || 'min-height:80px;">'
+                           || '  <div>'
+                           || '    <h1 style="font-size:2rem;color:#13294b;'
+                           || '               margin-bottom:5px;">'
+                           || '      New Dynamic Risk Assessment'
+                           || '    </h1>'
+                           || '    <p style="color:#666;font-size:1rem;">'
+                           || '      Step 1 of 3 - Site &amp; Assessment Details'
+                           || '    </p>'
+                           || '  </div>';
+                 
+                    IF l_logo_url IS NOT NULL THEN
+                        l_html := l_html
+                               || '  <div style="width:200px;height:60px;display:flex;'
+                               || 'align-items:center;justify-content:flex-end;">'
+                               || '    <img src="' || l_logo_url || '" '
+                               || '         alt="Company Logo" '
+                               || '         style="max-width:100%;max-height:100%;'
+                               || 'object-fit:contain;" />'
+                               || '  </div>';
+                    END IF;
+                 
+                    l_html := l_html || '</div>';
+                 
+                    RETURN l_html;
+                 
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        -- Never break Page 12 - fall back to plain header
+                        RETURN '<div style="margin-bottom:30px;">'
+                            || '<h1 style="font-size:2rem;color:#13294b;">'
+                            || 'New Dynamic Risk Assessment</h1>'
+                            || '<p style="color:#666;">Step 1 of 3 - Site &amp; '
+                            || 'Assessment Details</p></div>';
+                END;
+                
+                ```
+        }
+        layout {
+            sequence: 70
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    pageItem P13_CHECKLIST_JSON (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 60
+            slot: body
+        }
+    )
+
+    pageItem P13_DRA_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+    )
+
+    pageItem P13_DRA_NUMBER (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+    )
+
+    pageItem P13_WORKFLOW_STATUS (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+    )
+
+    dynamicAction page-load (
+        name: Page Load
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: "   ptwLoadDraStage1(apex.item('P13_WORKFLOW_STATUS').getValue() !== 'DRAFT');"
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    validation all-stage-1-questions-must-be-answered (
+        name: All Stage 1 Questions Must Be Answered
+        execution {
+            sequence: 10
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    l_unanswered_count NUMBER;
+                BEGIN
+                    IF :P13_DRA_ID IS NULL THEN
+                        RETURN TRUE; -- DRA not created yet - nothing to check
+                    END IF;
+                 
+                    SELECT COUNT(*)
+                    INTO   l_unanswered_count
+                    FROM   ptw_pro.ptw_dra_items di
+                    WHERE  di.section_code = 'STAGE1'
+                    AND    di.is_active    = 'Y'
+                    AND    NOT EXISTS (
+                        SELECT 1
+                        FROM   JSON_TABLE(:P13_CHECKLIST_JSON, '$[*]'
+                                   COLUMNS (
+                                       dra_item_id NUMBER      PATH '$.dra_item_id',
+                                       response    VARCHAR2(3) PATH '$.response'
+                                   )) jt
+                        WHERE  jt.dra_item_id = di.dra_item_id
+                        AND    jt.response IS NOT NULL
+                    );
+                 
+                    RETURN l_unanswered_count = 0;
+                END;
+                ```
+        }
+        error {
+            errorMessage: All 20 Stage 1 questions must be answered before moving on.
+        }
+    )
+
+    process get-dra-json (
+        name: GET_DRA_JSON
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                BEGIN
+                    htp.prn('{"items":' || ptw_pro.ptw_dra_pkg.get_dra_json(apex_application.g_x01) || '}');
+                END;
+                ```
+        }
+        execution {
+            sequence: 20
+            point: ajaxCallback
+        }
+        advanced {
+            executionMappingIdentifier: 44055442241627904
+        }
+    )
+
+    process save-stage-1-responses (
+        name: Save Stage 1 Responses
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                BEGIN
+                   IF :P13_WORKFLOW_STATUS = 'DRAFT' THEN
+                     ptw_pro.ptw_dra_pkg.save_dra_responses(:P13_DRA_ID, :P13_CHECKLIST_JSON);
+                   END IF;
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        advanced {
+            executionMappingIdentifier: 44053143640568185
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST IN ('SAVE_DRAFT','NEXT_STEP')
+        }
+    )
+
+)
+

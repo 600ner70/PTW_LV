@@ -1,0 +1,1168 @@
+page 11 (
+    name: Dynamic Risk Assessments
+    alias: DRA-DASHBOARD
+    title: Dynamic Risk Assessments
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            function ptwCancelDra(draId, draNumber) {
+                if (!navigator.onLine) {
+                    apex.message.showErrors([{
+                        type: 'error',
+                        message: 'You are currently offline. Please reconnect to cancel a DRA.'
+                    }]);
+                    return;
+                }
+                $('<div id="ptwCancelDraDialog">' +
+                    '<label style="display:block;font-weight:600;font-size:13px;margin-bottom:8px;color:#333;">' +
+                      'Cancellation Reason <span style="color:#C0392B">*</span>' +
+                    '</label>' +
+                    '<input type="text" id="ptwCancelDraReason" class="apex-item-text" ' +
+                      'placeholder="e.g. started in error, duplicate" />' +
+                  '</div>')
+                  .appendTo('body')
+                  .dialog({
+                      title: 'Cancel DRA – ' + draNumber,
+                      modal:  true,
+                      width:  500,
+                      dialogClass: 'ptw-apex-dialog',
+                      buttons: [
+                          {
+                              text:  'Cancel DRA',
+                              'class': 't-Button t-Button--hot',
+                              click: function() {
+                                  var reason = $('#ptwCancelDraReason').val();
+                                  if (!reason || reason.trim() === '') {
+                                      apex.message.alert('A cancellation reason is required.');
+                                      return;
+                                  }
+                                  apex.item('P11_SELECTED_DRA_ID').setValue(draId);
+                                  apex.item('P11_CANCEL_REASON').setValue(reason.trim());
+                                  $(this).dialog('close');
+                                  apex.submit({ request: 'CANCEL_DRA_' + draId });
+                              }
+                          },
+                          {
+                              text:  'Keep DRA',
+                              'class': 't-Button',
+                              click: function() { $(this).dialog('close'); }
+                          }
+                      ],
+                      close: function() { $(this).dialog('destroy').remove(); }
+                  });
+            }
+            ```
+    }
+    css {
+        inline:
+            ```css
+            .quick-actions {
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+            .quick-actions .t-Button {
+                flex: 1;
+                min-width: 200px;
+            }
+             
+            /* Purple badge/button - COMPLETED (view-only), matches Page 1 */
+            .t-Badge--purple {
+                --a-badge-background: #6f42c1;
+                --a-badge-text: #ffffff;
+                --a-badge-border: #6f42c1;
+                background-color: #6f42c1 !important;
+                color: #ffffff !important;
+                border-color: #6f42c1 !important;
+            }
+            .t-Button--purple {
+                --a-button-background-color: #6f42c1;
+                --a-button-border-color: #6f42c1;
+                --a-button-text-color: #ffffff;
+                background-color: #6f42c1 !important;
+                border-color: #6f42c1 !important;
+                color: #ffffff !important;
+                opacity: 1 !important;
+            }
+             
+            @media (max-width: 767px) {
+                .ptw-desktop-only { display: none !important; }
+            }
+            @media (min-width: 768px) {
+                .ptw-mobile-only  { display: none !important; }
+            }
+             
+            /* Card container - matches Redwood region surface, same as Page 1 */
+            .ptw-permit-card {
+                border-radius: 8px;
+                border: 1px solid var(--ut-component-border-color, #e0e0e0);
+                background: var(--ut-component-background-color);
+                margin-bottom: 0.75rem;
+                overflow: hidden;
+                box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            }
+             
+            /* Status left-border - DRAFT/COMPLETED/CANCELLED instead of the
+               time-remaining countdown colours permits use (a DRA doesn't expire) */
+            .ptw-card-draft     { border-left: 5px solid var(--ut-palette-warning, #f0ad4e); }
+            .ptw-card-completed { border-left: 5px solid var(--ut-palette-success, #3ea055); }
+            .ptw-card-cancelled { border-left: 5px solid var(--ut-palette-danger,  #c0392b); }
+             
+            .ptw-card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.75rem 1rem 0.5rem 1rem;
+                border-bottom: 1px solid var(--ut-component-border-color, #e0e0e0);
+                background: var(--ut-region-header-background-color,
+                                var(--ut-component-background-color));
+            }
+            .ptw-card-permit-number {
+                font-size: 0.9375rem;
+                font-weight: 700;
+                color: #003366;
+            }
+            .ptw-card-body {
+                padding: 0.6rem 1rem;
+                font-size: 0.875rem;
+                color: var(--ut-component-font-color, inherit);
+                line-height: 1.7;
+            }
+            .ptw-card-label {
+                font-weight: 600;
+                color: var(--ut-palette-neutral-600, #595959);
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 0.03em;
+            }
+            .ptw-card-actions {
+                display: flex;
+                gap: 0.4rem;
+                padding: 0.6rem 1rem 0.75rem 1rem;
+                border-top: 1px solid var(--ut-component-border-color, #e0e0e0);
+                background: var(--ut-component-background-color);
+                flex-wrap: wrap;
+            }
+            .ptw-card-actions a,
+            .ptw-card-actions button {
+                min-width: 44px;
+                min-height: 44px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 6px;
+                font-size: 1.1rem;
+            }
+             
+            #recentDrasMobile .t-Region-header {
+                display: flex;
+                align-items: center;
+            }
+            #recentDrasMobile .t-Region-headerItems--buttons {
+                margin-left: auto;
+            }
+             
+            /* Cancel dialog input - matches Page 1's suspend/resume dialogs */
+            .ptw-apex-dialog #ptwCancelDraReason {
+                display: block !important;
+                width: 100% !important;
+                height: 44px !important;
+                font-size: 14px !important;
+                box-sizing: border-box !important;
+                margin: 0 !important;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region page-header (
+        name: Page Header
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    l_html       CLOB;
+                    l_company_id NUMBER;
+                    l_logo_url   VARCHAR2(500);
+                    l_logo_count NUMBER;
+                    l_override   VARCHAR2(50) := V('G_OVERRIDE_COMPANY_ID');
+                BEGIN
+                    -- Derive effective company_id for the current user
+                    IF l_override IS NOT NULL AND TRIM(l_override) IS NOT NULL THEN
+                        BEGIN
+                            l_company_id := TO_NUMBER(TRIM(l_override));
+                        EXCEPTION
+                            WHEN OTHERS THEN l_company_id := NULL;
+                        END;
+                    ELSE
+                        -- Normal user: their own company
+                        -- Super user with no override: NULL (no logo shown)
+                        BEGIN
+                            SELECT company_id
+                            INTO   l_company_id
+                            FROM   ptw_pro.ptw_lv_users
+                            WHERE  UPPER(username) = UPPER(:APP_USER)
+                            AND    is_super_user   = 'N'
+                            AND    is_active       = 'Y';
+                        EXCEPTION
+                            WHEN NO_DATA_FOUND THEN l_company_id := NULL;
+                        END;
+                    END IF;
+                 
+                    -- Check if a logo file exists for this company
+                    -- (graceful fallback - no broken image if file missing)
+                 
+                    IF l_company_id IS NOT NULL THEN
+                        SELECT COUNT(*) INTO l_logo_count
+                        FROM   apex_application_static_files
+                        WHERE  application_id = :APP_ID
+                        AND    file_name      = 'logo_' || l_company_id || '.png';
+                 
+                        IF l_logo_count > 0 THEN
+                            l_logo_url := V('APP_FILES') || 'logo_' || l_company_id || '.png';
+                        END IF;
+                    END IF;
+                 
+                    -- Build header
+                    l_html := '<div style="margin-bottom:30px;display:flex;'
+                           || 'justify-content:space-between;align-items:center;'
+                           || 'min-height:80px;">'
+                           || '  <div>'
+                           || '    <h1 style="font-size:2rem;color:#13294b;'
+                           || '               margin-bottom:5px;">'
+                           || '      Dynamic Risk Assessments'
+                           || '    </h1>'
+                           || '    <p style="color:#666;font-size:1rem;">'
+                           || '      Dynamic Risk Assessment (Stop &amp; Think) Records'
+                           || '    </p>'
+                           || '  </div>';
+                 
+                    IF l_logo_url IS NOT NULL THEN
+                        l_html := l_html
+                               || '  <div style="width:200px;height:60px;display:flex;'
+                               || 'align-items:center;justify-content:flex-end;">'
+                               || '    <img src="' || l_logo_url || '" '
+                               || '         alt="Company Logo" '
+                               || '         style="max-width:100%;max-height:100%;'
+                               || 'object-fit:contain;" />'
+                               || '  </div>';
+                    END IF;
+                 
+                    l_html := l_html || '</div>';
+                 
+                    RETURN l_html;
+                 
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        -- Never break Page 11 - fall back to plain header
+                        RETURN '<div style="margin-bottom:30px;">'
+                            || '<h1 style="font-size:2rem;color:#13294b;">'
+                            || 'Dynamic Risk Assessments</h1>'
+                            || '<p style="color:#666;">Dynamic Risk Assessment '
+                            || '(Stop &amp; Think) Records</p></div>';
+                END;
+                ```
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            htmlDomId: page-header
+        }
+    )
+
+    region quick-actions (
+        name: Quick Actions
+        title: Quick Actions
+        type: staticContent
+        layout {
+            sequence: 60
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+            icon: fa-bolt
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression:
+                ```plsql
+                :APP_IS_ADMIN = 'Y' OR :APP_IS_ENGINEER = 'Y'
+                OR :APP_IS_AUTHORISER = 'Y'
+                ```
+        }
+    )
+
+    region recent-dras (
+        name: Recent DRAs
+        title: Recent DRAs
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT
+                    d.dra_id,
+                    d.dra_number,
+                    d.dra_type,
+                    CASE d.dra_type
+                        WHEN 'ENGINEER'     THEN 'Engineer DRA'
+                        ELSE 'Subcontractor DRA'
+                    END AS type_display,
+                    COALESCE(s.site_name, d.site_details) AS site_details,
+                    d.job_number,
+                    d.engineer_name,
+                    d.supervising_company,
+                    TO_CHAR(d.assessment_date,'DD-MON-YYYY HH24:MI') as assessment_date,
+                    d.permit_id,
+                    d.workflow_status,
+                    CASE d.workflow_status
+                        WHEN 'DRAFT'     THEN 'Draft'
+                        WHEN 'COMPLETED' THEN 'Completed'
+                        WHEN 'CANCELLED' THEN 'Cancelled'
+                    END AS status_display,
+                    CASE d.workflow_status
+                        WHEN 'DRAFT'     THEN 'class="t-Badge t-Badge--warning t-Badge--lg"'
+                        WHEN 'COMPLETED' THEN 'class="t-Badge t-Badge--purple t-Badge--lg"'
+                        WHEN 'CANCELLED' THEN 'class="t-Badge t-Badge--danger t-Badge--lg"'
+                    END AS status_badge,
+                    '<div class="ptw-action-btns">' ||
+                    -- Continue editing (DRAFT only, own DRA or Admin)
+                    CASE
+                        WHEN d.workflow_status = 'DRAFT'
+                             AND (UPPER(d.created_by) = UPPER(V('APP_USER')) OR :APP_IS_ADMIN = 'Y')
+                        THEN '<a href="' || apex_page.get_url(
+                                    p_page   => 12,
+                                    p_items  => 'P12_DRA_ID',
+                                    p_values => d.dra_id,
+                                    p_clear_cache => 12
+                                ) || '"
+                             class="t-Button t-Button--noLabel t-Button--icon t-Button--warning ptw-action-btn"
+                             title="Continue">
+                             <span class="t-Icon fa fa-pencil" aria-hidden="true"></span>
+                          </a>'
+                    END ||
+                    -- View / PDF (COMPLETED only)
+                    CASE
+                        WHEN d.workflow_status = 'COMPLETED'
+                        THEN '<a href="' || apex_page.get_url(
+                                    p_page   => 301,
+                                    p_items  => 'P301_DRA_ID',
+                                    p_values => d.dra_id,
+                                    p_clear_cache => 301
+                                ) || '"
+                             class="t-Button t-Button--noLabel t-Button--icon t-Button--normal ptw-action-btn"
+                             title="View / PDF">
+                             <span class="t-Icon fa fa-file-pdf-o" aria-hidden="true"></span>
+                          </a>'
+                    END ||
+                    -- Cancel (DRAFT only, own DRA or Admin)
+                    CASE
+                        WHEN d.workflow_status = 'DRAFT'
+                             AND (UPPER(d.created_by) = UPPER(V('APP_USER')) OR :APP_IS_ADMIN = 'Y')
+                        THEN '<a href="#"
+                             class="t-Button t-Button--noLabel t-Button--icon t-Button--danger ptw-action-btn"
+                             title="Cancel DRA"
+                             onclick="ptwCancelDra(' || d.dra_id || ', ''' || d.dra_number || '''); return false;">
+                             <span class="t-Icon fa fa-ban" aria-hidden="true"></span>
+                          </a>'
+                    END ||
+                    -- Related permit, if linked
+                    CASE
+                        WHEN d.permit_id IS NOT NULL
+                        THEN '<a href="' || apex_page.get_url(
+                                    p_page   => 2,
+                                    p_items  => 'P2_PERMIT_ID',
+                                    p_values => d.permit_id
+                                ) || '"
+                             class="t-Button t-Button--noLabel t-Button--icon t-Button--normal ptw-action-btn"
+                             title="Related Permit">
+                             <span class="t-Icon fa fa-link" aria-hidden="true"></span>
+                          </a>'
+                    END ||
+                    '</div>' AS actions
+                FROM   ptw_pro.ptw_lv_dra_assessments d
+                LEFT JOIN ptw_pro.ptw_lv_sites s ON s.site_id = d.site_id
+                WHERE  d.workflow_status != 'CANCELLED'
+                AND    (
+                           :APP_IS_ADMIN = 'Y' OR :APP_IS_AUTHORISER = 'Y'
+                           OR UPPER(d.created_by) = UPPER(V('APP_USER'))
+                       )
+                ORDER BY d.created_date DESC
+                ```
+        }
+        layout {
+            sequence: 80
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+            cssClasses: ptw-desktop-only
+            icon: fa-list
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        searchBar {
+            finderDropDown: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 43898976964698035
+        }
+
+        column ACTIONS (
+            type: plainText
+            heading {
+                heading: Actions
+            }
+            layout {
+                sequence: 140
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: N
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column ASSESSMENT_DATE (
+            type: plainText
+            heading {
+                heading: Assessment Date
+            }
+            layout {
+                sequence: 150
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        column DRA_ID (
+            type: hidden
+            heading {
+                heading: Dra Id
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column DRA_NUMBER (
+            type: link
+            heading {
+                heading: Dra Number
+            }
+            layout {
+                sequence: 20
+            }
+            link {
+                target: {
+                    page: 12
+                }
+                linkText: #DRA_NUMBER#
+                linkAttributes: #STATUS_BADGE#
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column DRA_TYPE (
+            type: hidden
+            heading {
+                heading: Dra Type
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column ENGINEER_NAME (
+            type: plainText
+            heading {
+                heading: Engineer
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column JOB_NUMBER (
+            type: plainText
+            heading {
+                heading: Job Number
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column PERMIT_ID (
+            type: hidden
+            heading {
+                heading: Permit Id
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column SITE_DETAILS (
+            type: plainText
+            heading {
+                heading: Site
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column STATUS_BADGE (
+            type: hidden
+            heading {
+                heading: Status Badge
+            }
+            layout {
+                sequence: 130
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column STATUS_DISPLAY (
+            type: plainText
+            heading {
+                heading: Status
+            }
+            layout {
+                sequence: 120
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column SUPERVISING_COMPANY (
+            type: plainText
+            heading {
+                heading: Company
+            }
+            layout {
+                sequence: 80
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column TYPE_DISPLAY (
+            type: plainText
+            heading {
+                heading: Type
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column WORKFLOW_STATUS (
+            type: hidden
+            heading {
+                heading: Workflow Status
+            }
+            layout {
+                sequence: 110
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Recent DRAs
+        }
+
+        savedReport primary (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn ACTIONS (
+                sequence: 9
+            )
+
+            displayColumn ASSESSMENT_DATE (
+                sequence: 8
+            )
+
+            displayColumn DRA_NUMBER (
+                sequence: 1
+            )
+
+            displayColumn ENGINEER_NAME (
+                sequence: 6
+            )
+
+            displayColumn JOB_NUMBER (
+                sequence: 5
+            )
+
+            displayColumn SITE_DETAILS (
+                sequence: 4
+            )
+
+            displayColumn STATUS_DISPLAY (
+                sequence: 2
+            )
+
+            displayColumn SUPERVISING_COMPANY (
+                sequence: 7
+            )
+
+            displayColumn TYPE_DISPLAY (
+                sequence: 3
+            )
+
+        )
+
+    )
+
+    region recent-dras-mobile (
+        name: Recent DRAs (Mobile)
+        title: Recent DRAs
+        type: classicReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT
+                    d.dra_id,
+                    d.dra_number,
+                    d.dra_type,
+                    CASE d.dra_type
+                        WHEN 'ENGINEER'     THEN 'Engineer DRA'
+                        ELSE 'Subcontractor DRA'
+                    END AS type_display,
+                    COALESCE(s.site_name, d.site_details) AS site_details,
+                    d.job_number,
+                    d.engineer_name,
+                    d.supervising_company,
+                    TO_CHAR(d.assessment_date, 'DD-MON-YYYY') AS assessment_date_display,
+                    d.permit_id,
+                    d.workflow_status,
+                    -- Card left-border colour class
+                    CASE d.workflow_status
+                        WHEN 'DRAFT'     THEN 'ptw-card-draft'
+                        WHEN 'COMPLETED' THEN 'ptw-card-completed'
+                        WHEN 'CANCELLED' THEN 'ptw-card-cancelled'
+                    END AS card_color_class,
+                    -- Status badge
+                    CASE d.workflow_status
+                        WHEN 'DRAFT'     THEN 'Draft'
+                        WHEN 'COMPLETED' THEN 'Completed'
+                        WHEN 'CANCELLED' THEN 'Cancelled'
+                    END AS status_display,
+                    CASE d.workflow_status
+                        WHEN 'DRAFT'     THEN 't-Badge--warning'
+                        WHEN 'COMPLETED' THEN 't-Badge--purple'
+                        WHEN 'CANCELLED' THEN 't-Badge--danger'
+                    END AS badge_class,
+                    -- Continue editing (DRAFT only, own DRA or Admin)
+                    CASE
+                        WHEN d.workflow_status = 'DRAFT'
+                             AND (UPPER(d.created_by) = UPPER(V('APP_USER')) OR :APP_IS_ADMIN = 'Y')
+                        THEN '<a href="' || apex_page.get_url(
+                                    p_page   => 12,
+                                    p_items  => 'P12_DRA_ID',
+                                    p_values => d.dra_id,
+                                    p_clear_cache => 12
+                                ) || '"
+                             class="t-Button t-Button--noLabel t-Button--icon t-Button--warning ptw-action-btn"
+                             title="Continue">
+                             <span class="t-Icon fa fa-pencil" aria-hidden="true"></span>
+                          </a>'
+                    END AS continue_html,
+                    -- View / PDF (COMPLETED only)
+                    CASE
+                        WHEN d.workflow_status = 'COMPLETED'
+                        THEN '<a href="' || apex_page.get_url(
+                                    p_page   => 301,
+                                    p_items  => 'P301_DRA_ID',
+                                    p_values => d.dra_id,
+                                    p_clear_cache => 301
+                                ) || '"
+                             class="t-Button t-Button--noLabel t-Button--icon t-Button--normal ptw-action-btn"
+                             title="View / PDF">
+                             <span class="t-Icon fa fa-file-pdf-o" aria-hidden="true"></span>
+                          </a>'
+                    END AS pdf_html,
+                    -- Cancel (DRAFT only, own DRA or Admin)
+                    CASE
+                        WHEN d.workflow_status = 'DRAFT'
+                             AND (UPPER(d.created_by) = UPPER(V('APP_USER')) OR :APP_IS_ADMIN = 'Y')
+                        THEN '<a href="#"
+                             class="t-Button t-Button--noLabel t-Button--icon t-Button--danger ptw-action-btn"
+                             title="Cancel DRA"
+                             onclick="ptwCancelDra(' || d.dra_id || ', ''' || d.dra_number || '''); return false;">
+                             <span class="t-Icon fa fa-ban" aria-hidden="true"></span>
+                          </a>'
+                    END AS cancel_html,
+                    -- Related permit, if linked
+                    CASE
+                        WHEN d.permit_id IS NOT NULL
+                        THEN '<a href="' || apex_page.get_url(
+                                    p_page   => 2,
+                                    p_items  => 'P2_PERMIT_ID',
+                                    p_values => d.permit_id
+                                ) || '"
+                             class="t-Button t-Button--noLabel t-Button--icon t-Button--normal ptw-action-btn"
+                             title="Related Permit">
+                             <span class="t-Icon fa fa-link" aria-hidden="true"></span>
+                          </a>'
+                    END AS link_html
+                FROM   ptw_pro.ptw_lv_dra_assessments d
+                LEFT JOIN ptw_pro.ptw_lv_sites s ON s.site_id = d.site_id
+                WHERE  d.workflow_status != 'CANCELLED'
+                AND    (
+                           :APP_IS_ADMIN = 'Y' OR :APP_IS_AUTHORISER = 'Y'
+                           OR UPPER(d.created_by) = UPPER(V('APP_USER'))
+                       )
+                ORDER BY d.created_date DESC
+                ```
+        }
+        layout {
+            sequence: 90
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+            cssClasses: ptw-mobile-only
+            icon: fa-list
+        }
+        componentAppearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Report--altRowsDefault
+                t-Report--rowHighlight
+            ]
+        }
+        pagination {
+            type: nextAndPreviousLinks
+        }
+
+        column ASSESSMENT_DATE_DISPLAY (
+            reportColumnQueryId: 9
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 90
+            }
+        )
+
+        column BADGE_CLASS (
+            reportColumnQueryId: 14
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 140
+            }
+        )
+
+        column CANCEL_HTML (
+            reportColumnQueryId: 17
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 170
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column CARD_COLOR_CLASS (
+            reportColumnQueryId: 12
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 120
+            }
+        )
+
+        column CONTINUE_HTML (
+            reportColumnQueryId: 15
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 150
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column DRA_ID (
+            reportColumnQueryId: 1
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 10
+            }
+        )
+
+        column DRA_NUMBER (
+            reportColumnQueryId: 2
+            derivedColumn: N
+            heading {
+                heading: Dra Number
+            }
+            layout {
+                sequence: 20
+            }
+            columnFormatting {
+                htmlExpression:
+                    ```html
+                    <div class="ptw-permit-card #CARD_COLOR_CLASS#">
+                     
+                      <div class="ptw-card-header">
+                        <span class="ptw-card-permit-number">#DRA_NUMBER#</span>
+                        <span class="t-Badge #BADGE_CLASS# t-Badge--lg">#STATUS_DISPLAY#</span>
+                      </div>
+                      <div style="padding:0 1rem;">
+                        <span class="apex-badge" style="background-color:#5a6b7a;color:white;
+                            padding:2px 10px;border-radius:12px;font-weight:600;font-size:0.75rem;">
+                          #TYPE_DISPLAY#
+                        </span>
+                      </div>
+                      <div class="ptw-card-body">
+                        <div>
+                          <strong class="ptw-card-label">Site</strong><br>
+                          #SITE_DETAILS#
+                        </div>
+                        <div>
+                          <strong class="ptw-card-label">Engineer</strong><br>
+                          #ENGINEER_NAME#
+                        </div>
+                        <div>
+                          <strong class="ptw-card-label">Date</strong><br>
+                          #ASSESSMENT_DATE_DISPLAY#
+                        </div>
+                      </div>
+                     
+                      <div class="ptw-card-actions ptw-action-btns">
+                        #CONTINUE_HTML#
+                        #PDF_HTML#
+                        #CANCEL_HTML#
+                        #LINK_HTML#
+                      </div>
+                     
+                    </div>
+                    ```
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+        column DRA_TYPE (
+            reportColumnQueryId: 3
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 30
+            }
+        )
+
+        column ENGINEER_NAME (
+            reportColumnQueryId: 7
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 70
+            }
+        )
+
+        column JOB_NUMBER (
+            reportColumnQueryId: 6
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 60
+            }
+        )
+
+        column LINK_HTML (
+            reportColumnQueryId: 18
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 180
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column PDF_HTML (
+            reportColumnQueryId: 16
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 160
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column PERMIT_ID (
+            reportColumnQueryId: 10
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 100
+            }
+        )
+
+        column SITE_DETAILS (
+            reportColumnQueryId: 5
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 50
+            }
+        )
+
+        column STATUS_DISPLAY (
+            reportColumnQueryId: 13
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 130
+            }
+        )
+
+        column SUPERVISING_COMPANY (
+            reportColumnQueryId: 8
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 80
+            }
+        )
+
+        column TYPE_DISPLAY (
+            reportColumnQueryId: 4
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 40
+            }
+        )
+
+        column WORKFLOW_STATUS (
+            reportColumnQueryId: 11
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 110
+            }
+        )
+
+    )
+
+    pageItem P11_CANCEL_REASON (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+    )
+
+    pageItem P11_SELECTED_DRA_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+    )
+
+    button create-dra (
+        buttonName: CREATE_DRA
+        label: Create New DRA
+        layout {
+            sequence: 10
+            region: @quick-actions
+            slot: regionBody
+            columnSpan: 12
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa fa-plus-circle
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 12
+                items: {
+                    P12_WORKFLOW_STATUS: DRAFT
+                }
+                clearCache: 12
+            }
+        }
+    )
+
+    process cancel-dra (
+        name: Cancel DRA
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    l_dra_id ptw_pro.ptw_lv_dra_assessments.dra_id%TYPE := :P11_SELECTED_DRA_ID;
+                BEGIN
+                    ptw_pro.ptw_dra_pkg.cancel_dra(
+                        p_dra_id => l_dra_id,
+                        p_reason => :P11_CANCEL_REASON
+                    );
+                    apex_util.set_session_state('P11_SELECTED_DRA_ID', NULL);
+                    apex_util.set_session_state('P11_CANCEL_REASON', NULL);
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        apex_error.add_error(
+                            p_message          => SQLERRM,
+                            p_display_location => apex_error.c_inline_in_notification
+                        );
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        successMessage {
+            successMessage: DRA cancelled.
+        }
+        advanced {
+            executionMappingIdentifier: 43992168029819421
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST like 'CANCEL_DRA_%'
+        }
+    )
+
+)
+

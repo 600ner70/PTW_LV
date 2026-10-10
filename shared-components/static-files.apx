@@ -88,6 +88,16 @@ file ptw-checklist.min.js (
     charSet: utf-8
 )
 
+file ptw-dra.js (
+    mimeType: text/javascript
+    charSet: utf-8
+)
+
+file ptw-dra.min.js (
+    mimeType: text/javascript
+    charSet: utf-8
+)
+
 file ptw-global.css (
     mimeType: text/css
     charSet: utf-8

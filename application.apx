@@ -38,6 +38,7 @@ app PTW-PRO (
         fileUrls: [
             #APP_FILES#ptw-utils#MIN#.js
             #APP_FILES#ptw-checklist#MIN#.js
+            #APP_FILES#ptw-dra#MIN#.js
         ]
     }
     css {

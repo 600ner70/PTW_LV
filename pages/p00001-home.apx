@@ -1638,8 +1638,6 @@ page 1 (
             template: @/standard
             templateOptions: [
                 #DEFAULT#
-                t-Region--showIcon
-                t-Region--accent15
                 t-Region--scrollBody
             ]
             cssClasses: ptw-mobile-only

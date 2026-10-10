@@ -1,6 +1,9 @@
 appItem APP_IS_ADMIN (
 )
 
+appItem APP_IS_AUTHORISER (
+)
+
 appItem APP_IS_ENGINEER (
 )
 

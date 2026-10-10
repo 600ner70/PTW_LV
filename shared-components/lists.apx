@@ -370,6 +370,25 @@ list navigation-menu (
         }
     )
 
+    entry dynamic-risk-assessments (
+        label: Dynamic Risk Assessments
+        icon {
+            imageIconCssClasses: fa-shield
+        }
+        layout {
+            sequence: 15
+        }
+        isCurrent {
+            type: pages
+            pages: 11
+        }
+        link {
+            target: {
+                page: 11
+            }
+        }
+    )
+
     entry equipment-isolation (
         label: Equipment Isolation
         icon {
