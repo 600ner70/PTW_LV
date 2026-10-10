@@ -285,7 +285,7 @@ page 12 (
             alignment: left
         }
         layout {
-            sequence: 40
+            sequence: 50
             region: @assessment-details
             slot: regionBody
             alignment: left
@@ -326,6 +326,28 @@ page 12 (
         }
     )
 
+    pageItem P12_JOB_NUMBER (
+        type: textField
+        label {
+            label: Job Number
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @assessment-details
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 100
+        }
+    )
+
     pageItem P12_PERMIT_ID (
         type: popupLov
         label {
@@ -336,17 +358,17 @@ page 12 (
             type: sqlQuery
             sqlQuery:
                 ```sql
-                SELECT permit_number || ' - ' || work_description d,
+                SELECT permit_number || ' - ' || SUBSTR(work_description, 1, 80) d,
                        permit_id r
                 FROM   ptw_pro.ptw_lv_permits
-                WHERE  workflow_status NOT IN ('CLOSED','CANCELLED')
-                ORDER BY created_date DESC
+                WHERE  workflow_status NOT IN ('COMPLETED', 'CANCELLED', 'LAPSED')
+                ORDER  BY created_date DESC
                 ```
             displayExtraValues: false
             nullDisplayValue: -- Select permit --
         }
         layout {
-            sequence: 60
+            sequence: 70
             region: @assessment-details
             slot: regionBody
             alignment: left
@@ -393,6 +415,7 @@ page 12 (
                 ```sql
                 SELECT site_name d, site_id r
                 FROM   ptw_pro.ptw_lv_sites
+                WHERE is_active = 'Y'
                 ORDER BY site_name
                 ```
             displayExtraValues: false
@@ -417,7 +440,7 @@ page 12 (
             alignment: left
         }
         layout {
-            sequence: 50
+            sequence: 60
             region: @assessment-details
             slot: regionBody
             alignment: left
@@ -426,11 +449,6 @@ page 12 (
             template: @/optional-floating
             templateOptions: #DEFAULT#
             width: 30
-        }
-        serverSideCondition {
-            type: item=value
-            item: P12_DRA_TYPE
-            value: SUBCONTRACTOR
         }
     )
 
@@ -523,11 +541,7 @@ page 12 (
         action native-javascript-code (
             action: executeJsCode
             settings {
-                jsCode:
-                    ```javascript-browser
-                    apex.item('P12_CHECKLIST_JSON').setValue(JSON.stringify(PTW.dra.collect()));
-                    captureLocationThenSubmit('NEXT_STEP');
-                    ```
+                jsCode: captureLocationThenSubmit('NEXT_STEP');
             }
             execution {
                 sequence: 10
@@ -551,11 +565,7 @@ page 12 (
         action native-javascript-code (
             action: executeJsCode
             settings {
-                jsCode:
-                    ```javascript-browser
-                    apex.item('P12_CHECKLIST_JSON').setValue(JSON.stringify(PTW.dra.collect()));
-                    captureLocationThenSubmit('SAVE_DRAFT');
-                    ```
+                jsCode: captureLocationThenSubmit('SAVE_DRAFT');
             }
             execution {
                 sequence: 10
@@ -686,7 +696,6 @@ page 12 (
                             p_message          => v_message,
                             p_display_location => apex_error.c_inline_in_notification
                         );
-                        RAISE_APPLICATION_ERROR(-20083, v_message);
                     END IF;
                 END;
                 ```
@@ -714,8 +723,6 @@ page 12 (
                 page: 13
                 items: {
                     P13_DRA_ID: &P12_DRA_ID.
-                    P13_DRA_NUMBER: &P12_DRA_NUMBER.
-                    P13_WORKFLOW_STATUS: &P12_WORKFLOW_STATUS.
                 }
                 clearCache: 13
                 successMessage: false
@@ -734,6 +741,9 @@ page 12 (
         behavior {
             target: {
                 page: 12
+                items: {
+                    P12_DRA_ID: &P12_DRA_ID.
+                }
                 clearCache: 12
                 successMessage: false
             }

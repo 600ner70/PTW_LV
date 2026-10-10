@@ -826,6 +826,9 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
         v_na_lng  ptw_pro.ptw_signatures.longitude%TYPE;
         v_work_complete ptw_pro.ptw_lv_permits.clear_work_complete%TYPE;
         v_area_safe     ptw_pro.ptw_lv_permits.clear_area_safe%TYPE;
+        v_cleared_late  ptw_pro.ptw_lv_permits.cleared_late%TYPE;
+        v_late_reason   ptw_pro.ptw_lv_permits.late_clear_reason%TYPE;
+        v_ended         ptw_pro.ptw_lv_permits.ended_datetime%TYPE;
         v_section_title VARCHAR2(100);
         v_declaration   VARCHAR2(1500);
         v_person_label  VARCHAR2(100);
@@ -834,8 +837,10 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
         ptw_pro.ptw_signature_pkg.get_signature(p_permit_id, 'CLEAR',
             v_name, v_sig, v_mobile, v_company, v_dt, v_na_lat, v_na_lng, v_na_auth_to_dt);
 
-        SELECT clear_work_complete, clear_area_safe
-        INTO   v_work_complete, v_area_safe
+        SELECT clear_work_complete, clear_area_safe,
+               cleared_late, late_clear_reason, ended_datetime
+        INTO   v_work_complete, v_area_safe,
+               v_cleared_late, v_late_reason, v_ended
         FROM   ptw_pro.ptw_lv_permits WHERE permit_id = p_permit_id;
 
         -- General's real form calls this stage "Completion of Works" and talks
@@ -904,6 +909,16 @@ CREATE OR REPLACE EDITIONABLE PACKAGE BODY "PTW_PRO"."PTW_PDF_LIB_PKG" AS
             <div class="ptw-lv-label">Date &amp; Time:</div>
             <div class="ptw-lv-value">' || fmt_datetime(v_dt) || '</div>
         </div>
+        ' || CASE WHEN v_cleared_late = 'Y' THEN '
+        <div class="ptw-lv-row">
+            <div class="ptw-lv-label">Cleared after expiry:</div>
+            <div class="ptw-lv-value"><span class="status-badge status-no">Yes</span>
+                (permit expired ' || fmt_datetime(v_ended) || ')</div>
+        </div>
+        <div class="ptw-lv-row">
+            <div class="ptw-lv-label">Reason:</div>
+            <div class="ptw-lv-value">' || safe_val(v_late_reason) || '</div>
+        </div>' END || '
         <div class="ptw-lv-row">
             <div class="ptw-lv-label">Signature:</div>
             <div class="ptw-lv-value">

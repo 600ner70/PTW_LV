@@ -764,6 +764,10 @@ PROMPT Exporting trigger TRG_PTW_TYPES_AUDIT
 SPOOL triggers/trg_ptw_types_audit.sql
 SELECT DBMS_METADATA.GET_DDL('TRIGGER', 'TRG_PTW_TYPES_AUDIT', 'PTW_PRO') FROM DUAL;
 SPOOL OFF
+PROMPT Exporting function GENERATE_PTW_DRA_PDF
+SPOOL functions/generate_ptw_dra_pdf.sql
+SELECT DBMS_METADATA.GET_DDL('FUNCTION', 'GENERATE_PTW_DRA_PDF', 'PTW_PRO') FROM DUAL;
+SPOOL OFF
 PROMPT Exporting function GENERATE_PTW_FIREISOLATION_PDF
 SPOOL functions/generate_ptw_fireisolation_pdf.sql
 SELECT DBMS_METADATA.GET_DDL('FUNCTION', 'GENERATE_PTW_FIREISOLATION_PDF', 'PTW_PRO') FROM DUAL;
@@ -799,6 +803,10 @@ SPOOL OFF
 PROMPT Exporting function PTW_LV_PERMIT_VISIBLE
 SPOOL functions/ptw_lv_permit_visible.sql
 SELECT DBMS_METADATA.GET_DDL('FUNCTION', 'PTW_LV_PERMIT_VISIBLE', 'PTW_PRO') FROM DUAL;
+SPOOL OFF
+PROMPT Exporting package spec PTW_AUTH_WORKFLOW_PKG
+SPOOL packages/ptw_auth_workflow_pkg.pks.sql
+SELECT DBMS_METADATA.GET_DDL('PACKAGE', 'PTW_AUTH_WORKFLOW_PKG', 'PTW_PRO') FROM DUAL;
 SPOOL OFF
 PROMPT Exporting package spec PTW_CHECKLIST_PKG
 SPOOL packages/ptw_checklist_pkg.pks.sql
@@ -839,6 +847,10 @@ SPOOL OFF
 PROMPT Exporting package spec PTW_UI_PKG
 SPOOL packages/ptw_ui_pkg.pks.sql
 SELECT DBMS_METADATA.GET_DDL('PACKAGE', 'PTW_UI_PKG', 'PTW_PRO') FROM DUAL;
+SPOOL OFF
+PROMPT Exporting package body PTW_AUTH_WORKFLOW_PKG
+SPOOL packages/ptw_auth_workflow_pkg.pkb.sql
+SELECT DBMS_METADATA.GET_DDL('PACKAGE_BODY', 'PTW_AUTH_WORKFLOW_PKG', 'PTW_PRO') FROM DUAL;
 SPOOL OFF
 PROMPT Exporting package body PTW_CHECKLIST_PKG
 SPOOL packages/ptw_checklist_pkg.pkb.sql

@@ -10,6 +10,41 @@ page 9 (
     navigation {
         cursorFocus: doNotFocusCursor
     }
+    javaScript {
+        executeWhenPageLoads:
+            ```javascript-browser
+            (function () {
+                var BADGES = [
+                    { val: 'Y', cls: 'binary-badge-yes', label: '\u2713' },
+                    { val: 'N', cls: 'binary-badge-no',  label: '\u2717' }
+                ];
+                ['P9_DRA_REQUIRED'].forEach(function (itemName) {
+                    var $fc = $('#' + itemName).closest('.t-Form-fieldContainer');
+                    if ($fc.length === 0) return;
+                    $fc.find('.binary-badge-row').remove();
+                    var currentVal = $('input[name="' + itemName + '"]:checked').val() || '';
+                    var $row = $('<div class="binary-badge-row"></div>').attr('data-item', itemName);
+                    BADGES.forEach(function (b) {
+                        $('<span></span>')
+                            .addClass('binary-badge ' + b.cls)
+                            .toggleClass('cm-active', currentVal === b.val)
+                            .attr('data-value', b.val)
+                            .text(b.label)
+                            .appendTo($row);
+                    });
+                    $fc.find('.t-Form-inputContainer').append($row);
+                });
+                $('.cm-binary-item .apex-item-grid').hide();
+                $(document).off('click.binarybadge9').on('click.binarybadge9', '.binary-badge:not(.binary-readonly)', function () {
+                    var $badge = $(this), $row = $badge.closest('.binary-badge-row');
+                    $('input[name="' + $row.attr('data-item') + '"][value="' + $badge.attr('data-value') + '"]')
+                        .prop('checked', true).trigger('change');   // fires the Show DRA picker DA
+                    $row.find('.binary-badge').removeClass('cm-active');
+                    $badge.addClass('cm-active');
+                });
+            }());
+            ```
+    }
     security {
         pageAccessProtection: argumentsMustHaveChecksum
         formAutoComplete: false
@@ -19,7 +54,7 @@ page 9 (
         name: Buttons
         type: staticContent
         layout {
-            sequence: 110
+            sequence: 130
             slot: contentBody
         }
         appearance {
@@ -47,7 +82,7 @@ page 9 (
                 ```
         }
         layout {
-            sequence: 100
+            sequence: 120
             slot: contentBody
         }
         appearance {
@@ -79,7 +114,7 @@ page 9 (
                 ```
         }
         layout {
-            sequence: 60
+            sequence: 80
             slot: contentBody
         }
         appearance {
@@ -94,6 +129,72 @@ page 9 (
         }
     )
 
+    pageItem P9_DRA_ID (
+        type: selectList
+        label {
+            label: Completed DRA for this work
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT d.dra_number || ' - ' || d.engineer_name
+                       || ' - ' || TO_CHAR(d.signed_datetime, 'DD-MON HH24:MI') d,
+                       d.dra_id r
+                FROM   ptw_pro.ptw_lv_dra_assessments d
+                WHERE  d.workflow_status    = 'COMPLETED'
+                AND    d.stage3_can_proceed = 'YES'
+                AND    (   d.permit_id = :P9_PERMIT_ID
+                        OR (d.permit_id IS NULL AND d.signed_datetime >= SYSDATE - 1))
+                ORDER  BY CASE WHEN d.permit_id = :P9_PERMIT_ID THEN 0 ELSE 1 END,
+                          d.signed_datetime DESC
+                ```
+            displayExtraValues: false
+            nullDisplayValue: -- Select DRA --
+        }
+        layout {
+            sequence: 70
+            slot: contentBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        help {
+            inlineHelpText: Only completed DRAs that say the work can proceed are listed. Complete one from Dynamic Risk Assessments, choosing this permit as the Related Permit, then reopen Start Permit.
+        }
+    )
+
+    pageItem P9_DRA_REQUIRED (
+        type: radioGroup
+        label {
+            label: Is a Dynamic Risk Assessment (DRA) needed for this work?
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes;Y,No;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 60
+            slot: contentBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-above
+            templateOptions: #DEFAULT#
+            cssClasses: cm-binary-item
+        }
+    )
+
     pageItem P9_END_DATE (
         type: datePicker
         label {
@@ -104,7 +205,7 @@ page 9 (
             showTime: true
         }
         layout {
-            sequence: 90
+            sequence: 110
             slot: contentBody
             alignment: left
             startNewRow: false
@@ -150,7 +251,7 @@ page 9 (
             showTime: true
         }
         layout {
-            sequence: 80
+            sequence: 100
             slot: contentBody
             alignment: left
             columnSpan: 6
@@ -179,7 +280,7 @@ page 9 (
             displayNullValue: false
         }
         layout {
-            sequence: 70
+            sequence: 90
             slot: contentBody
             alignment: left
         }
@@ -342,6 +443,59 @@ page 9 (
 
     )
 
+    dynamicAction show-dra-picker (
+        name: Show DRA picker
+        execution {
+            sequence: 60
+        }
+        when {
+            selectionType: items
+            items: P9_DRA_REQUIRED
+        }
+        clientSideCondition {
+            type: item=value
+            item: P9_DRA_REQUIRED
+            value: Y
+        }
+
+        action native-clear (
+            action: clear
+            affectedElements {
+                selectionType: items
+                items: P9_DRA_ID
+            }
+            execution {
+                sequence: 20
+                fireWhenEventResultIs: false
+                fireOnInit: false
+            }
+        )
+
+        action native-hide (
+            action: hide
+            affectedElements {
+                selectionType: items
+                items: P9_DRA_ID
+            }
+            execution {
+                sequence: 10
+                fireWhenEventResultIs: false
+            }
+        )
+
+        action native-show (
+            action: show
+            affectedElements {
+                selectionType: items
+                items: P9_DRA_ID
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
     dynamicAction start-the-permit (
         name: Start the permit
         execution {
@@ -395,6 +549,44 @@ page 9 (
             }
         )
 
+    )
+
+    validation dra-answer-required (
+        name: DRA Answer Required
+        execution {
+            sequence: 50
+        }
+        validation {
+            type: itemIsNotNull
+            item: P9_DRA_REQUIRED
+        }
+        error {
+            errorMessage: Say whether a DRA is needed for this work.
+            associatedItem: @P9_DRA_REQUIRED
+        }
+        serverSideCondition {
+            whenButtonPressed: @start-permit
+        }
+    )
+
+    validation dra-selected (
+        name: DRA Selected
+        execution {
+            sequence: 60
+        }
+        validation {
+            language: sql
+            sqlExpression:
+                ```sql
+                :P9_DRA_REQUIRED = 'N'
+                OR (:P9_DRA_ID IS NOT NULL
+                AND ptw_pro.ptw_dra_pkg.can_use_for_permit(:P9_DRA_ID, :P9_PERMIT_ID) = 'Y')
+                ```
+        }
+        error {
+            errorMessage: Select a completed DRA that says the work can proceed.
+            associatedItem: @P9_DRA_ID
+        }
     )
 
     validation end-after-start (
@@ -527,16 +719,22 @@ page 9 (
                            current_step       = 'LIVE',
                            started_datetime   = v_from_dt,
                            ended_datetime     = v_to_dt,
+                           dra_required       = :P9_DRA_REQUIRED,
                            started_latitude   = TO_NUMBER(:APP_LATITUDE),
                            started_longitude  = TO_NUMBER(:APP_LONGITUDE),
                            modified_by        = V('APP_USER'),
                            modified_date      = v_now
-                    WHERE  permit_id = :P9_PERMIT_ID;
+                    WHERE  permit_id = :P9_PERMIT_ID
+                    AND    workflow_status = 'AUTHORISED';
                 
                     IF SQL%ROWCOUNT = 0 THEN
-                        RAISE_APPLICATION_ERROR(-20001, 'Permit not found.');
+                        RAISE_APPLICATION_ERROR(-20001, 'Permit is not authorised or has already been started.');
                     END IF;
                 
+                    IF :P9_DRA_REQUIRED = 'Y' THEN
+                        ptw_pro.ptw_dra_pkg.link_to_permit(:P9_DRA_ID, :P9_PERMIT_ID);
+                    END IF;
+                 
                     COMMIT;
                     :P9_WORKFLOW_STATUS := 'STARTED';
                     apex_application.g_print_success_message := 'Permit started successfully.';

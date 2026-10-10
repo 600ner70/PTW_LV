@@ -46,10 +46,9 @@ automation permit-expiry-warning (
                                                 p_application_id => 105,
                                                 p_user_name      => r.created_by,
                                                 p_title          => 'Permit Expiring Soon',
-                                                p_body           => 'Permit ' || r.permit_number ||
-                                                                     ' expires at ' ||
-                                                                     TO_CHAR(r.ended_datetime, 'DD-MON-YYYY HH24:MI') ||
-                                                                     '. Please renew or close it.'
+                                                p_body           => 'Permit ' || r.permit_number || ' expires at ' ||
+                                                                       TO_CHAR(r.ended_datetime, 'DD-MON-YYYY HH24:MI') ||
+                                                                       '. Please clear it before then.'
                                             );
                 
                                             INSERT INTO ptw_pro.ptw_push_notification_log

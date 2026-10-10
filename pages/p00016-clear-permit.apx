@@ -81,8 +81,12 @@ page 16 (
             ```javascript-browser
             // ── Shared state ──────────────────────────────────────────
             var p16Status  = apex.item('P16_WORKFLOW_STATUS').getValue();
-            var isReadOnly = (p16Status !== 'STARTED');
+            var isReadOnly = (p16Status !== 'STARTED' && p16Status !== 'LAPSED');
             var isGeneral = (apex.item('P16_PTW_TYPE').getValue() === 'GENERAL');
+            
+            if (isReadOnly) { 
+                apex.item('P16_LATE_CLEAR_REASON').disable(); 
+            }
             
             if (isGeneral) {
                 $('#p16-decl-tidy-para').hide();
@@ -383,7 +387,7 @@ page 16 (
         name: Buttons
         type: staticContent
         layout {
-            sequence: 150
+            sequence: 180
             slot: contentBody
         }
         appearance {
@@ -421,7 +425,7 @@ page 16 (
                 ```
         }
         layout {
-            sequence: 100
+            sequence: 130
             slot: contentBody
         }
         appearance {
@@ -441,7 +445,7 @@ page 16 (
         title: Engineer
         type: staticContent
         layout {
-            sequence: 130
+            sequence: 160
             slot: contentBody
         }
         appearance {
@@ -482,7 +486,7 @@ page 16 (
                 ```
         }
         layout {
-            sequence: 140
+            sequence: 170
             slot: contentBody
         }
         appearance {
@@ -502,6 +506,44 @@ page 16 (
         }
     )
 
+    region late-clearance-warning (
+        name: Late Clearance Warning
+        title: Cleared after expiry
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <p style="margin:0;">
+                  This permit's validity window ended at <strong>&P16_ENDED_DISPLAY.</strong>.
+                  Clearance after that time is recorded as <strong>cleared after expiry</strong>
+                  and needs a reason.
+                </p>
+                
+                ```
+        }
+        layout {
+            sequence: 120
+            slot: contentBody
+        }
+        appearance {
+            template: @/alert
+            templateOptions: [
+                #DEFAULT#
+                t-Alert--horizontal
+                t-Alert--defaultIcons
+                t-Alert--warning
+            ]
+        }
+        advanced {
+            htmlDomId: p16-late-warning
+        }
+        serverSideCondition {
+            type: item=value
+            item: P16_IS_LATE
+            value: Y
+        }
+    )
+
     region permit-info-banner (
         name: Permit Info Banner
         type: staticContent
@@ -509,7 +551,7 @@ page 16 (
             htmlCode: <h2 class="t-Alert-title">&P16_BANNER_TITLE.</h2>
         }
         layout {
-            sequence: 90
+            sequence: 110
             slot: contentBody
         }
         appearance {
@@ -523,7 +565,7 @@ page 16 (
         title: Person in Charge of Works
         type: staticContent
         layout {
-            sequence: 110
+            sequence: 140
             slot: contentBody
         }
         appearance {
@@ -562,7 +604,7 @@ page 16 (
                 ```
         }
         layout {
-            sequence: 120
+            sequence: 150
             slot: contentBody
         }
         appearance {
@@ -904,6 +946,50 @@ page 16 (
         }
     )
 
+    pageItem P16_ENDED_DISPLAY (
+        type: hidden
+        layout {
+            sequence: 100
+            slot: contentBody
+        }
+    )
+
+    pageItem P16_IS_LATE (
+        type: hidden
+        layout {
+            sequence: 90
+            slot: contentBody
+        }
+    )
+
+    pageItem P16_LATE_CLEAR_REASON (
+        type: textarea
+        label {
+            label: Reason for clearing after expiry
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @late-clearance-warning
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 3
+        }
+        validation {
+            maxLength: 1000
+        }
+        serverSideCondition {
+            type: item=value
+            item: P16_IS_LATE
+            value: Y
+        }
+    )
+
     pageItem P16_PERMIT_ID (
         type: hidden
         settings {
@@ -1128,8 +1214,38 @@ page 16 (
         }
     )
 
+    validation late-clearance-reason-required (
+        name: Late Clearance Reason Required
+        execution {
+            sequence: 90
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    v_ended DATE;
+                BEGIN
+                    SELECT ended_datetime INTO v_ended
+                    FROM   ptw_pro.ptw_lv_permits
+                    WHERE  permit_id = :P16_PERMIT_ID;
+                 
+                    RETURN NOT ( SYSDATE >= v_ended
+                                 AND TRIM(:P16_LATE_CLEAR_REASON) IS NULL );
+                END;
+                ```
+        }
+        error {
+            errorMessage: Please give a reason for clearing this permit after it expired.
+            associatedItem: @P16_LATE_CLEAR_REASON
+        }
+        serverSideCondition {
+            whenButtonPressed: @clear-permit
+        }
+    )
+
     validation permit-still-valid (
-        name: Permit Still Valid
+        name: Permit Can Be Cleared
         execution {
             sequence: 60
         }
@@ -1144,14 +1260,13 @@ page 16 (
                     INTO   v_count
                     FROM   ptw_pro.ptw_lv_permits
                     WHERE  permit_id       = :P16_PERMIT_ID
-                    AND    workflow_status = 'STARTED'
-                    AND    SYSDATE         < ended_datetime;
+                    AND    workflow_status IN ('STARTED', 'LAPSED');
                     RETURN v_count > 0;
                 END;
                 ```
         }
         error {
-            errorMessage: Permit can no longer be cleared — it may have expired or already been closed.
+            errorMessage: This permit can no longer be cleared - it has already been completed or cancelled.
             displayLocation: inlineInNotification
         }
         serverSideCondition {
@@ -1240,15 +1355,18 @@ page 16 (
                            clear_longitude     = TO_NUMBER(:APP_LONGITUDE),
                            completion_date     = v_now,
                            modified_by         = V('APP_USER'),
-                           modified_date       = v_now
+                           modified_date       = v_now,
+                           cleared_late        = CASE WHEN v_now >= ended_datetime
+                                                 THEN 'Y' ELSE 'N' END,
+                           late_clear_reason   = CASE WHEN v_now >= ended_datetime
+                                                 THEN TRIM(:P16_LATE_CLEAR_REASON) END
                     WHERE  permit_id           = :P16_PERMIT_ID
-                    AND    workflow_status     = 'STARTED'
-                    AND    SYSDATE             < ended_datetime;
+                    AND    workflow_status     IN ('STARTED', 'LAPSED');
                 
                     IF SQL%ROWCOUNT = 0 THEN
                         RAISE_APPLICATION_ERROR(-20001,
-                            'Permit could not be cleared. It may have expired or '
-                            || 'already been closed. Please refresh the permits list.');
+                          'Permit could not be cleared. It may already have been completed '
+                          || 'or cancelled. Please refresh the permits list.');
                     END IF;
                 
                     ptw_pro.ptw_signature_pkg.save_signature(
@@ -1349,14 +1467,21 @@ page 16 (
                     v_na_company    ptw_pro.ptw_signatures.company_name%TYPE;
                     v_na_dt         DATE;
                     v_na_auth_to_dt  ptw_pro.ptw_signatures.auth_to_datetime%TYPE; 
+                    v_late_reason  ptw_pro.ptw_lv_permits.late_clear_reason%TYPE;
+                    v_cleared_late ptw_pro.ptw_lv_permits.cleared_late%TYPE;
                 BEGIN
                 
                     SELECT workflow_status, ended_datetime, permit_number,
-                           person_in_charge_name, supervising_company, ptw_type
+                           person_in_charge_name, supervising_company, ptw_type,
+                           late_clear_reason, cleared_late
                     INTO   v_status, v_ended, :P16_PERMIT_NUMBER,
-                           :P16_CLEAR_PERSON_NAME, :P16_CLEAR_COMPANY, :P16_PTW_TYPE
+                           :P16_CLEAR_PERSON_NAME, :P16_CLEAR_COMPANY, :P16_PTW_TYPE,
+                           v_late_reason, v_cleared_late
                     FROM   ptw_pro.ptw_lv_permits
                     WHERE  permit_id = :P16_PERMIT_ID;
+                
+                    :P16_WORKFLOW_STATUS := v_status;
+                    :P16_ENDED_DISPLAY   := TO_CHAR(v_ended, 'DD-MON-YYYY HH24:MI');
                 
                     :P16_BANNER_TITLE := CASE :P16_PTW_TYPE
                                           WHEN 'GENERAL'               THEN 'Completion of Works'
@@ -1369,7 +1494,7 @@ page 16 (
                                                     ELSE 'Clear Permit'
                                                END;
                                                
-                    IF v_status NOT IN ('STARTED', 'COMPLETED') THEN
+                    IF v_status NOT IN ('STARTED', 'LAPSED', 'COMPLETED') THEN
                         apex_error.add_error(
                             p_message          => 'This permit cannot be viewed here. Current status: ' || v_status,
                             p_display_location => apex_error.c_on_error_page
@@ -1377,20 +1502,15 @@ page 16 (
                         RETURN;
                     END IF;
                 
-                    IF v_status = 'STARTED' THEN
-                        IF SYSDATE >= v_ended THEN
-                            apex_error.add_error(
-                                p_message          => 'This permit has expired ('
-                                                      || TO_CHAR(v_ended, 'DD-MON-YYYY HH24:MI')
-                                                      || ') and cannot be cleared.',
-                                p_display_location => apex_error.c_on_error_page
-                            );
-                            RETURN;
-                        END IF;
+                    IF v_status IN ('STARTED', 'LAPSED') THEN
+                        :P16_IS_LATE := CASE WHEN SYSDATE >= v_ended THEN 'Y' ELSE 'N' END;
                         :P16_CLEAR_DATETIME := TO_CHAR(SYSDATE, 'DD-MON-YYYY HH24:MI');
                     END IF;
                 
                     IF v_status = 'COMPLETED' THEN
+                
+                        :P16_IS_LATE           := v_cleared_late;
+                        :P16_LATE_CLEAR_REASON := v_late_reason;
                         ptw_pro.ptw_signature_pkg.get_signature(:P16_PERMIT_ID, 'CLEAR',
                             :P16_CLEAR_PERSON_NAME, v_sig, :P16_CLEAR_PERSON_MOBILE, :P16_CLEAR_COMPANY,
                             :P16_CLEAR_DATETIME, v_na_lat, v_na_lng, v_na_auth_to_dt);

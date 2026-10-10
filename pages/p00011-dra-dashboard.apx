@@ -364,9 +364,7 @@ page 11 (
                           </a>'
                     END ||
                     -- View / PDF (COMPLETED only)
-                    CASE
-                        WHEN d.workflow_status = 'COMPLETED'
-                        THEN '<a href="' || apex_page.get_url(
+                    '<a href="' || apex_page.get_url(
                                     p_page   => 301,
                                     p_items  => 'P301_DRA_ID',
                                     p_values => d.dra_id,
@@ -376,7 +374,7 @@ page 11 (
                              title="View / PDF">
                              <span class="t-Icon fa fa-file-pdf-o" aria-hidden="true"></span>
                           </a>'
-                    END ||
+                    ||
                     -- Cancel (DRAFT only, own DRA or Admin)
                     CASE
                         WHEN d.workflow_status = 'DRAFT'
@@ -497,6 +495,10 @@ page 11 (
             link {
                 target: {
                     page: 12
+                    items: {
+                        P12_DRA_ID: #DRA_ID#
+                    }
+                    clearCache: 12
                 }
                 linkText: #DRA_NUMBER#
                 linkAttributes: #STATUS_BADGE#

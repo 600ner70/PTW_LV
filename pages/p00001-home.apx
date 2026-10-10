@@ -637,8 +637,7 @@ page 1 (
                               </a>'
                     END ||
                     CASE
-                        WHEN p.workflow_status = 'STARTED' 
-                        AND  SYSDATE < p.ended_datetime
+                        WHEN p.workflow_status IN ('STARTED', 'LAPSED') 
                         AND  EXISTS (
                                  SELECT 1 
                                  FROM   ptw_pro.ptw_lv_monitoring m
@@ -648,15 +647,16 @@ page 1 (
                         THEN '<a href="' || apex_page.get_url(
                                                 p_page   => 16,
                                                 p_items  => 'P16_PERMIT_ID,P16_PERMIT_NUMBER,P16_WORKFLOW_STATUS',
-                                                p_values => p.permit_id || ',' || p.permit_number || ',STARTED',
+                                                p_values => p.permit_id || ',' || p.permit_number || ',' || p.workflow_status,
                                                 p_clear_cache => 16
                                             ) || '"
-                                 class="t-Button t-Button--noLabel t-Button--icon t-Button--success ptw-action-btn"
+                                 class="t-Button t-Button--noLabel t-Button--icon '
+                                   || CASE WHEN p.workflow_status = 'LAPSED' THEN 't-Button--warning'
+                                      ELSE 't-Button--success' END || ' ptw-action-btn"
                                  title="Clear Permit">
                                  <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>
                               </a>'
-                        WHEN p.workflow_status = 'STARTED'
-                        AND  SYSDATE < p.ended_datetime
+                        WHEN p.workflow_status IN ('STARTED', 'LAPSED')
                         AND  EXISTS (
                                 SELECT 1
                                 FROM   ptw_pro.ptw_types ty
@@ -666,10 +666,12 @@ page 1 (
                         THEN '<a href="' || apex_page.get_url(
                                                 p_page   => 16,
                                                 p_items  => 'P16_PERMIT_ID,P16_PERMIT_NUMBER,P16_WORKFLOW_STATUS',
-                                                p_values => p.permit_id || ',' || p.permit_number || ',STARTED',
+                                                p_values => p.permit_id || ',' || p.permit_number || ',' || p.workflow_status,
                                                 p_clear_cache => 16
                                             ) || '"
-                                 class="t-Button t-Button--noLabel t-Button--icon t-Button--success ptw-action-btn"
+                                 class="t-Button t-Button--noLabel t-Button--icon '
+                                   || CASE WHEN p.workflow_status = 'LAPSED' THEN 't-Button--warning'
+                                      ELSE 't-Button--success' END || ' ptw-action-btn"
                                  title="Complete Works">
                                  <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>
                               </a>'        
@@ -1263,7 +1265,10 @@ page 1 (
                     CASE p.workflow_status
                         WHEN 'DRAFT'       THEN 'Draft'
                         WHEN 'SUSPENDED'   THEN 'Suspended'
-                        WHEN 'COMPLETED'   THEN 'Completed'
+                        WHEN 'COMPLETED'   THEN CASE p.cleared_late 
+                                                WHEN 'Y'
+                                                THEN 'Completed (late)'
+                                                ELSE 'Completed' END
                         WHEN 'CANCELLED'   THEN 'Cancelled'
                         WHEN 'AUTHORISED'  THEN 'Authorised'
                         WHEN 'LAPSED'      THEN 'Lapsed'
@@ -1399,10 +1404,9 @@ page 1 (
                         ELSE NULL
                     END AS monitoring_html,
                 
-                    -- Clearance button (STARTED = clear, COMPLETED = view — matches IR)
+                    -- Clearance button (STARTED, LAPSED = clear, COMPLETED = view — matches IR)
                     CASE
-                        WHEN p.workflow_status = 'STARTED' 
-                        AND  SYSDATE < p.ended_datetime
+                        WHEN p.workflow_status IN ('STARTED', 'LAPSED')
                         AND  EXISTS (
                                  SELECT 1 
                                  FROM   ptw_pro.ptw_lv_monitoring m
@@ -1412,15 +1416,16 @@ page 1 (
                         THEN '<a href="' || apex_page.get_url(
                                                 p_page   => 16,
                                                 p_items  => 'P16_PERMIT_ID,P16_PERMIT_NUMBER,P16_WORKFLOW_STATUS',
-                                                p_values => p.permit_id || ',' || p.permit_number || ',STARTED',
+                                                p_values => p.permit_id || ',' || p.permit_number || ',' ||p.workflow_status,
                                                 p_clear_cache => 16
                                             ) || '"
-                                 class="t-Button t-Button--noLabel t-Button--icon t-Button--success ptw-action-btn"
+                                 class="t-Button t-Button--noLabel t-Button--icon '
+                                 || CASE WHEN p.workflow_status = 'LAPSED' THEN 't-Button--warning'
+                                 ELSE 't-Button--success' END || ' ptw-action-btn"
                                  title="Clear Permit">
                                  <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>
                               </a>'
-                        WHEN p.workflow_status = 'STARTED'
-                        AND  SYSDATE < p.ended_datetime
+                        WHEN p.workflow_status IN ('STARTED', 'LAPSED')
                         AND  EXISTS (
                                 SELECT 1
                                 FROM   ptw_pro.ptw_types ty
@@ -1430,10 +1435,12 @@ page 1 (
                         THEN '<a href="' || apex_page.get_url(
                                                 p_page   => 16,
                                                 p_items  => 'P16_PERMIT_ID,P16_PERMIT_NUMBER,P16_WORKFLOW_STATUS',
-                                                p_values => p.permit_id || ',' || p.permit_number || ',STARTED',
+                                                p_values => p.permit_id || ',' || p.permit_number || ','|| p.workflow_status,
                                                 p_clear_cache => 16
                                             ) || '"
-                                 class="t-Button t-Button--noLabel t-Button--icon t-Button--success ptw-action-btn"
+                                 class="t-Button t-Button--noLabel t-Button--icon '
+                                 || CASE WHEN p.workflow_status = 'LAPSED' THEN 't-Button--warning'
+                                 ELSE 't-Button--success' END || ' ptw-action-btn"
                                  title="Complete Works">
                                  <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>
                               </a>'
