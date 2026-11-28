@@ -4,8 +4,8 @@ begin
 --     APP STATIC FILES: 105
 --   Manifest End
 wwv_flow_imp.component_begin (
- p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.17'
+ p_version_yyyy_mm_dd=>'2026.03.30'
+,p_release=>'26.1.6'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
@@ -42,7 +42,11 @@ wwv_flow_imp_shared.create_app_static_file(
 ,p_file_name=>'icons/app-icon-32.png'
 ,p_mime_type=>'image/png'
 ,p_file_charset=>'utf-8'
-,p_file_content => wwv_flow_imp.varchar2_to_blob(wwv_flow_imp.g_varchar2_table)
+,p_file_content=>wwv_flow_imp.varchar2_to_blob(wwv_flow_imp.g_varchar2_table)
+,p_created_on=>wwv_flow_imp.dz('20260207174826Z')
+,p_updated_on=>wwv_flow_imp.dz('20260514095927Z')
+,p_created_by=>'PERMITPRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp.component_end;
 end;

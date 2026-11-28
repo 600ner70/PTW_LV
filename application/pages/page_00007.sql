@@ -4,8 +4,8 @@ begin
 --     PAGE: 00007
 --   Manifest End
 wwv_flow_imp.component_begin (
- p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.17'
+ p_version_yyyy_mm_dd=>'2026.03.30'
+,p_release=>'26.1.6'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
@@ -58,18 +58,29 @@ wwv_flow_imp_page.create_page(
 ,p_dialog_resizable=>'Y'
 ,p_protection_level=>'C'
 ,p_page_component_map=>'17'
+,p_created_on=>wwv_flow_imp.dz('20260228101844Z')
+,p_last_updated_on=>wwv_flow_imp.dz('20260829155705Z')
+,p_created_by=>'PTW_PRO'
+,p_last_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(58110169498870687)
 ,p_plug_name=>'Location'
+,p_static_id=>'location'
 ,p_region_name=>'history_map'
 ,p_region_template_options=>'#DEFAULT#'
 ,p_plug_template=>4501440665235496320
 ,p_plug_display_sequence=>70
+,p_plug_item_display_point=>'ABOVE'
 ,p_location=>null
 ,p_lazy_loading=>true
 ,p_plug_source_type=>'NATIVE_MAP_REGION'
+,p_plug_query_headings_type=>'COLON_DELMITED_LIST'
 ,p_ai_enabled=>false
+,p_created_on=>wwv_flow_imp.dz('20260228101844Z')
+,p_updated_on=>wwv_flow_imp.dz('20260829155705Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_map_region(
  p_id=>wwv_flow_imp.id(29752025641080897)
@@ -101,11 +112,14 @@ wwv_flow_imp_page.create_map_region(
 ,p_layer_messages_position=>'BELOW'
 ,p_show_legend=>false
 ,p_features=>'SCALE_BAR:INFINITE_MAP:RECTANGLE_ZOOM'
+,p_updated_on=>wwv_flow_imp.dz('20260829155705Z')
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_map_region_layer(
  p_id=>wwv_flow_imp.id(29752518329080894)
 ,p_map_region_id=>wwv_flow_imp.id(29752025641080897)
 ,p_name=>'Location'
+,p_static_id=>'location'
 ,p_layer_type=>'POINT'
 ,p_display_sequence=>10
 ,p_location=>'LOCAL'
@@ -113,14 +127,15 @@ wwv_flow_imp_page.create_map_region_layer(
 ,p_layer_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'select PERMIT_ID,',
 '       CASE PERMIT_STAGE',
-'        WHEN ''SITE_WORK_DETAILS'' THEN ''Step 1: Site and Work Details''',
-'        WHEN ''CONTROL_MEASURES''  THEN ''Step 2: Control Measures''',
-'        WHEN ''EQUIP_ISOLATION''   THEN ''Step 3: Equipment Isolation''',
-'        WHEN ''AUTHORISATION''     THEN ''Step 4: Authorisation''',
-'        WHEN ''COMPLETED''         THEN ''Step 5: Live''',
-'        WHEN ''MONITORING''        THEN ''Step 6: Monitoring''',
-'        WHEN ''CLEARANCE''         THEN ''Step 7: Clearnace''',
-'        WHEN ''CANCELLED''         THEN ''Cancelled''',
+'        WHEN ''SITE_WORK_DETAILS''  THEN ''Site and Work Details''',
+'        WHEN ''CONTROL_MEASURES''   THEN ''Control Measures''',
+'        WHEN ''EQUIP_ISOLATION''    THEN ''Equipment Isolation''',
+'        WHEN ''AUTHORISATION''      THEN ''Authorisation''',
+'        WHEN ''COMPLETED''          THEN ''Live''',
+'        WHEN ''MONITORING''         THEN ''Monitoring''',
+'        WHEN ''MONITORING_CONCERN'' THEN ''Monitoring Concern Raised''',
+'        WHEN ''CLEARANCE''          THEN ''Clearnace''',
+'        WHEN ''CANCELLED''          THEN ''Cancelled''',
 '       ELSE PERMIT_STAGE',
 '       END as step_display,',
 '       LATITUDE,',
@@ -144,6 +159,7 @@ wwv_flow_imp_page.create_map_region_layer(
 '                 psl.created_by) map_data',
 ''))
 ,p_items_to_submit=>'P7_PERMIT_ID,P7_CURRENT_STAGE,P7_CREATED_DATE'
+,p_use_vector_tiles=>false
 ,p_has_spatial_index=>false
 ,p_geometry_column_data_type=>'LONLAT_COLUMNS'
 ,p_longitude_column=>'LONGITUDE'
@@ -155,50 +171,78 @@ wwv_flow_imp_page.create_map_region_layer(
 ,p_feature_clustering=>false
 ,p_tooltip_adv_formatting=>false
 ,p_info_window_adv_formatting=>false
+,p_legend_adv_formatting=>false
 ,p_allow_hide=>true
+,p_updated_on=>wwv_flow_imp.dz('20260829155705Z')
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(33350643652951420)
 ,p_name=>'P7_CREATED_DATE'
 ,p_item_sequence=>60
 ,p_format_mask=>'DD-MON-YYYY HH24:MI'
+,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_encrypt_session_state_yn=>'N'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(41969669086328827)
-,p_name=>'P7_LATITUDE'
-,p_item_sequence=>30
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(41969726013328828)
-,p_name=>'P7_LONGITUDE'
-,p_item_sequence=>40
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(58097411888997905)
-,p_name=>'P7_PERMIT_ID'
-,p_item_sequence=>10
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
-,p_ai_enabled=>false
+,p_created_on=>wwv_flow_imp.dz('20260318220330Z')
+,p_updated_on=>wwv_flow_imp.dz('20260422225111Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(58097606026997906)
 ,p_name=>'P7_CURRENT_STAGE'
 ,p_item_sequence=>50
+,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260228101844Z')
+,p_updated_on=>wwv_flow_imp.dz('20260422225111Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(41969669086328827)
+,p_name=>'P7_LATITUDE'
+,p_item_sequence=>30
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260422225111Z')
+,p_updated_on=>wwv_flow_imp.dz('20260422225111Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(41969726013328828)
+,p_name=>'P7_LONGITUDE'
+,p_item_sequence=>40
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260422225111Z')
+,p_updated_on=>wwv_flow_imp.dz('20260422225111Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(58097411888997905)
+,p_name=>'P7_PERMIT_ID'
+,p_item_sequence=>10
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_ai_enabled=>false
+,p_created_on=>wwv_flow_imp.dz('20260228101844Z')
+,p_updated_on=>wwv_flow_imp.dz('20260228101844Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(41969583459328826)
@@ -206,6 +250,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_point=>'BEFORE_HEADER'
 ,p_process_type=>'NATIVE_PLSQL'
 ,p_process_name=>'Load defaults'
+,p_static_id=>'load-defaults'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'SELECT latitude, longitude',
 'INTO   :P7_LATITUDE, :P7_LONGITUDE',
@@ -216,6 +261,10 @@ wwv_flow_imp_page.create_page_process(
 'FETCH  FIRST 1 ROW ONLY;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_internal_uid=>41969583459328826
+,p_created_on=>wwv_flow_imp.dz('20260422225111Z')
+,p_updated_on=>wwv_flow_imp.dz('20260422225111Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp.component_end;
 end;

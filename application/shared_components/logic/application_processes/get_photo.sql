@@ -4,8 +4,8 @@ begin
 --     APPLICATION PROCESS: GET_PHOTO
 --   Manifest End
 wwv_flow_imp.component_begin (
- p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.17'
+ p_version_yyyy_mm_dd=>'2026.03.30'
+,p_release=>'26.1.6'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
@@ -15,8 +15,8 @@ wwv_flow_imp_shared.create_flow_process(
  p_id=>wwv_flow_imp.id(40754350770548208)
 ,p_process_sequence=>1
 ,p_process_point=>'BEFORE_HEADER'
-,p_process_type=>'NATIVE_PLSQL'
 ,p_process_name=>'GET_PHOTO'
+,p_static_id=>'get-photo'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'DECLARE',
 '    l_blob      BLOB;',
@@ -44,7 +44,11 @@ wwv_flow_imp_shared.create_flow_process(
 ,p_process_clob_language=>'PLSQL'
 ,p_process_when=>'APPLICATION_PROCESS=GET_PHOTO'
 ,p_process_when_type=>'REQUEST_EQUALS_CONDITION'
-,p_version_scn=>46727925656725
+,p_version_scn=>'46727925656725'
+,p_created_on=>wwv_flow_imp.dz('20260415211234Z')
+,p_updated_on=>wwv_flow_imp.dz('20260415211234Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp.component_end;
 end;

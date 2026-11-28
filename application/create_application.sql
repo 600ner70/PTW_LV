@@ -4,8 +4,8 @@ begin
 --     FLOW: 105
 --   Manifest End
 wwv_flow_imp.component_begin (
- p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.17'
+ p_version_yyyy_mm_dd=>'2026.03.30'
+,p_release=>'26.1.6'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
@@ -20,8 +20,7 @@ wwv_imp_workspace.create_flow(
 ,p_page_protection_enabled_y_n=>'Y'
 ,p_checksum_salt=>'A9926E9A37BC8591E2F899AA8424E879CD546B06F9181DA62E16FA46A2A826D9'
 ,p_bookmark_checksum_function=>'SH512'
-,p_max_session_idle_sec=>3400
-,p_session_timeout_warning_sec=>3200
+,p_session_timeout_warning_sec=>0
 ,p_compatibility_mode=>'24.2'
 ,p_flow_language=>'en'
 ,p_flow_language_derived_from=>'FLOW_PRIMARY_LANGUAGE'
@@ -29,7 +28,7 @@ wwv_imp_workspace.create_flow(
 ,p_date_format=>'DS'
 ,p_timestamp_format=>'DS'
 ,p_timestamp_tz_format=>'DS'
-,p_flow_image_prefix => nvl(wwv_flow_application_install.get_image_prefix,'')
+,p_flow_image_prefix=>nvl(wwv_flow_application_install.get_image_prefix,'')
 ,p_authentication_id=>wwv_flow_imp.id(26414203820144584)
 ,p_application_tab_set=>0
 ,p_public_user=>'APEX_PUBLIC_USER'
@@ -37,30 +36,51 @@ wwv_imp_workspace.create_flow(
 ,p_no_proxy_domains=>nvl(wwv_flow_application_install.get_no_proxy_domains,'')
 ,p_flow_version=>'Release 1.0 [&APP_ENV.]'
 ,p_flow_status=>'AVAILABLE_W_EDIT_LINK'
-,p_flow_unavailable_text=>'This application is currently unavailable at this time.'
 ,p_exact_substitutions_only=>'Y'
 ,p_browser_frame=>'D'
 ,p_runtime_api_usage=>'W'
 ,p_security_scheme=>wwv_flow_imp.id(30177956100539874)
 ,p_rejoin_existing_sessions=>'N'
 ,p_csv_encoding=>'Y'
-,p_auto_time_zone=>'N'
+,p_modernization_available=>'Y'
 ,p_substitution_string_01=>'APP_NAME'
 ,p_substitution_value_01=>'PTW_PRO'
 ,p_substitution_string_02=>'APP_ENV'
 ,p_substitution_value_02=>'DEV'
-,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
-,p_files_version=>280
-,p_version_scn=>50038851918858
+,p_created_on=>wwv_flow_imp.dz('20260207174826Z')
+,p_last_updated_on=>wwv_flow_imp.dz('20261104105151Z')
+,p_created_by=>'PERMITPRO'
+,p_last_updated_by=>'PTW_PRO'
+,p_file_prefix=>nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
+,p_files_version=>2461332124745
+,p_version_scn=>'51074330731924'
 ,p_print_server_type=>'NATIVE'
 ,p_file_storage=>'DB'
 ,p_is_pwa=>'Y'
 ,p_pwa_is_installable=>'Y'
 ,p_pwa_manifest_display=>'fullscreen'
 ,p_pwa_manifest_orientation=>'any'
-,p_pwa_apple_status_bar_style=>'default'
 ,p_pwa_is_push_enabled=>'Y'
-,p_pwa_push_credential_id=>wwv_flow_imp.id(30175822546549151)
+,p_pwa_push_credential_id=>30175822546549151
+,p_theme_id=>42
+,p_home_url=>'f?p=&APP_ID.:1:&APP_SESSION.::&DEBUG.:::'
+,p_login_url=>'f?p=&APP_ID.:LOGIN:&APP_SESSION.::&DEBUG.:::'
+,p_theme_style_by_user_pref=>false
+,p_built_with_love=>false
+,p_global_page_id=>0
+,p_navigation_list_id=>wwv_flow_imp.id(26415021693144587)
+,p_navigation_list_position=>'SIDE'
+,p_navigation_list_template_id=>2467739217141810545
+,p_nav_list_template_options=>'#DEFAULT#:js-defaultCollapsed:js-navCollapsed--hidden:t-TreeNav--styleA'
+,p_css_file_urls=>'#APP_FILES#ptw-global#MIN#.css'
+,p_javascript_file_urls=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'#APP_FILES#ptw-utils#MIN#.js',
+'#APP_FILES#ptw-checklist#MIN#.js',
+'#APP_FILES#ptw-dra#MIN#.js'))
+,p_nav_bar_type=>'LIST'
+,p_nav_bar_list_id=>wwv_flow_imp.id(26416210318144596)
+,p_nav_bar_list_template_id=>2847543055748234966
+,p_nav_bar_template_options=>'#DEFAULT#'
 );
 wwv_flow_imp.component_end;
 end;

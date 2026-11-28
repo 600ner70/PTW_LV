@@ -4,8 +4,8 @@ begin
 --     PTW_AUTHORISED_PERSONS
 --   Manifest End
 wwv_flow_imp.component_begin (
- p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.17'
+ p_version_yyyy_mm_dd=>'2026.03.30'
+,p_release=>'26.1.6'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
@@ -14,6 +14,7 @@ wwv_flow_imp.component_begin (
 wwv_flow_imp_shared.create_list_of_values(
  p_id=>wwv_flow_imp.id(35799522908090663)
 ,p_lov_name=>'PTW_AUTHORISED_PERSONS'
+,p_static_id=>'ptw-authorised-persons'
 ,p_lov_query=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'SELECT DISTINCT',
 '    u.first_name || '' '' || u.last_name     AS display_value,',
@@ -38,9 +39,12 @@ wwv_flow_imp_shared.create_list_of_values(
 ,p_location=>'LOCAL'
 ,p_return_column_name=>'RETURN_VALUE'
 ,p_display_column_name=>'DISPLAY_VALUE'
-,p_group_sort_direction=>'ASC'
 ,p_default_sort_direction=>'ASC'
-,p_version_scn=>49919734007516
+,p_version_scn=>'49919734007516'
+,p_created_on=>wwv_flow_imp.dz('20260321130849Z')
+,p_updated_on=>wwv_flow_imp.dz('20260707091753Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp.component_end;
 end;

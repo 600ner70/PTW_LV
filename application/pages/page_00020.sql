@@ -4,8 +4,8 @@ begin
 --     PAGE: 00020
 --   Manifest End
 wwv_flow_imp.component_begin (
- p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.17'
+ p_version_yyyy_mm_dd=>'2026.03.30'
+,p_release=>'26.1.6'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
@@ -17,25 +17,40 @@ wwv_flow_imp_page.create_page(
 ,p_alias=>'PHOTO-DOWNLOAD'
 ,p_step_title=>'Photo Download'
 ,p_autocomplete_on_off=>'OFF'
+,p_step_template=>4072355960268175073
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
 ,p_page_component_map=>'11'
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(40755195550498301)
-,p_name=>'P20_PHOTO_ID'
-,p_item_sequence=>30
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260415212009Z')
+,p_last_updated_on=>wwv_flow_imp.dz('20260419101244Z')
+,p_created_by=>'PTW_PRO'
+,p_last_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(40755372545498303)
 ,p_name=>'P20_PERMIT_ID'
 ,p_item_sequence=>40
+,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260419101244Z')
+,p_updated_on=>wwv_flow_imp.dz('20260419101244Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(40755195550498301)
+,p_name=>'P20_PHOTO_ID'
+,p_item_sequence=>30
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260415212234Z')
+,p_updated_on=>wwv_flow_imp.dz('20260419101244Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(40755250521498302)
@@ -43,6 +58,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_point=>'BEFORE_HEADER'
 ,p_process_type=>'NATIVE_PLSQL'
 ,p_process_name=>'Stream Photo'
+,p_static_id=>'stream-photo'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'DECLARE',
 '    l_blob      BLOB;',
@@ -71,6 +87,10 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_when=>'P20_PHOTO_ID'
 ,p_process_when_type=>'ITEM_IS_NOT_NULL'
 ,p_internal_uid=>40755250521498302
+,p_created_on=>wwv_flow_imp.dz('20260415212234Z')
+,p_updated_on=>wwv_flow_imp.dz('20260415212234Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp.component_end;
 end;

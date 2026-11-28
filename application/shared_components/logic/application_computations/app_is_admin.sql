@@ -4,8 +4,8 @@ begin
 --     APPLICATION COMPUTATION: APP_IS_ADMIN
 --   Manifest End
 wwv_flow_imp.component_begin (
- p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.17'
+ p_version_yyyy_mm_dd=>'2026.03.30'
+,p_release=>'26.1.6'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
@@ -15,6 +15,7 @@ wwv_flow_imp_shared.create_flow_computation(
  p_id=>wwv_flow_imp.id(46109066903404734)
 ,p_computation_sequence=>10
 ,p_computation_item=>'APP_IS_ADMIN'
+,p_static_id=>'app-is-admin'
 ,p_computation_point=>'AFTER_LOGIN'
 ,p_computation_type=>'FUNCTION_BODY'
 ,p_computation_language=>'PLSQL'
@@ -54,7 +55,11 @@ wwv_flow_imp_shared.create_flow_computation(
 'EXCEPTION',
 '    WHEN OTHERS THEN RETURN ''N'';',
 'END;'))
-,p_version_scn=>46857048022620
+,p_version_scn=>'46857048022620'
+,p_created_on=>wwv_flow_imp.dz('20260504151925Z')
+,p_updated_on=>wwv_flow_imp.dz('20260504182445Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp.component_end;
 end;

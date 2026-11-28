@@ -4,8 +4,8 @@ begin
 --     PAGE: 00017
 --   Manifest End
 wwv_flow_imp.component_begin (
- p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.17'
+ p_version_yyyy_mm_dd=>'2026.03.30'
+,p_release=>'26.1.6'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
@@ -637,125 +637,28 @@ unistr('// \2500\2500 Required star \2500\2500\2500\2500\2500\2500\2500\2500\250
 '    border-radius: 4px 4px 0 0;',
 '}',
 ''))
+,p_step_template=>2100407606326202693
 ,p_page_template_options=>'#DEFAULT#'
 ,p_required_role=>wwv_flow_imp.id(30177956100539874)
 ,p_dialog_resizable=>'Y'
 ,p_protection_level=>'C'
 ,p_page_component_map=>'16'
-);
-wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(47749327162890015)
-,p_plug_name=>'Permit Info Banner'
-,p_region_template_options=>'#DEFAULT#'
-,p_plug_template=>4501440665235496320
-,p_plug_display_sequence=>100
-,p_location=>null
-,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'<div class="t-Alert t-Alert--info t-Alert--horizontal p17-cancel-banner" role="region" style="margin-bottom:8px;">',
-'  <div class="t-Alert-wrap">',
-'    <div class="t-Alert-icon">',
-'      <span class="t-Icon fa fa-ban" aria-hidden="true"></span>',
-'    </div>',
-'    <div class="t-Alert-content">',
-'      <div class="t-Alert-header">',
-'        <h2 class="t-Alert-title">Cancellation of Permit to Work</h2>',
-'      </div>',
-'      <div class="t-Alert-body">',
-'        Permit: <strong>&P17_PERMIT_NUMBER.</strong>',
-'      </div>',
-'    </div>',
-'  </div>',
-'</div>'))
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'expand_shortcuts', 'N',
-  'output_as', 'HTML')).to_clob
-);
-wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(47749474592890016)
-,p_plug_name=>'Declaration'
-,p_title=>'Declaration'
-,p_icon_css_classes=>'fa-file-text-o'
-,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
-,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>110
-,p_location=>null
-,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'<div class="p17-declaration-box">',
-'    <p style="margin:0 0 8px 0;">',
-'        I confirm that these works have been',
-'        <strong><span id="p17-decl-work-complete">completed / not complete</span></strong>',
-'        and that I have checked that the place of work has been left in a',
-'        safe and tidy condition. Where the work is not complete a further',
-'        Permit may be required.',
-'    </p>',
-'    <p style="margin:0;">',
-'        Both the Original and copy of this Permit to Work must be signed',
-'        by the Authorised Person when cancelling this Permit.',
-'    </p>',
-'</div>'))
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'expand_shortcuts', 'N',
-  'output_as', 'HTML')).to_clob
-);
-wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(47749512874890017)
-,p_plug_name=>'Cancellation Details'
-,p_title=>'Cancellation Details'
-,p_icon_css_classes=>'fa-user-circle'
-,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
-,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>120
-,p_location=>null
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'expand_shortcuts', 'N',
-  'output_as', 'HTML')).to_clob
-);
-wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(47749957235890021)
-,p_plug_name=>'Signature'
-,p_title=>'Authorised Person Signature'
-,p_region_name=>'p17-signature-region'
-,p_icon_css_classes=>'fa-pencil-square-o'
-,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
-,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>140
-,p_location=>null
-,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'<div class="p17-sig-wrapper">',
-'    <canvas id="p17SigCanvas"></canvas>',
-'</div>',
-'<div style="margin-top:8px;">',
-'    <button type="button"',
-'            class="t-Button t-Button--small"',
-'            onclick="p17ClearSig();">',
-'        <span class="t-Icon fa fa-eraser"></span> Clear Signature',
-'    </button>',
-'</div>',
-''))
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'expand_shortcuts', 'N',
-  'output_as', 'HTML')).to_clob
-);
-wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(47750040795890022)
-,p_plug_name=>'Buttons'
-,p_region_template_options=>'#DEFAULT#'
-,p_plug_template=>2126429139436695430
-,p_plug_display_sequence=>150
-,p_location=>null
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'expand_shortcuts', 'N',
-  'output_as', 'HTML')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260511191026Z')
+,p_last_updated_on=>wwv_flow_imp.dz('20260919130307Z')
+,p_created_by=>'PTW_PRO'
+,p_last_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(47751998134890041)
 ,p_plug_name=>'Area Photo'
+,p_static_id=>'area-photo'
 ,p_title=>'Area Photo'
 ,p_region_name=>'p17-photo-region'
 ,p_icon_css_classes=>'fa-camera'
 ,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>130
+,p_plug_display_sequence=>150
+,p_plug_item_display_point=>'ABOVE'
 ,p_location=>null
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '<!-- Hidden file inputs -->',
@@ -837,12 +740,169 @@ wwv_flow_imp_page.create_page_plug(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260511212834Z')
+,p_updated_on=>wwv_flow_imp.dz('20260919130307Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(47750040795890022)
+,p_plug_name=>'Buttons'
+,p_static_id=>'buttons'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>2126429139436695430
+,p_plug_display_sequence=>170
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'expand_shortcuts', 'N',
+  'output_as', 'HTML')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260511194120Z')
+,p_updated_on=>wwv_flow_imp.dz('20260919130307Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(47749512874890017)
+,p_plug_name=>'Cancellation Details'
+,p_static_id=>'cancellation-details'
+,p_title=>'Cancellation Details'
+,p_icon_css_classes=>'fa-user-circle'
+,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
+,p_plug_template=>4072358936313175081
+,p_plug_display_sequence=>140
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'expand_shortcuts', 'N',
+  'output_as', 'HTML')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260511194120Z')
+,p_updated_on=>wwv_flow_imp.dz('20260919130307Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(47749474592890016)
+,p_plug_name=>'Declaration'
+,p_static_id=>'declaration'
+,p_title=>'Declaration'
+,p_icon_css_classes=>'fa-file-text-o'
+,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
+,p_plug_template=>4072358936313175081
+,p_plug_display_sequence=>130
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<div class="p17-declaration-box">',
+'    <p style="margin:0 0 8px 0;">',
+'        I confirm that these works have been',
+'        <strong><span id="p17-decl-work-complete">completed / not complete</span></strong>',
+'        and that I have checked that the place of work has been left in a',
+'        safe and tidy condition. Where the work is not complete a further',
+'        Permit may be required.',
+'    </p>',
+'    <p style="margin:0;">',
+'        Both the Original and copy of this Permit to Work must be signed',
+'        by the Authorised Person when cancelling this Permit.',
+'    </p>',
+'</div>'))
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'expand_shortcuts', 'N',
+  'output_as', 'HTML')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260511194120Z')
+,p_updated_on=>wwv_flow_imp.dz('20260919130307Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(47749327162890015)
+,p_plug_name=>'Permit Info Banner'
+,p_static_id=>'permit-info-banner'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4501440665235496320
+,p_plug_display_sequence=>120
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<div class="t-Alert t-Alert--info t-Alert--horizontal p17-cancel-banner" role="region" style="margin-bottom:8px;">',
+'  <div class="t-Alert-wrap">',
+'    <div class="t-Alert-icon">',
+'      <span class="t-Icon fa fa-ban" aria-hidden="true"></span>',
+'    </div>',
+'    <div class="t-Alert-content">',
+'      <div class="t-Alert-header">',
+'        <h2 class="t-Alert-title">Cancellation of &P17_CANCEL_TITLE.</h2>',
+'      </div>',
+'      <div class="t-Alert-body">',
+'        Permit: <strong>&P17_PERMIT_NUMBER.</strong>',
+'      </div>',
+'    </div>',
+'  </div>',
+'</div>'))
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'expand_shortcuts', 'N',
+  'output_as', 'HTML')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260511194120Z')
+,p_updated_on=>wwv_flow_imp.dz('20260919130307Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(47749957235890021)
+,p_plug_name=>'Signature'
+,p_static_id=>'signature'
+,p_title=>'Authorised Person Signature'
+,p_region_name=>'p17-signature-region'
+,p_icon_css_classes=>'fa-pencil-square-o'
+,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
+,p_plug_template=>4072358936313175081
+,p_plug_display_sequence=>160
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<div class="p17-sig-wrapper">',
+'    <canvas id="p17SigCanvas"></canvas>',
+'</div>',
+'<div style="margin-top:8px;">',
+'    <button type="button"',
+'            class="t-Button t-Button--small"',
+'            onclick="p17ClearSig();">',
+'        <span class="t-Icon fa fa-eraser"></span> Clear Signature',
+'    </button>',
+'</div>',
+''))
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'expand_shortcuts', 'N',
+  'output_as', 'HTML')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260511194120Z')
+,p_updated_on=>wwv_flow_imp.dz('20260919130307Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(47750138528890023)
+,p_button_sequence=>10
+,p_button_plug_id=>wwv_flow_imp.id(47750040795890022)
+,p_button_name=>'CANCEL'
+,p_static_id=>'cancel'
+,p_button_static_id=>'BTN_CANCEL_P17'
+,p_button_action=>'DEFINED_BY_DA'
+,p_button_template_options=>'#DEFAULT#'
+,p_button_template_id=>4072362960822175091
+,p_button_image_alt=>'Cancel'
+,p_button_position=>'PREVIOUS'
+,p_warn_on_unsaved_changes=>null
+,p_created_on=>wwv_flow_imp.dz('20260511194120Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511194120Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(47750408723890026)
 ,p_button_sequence=>20
 ,p_button_plug_id=>wwv_flow_imp.id(47750040795890022)
 ,p_button_name=>'CANCEL_PERMIT'
+,p_static_id=>'cancel-permit'
 ,p_button_static_id=>'BTN_CANCEL_PERMIT_P17'
 ,p_button_action=>'DEFINED_BY_DA'
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
@@ -851,19 +911,10 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_position=>'NEXT'
 ,p_warn_on_unsaved_changes=>null
 ,p_icon_css_classes=>'fa-ban'
-);
-wwv_flow_imp_page.create_page_button(
- p_id=>wwv_flow_imp.id(47750138528890023)
-,p_button_sequence=>10
-,p_button_plug_id=>wwv_flow_imp.id(47750040795890022)
-,p_button_name=>'CANCEL'
-,p_button_static_id=>'BTN_CANCEL_P17'
-,p_button_action=>'DEFINED_BY_DA'
-,p_button_template_options=>'#DEFAULT#'
-,p_button_template_id=>4072362960822175091
-,p_button_image_alt=>'Cancel'
-,p_button_position=>'PREVIOUS'
-,p_warn_on_unsaved_changes=>null
+,p_created_on=>wwv_flow_imp.dz('20260511194120Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511194120Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_branch(
  p_id=>wwv_flow_imp.id(47751744369890039)
@@ -875,54 +926,61 @@ wwv_flow_imp_page.create_page_branch(
 ,p_branch_condition_type=>'VAL_OF_ITEM_IN_COND_EQ_COND2'
 ,p_branch_condition=>'P17_CANCELLED'
 ,p_branch_condition_text=>'Y'
+,p_created_on=>wwv_flow_imp.dz('20260511210700Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511210744Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(47748966673890011)
-,p_name=>'P17_PERMIT_ID'
-,p_item_sequence=>30
+ p_id=>wwv_flow_imp.id(47751839324890040)
+,p_name=>'P17_AREA_PHOTO_UPLOADED'
+,p_item_sequence=>70
+,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(47749009218890012)
-,p_name=>'P17_PERMIT_NUMBER'
-,p_item_sequence=>40
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(47749159685890013)
-,p_name=>'P17_CANCEL_SIGNATURE_DATA'
-,p_item_sequence=>50
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260511212834Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511212834Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(47749214391890014)
 ,p_name=>'P17_CANCELLED'
 ,p_item_sequence=>90
+,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260511194120Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511212834Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(47749630284890018)
-,p_name=>'P17_CANCEL_WORK_COMPLETE'
-,p_item_sequence=>10
+ p_id=>wwv_flow_imp.id(47749882578890020)
+,p_name=>'P17_CANCEL_DATETIME'
+,p_item_sequence=>30
 ,p_item_plug_id=>wwv_flow_imp.id(47749512874890017)
-,p_prompt=>'Works Status'
-,p_display_as=>'NATIVE_RADIOGROUP'
-,p_lov=>'STATIC:Completed;Y,Not Complete;N'
+,p_item_default=>'TO_CHAR(SYSDATE, ''DD-MON-YYYY HH24:MI'')'
+,p_item_default_type=>'EXPRESSION'
+,p_item_default_language=>'PLSQL'
+,p_prompt=>'Date / Time'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_DISPLAY_ONLY'
+,p_begin_on_new_line=>'N'
+,p_colspan=>6
 ,p_field_template=>1609121967514267634
-,p_item_css_classes=>'cm-binary-item'
 ,p_item_template_options=>'#DEFAULT#'
-,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'number_of_columns', '2',
-  'page_action_on_selection', 'NONE')).to_clob
+  'based_on', 'VALUE',
+  'format', 'PLAIN',
+  'send_on_page_submit', 'Y',
+  'show_line_breaks', 'Y')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260511194120Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511194120Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(47749787786890019)
@@ -931,6 +989,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_plug_id=>wwv_flow_imp.id(47749512874890017)
 ,p_prompt=>'Authorised Person Name'
 ,p_placeholder=>'Full name (print clearly)'
+,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>30
 ,p_cMaxlength=>200
@@ -942,88 +1001,149 @@ wwv_flow_imp_page.create_page_item(
   'submit_when_enter_pressed', 'N',
   'subtype', 'TEXT',
   'trim_spaces', 'BOTH')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260511194120Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511194120Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(47749882578890020)
-,p_name=>'P17_CANCEL_DATETIME'
-,p_item_sequence=>30
-,p_item_plug_id=>wwv_flow_imp.id(47749512874890017)
-,p_item_default=>'TO_CHAR(SYSDATE, ''DD-MON-YYYY HH24:MI'')'
-,p_item_default_type=>'EXPRESSION'
-,p_item_default_language=>'PLSQL'
-,p_prompt=>'Date / Time'
-,p_display_as=>'NATIVE_DISPLAY_ONLY'
-,p_begin_on_new_line=>'N'
-,p_colspan=>6
-,p_field_template=>1609121967514267634
-,p_item_template_options=>'#DEFAULT#'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'based_on', 'VALUE',
-  'format', 'PLAIN',
-  'send_on_page_submit', 'Y',
-  'show_line_breaks', 'Y')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(47751346756890035)
-,p_name=>'P17_WORKFLOW_STATUS'
-,p_item_sequence=>80
+ p_id=>wwv_flow_imp.id(47749159685890013)
+,p_name=>'P17_CANCEL_SIGNATURE_DATA'
+,p_item_sequence=>50
+,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260511194120Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511194120Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(47751532313890037)
 ,p_name=>'P17_CANCEL_SIGNATURE_DATA_URL'
 ,p_item_sequence=>60
+,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260511204318Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511204318Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(47751839324890040)
-,p_name=>'P17_AREA_PHOTO_UPLOADED'
-,p_item_sequence=>70
+ p_id=>wwv_flow_imp.id(42198041985924533)
+,p_name=>'P17_CANCEL_TITLE'
+,p_item_sequence=>110
+,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260919130307Z')
+,p_updated_on=>wwv_flow_imp.dz('20260919130307Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(47749630284890018)
+,p_name=>'P17_CANCEL_WORK_COMPLETE'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(47749512874890017)
+,p_prompt=>'Works Status'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_lov=>'STATIC:Completed;Y,Not Complete;N'
+,p_field_template=>1609121967514267634
+,p_item_css_classes=>'cm-binary-item'
+,p_item_template_options=>'#DEFAULT#'
+,p_lov_display_extra=>'NO'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'number_of_columns', '2',
+  'page_action_on_selection', 'NONE')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260511194120Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511204754Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(47748966673890011)
+,p_name=>'P17_PERMIT_ID'
+,p_item_sequence=>30
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260511194120Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511194120Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(47749009218890012)
+,p_name=>'P17_PERMIT_NUMBER'
+,p_item_sequence=>40
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260511194120Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511194120Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(42198111787924534)
+,p_name=>'P17_PTW_TYPE'
+,p_item_sequence=>100
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260919130307Z')
+,p_updated_on=>wwv_flow_imp.dz('20260919130307Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(47751346756890035)
+,p_name=>'P17_WORKFLOW_STATUS'
+,p_item_sequence=>80
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260511201309Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511212834Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_validation(
- p_id=>wwv_flow_imp.id(47750760220890029)
-,p_validation_name=>'Work Status Required'
-,p_validation_sequence=>10
-,p_validation=>'P17_CANCEL_WORK_COMPLETE'
-,p_validation_type=>'ITEM_NOT_NULL'
-,p_error_message=>'Please indicate whether the works are completed  or not complete.'
-,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
-);
-wwv_flow_imp_page.create_page_validation(
- p_id=>wwv_flow_imp.id(47750881002890030)
-,p_validation_name=>'Person Name Required'
-,p_validation_sequence=>20
-,p_validation=>'P17_CANCEL_PERSON_NAME'
-,p_validation_type=>'ITEM_NOT_NULL'
-,p_error_message=>'Name of Authorised Person is required.'
-,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
-);
-wwv_flow_imp_page.create_page_validation(
- p_id=>wwv_flow_imp.id(47750983222890031)
-,p_validation_name=>'Signature Required'
-,p_validation_sequence=>30
+ p_id=>wwv_flow_imp.id(47752380362890045)
+,p_validation_name=>'Area Photo Required'
+,p_static_id=>'area-photo-required'
+,p_validation_sequence=>50
 ,p_validation=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'RETURN NOT (',
-'    :P17_CANCEL_SIGNATURE_DATA IS NULL',
-'    OR TRIM(:P17_CANCEL_SIGNATURE_DATA) IS NULL',
-'    OR :P17_CANCEL_SIGNATURE_DATA = ''data:,''',
+'    :P17_CANCEL_WORK_COMPLETE = ''N''',
+'    AND (',
+'        :P17_AREA_PHOTO_UPLOADED IS NULL',
+'        OR :P17_AREA_PHOTO_UPLOADED != ''Y''',
+'    )',
 ');'))
 ,p_validation2=>'PLSQL'
 ,p_validation_type=>'FUNC_BODY_RETURNING_BOOLEAN'
-,p_error_message=>'A signature is required to cancel this permit.'
-,p_when_button_pressed=>wwv_flow_imp.id(47750408723890026)
+,p_error_message=>'A photo of the area is required when works are not complete. Please take or upload a photo before signing off the cancellation.'
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+,p_created_on=>wwv_flow_imp.dz('20260511212834Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511212834Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_validation(
  p_id=>wwv_flow_imp.id(47751088513890032)
 ,p_validation_name=>'Permit Still Valid for Cancellation'
+,p_static_id=>'permit-still-valid-for-cancellation'
 ,p_validation_sequence=>40
 ,p_validation=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'DECLARE',
@@ -1045,33 +1165,74 @@ wwv_flow_imp_page.create_page_validation(
 ,p_error_message=>'This permit cannot be cancelled. It may already be cancelled or completed.'
 ,p_when_button_pressed=>wwv_flow_imp.id(47750408723890026)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+,p_created_on=>wwv_flow_imp.dz('20260511194121Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511194121Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_validation(
- p_id=>wwv_flow_imp.id(47752380362890045)
-,p_validation_name=>'Area Photo Required'
-,p_validation_sequence=>50
+ p_id=>wwv_flow_imp.id(47750881002890030)
+,p_validation_name=>'Person Name Required'
+,p_static_id=>'person-name-required'
+,p_validation_sequence=>20
+,p_validation=>'P17_CANCEL_PERSON_NAME'
+,p_validation_type=>'ITEM_NOT_NULL'
+,p_error_message=>'Name of Authorised Person is required.'
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+,p_created_on=>wwv_flow_imp.dz('20260511194121Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511194121Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(47750983222890031)
+,p_validation_name=>'Signature Required'
+,p_static_id=>'signature-required'
+,p_validation_sequence=>30
 ,p_validation=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'RETURN NOT (',
-'    :P17_CANCEL_WORK_COMPLETE = ''N''',
-'    AND (',
-'        :P17_AREA_PHOTO_UPLOADED IS NULL',
-'        OR :P17_AREA_PHOTO_UPLOADED != ''Y''',
-'    )',
+'    :P17_CANCEL_SIGNATURE_DATA IS NULL',
+'    OR TRIM(:P17_CANCEL_SIGNATURE_DATA) IS NULL',
+'    OR :P17_CANCEL_SIGNATURE_DATA = ''data:,''',
 ');'))
 ,p_validation2=>'PLSQL'
 ,p_validation_type=>'FUNC_BODY_RETURNING_BOOLEAN'
-,p_error_message=>'A photo of the area is required when works are not complete. Please take or upload a photo before signing off the cancellation.'
+,p_error_message=>'A signature is required to cancel this permit.'
+,p_when_button_pressed=>wwv_flow_imp.id(47750408723890026)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+,p_created_on=>wwv_flow_imp.dz('20260511194121Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511194121Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(47750760220890029)
+,p_validation_name=>'Work Status Required'
+,p_static_id=>'work-status-required'
+,p_validation_sequence=>10
+,p_validation=>'P17_CANCEL_WORK_COMPLETE'
+,p_validation_type=>'ITEM_NOT_NULL'
+,p_error_message=>'Please indicate whether the works are completed  or not complete.'
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+,p_created_on=>wwv_flow_imp.dz('20260511194121Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511194121Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(47750296407890024)
 ,p_name=>'Cancel - Close Dialog'
+,p_static_id=>'cancel-close-dialog'
 ,p_event_sequence=>10
 ,p_triggering_element_type=>'BUTTON'
 ,p_triggering_button_id=>wwv_flow_imp.id(47750138528890023)
 ,p_bind_type=>'bind'
 ,p_execution_type=>'IMMEDIATE'
 ,p_bind_event_type=>'click'
+,p_created_on=>wwv_flow_imp.dz('20260511194121Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511194121Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_da_action(
  p_id=>wwv_flow_imp.id(47750373778890025)
@@ -1079,17 +1240,27 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_event_result=>'TRUE'
 ,p_action_sequence=>10
 ,p_execute_on_page_init=>'N'
+,p_static_id=>'native-dialog-cancel'
 ,p_action=>'NATIVE_DIALOG_CANCEL'
+,p_created_on=>wwv_flow_imp.dz('20260511194121Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511194121Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(47750598951890027)
 ,p_name=>'Cancel Permit - Capture Location and Submit'
+,p_static_id=>'cancel-permit-capture-location-and-submit'
 ,p_event_sequence=>20
 ,p_triggering_element_type=>'BUTTON'
 ,p_triggering_button_id=>wwv_flow_imp.id(47750408723890026)
 ,p_bind_type=>'bind'
 ,p_execution_type=>'IMMEDIATE'
 ,p_bind_event_type=>'click'
+,p_created_on=>wwv_flow_imp.dz('20260511194121Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511194121Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_da_action(
  p_id=>wwv_flow_imp.id(47750676740890028)
@@ -1097,8 +1268,14 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_event_result=>'TRUE'
 ,p_action_sequence=>10
 ,p_execute_on_page_init=>'N'
+,p_static_id=>'native-javascript-code'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>'captureLocationThenSubmit(''CANCEL_PERMIT'');'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'js_code', 'captureLocationThenSubmit(''CANCEL_PERMIT'');')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260511194121Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511194121Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(47751164940890033)
@@ -1106,6 +1283,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_point=>'AFTER_SUBMIT'
 ,p_process_type=>'NATIVE_PLSQL'
 ,p_process_name=>'Cancel Permit'
+,p_static_id=>'cancel-permit'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'DECLARE',
 '    v_sig_blob BLOB;',
@@ -1123,19 +1301,17 @@ wwv_flow_imp_page.create_page_process(
 'BEGIN',
 '    v_sig_blob := base64_to_blob(:P17_CANCEL_SIGNATURE_DATA);',
 '',
+'    -- Guarded status transition, same protection as before.',
 '    UPDATE ptw_pro.ptw_lv_permits',
-'    SET    cancel_work_complete    = :P17_CANCEL_WORK_COMPLETE,',
-'           cancel_person_name     = UPPER(TRIM(:P17_CANCEL_PERSON_NAME)),',
-'           cancel_person_signature = v_sig_blob,',
-'           cancel_datetime        = SYSDATE,',
-'           cancel_latitude        = :APP_LATITUDE,',
-'           cancel_longitude       = :APP_LONGITUDE,',
-'           workflow_status        = ''CANCELLED'',',
-'           current_step           = ''CANCELLED'',',
-'           completion_date        = SYSDATE,',
-'           modified_by            = NVL(V(''APP_USER''), USER),',
-'           modified_date          = CURRENT_TIMESTAMP',
-'    WHERE  permit_id              = :P17_PERMIT_ID',
+'    SET    cancel_work_complete = :P17_CANCEL_WORK_COMPLETE,',
+'           workflow_status      = ''CANCELLED'',',
+'           current_step         = ''CANCELLED'',',
+'           completion_date      = SYSDATE,',
+'           cancel_latitude      = TO_NUMBER(:APP_LATITUDE),',
+'           cancel_longitude     = TO_NUMBER(:APP_LONGITUDE),',
+'           modified_by          = NVL(V(''APP_USER''), USER),',
+'           modified_date        = CURRENT_TIMESTAMP',
+'    WHERE  permit_id            = :P17_PERMIT_ID',
 '    AND    workflow_status NOT IN (''CANCELLED'',''COMPLETED'',''CLEARED'');',
 '',
 '    IF SQL%ROWCOUNT = 0 THEN',
@@ -1148,8 +1324,17 @@ wwv_flow_imp_page.create_page_process(
 '        RETURN;',
 '    END IF;',
 '',
-'    :P17_CANCELLED := ''Y'';',
+'    ptw_pro.ptw_signature_pkg.save_signature(',
+'        p_permit_id      => :P17_PERMIT_ID,',
+'        p_stage          => ''CANCEL'',',
+'        p_person_name    => UPPER(TRIM(:P17_CANCEL_PERSON_NAME)),',
+'        p_signature_blob => v_sig_blob,',
+'        p_event_datetime => SYSDATE,',
+'        p_latitude       => :APP_LATITUDE,',
+'        p_longitude      => :APP_LONGITUDE',
+'    );',
 '',
+'    :P17_CANCELLED := ''Y'';',
 '    COMMIT;',
 '',
 'EXCEPTION',
@@ -1160,12 +1345,15 @@ wwv_flow_imp_page.create_page_process(
 '            p_display_location => apex_error.c_inline_in_notification',
 '        );',
 '        RAISE;',
-'END;',
-''))
+'END;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 ,p_process_when_button_id=>wwv_flow_imp.id(47750408723890026)
 ,p_internal_uid=>47751164940890033
+,p_created_on=>wwv_flow_imp.dz('20260511194121Z')
+,p_updated_on=>wwv_flow_imp.dz('20260829150356Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(47751263076890034)
@@ -1173,13 +1361,143 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_point=>'AFTER_SUBMIT'
 ,p_process_type=>'NATIVE_CLOSE_WINDOW'
 ,p_process_name=>'Close Dialog'
-,p_attribute_01=>'P17_CANCELLED'
-,p_attribute_02=>'N'
+,p_static_id=>'close-dialog'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'items_to_return', 'P17_CANCELLED',
+  'show_success_messages', 'N')).to_clob
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 ,p_process_when=>'P17_CANCELLED'
 ,p_process_when_type=>'VAL_OF_ITEM_IN_COND_EQ_COND2'
 ,p_process_when2=>'N'
 ,p_internal_uid=>47751263076890034
+,p_created_on=>wwv_flow_imp.dz('20260511194121Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511194121Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(47752296176890044)
+,p_process_sequence=>30
+,p_process_point=>'ON_DEMAND'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'DELETE_PERMIT_PHOTO'
+,p_static_id=>'delete-permit-photo'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'    l_photo_id   NUMBER        := TO_NUMBER(apex_application.g_x01);',
+'    l_app_user   VARCHAR2(255) := NVL(V(''APP_USER''), USER);',
+'    l_can_delete NUMBER;',
+'BEGIN',
+'    SELECT COUNT(*)',
+'    INTO   l_can_delete',
+'    FROM   ptw_pro.ptw_lv_permit_photos ph',
+'    WHERE  ph.photo_id = l_photo_id',
+'    AND    (',
+'               UPPER(ph.uploaded_by) = UPPER(l_app_user)',
+'               OR EXISTS (',
+'                   SELECT 1',
+'                   FROM   ptw_pro.ptw_lv_user_roles_v',
+'                   WHERE  UPPER(username) = UPPER(l_app_user)',
+'                   AND    role_name IN (''ADMIN'', ''ADMIN_CONTRACT_SUPPORT'')',
+'                   AND    is_active = ''Y''',
+'               )',
+'           );',
+'',
+'    IF l_can_delete = 0 THEN',
+'        apex_json.open_object;',
+'        apex_json.write(''success'', false);',
+'        apex_json.write(''message'', ''File not found or you do not have permission to delete it.'');',
+'        apex_json.close_object;',
+'        RETURN;',
+'    END IF;',
+'',
+'    DELETE FROM ptw_pro.ptw_lv_permit_photos',
+'    WHERE  photo_id = l_photo_id;',
+'',
+'    COMMIT;',
+'',
+'    apex_json.open_object;',
+'    apex_json.write(''success'', true);',
+'    apex_json.close_object;',
+'',
+'EXCEPTION',
+'    WHEN OTHERS THEN',
+'        ROLLBACK;',
+'        apex_json.open_object;',
+'        apex_json.write(''success'', false);',
+'        apex_json.write(''message'', ''Delete error: '' || SQLERRM);',
+'        apex_json.close_object;',
+'END;',
+''))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>47752296176890044
+,p_created_on=>wwv_flow_imp.dz('20260511212834Z')
+,p_updated_on=>wwv_flow_imp.dz('20260511212834Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(47752153706890043)
+,p_process_sequence=>20
+,p_process_point=>'ON_DEMAND'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'GET_PERMIT_PHOTOS'
+,p_static_id=>'get-permit-photos'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'    l_permit_id NUMBER := TO_NUMBER(apex_application.g_x01);',
+'BEGIN',
+'    apex_json.open_object;',
+'    apex_json.open_array(''photos'');',
+'',
+'    FOR r IN (',
+'        SELECT photo_id,',
+'               photo_caption,',
+'               file_name,',
+'               mime_type,',
+'               TO_CHAR(uploaded_date, ''DD-Mon-YYYY HH24:MI'') AS uploaded_date,',
+'               uploaded_by',
+'        FROM   ptw_pro.ptw_lv_permit_photos',
+'        WHERE  permit_id      = l_permit_id',
+'        AND    source_page_id = :APP_PAGE_ID                    -- ADDED',
+'        ORDER  BY uploaded_date DESC',
+'    ) LOOP',
+'        apex_json.open_object;',
+'        apex_json.write(''photoId'',      r.photo_id);',
+'        apex_json.write(''caption'',      NVL(r.photo_caption, ''''));',
+'        apex_json.write(''fileName'',     NVL(r.file_name, ''attachment''));',
+'        apex_json.write(''mimeType'',     NVL(r.mime_type, ''application/octet-stream''));',
+'        apex_json.write(''uploadedDate'', r.uploaded_date);',
+'        apex_json.write(''uploadedBy'',   r.uploaded_by);',
+'        apex_json.write(''url'',',
+'            apex_page.get_url(',
+'                p_page   => 20,',
+'                p_items  => ''P20_PHOTO_ID'',',
+'                p_values => r.photo_id,',
+'                p_plain_url => true',
+'            )',
+'        );',
+'        apex_json.close_object;',
+'    END LOOP;',
+'',
+'    apex_json.close_array;',
+'    apex_json.close_object;',
+'',
+'EXCEPTION',
+'    WHEN OTHERS THEN',
+'        apex_json.open_object;',
+'        apex_json.open_array(''photos'');',
+'        apex_json.close_array;',
+'        apex_json.write(''error'', SQLERRM);',
+'        apex_json.close_object;',
+'END;',
+''))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>47752153706890043
+,p_created_on=>wwv_flow_imp.dz('20260511212834Z')
+,p_updated_on=>wwv_flow_imp.dz('20260711131557Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(47751662520890038)
@@ -1187,67 +1505,57 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_point=>'BEFORE_HEADER'
 ,p_process_type=>'NATIVE_PLSQL'
 ,p_process_name=>'Load Cancel Permit Data'
+,p_static_id=>'load-cancel-permit-data'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'DECLARE',
-'    v_clob  CLOB;',
-'    v_sig   BLOB;',
-'    v_count NUMBER;',
+'   v_clob CLOB;',
+'   v_sig  BLOB;',
+'   v_na_mobile     ptw_pro.ptw_signatures.mobile_no%TYPE;',
+'   v_na_company    ptw_pro.ptw_signatures.company_name%TYPE;',
+'   v_na_lat        ptw_pro.ptw_signatures.latitude%TYPE;',
+'   v_na_lng        ptw_pro.ptw_signatures.longitude%TYPE;',
+'   v_na_auth_to_dt ptw_pro.ptw_signatures.auth_to_datetime%TYPE;  -- NEW',
 'BEGIN',
-'    -- Load permit number and workflow status first',
-'    SELECT permit_number,',
-'           workflow_status',
-'    INTO   :P17_PERMIT_NUMBER,',
-'           :P17_WORKFLOW_STATUS',
+'    SELECT permit_number, workflow_status, ptw_type',
+'    INTO   :P17_PERMIT_NUMBER, :P17_WORKFLOW_STATUS, :P17_PTW_TYPE',
 '    FROM   ptw_pro.ptw_lv_permits',
 '    WHERE  permit_id = :P17_PERMIT_ID;',
-' ',
-'    -- If already cancelled, load the saved cancellation data',
-'    -- for readonly display',
+'',
+'    :P17_CANCEL_TITLE := CASE WHEN :P17_PTW_TYPE = ''LIMITATION OF ACCESS'' THEN ''Limitation of Access'' ELSE ''Permit to Work'' END;',
+'',
 '    IF :P17_WORKFLOW_STATUS = ''CANCELLED'' THEN',
-' ',
-'        SELECT cancel_work_complete,',
-'               cancel_person_name,',
-'               TO_CHAR(cancel_datetime, ''DD-MON-YYYY HH24:MI''),',
-'               cancel_person_signature',
-'        INTO   :P17_CANCEL_WORK_COMPLETE,',
-'               :P17_CANCEL_PERSON_NAME,',
-'               :P17_CANCEL_DATETIME,',
-'               v_sig',
+'',
+'        ptw_pro.ptw_signature_pkg.get_signature(:P17_PERMIT_ID, ''CANCEL'',',
+'            :P17_CANCEL_PERSON_NAME, v_sig, v_na_mobile, v_na_company,',
+'            :P17_CANCEL_DATETIME, v_na_lat, v_na_lng, v_na_auth_to_dt);   -- CHANGED',
+'',
+'        SELECT cancel_work_complete',
+'        INTO   :P17_CANCEL_WORK_COMPLETE',
 '        FROM   ptw_pro.ptw_lv_permits',
 '        WHERE  permit_id = :P17_PERMIT_ID;',
-' ',
-'        -- Convert signature BLOB to base64 data URL for canvas display',
-'        -- Same pattern as Page 10 Load Monitoring Data process',
-'        IF v_sig IS NOT NULL',
-'           AND DBMS_LOB.GETLENGTH(v_sig) > 0',
-'        THEN',
+'',
+'        IF v_sig IS NOT NULL AND DBMS_LOB.GETLENGTH(v_sig) > 0 THEN',
 '            v_clob := apex_web_service.blob2clobbase64(v_sig);',
-'            -- Strip newlines introduced by base64 encoding',
 '            v_clob := REPLACE(REPLACE(v_clob, CHR(13), ''''), CHR(10), '''');',
-'            -- Truncate to 32k for session state (sufficient for sig PNG)',
 '            :P17_CANCEL_SIGNATURE_DATA_URL :=',
 '                ''data:image/png;base64,'' || DBMS_LOB.SUBSTR(v_clob, 32000, 1);',
 '        ELSE',
 '            :P17_CANCEL_SIGNATURE_DATA_URL := NULL;',
 '        END IF;',
-' ',
+'',
 '    ELSE',
-unistr('        -- Not yet cancelled \2014 new entry mode'),
-'        -- Pre-fill datetime display to NOW',
 '        :P17_CANCEL_DATETIME := TO_CHAR(SYSDATE, ''DD-MON-YYYY HH24:MI'');',
 '        :P17_CANCEL_SIGNATURE_DATA_URL := NULL;',
-' ',
 '    END IF;',
-' ',
+'',
 'EXCEPTION',
 '    WHEN NO_DATA_FOUND THEN',
 '        apex_error.add_error(',
-'            p_message          => ''Permit not found.'',',
-'            p_display_location => apex_error.c_on_error_page',
+'            p_message => ''Permit not found.'', p_display_location => apex_error.c_on_error_page',
 '        );',
 '    WHEN OTHERS THEN',
 '        apex_error.add_error(',
-'            p_message          => ''Error loading cancellation data: '' || SQLERRM,',
+'            p_message => ''Error loading cancellation data: '' || SQLERRM,',
 '            p_display_location => apex_error.c_on_error_page',
 '        );',
 'END;',
@@ -1256,6 +1564,10 @@ unistr('        -- Not yet cancelled \2014 new entry mode'),
 ,p_process_when=>'P17_PERMIT_ID'
 ,p_process_when_type=>'ITEM_IS_NOT_NULL'
 ,p_internal_uid=>47751662520890038
+,p_created_on=>wwv_flow_imp.dz('20260511204319Z')
+,p_updated_on=>wwv_flow_imp.dz('20260919130307Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(47752004439890042)
@@ -1263,6 +1575,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_point=>'ON_DEMAND'
 ,p_process_type=>'NATIVE_PLSQL'
 ,p_process_name=>'UPLOAD_PERMIT_PHOTO'
+,p_static_id=>'upload-permit-photo'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'DECLARE',
 '    l_permit_id   NUMBER        := TO_NUMBER(apex_application.g_x01);',
@@ -1349,120 +1662,10 @@ wwv_flow_imp_page.create_page_process(
 ''))
 ,p_process_clob_language=>'PLSQL'
 ,p_internal_uid=>47752004439890042
-);
-wwv_flow_imp_page.create_page_process(
- p_id=>wwv_flow_imp.id(47752153706890043)
-,p_process_sequence=>20
-,p_process_point=>'ON_DEMAND'
-,p_process_type=>'NATIVE_PLSQL'
-,p_process_name=>'GET_PERMIT_PHOTOS'
-,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'DECLARE',
-'    l_permit_id NUMBER := TO_NUMBER(apex_application.g_x01);',
-'BEGIN',
-'    apex_json.open_object;',
-'    apex_json.open_array(''photos'');',
-'',
-'    FOR r IN (',
-'        SELECT photo_id,',
-'               photo_caption,',
-'               file_name,',
-'               mime_type,',
-'               TO_CHAR(uploaded_date, ''DD-Mon-YYYY HH24:MI'') AS uploaded_date,',
-'               uploaded_by',
-'        FROM   ptw_pro.ptw_lv_permit_photos',
-'        WHERE  permit_id      = l_permit_id',
-'        AND    source_page_id = :APP_PAGE_ID                    -- ADDED',
-'        ORDER  BY uploaded_date DESC',
-'    ) LOOP',
-'        apex_json.open_object;',
-'        apex_json.write(''photoId'',      r.photo_id);',
-'        apex_json.write(''caption'',      NVL(r.photo_caption, ''''));',
-'        apex_json.write(''fileName'',     NVL(r.file_name, ''attachment''));',
-'        apex_json.write(''mimeType'',     NVL(r.mime_type, ''application/octet-stream''));',
-'        apex_json.write(''uploadedDate'', r.uploaded_date);',
-'        apex_json.write(''uploadedBy'',   r.uploaded_by);',
-'        apex_json.write(''url'',',
-'            apex_page.get_url(',
-'                p_page   => 20,',
-'                p_items  => ''P20_PHOTO_ID'',',
-'                p_values => r.photo_id,',
-'                p_plain_url => true',
-'            )',
-'        );',
-'        apex_json.close_object;',
-'    END LOOP;',
-'',
-'    apex_json.close_array;',
-'    apex_json.close_object;',
-'',
-'EXCEPTION',
-'    WHEN OTHERS THEN',
-'        apex_json.open_object;',
-'        apex_json.open_array(''photos'');',
-'        apex_json.close_array;',
-'        apex_json.write(''error'', SQLERRM);',
-'        apex_json.close_object;',
-'END;',
-''))
-,p_process_clob_language=>'PLSQL'
-,p_internal_uid=>47752153706890043
-);
-wwv_flow_imp_page.create_page_process(
- p_id=>wwv_flow_imp.id(47752296176890044)
-,p_process_sequence=>30
-,p_process_point=>'ON_DEMAND'
-,p_process_type=>'NATIVE_PLSQL'
-,p_process_name=>'DELETE_PERMIT_PHOTO'
-,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'DECLARE',
-'    l_photo_id   NUMBER        := TO_NUMBER(apex_application.g_x01);',
-'    l_app_user   VARCHAR2(255) := NVL(V(''APP_USER''), USER);',
-'    l_can_delete NUMBER;',
-'BEGIN',
-'    SELECT COUNT(*)',
-'    INTO   l_can_delete',
-'    FROM   ptw_pro.ptw_lv_permit_photos ph',
-'    WHERE  ph.photo_id = l_photo_id',
-'    AND    (',
-'               UPPER(ph.uploaded_by) = UPPER(l_app_user)',
-'               OR EXISTS (',
-'                   SELECT 1',
-'                   FROM   ptw_pro.ptw_lv_user_roles_v',
-'                   WHERE  UPPER(username) = UPPER(l_app_user)',
-'                   AND    role_name IN (''ADMIN'', ''ADMIN_CONTRACT_SUPPORT'')',
-'                   AND    is_active = ''Y''',
-'               )',
-'           );',
-'',
-'    IF l_can_delete = 0 THEN',
-'        apex_json.open_object;',
-'        apex_json.write(''success'', false);',
-'        apex_json.write(''message'', ''File not found or you do not have permission to delete it.'');',
-'        apex_json.close_object;',
-'        RETURN;',
-'    END IF;',
-'',
-'    DELETE FROM ptw_pro.ptw_lv_permit_photos',
-'    WHERE  photo_id = l_photo_id;',
-'',
-'    COMMIT;',
-'',
-'    apex_json.open_object;',
-'    apex_json.write(''success'', true);',
-'    apex_json.close_object;',
-'',
-'EXCEPTION',
-'    WHEN OTHERS THEN',
-'        ROLLBACK;',
-'        apex_json.open_object;',
-'        apex_json.write(''success'', false);',
-'        apex_json.write(''message'', ''Delete error: '' || SQLERRM);',
-'        apex_json.close_object;',
-'END;',
-''))
-,p_process_clob_language=>'PLSQL'
-,p_internal_uid=>47752296176890044
+,p_created_on=>wwv_flow_imp.dz('20260511212834Z')
+,p_updated_on=>wwv_flow_imp.dz('20260711131557Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp.component_end;
 end;

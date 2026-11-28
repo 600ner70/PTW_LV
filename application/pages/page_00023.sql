@@ -4,8 +4,8 @@ begin
 --     PAGE: 00023
 --   Manifest End
 wwv_flow_imp.component_begin (
- p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.17'
+ p_version_yyyy_mm_dd=>'2026.03.30'
+,p_release=>'26.1.6'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
@@ -34,18 +34,25 @@ wwv_flow_imp_page.create_page(
 '    margin-left: 6px;',
 '    font-size: 0.9em;',
 '}'))
+,p_step_template=>4072355960268175073
 ,p_page_css_classes=>'ptw-locked-note'
 ,p_page_template_options=>'#DEFAULT#'
 ,p_required_role=>wwv_flow_imp.id(26419849891144614)
 ,p_protection_level=>'C'
 ,p_page_component_map=>'25'
+,p_created_on=>wwv_flow_imp.dz('20260614161756Z')
+,p_last_updated_on=>wwv_flow_imp.dz('20260820211743Z')
+,p_created_by=>'PTW_PRO'
+,p_last_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(52461800210584415)
 ,p_plug_name=>'Page Header'
+,p_static_id=>'page-header'
 ,p_region_template_options=>'#DEFAULT#:t-Region--removeHeader js-removeLandmark:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
 ,p_plug_display_sequence=>40
+,p_plug_item_display_point=>'ABOVE'
 ,p_location=>null
 ,p_function_body_language=>'PLSQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -99,10 +106,15 @@ wwv_flow_imp_page.create_page_plug(
 'END;'))
 ,p_lazy_loading=>false
 ,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+,p_created_on=>wwv_flow_imp.dz('20260614162239Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705170049Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_region(
  p_id=>wwv_flow_imp.id(52461942092584416)
 ,p_name=>'Permit Types'
+,p_static_id=>'permit-types'
 ,p_title=>'Permit Types'
 ,p_template=>4072358936313175081
 ,p_display_sequence=>110
@@ -145,14 +157,13 @@ wwv_flow_imp_page.create_report_region(
 '           ut.modified_by                 AS competency_confirmed_by,',
 '           ut.modified_date               AS competency_confirmed_date',
 '    FROM   ptw_pro.ptw_types pt',
-'    JOIN   ptw_pro.ptw_lv_company_types ct',
+'    LEFT JOIN ptw_pro.ptw_lv_company_types ct',
 '           ON ct.type_id = pt.type_id AND ct.company_id = :P23_EFFECTIVE_COMPANY_ID',
 '    LEFT JOIN ptw_pro.ptw_lv_team_types tt',
 '           ON tt.type_id = pt.type_id AND tt.team_id = :P23_TEAM_ID',
 '    LEFT JOIN ptw_pro.ptw_lv_user_types ut',
 '           ON ut.type_id = pt.type_id AND ut.user_id = :P23_ENGINEER_ID',
 '    WHERE  pt.available = ''Y''',
-'--    AND    ct.is_active = ''Y''',
 ') x',
 'ORDER BY x.type_desc'))
 ,p_ajax_enabled=>'Y'
@@ -167,24 +178,10 @@ wwv_flow_imp_page.create_report_region(
 ,p_prn_output=>'N'
 ,p_sort_null=>'L'
 ,p_plug_query_strip_html=>'N'
-);
-wwv_flow_imp_page.create_report_columns(
- p_id=>wwv_flow_imp.id(52464597899584442)
-,p_query_column_id=>1
-,p_column_alias=>'TYPE_ID'
-,p_column_display_sequence=>70
-,p_hidden_column=>'Y'
-,p_derived_column=>'N'
-);
-wwv_flow_imp_page.create_report_columns(
- p_id=>wwv_flow_imp.id(52464132863584438)
-,p_query_column_id=>2
-,p_column_alias=>'TYPE_DESC'
-,p_column_display_sequence=>30
-,p_column_heading=>'Description'
-,p_heading_alignment=>'LEFT'
-,p_derived_column=>'N'
-,p_include_in_export=>'Y'
+,p_created_on=>wwv_flow_imp.dz('20260614162536Z')
+,p_updated_on=>wwv_flow_imp.dz('20260820205013Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
  p_id=>wwv_flow_imp.id(53188057368153104)
@@ -195,6 +192,33 @@ wwv_flow_imp_page.create_report_columns(
 ,p_heading_alignment=>'LEFT'
 ,p_derived_column=>'N'
 ,p_include_in_export=>'Y'
+,p_updated_on=>wwv_flow_imp.dz('20260705172324Z')
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_report_columns(
+ p_id=>wwv_flow_imp.id(53188223192153106)
+,p_query_column_id=>5
+,p_column_alias=>'COMPETENCY_CONFIRMED_BY'
+,p_column_display_sequence=>100
+,p_column_heading=>'Competency Confirmed By'
+,p_heading_alignment=>'LEFT'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+,p_updated_on=>wwv_flow_imp.dz('20260705172324Z')
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_report_columns(
+ p_id=>wwv_flow_imp.id(53188314740153107)
+,p_query_column_id=>6
+,p_column_alias=>'COMPETENCY_CONFIRMED_DATE'
+,p_column_display_sequence=>110
+,p_column_heading=>'Competency Confirmed Date'
+,p_column_format=>'DD-MON-YYYY HH24:MI'
+,p_heading_alignment=>'LEFT'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+,p_updated_on=>wwv_flow_imp.dz('20260705195251Z')
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
  p_id=>wwv_flow_imp.id(53188481829153108)
@@ -207,34 +231,39 @@ wwv_flow_imp_page.create_report_columns(
 ,p_display_as=>'WITHOUT_MODIFICATION'
 ,p_derived_column=>'N'
 ,p_include_in_export=>'Y'
+,p_updated_on=>wwv_flow_imp.dz('20260705195416Z')
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
- p_id=>wwv_flow_imp.id(53188223192153106)
-,p_query_column_id=>5
-,p_column_alias=>'COMPETENCY_CONFIRMED_BY'
-,p_column_display_sequence=>100
-,p_column_heading=>'Competency Confirmed By'
+ p_id=>wwv_flow_imp.id(52464132863584438)
+,p_query_column_id=>2
+,p_column_alias=>'TYPE_DESC'
+,p_column_display_sequence=>30
+,p_column_heading=>'Description'
 ,p_heading_alignment=>'LEFT'
 ,p_derived_column=>'N'
 ,p_include_in_export=>'Y'
+,p_updated_on=>wwv_flow_imp.dz('20260705172324Z')
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
- p_id=>wwv_flow_imp.id(53188314740153107)
-,p_query_column_id=>6
-,p_column_alias=>'COMPETENCY_CONFIRMED_DATE'
-,p_column_display_sequence=>110
-,p_column_heading=>'Competency Confirmed Date'
-,p_column_format=>'DD-MON-YYYY HH24:MI'
-,p_heading_alignment=>'LEFT'
+ p_id=>wwv_flow_imp.id(52464597899584442)
+,p_query_column_id=>1
+,p_column_alias=>'TYPE_ID'
+,p_column_display_sequence=>70
+,p_hidden_column=>'Y'
 ,p_derived_column=>'N'
-,p_include_in_export=>'Y'
+,p_updated_on=>wwv_flow_imp.dz('20260614195755Z')
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(52496227297962721)
 ,p_plug_name=>'Super User Current Company'
+,p_static_id=>'super-user-current-company'
 ,p_region_template_options=>'#DEFAULT#:t-BreadcrumbRegion--useBreadcrumbTitle'
 ,p_plug_template=>2531463326621247859
 ,p_plug_display_sequence=>50
+,p_plug_item_display_point=>'ABOVE'
 ,p_location=>null
 ,p_function_body_language=>'PLSQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -276,12 +305,17 @@ wwv_flow_imp_page.create_page_plug(
 '    WHEN OTHERS THEN RETURN FALSE;',
 'END;'))
 ,p_plug_display_when_cond2=>'PLSQL'
+,p_created_on=>wwv_flow_imp.dz('20260621162558Z')
+,p_updated_on=>wwv_flow_imp.dz('20260621162813Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(52464752525584444)
 ,p_button_sequence=>10
 ,p_button_plug_id=>wwv_flow_imp.id(52461942092584416)
 ,p_button_name=>'SAVE'
+,p_static_id=>'save'
 ,p_button_action=>'SUBMIT'
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
 ,p_button_template_id=>2082829544945815391
@@ -290,6 +324,10 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_position=>'ABOVE_BOX'
 ,p_button_alignment=>'RIGHT'
 ,p_icon_css_classes=>'fa-save'
+,p_created_on=>wwv_flow_imp.dz('20260614200405Z')
+,p_updated_on=>wwv_flow_imp.dz('20260614200456Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_branch(
  p_id=>wwv_flow_imp.id(52464996995584446)
@@ -298,52 +336,43 @@ wwv_flow_imp_page.create_page_branch(
 ,p_branch_point=>'AFTER_PROCESSING'
 ,p_branch_type=>'REDIRECT_URL'
 ,p_branch_sequence=>10
+,p_created_on=>wwv_flow_imp.dz('20260614200816Z')
+,p_updated_on=>wwv_flow_imp.dz('20260614200816Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(53156753085466136)
-,p_name=>'P23_SCOPE'
-,p_item_sequence=>60
-,p_item_default=>'COMPANY'
-,p_prompt=>'Scope Selector'
-,p_display_as=>'NATIVE_RADIOGROUP'
-,p_lov=>'STATIC:Company;COMPANY,Team;TEAM,Engineer;ENGINEER'
-,p_colspan=>6
-,p_field_template=>1609121967514267634
-,p_item_template_options=>'#DEFAULT#'
-,p_lov_display_extra=>'NO'
+ p_id=>wwv_flow_imp.id(53157013726466139)
+,p_name=>'P23_COMPETENCY_ACK'
+,p_item_sequence=>100
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'number_of_columns', '3',
-  'page_action_on_selection', 'NONE')).to_clob
+  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260705171034Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705174006Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(53156811548466137)
-,p_name=>'P23_TEAM_ID'
-,p_item_sequence=>70
-,p_prompt=>'Team'
-,p_display_as=>'NATIVE_SELECT_LIST'
-,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'SELECT team_name d, team_id r',
-'FROM   ptw_pro.ptw_lv_teams',
-'WHERE  company_id = :P23_EFFECTIVE_COMPANY_ID  -- same resolution',
-'                                           -- pattern as the',
-'                                           -- rest of this page',
-'AND    is_active = ''Y''',
-'ORDER  BY team_name'))
-,p_lov_display_null=>'YES'
-,p_lov_null_text=>'-- Select Team --'
-,p_cHeight=>1
-,p_colspan=>6
-,p_field_template=>1609121967514267634
-,p_item_template_options=>'#DEFAULT#'
-,p_lov_display_extra=>'NO'
+ p_id=>wwv_flow_imp.id(53188544069153109)
+,p_name=>'P23_EFFECTIVE_COMPANY_ID'
+,p_item_sequence=>90
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'page_action_on_selection', 'NONE')).to_clob
+  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260705174006Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705174006Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(53156945295466138)
 ,p_name=>'P23_ENGINEER_ID'
 ,p_item_sequence=>80
 ,p_prompt=>'Engineer'
+,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_SELECT_LIST'
 ,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'SELECT first_name || '' '' || last_name || '' ('' || username || '')'' d,',
@@ -362,26 +391,83 @@ wwv_flow_imp_page.create_page_item(
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'page_action_on_selection', 'NONE')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260705171034Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705182854Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(53157013726466139)
-,p_name=>'P23_COMPETENCY_ACK'
-,p_item_sequence=>100
-,p_display_as=>'NATIVE_HIDDEN'
+ p_id=>wwv_flow_imp.id(53156753085466136)
+,p_name=>'P23_SCOPE'
+,p_item_sequence=>60
+,p_item_default=>'COMPANY'
+,p_prompt=>'Scope Selector'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_RADIOGROUP'
+,p_lov=>'STATIC:Company;COMPANY,Team;TEAM,Engineer;ENGINEER'
+,p_colspan=>6
+,p_field_template=>1609121967514267634
+,p_item_template_options=>'#DEFAULT#'
+,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
+  'number_of_columns', '3',
+  'page_action_on_selection', 'NONE')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260705170049Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705173432Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(53188544069153109)
-,p_name=>'P23_EFFECTIVE_COMPANY_ID'
-,p_item_sequence=>90
-,p_display_as=>'NATIVE_HIDDEN'
+ p_id=>wwv_flow_imp.id(53156811548466137)
+,p_name=>'P23_TEAM_ID'
+,p_item_sequence=>70
+,p_prompt=>'Team'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'SELECT team_name d, team_id r',
+'FROM   ptw_pro.ptw_lv_teams',
+'WHERE  company_id = :P23_EFFECTIVE_COMPANY_ID  -- same resolution',
+'                                           -- pattern as the',
+'                                           -- rest of this page',
+'AND    is_active = ''Y''',
+'ORDER  BY team_name'))
+,p_lov_display_null=>'YES'
+,p_lov_null_text=>'-- Select Team --'
+,p_cHeight=>1
+,p_colspan=>6
+,p_field_template=>1609121967514267634
+,p_item_template_options=>'#DEFAULT#'
+,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
+  'page_action_on_selection', 'NONE')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260705171034Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705182854Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(53189012131153114)
+,p_validation_name=>'Engineer is not null'
+,p_static_id=>'engineer-is-not-null'
+,p_validation_sequence=>20
+,p_validation=>'P23_ENGINEER_ID'
+,p_validation_type=>'ITEM_NOT_NULL'
+,p_error_message=>'Engineer must be selected.'
+,p_validation_condition=>'P23_SCOPE'
+,p_validation_condition2=>'ENGINEER'
+,p_validation_condition_type=>'VAL_OF_ITEM_IN_COND_EQ_COND2'
+,p_associated_item=>wwv_flow_imp.id(53156945295466138)
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+,p_created_on=>wwv_flow_imp.dz('20260705180749Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705180749Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_validation(
  p_id=>wwv_flow_imp.id(53188983958153113)
 ,p_validation_name=>'Team is not null'
+,p_static_id=>'team-is-not-null'
 ,p_validation_sequence=>10
 ,p_validation=>'P23_TEAM_ID'
 ,p_validation_type=>'ITEM_NOT_NULL'
@@ -393,112 +479,64 @@ wwv_flow_imp_page.create_page_validation(
 ,p_validation_condition_type=>'VAL_OF_ITEM_IN_COND_EQ_COND2'
 ,p_associated_item=>wwv_flow_imp.id(53156811548466137)
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
-);
-wwv_flow_imp_page.create_page_validation(
- p_id=>wwv_flow_imp.id(53189012131153114)
-,p_validation_name=>'Engineer is not null'
-,p_validation_sequence=>20
-,p_validation=>'P23_ENGINEER_ID'
-,p_validation_type=>'ITEM_NOT_NULL'
-,p_error_message=>'Engineer must be selected.'
-,p_validation_condition=>'P23_SCOPE'
-,p_validation_condition2=>'ENGINEER'
-,p_validation_condition_type=>'VAL_OF_ITEM_IN_COND_EQ_COND2'
-,p_associated_item=>wwv_flow_imp.id(53156945295466138)
-,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+,p_created_on=>wwv_flow_imp.dz('20260705180749Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705180808Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(53157874525466147)
-,p_name=>'Session state'
-,p_event_sequence=>5
-,p_triggering_element_type=>'ITEM'
-,p_triggering_element=>'P23_SCOPE'
+ p_id=>wwv_flow_imp.id(53188781398153111)
+,p_name=>'Competency Confirm Dialog'
+,p_static_id=>'competency-confirm-dialog'
+,p_event_sequence=>30
+,p_triggering_element_type=>'JQUERY_SELECTOR'
+,p_triggering_element=>'.ptw-competency-checkbox'
 ,p_bind_type=>'bind'
 ,p_execution_type=>'IMMEDIATE'
 ,p_bind_event_type=>'change'
+,p_created_on=>wwv_flow_imp.dz('20260705180749Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705180749Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(53157925905466148)
-,p_event_id=>wwv_flow_imp.id(53157874525466147)
+ p_id=>wwv_flow_imp.id(53188810329153112)
+,p_event_id=>wwv_flow_imp.id(53188781398153111)
 ,p_event_result=>'TRUE'
 ,p_action_sequence=>10
 ,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
-,p_attribute_01=>'NULL;'
-,p_attribute_02=>'P23_SCOPE'
-,p_attribute_05=>'PLSQL'
-,p_wait_for_result=>'Y'
-);
-wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(53157168571466140)
-,p_name=>'Scope Switch to Team'
-,p_event_sequence=>10
-,p_triggering_element_type=>'ITEM'
-,p_triggering_element=>'P23_SCOPE'
-,p_condition_element=>'P23_SCOPE'
-,p_triggering_condition_type=>'EQUALS'
-,p_triggering_expression=>'TEAM'
-,p_bind_type=>'bind'
-,p_execution_type=>'IMMEDIATE'
-,p_bind_event_type=>'change'
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(53157548128466144)
-,p_event_id=>wwv_flow_imp.id(53157168571466140)
-,p_event_result=>'TRUE'
-,p_action_sequence=>10
-,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
-,p_attribute_01=>'NULL;'
-,p_attribute_02=>'P23_SCOPE'
-,p_attribute_05=>'PLSQL'
-,p_wait_for_result=>'Y'
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(53157607649466145)
-,p_event_id=>wwv_flow_imp.id(53157168571466140)
-,p_event_result=>'FALSE'
-,p_action_sequence=>10
-,p_execute_on_page_init=>'Y'
-,p_action=>'NATIVE_HIDE'
-,p_affected_elements_type=>'ITEM'
-,p_affected_elements=>'P23_TEAM_ID'
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(53157270575466141)
-,p_event_id=>wwv_flow_imp.id(53157168571466140)
-,p_event_result=>'TRUE'
-,p_action_sequence=>20
-,p_execute_on_page_init=>'Y'
-,p_action=>'NATIVE_SHOW'
-,p_affected_elements_type=>'ITEM'
-,p_affected_elements=>'P23_TEAM_ID'
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(53157714910466146)
-,p_event_id=>wwv_flow_imp.id(53157168571466140)
-,p_event_result=>'FALSE'
-,p_action_sequence=>20
-,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_REFRESH'
-,p_affected_elements_type=>'REGION'
-,p_affected_region_id=>wwv_flow_imp.id(52461942092584416)
-,p_attribute_01=>'N'
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(53157411209466143)
-,p_event_id=>wwv_flow_imp.id(53157168571466140)
-,p_event_result=>'TRUE'
-,p_action_sequence=>40
-,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_REFRESH'
-,p_affected_elements_type=>'REGION'
-,p_affected_region_id=>wwv_flow_imp.id(52461942092584416)
-,p_attribute_01=>'N'
+,p_static_id=>'native-javascript-code'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_affected_elements_type=>'EVENT_SOURCE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'js_code', wwv_flow_string.join(wwv_flow_t_varchar2(
+    'var $cb = $(this.triggeringElement);',
+    'var typeDesc = $cb.data("type-desc");',
+    '',
+    'apex.confirm(',
+    '    "Confirm you have personally verified this engineer is " +',
+    '    "competent to issue " + typeDesc + "?",',
+    '    function(okPressed) {',
+    '        if (okPressed) {',
+    '            // P23_COMPETENCY_ACK is a real page item (unlike the',
+    '            // per-row checkbox above), so apex.item() is correct',
+    '            // and Oracle-documented here.',
+    '            apex.item("P23_COMPETENCY_ACK").setValue("Y");',
+    '        } else {',
+    '            $cb.prop("checked", false);',
+    '        }',
+    '    }',
+    ');',
+    '')))).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260705180749Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705180749Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(53158060686466149)
 ,p_name=>'Scope Switch to Engineer'
+,p_static_id=>'scope-switch-to-engineer'
 ,p_event_sequence=>20
 ,p_triggering_element_type=>'ITEM'
 ,p_triggering_element=>'P23_SCOPE'
@@ -508,16 +546,10 @@ wwv_flow_imp_page.create_page_da_event(
 ,p_bind_type=>'bind'
 ,p_execution_type=>'IMMEDIATE'
 ,p_bind_event_type=>'change'
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(53158141778466150)
-,p_event_id=>wwv_flow_imp.id(53158060686466149)
-,p_event_result=>'TRUE'
-,p_action_sequence=>10
-,p_execute_on_page_init=>'Y'
-,p_action=>'NATIVE_SHOW'
-,p_affected_elements_type=>'ITEM'
-,p_affected_elements=>'P23_ENGINEER_ID'
+,p_created_on=>wwv_flow_imp.dz('20260705172105Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705172105Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_da_action(
  p_id=>wwv_flow_imp.id(53187850815153102)
@@ -525,9 +557,14 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_event_result=>'FALSE'
 ,p_action_sequence=>10
 ,p_execute_on_page_init=>'Y'
+,p_static_id=>'native-hide'
 ,p_action=>'NATIVE_HIDE'
 ,p_affected_elements_type=>'ITEM'
 ,p_affected_elements=>'P23_ENGINEER_ID'
+,p_created_on=>wwv_flow_imp.dz('20260705172105Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705172105Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_da_action(
  p_id=>wwv_flow_imp.id(53187753629153101)
@@ -535,10 +572,16 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_event_result=>'TRUE'
 ,p_action_sequence=>20
 ,p_execute_on_page_init=>'N'
+,p_static_id=>'native-refresh'
 ,p_action=>'NATIVE_REFRESH'
 ,p_affected_elements_type=>'REGION'
 ,p_affected_region_id=>wwv_flow_imp.id(52461942092584416)
-,p_attribute_01=>'N'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'maintain_pagination', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260705172105Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705172105Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_da_action(
  p_id=>wwv_flow_imp.id(53187903083153103)
@@ -546,79 +589,181 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_event_result=>'FALSE'
 ,p_action_sequence=>20
 ,p_execute_on_page_init=>'N'
+,p_static_id=>'native-refresh-2'
 ,p_action=>'NATIVE_REFRESH'
 ,p_affected_elements_type=>'REGION'
 ,p_affected_region_id=>wwv_flow_imp.id(52461942092584416)
-,p_attribute_01=>'N'
-);
-wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(53188781398153111)
-,p_name=>'Competency Confirm Dialog'
-,p_event_sequence=>30
-,p_triggering_element_type=>'JQUERY_SELECTOR'
-,p_triggering_element=>'.ptw-competency-checkbox'
-,p_bind_type=>'bind'
-,p_execution_type=>'IMMEDIATE'
-,p_bind_event_type=>'change'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'maintain_pagination', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260705172105Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705172105Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(53188810329153112)
-,p_event_id=>wwv_flow_imp.id(53188781398153111)
+ p_id=>wwv_flow_imp.id(53158141778466150)
+,p_event_id=>wwv_flow_imp.id(53158060686466149)
 ,p_event_result=>'TRUE'
 ,p_action_sequence=>10
-,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_affected_elements_type=>'EVENT_SOURCE'
-,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'var $cb = $(this.triggeringElement);',
-'var typeDesc = $cb.data("type-desc");',
-'',
-'apex.confirm(',
-'    "Confirm you have personally verified this engineer is " +',
-'    "competent to issue " + typeDesc + "?",',
-'    function(okPressed) {',
-'        if (okPressed) {',
-'            // P23_COMPETENCY_ACK is a real page item (unlike the',
-'            // per-row checkbox above), so apex.item() is correct',
-'            // and Oracle-documented here.',
-'            apex.item("P23_COMPETENCY_ACK").setValue("Y");',
-'        } else {',
-'            $cb.prop("checked", false);',
-'        }',
-'    }',
-');',
-''))
+,p_execute_on_page_init=>'Y'
+,p_static_id=>'native-show'
+,p_action=>'NATIVE_SHOW'
+,p_affected_elements_type=>'ITEM'
+,p_affected_elements=>'P23_ENGINEER_ID'
+,p_created_on=>wwv_flow_imp.dz('20260705172105Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705172105Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(53189215174153116)
-,p_name=>'when change Team list'
-,p_event_sequence=>40
+ p_id=>wwv_flow_imp.id(53157168571466140)
+,p_name=>'Scope Switch to Team'
+,p_static_id=>'scope-switch-to-team'
+,p_event_sequence=>10
 ,p_triggering_element_type=>'ITEM'
-,p_triggering_element=>'P23_TEAM_ID'
+,p_triggering_element=>'P23_SCOPE'
+,p_condition_element=>'P23_SCOPE'
+,p_triggering_condition_type=>'EQUALS'
+,p_triggering_expression=>'TEAM'
 ,p_bind_type=>'bind'
 ,p_execution_type=>'IMMEDIATE'
 ,p_bind_event_type=>'change'
+,p_created_on=>wwv_flow_imp.dz('20260705171034Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705172105Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(53189348276153117)
-,p_event_id=>wwv_flow_imp.id(53189215174153116)
+ p_id=>wwv_flow_imp.id(53157548128466144)
+,p_event_id=>wwv_flow_imp.id(53157168571466140)
 ,p_event_result=>'TRUE'
 ,p_action_sequence=>10
 ,p_execute_on_page_init=>'N'
+,p_static_id=>'native-execute-plsql-code'
+,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'items_to_submit', 'P23_SCOPE',
+  'language', 'PLSQL',
+  'plsql_code', 'NULL;',
+  'show_processing', 'N')).to_clob
+,p_wait_for_result=>'Y'
+,p_created_on=>wwv_flow_imp.dz('20260705171246Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705171246Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(53157607649466145)
+,p_event_id=>wwv_flow_imp.id(53157168571466140)
+,p_event_result=>'FALSE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'Y'
+,p_static_id=>'native-hide'
+,p_action=>'NATIVE_HIDE'
+,p_affected_elements_type=>'ITEM'
+,p_affected_elements=>'P23_TEAM_ID'
+,p_created_on=>wwv_flow_imp.dz('20260705171747Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705171747Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(53157411209466143)
+,p_event_id=>wwv_flow_imp.id(53157168571466140)
+,p_event_result=>'TRUE'
+,p_action_sequence=>40
+,p_execute_on_page_init=>'N'
+,p_static_id=>'native-refresh'
 ,p_action=>'NATIVE_REFRESH'
 ,p_affected_elements_type=>'REGION'
 ,p_affected_region_id=>wwv_flow_imp.id(52461942092584416)
-,p_attribute_01=>'N'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'maintain_pagination', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260705171035Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705171246Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(53157714910466146)
+,p_event_id=>wwv_flow_imp.id(53157168571466140)
+,p_event_result=>'FALSE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'N'
+,p_static_id=>'native-refresh-2'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'REGION'
+,p_affected_region_id=>wwv_flow_imp.id(52461942092584416)
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'maintain_pagination', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260705171747Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705171747Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(53157270575466141)
+,p_event_id=>wwv_flow_imp.id(53157168571466140)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'Y'
+,p_static_id=>'native-show'
+,p_action=>'NATIVE_SHOW'
+,p_affected_elements_type=>'ITEM'
+,p_affected_elements=>'P23_TEAM_ID'
+,p_created_on=>wwv_flow_imp.dz('20260705171035Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705171900Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(53157874525466147)
+,p_name=>'Session state'
+,p_static_id=>'session-state'
+,p_event_sequence=>5
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P23_SCOPE'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+,p_created_on=>wwv_flow_imp.dz('20260705171900Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705171900Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(53157925905466148)
+,p_event_id=>wwv_flow_imp.id(53157874525466147)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_static_id=>'native-execute-plsql-code'
+,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'items_to_submit', 'P23_SCOPE',
+  'language', 'PLSQL',
+  'plsql_code', 'NULL;',
+  'show_processing', 'N')).to_clob
+,p_wait_for_result=>'Y'
+,p_created_on=>wwv_flow_imp.dz('20260705171900Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705171900Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(53189782609153121)
 ,p_name=>'when change Engineer list'
+,p_static_id=>'when-change-engineer-list'
 ,p_event_sequence=>50
 ,p_triggering_element_type=>'ITEM'
 ,p_triggering_element=>'P23_ENGINEER_ID'
 ,p_bind_type=>'bind'
 ,p_execution_type=>'IMMEDIATE'
 ,p_bind_event_type=>'change'
+,p_created_on=>wwv_flow_imp.dz('20260705191524Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705191524Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_da_action(
  p_id=>wwv_flow_imp.id(53189863009153122)
@@ -626,10 +771,48 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_event_result=>'TRUE'
 ,p_action_sequence=>10
 ,p_execute_on_page_init=>'N'
+,p_static_id=>'native-refresh'
 ,p_action=>'NATIVE_REFRESH'
 ,p_affected_elements_type=>'REGION'
 ,p_affected_region_id=>wwv_flow_imp.id(52461942092584416)
-,p_attribute_01=>'N'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'maintain_pagination', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260705191524Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705191524Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(53189215174153116)
+,p_name=>'when change Team list'
+,p_static_id=>'when-change-team-list'
+,p_event_sequence=>40
+,p_triggering_element_type=>'ITEM'
+,p_triggering_element=>'P23_TEAM_ID'
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'change'
+,p_created_on=>wwv_flow_imp.dz('20260705183246Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705183246Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(53189348276153117)
+,p_event_id=>wwv_flow_imp.id(53189215174153116)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_static_id=>'native-refresh'
+,p_action=>'NATIVE_REFRESH'
+,p_affected_elements_type=>'REGION'
+,p_affected_region_id=>wwv_flow_imp.id(52461942092584416)
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'maintain_pagination', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260705183246Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705183246Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(53188634878153110)
@@ -637,6 +820,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_point=>'AFTER_HEADER'
 ,p_process_type=>'NATIVE_PLSQL'
 ,p_process_name=>'Load data'
+,p_static_id=>'load-data'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'DECLARE',
 '    v_override   VARCHAR2(50) := V(''G_OVERRIDE_COMPANY_ID'');',
@@ -661,6 +845,10 @@ wwv_flow_imp_page.create_page_process(
 'END;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_internal_uid=>53188634878153110
+,p_created_on=>wwv_flow_imp.dz('20260705174143Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705174413Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(52464836682584445)
@@ -668,6 +856,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_point=>'AFTER_SUBMIT'
 ,p_process_type=>'NATIVE_PLSQL'
 ,p_process_name=>'Save Permit Type Assignments'
+,p_static_id=>'save-permit-type-assignments'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'DECLARE',
 '    v_company_id NUMBER;',
@@ -756,8 +945,9 @@ wwv_flow_imp_page.create_page_process(
 '',
 '                SELECT COUNT(*) INTO v_used',
 '                FROM   ptw_pro.ptw_lv_permits p',
-'                WHERE  p.ptw_type = (SELECT ptw_type FROM ptw_pro.ptw_types',
-'                                       WHERE type_id = v_type_id);',
+'                WHERE  p.ptw_type   = (SELECT ptw_type FROM ptw_pro.ptw_types',
+'                                         WHERE type_id = v_type_id)',
+'                AND    p.company_id = v_company_id;',
 '',
 '                IF v_used = 0 THEN',
 '                    DELETE FROM ptw_pro.ptw_lv_company_types',
@@ -771,6 +961,11 @@ wwv_flow_imp_page.create_page_process(
 '                    DELETE FROM ptw_pro.ptw_lv_user_types',
 '                    WHERE  company_id = v_company_id',
 '                    AND    type_id    = v_type_id;',
+'                ELSE',
+'                    apex_error.add_error(',
+'                        p_message          => ''This permit type has been used by your company and cannot be deactivated.'',',
+'                        p_display_location => apex_error.c_inline_in_notification);',
+'                    RETURN;',
 '                END IF;',
 '',
 '            END IF;',
@@ -815,6 +1010,10 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_when_button_id=>wwv_flow_imp.id(52464752525584444)
 ,p_process_success_message=>'Permit types updated.'
 ,p_internal_uid=>52464836682584445
+,p_created_on=>wwv_flow_imp.dz('20260614200739Z')
+,p_updated_on=>wwv_flow_imp.dz('20260820211743Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp.component_end;
 end;

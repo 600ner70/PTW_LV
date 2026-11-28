@@ -4,8 +4,8 @@ begin
 --     PAGE: 00008
 --   Manifest End
 wwv_flow_imp.component_begin (
- p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.17'
+ p_version_yyyy_mm_dd=>'2026.03.30'
+,p_release=>'26.1.6'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
@@ -16,6 +16,7 @@ wwv_flow_imp_page.create_page(
 ,p_name=>'User Managerment'
 ,p_alias=>'ADMIN-USERS'
 ,p_step_title=>'User Managerment'
+,p_warn_on_unsaved_changes=>'N'
 ,p_autocomplete_on_off=>'OFF'
 ,p_inline_css=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '.admin-page-header {',
@@ -229,217 +230,26 @@ wwv_flow_imp_page.create_page(
 '    line-height: 1.6;',
 '}',
 ''))
+,p_step_template=>4072355960268175073
 ,p_page_template_options=>'#DEFAULT#'
 ,p_required_role=>wwv_flow_imp.id(26419849891144614)
 ,p_protection_level=>'C'
 ,p_page_component_map=>'25'
-);
-wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(30144298864642711)
-,p_plug_name=>'Page Header'
-,p_region_template_options=>'#DEFAULT#'
-,p_plug_template=>4501440665235496320
-,p_plug_display_sequence=>40
-,p_location=>null
-,p_function_body_language=>'PLSQL'
-,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'DECLARE',
-'    l_is_admin  VARCHAR2(1) := ''N'';',
-'    l_html      CLOB;',
-'BEGIN',
-'    BEGIN',
-'        SELECT CASE is_admin WHEN ''Yes'' THEN ''Y'' ELSE ''N'' END',
-'        INTO   l_is_admin',
-'        FROM   apex_workspace_apex_users',
-'        WHERE  UPPER(user_name)  = UPPER(V(''APP_USER''))',
-'        AND    workspace_name    = (',
-'                   SELECT workspace FROM apex_applications',
-'                   WHERE  application_id = :APP_ID',
-'               );',
-'    EXCEPTION',
-'        WHEN NO_DATA_FOUND THEN l_is_admin := ''N'';',
-'    END;',
-'',
-'    l_html := ''<div class="admin-page-header">''',
-'           || ''  <div style="display:flex; justify-content:space-between; align-items:center;">''',
-'           || ''    <div>''',
-'           || ''      <h1><span class="fa fa-users-cog" style="margin-right:10px;"></span>User Management</h1>''',
-'           || ''      <p>Edit user profiles, manage role assignments and account status. ''',
-'           || ''         New users must be created directly in the APEX Workspace by a system administrator.</p>''',
-'           || ''    </div>'';',
-'',
-'    IF l_is_admin = ''Y'' THEN',
-'        l_html := l_html',
-'               || ''<div style="flex-shrink:0; margin-left:20px;">''',
-'               || ''  <span style="background:#dc3545; color:white;''',
-'               || ''             display:inline-flex; align-items:center;''',
-'               || ''             padding:6px 16px; border-radius:20px;''',
-'               || ''             font-size:0.78rem; font-weight:700;''',
-'               || ''             letter-spacing:0.5px; text-transform:uppercase;''',
-'               || ''             box-shadow:0 2px 4px rgba(0,0,0,0.3);''',
-'               || ''             white-space:nowrap;">''',
-'               || ''  <span class="fa fa-shield" style="margin-right:8px; font-size:0.9rem;"></span>''',
-'               || ''  Workspace Administrator''',
-'               || ''</span>''',
-'               || ''</div>'';',
-'    END IF;',
-'',
-'    l_html := l_html',
-'           || ''  </div>''',
-'           || ''</div>'';',
-'',
-'    RETURN l_html;',
-'END;'))
-,p_lazy_loading=>false
-,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
-);
-wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(30144364566642712)
-,p_plug_name=>'Role Permissions Matrix'
-,p_title=>'Role Permissions Reference'
-,p_icon_css_classes=>'fa-shield'
-,p_region_template_options=>'#DEFAULT#:is-collapsed:t-Region--accent15:t-Region--scrollBody'
-,p_plug_template=>2664334895415463485
-,p_plug_display_sequence=>50
-,p_location=>null
-,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'<table class="perm-matrix">',
-'    <thead>',
-'        <tr>',
-'            <th style="width:30%;">Permission</th>',
-'            <th>Admin</th>',
-'            <th>User Support</th>',
-'            <th>Contract Support</th>',
-'            <th>Authoriser</th>',
-'            <th>Engineer</th>',
-'            <th>Read Only</th>',
-'        </tr>',
-'    </thead>',
-'    <tbody>',
-'        <tr>',
-'            <td>View Dashboard</td>',
-'            <td class="pm-yes">&#10003; All</td>',
-'            <td class="pm-yes">&#10003; All</td>',
-'            <td class="pm-yes">&#10003; All</td>',
-'            <td class="pm-yes">&#10003; All</td>',
-'            <td class="pm-own">Own Only</td>',
-'            <td class="pm-yes">&#10003; All</td>',
-'        </tr>',
-'        <tr>',
-'            <td>Export / Download Reports</td>',
-'            <td class="pm-yes">&#10003;</td>',
-'            <td class="pm-no">&#10007;</td>',
-'            <td class="pm-yes">&#10003;</td>',
-'            <td class="pm-yes">&#10003;</td>',
-'            <td class="pm-no">&#10007;</td>',
-'            <td class="pm-no">&#10007;</td>',
-'        </tr>',
-'        <tr>',
-'            <td>Delete Permits</td>',
-'            <td class="pm-yes">&#10003;</td>',
-'            <td class="pm-no">&#10007;</td>',
-'            <td class="pm-yes">&#10003;</td>',
-'            <td class="pm-no">&#10007;</td>',
-'            <td class="pm-no">&#10007;</td>',
-'            <td class="pm-no">&#10007;</td>',
-'        </tr>',
-'        <tr>',
-'            <td>Create New Permit</td>',
-'            <td class="pm-yes">&#10003;</td>',
-'            <td class="pm-no">&#10007;</td>',
-'            <td class="pm-no">&#10007;</td>',
-'            <td class="pm-yes">&#10003;</td>',
-'            <td class="pm-yes">&#10003;</td>',
-'            <td class="pm-no">&#10007;</td>',
-'        </tr>',
-'        <tr>',
-'            <td>Edit Permit (Pages 2-4, 6)</td>',
-'            <td class="pm-yes">&#10003; All</td>',
-'            <td class="pm-no">&#10007;</td>',
-'            <td class="pm-no">View Only</td>',
-'            <td class="pm-yes">&#10003; All</td>',
-'            <td class="pm-own">Own Only</td>',
-'            <td class="pm-no">&#10007;</td>',
-'        </tr>',
-'        <tr>',
-'            <td>Authorise Permit (Page 5)</td>',
-'            <td class="pm-yes">&#10003;</td>',
-'            <td class="pm-no">&#10007;</td>',
-'            <td class="pm-no">&#10007;</td>',
-'            <td class="pm-yes">&#10003;</td>',
-'            <td class="pm-no">&#10007;</td>',
-'            <td class="pm-no">&#10007;</td>',
-'        </tr>',
-'        <tr>',
-'            <td>Generate PDF</td>',
-'            <td class="pm-yes">&#10003;</td>',
-'            <td class="pm-no">&#10007;</td>',
-'            <td class="pm-yes">&#10003;</td>',
-'            <td class="pm-yes">&#10003;</td>',
-'            <td class="pm-yes">&#10003;</td>',
-'            <td class="pm-no">&#10007;</td>',
-'        </tr>',
-'        <tr>',
-'            <td>User Management</td>',
-'            <td class="pm-yes">&#10003;</td>',
-'            <td class="pm-yes">&#10003;</td>',
-'            <td class="pm-no">&#10007;</td>',
-'            <td class="pm-no">&#10007;</td>',
-'            <td class="pm-no">&#10007;</td>',
-'            <td class="pm-no">&#10007;</td>',
-'        </tr>',
-'    </tbody>',
-'</table>'))
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'expand_shortcuts', 'N',
-  'output_as', 'HTML')).to_clob
-);
-wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(30144419171642713)
-,p_plug_name=>'Edit User Details'
-,p_title=>'Edit User Details'
-,p_region_name=>'R_EDIT_USER'
-,p_icon_css_classes=>'fa-user-edit'
-,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
-,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>60
-,p_location=>null
-,p_plug_display_condition_type=>'ITEM_IS_NOT_NULL'
-,p_plug_display_when_condition=>'P8_SELECTED_USERNAME'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'expand_shortcuts', 'N',
-  'output_as', 'HTML')).to_clob
-);
-wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(30145873358642727)
-,p_plug_name=>'Reset Password'
-,p_title=>'Reset User Password'
-,p_icon_css_classes=>'fa-key'
-,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
-,p_plug_template=>4072358936313175081
-,p_plug_display_sequence=>90
-,p_location=>null
-,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'<p style="color:#555; margin-top:0;">',
-'    To reset a password for an existing user, enter their exact username',
-'    and a new temporary password below. Advise the user to change their',
-'    password on first login. This does not affect the user&rsquo;s role or',
-'    account status.',
-'</p>',
-''))
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'expand_shortcuts', 'N',
-  'output_as', 'HTML')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260301130017Z')
+,p_last_updated_on=>wwv_flow_imp.dz('20261104100747Z')
+,p_created_by=>'PTW_PRO'
+,p_last_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(30146348111642732)
 ,p_plug_name=>'Current Users Report'
+,p_static_id=>'current-users-report'
 ,p_title=>'Current Application Users'
 ,p_icon_css_classes=>'fa-list-alt'
 ,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
-,p_component_template_options=>'#DEFAULT#'
 ,p_plug_template=>4072358936313175081
 ,p_plug_display_sequence=>100
+,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'SQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'SELECT',
@@ -539,6 +349,11 @@ wwv_flow_imp_page.create_page_plug(
 ,p_prn_page_header_alignment=>'CENTER'
 ,p_prn_page_footer_alignment=>'CENTER'
 ,p_prn_border_color=>'#666666'
+,p_ai_enabled=>false
+,p_created_on=>wwv_flow_imp.dz('20260301162405Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705191327Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_worksheet(
  p_id=>wwv_flow_imp.id(30146472761642733)
@@ -550,68 +365,11 @@ wwv_flow_imp_page.create_worksheet(
 ,p_lazy_loading=>false
 ,p_show_detail_link=>'N'
 ,p_enable_mail_download=>'Y'
-,p_owner=>'PTW_PRO'
 ,p_internal_uid=>30146472761642733
-);
-wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(30146577209642734)
-,p_db_column_name=>'USER_NAME'
-,p_display_order=>10
-,p_column_identifier=>'A'
-,p_column_label=>'Username'
-,p_column_type=>'STRING'
-,p_heading_alignment=>'LEFT'
-,p_use_as_row_header=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(30146657386642735)
-,p_db_column_name=>'EMAIL'
-,p_display_order=>20
-,p_column_identifier=>'B'
-,p_column_label=>'Email Address'
-,p_column_type=>'STRING'
-,p_heading_alignment=>'LEFT'
-,p_use_as_row_header=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(33349011612951404)
-,p_db_column_name=>'MOBILE_NO'
-,p_display_order=>30
-,p_column_identifier=>'O'
-,p_column_label=>'Mobile No'
-,p_column_type=>'STRING'
-,p_heading_alignment=>'LEFT'
-,p_use_as_row_header=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(30146799896642736)
-,p_db_column_name=>'FIRST_NAME'
-,p_display_order=>40
-,p_column_identifier=>'C'
-,p_column_label=>'First Name'
-,p_column_type=>'STRING'
-,p_heading_alignment=>'LEFT'
-,p_use_as_row_header=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(30146893986642737)
-,p_db_column_name=>'LAST_NAME'
-,p_display_order=>50
-,p_column_identifier=>'D'
-,p_column_label=>'Last Name'
-,p_column_type=>'STRING'
-,p_heading_alignment=>'LEFT'
-,p_use_as_row_header=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(30146903995642738)
-,p_db_column_name=>'DESCRIPTION'
-,p_display_order=>60
-,p_column_identifier=>'E'
-,p_column_label=>'Job Title'
-,p_column_type=>'STRING'
-,p_heading_alignment=>'LEFT'
-,p_use_as_row_header=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260301162405Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705191327Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(30147090798642739)
@@ -623,6 +381,27 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_column_type=>'STRING'
 ,p_heading_alignment=>'LEFT'
 ,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260301162406Z')
+,p_updated_on=>wwv_flow_imp.dz('20260311094239Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(39965718241997133)
+,p_db_column_name=>'ACCOUNT_STATUS_ICON'
+,p_display_order=>170
+,p_column_identifier=>'R'
+,p_column_label=>'Account Locked?'
+,p_column_type=>'STRING'
+,p_display_text_as=>'WITHOUT_MODIFICATION'
+,p_heading_alignment=>'LEFT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260406121025Z')
+,p_updated_on=>wwv_flow_imp.dz('20260406121259Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(30147770270642746)
@@ -642,6 +421,26 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_display_text_as=>'WITHOUT_MODIFICATION'
 ,p_heading_alignment=>'LEFT'
 ,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260301164448Z')
+,p_updated_on=>wwv_flow_imp.dz('20260403175950Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(30146903995642738)
+,p_db_column_name=>'DESCRIPTION'
+,p_display_order=>60
+,p_column_identifier=>'E'
+,p_column_label=>'Job Title'
+,p_column_type=>'STRING'
+,p_heading_alignment=>'LEFT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260301162406Z')
+,p_updated_on=>wwv_flow_imp.dz('20260311094239Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(30147829890642747)
@@ -651,6 +450,71 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_column_label=>'Edit Url'
 ,p_column_type=>'STRING'
 ,p_display_text_as=>'HIDDEN_ESCAPE_SC'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260301170222Z')
+,p_updated_on=>wwv_flow_imp.dz('20260311094239Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(30146657386642735)
+,p_db_column_name=>'EMAIL'
+,p_display_order=>20
+,p_column_identifier=>'B'
+,p_column_label=>'Email Address'
+,p_column_type=>'STRING'
+,p_heading_alignment=>'LEFT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260301162406Z')
+,p_updated_on=>wwv_flow_imp.dz('20260301164448Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(30146799896642736)
+,p_db_column_name=>'FIRST_NAME'
+,p_display_order=>40
+,p_column_identifier=>'C'
+,p_column_label=>'First Name'
+,p_column_type=>'STRING'
+,p_heading_alignment=>'LEFT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260301162406Z')
+,p_updated_on=>wwv_flow_imp.dz('20260311094239Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(30146893986642737)
+,p_db_column_name=>'LAST_NAME'
+,p_display_order=>50
+,p_column_identifier=>'D'
+,p_column_label=>'Last Name'
+,p_column_type=>'STRING'
+,p_heading_alignment=>'LEFT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260301162406Z')
+,p_updated_on=>wwv_flow_imp.dz('20260311094239Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(33349011612951404)
+,p_db_column_name=>'MOBILE_NO'
+,p_display_order=>30
+,p_column_identifier=>'O'
+,p_column_label=>'Mobile No'
+,p_column_type=>'STRING'
+,p_heading_alignment=>'LEFT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260311094239Z')
+,p_updated_on=>wwv_flow_imp.dz('20260311094239Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(39964380753997119)
@@ -661,17 +525,11 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_column_type=>'STRING'
 ,p_heading_alignment=>'LEFT'
 ,p_use_as_row_header=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(39965718241997133)
-,p_db_column_name=>'ACCOUNT_STATUS_ICON'
-,p_display_order=>170
-,p_column_identifier=>'R'
-,p_column_label=>'Account Locked?'
-,p_column_type=>'STRING'
-,p_display_text_as=>'WITHOUT_MODIFICATION'
-,p_heading_alignment=>'LEFT'
-,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260403173449Z')
+,p_updated_on=>wwv_flow_imp.dz('20260403173449Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(53189603051153120)
@@ -682,6 +540,26 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_column_type=>'STRING'
 ,p_heading_alignment=>'LEFT'
 ,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260705191227Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705191227Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(30146577209642734)
+,p_db_column_name=>'USER_NAME'
+,p_display_order=>10
+,p_column_identifier=>'A'
+,p_column_label=>'Username'
+,p_column_type=>'STRING'
+,p_heading_alignment=>'LEFT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260301162405Z')
+,p_updated_on=>wwv_flow_imp.dz('20260301164448Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_worksheet_rpt(
  p_id=>wwv_flow_imp.id(31598082560718882)
@@ -691,10 +569,262 @@ wwv_flow_imp_page.create_worksheet_rpt(
 ,p_status=>'PUBLIC'
 ,p_is_default=>'Y'
 ,p_report_columns=>'USER_NAME:TEAM_NAME:EMAIL:MOBILE_NO:FIRST_NAME:LAST_NAME:DESCRIPTION:ACCOUNT_STATUS:ACCOUNT_STATUS_ICON:ACTIONS:'
+,p_created_on=>wwv_flow_imp.dz('20260301162407Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705191315Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PAULTEST'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(30144419171642713)
+,p_plug_name=>'Edit User Details'
+,p_static_id=>'edit-user-details'
+,p_title=>'Edit User Details'
+,p_region_name=>'R_EDIT_USER'
+,p_icon_css_classes=>'fa-user-edit'
+,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
+,p_plug_template=>4072358936313175081
+,p_plug_display_sequence=>60
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_plug_display_condition_type=>'ITEM_IS_NOT_NULL'
+,p_plug_display_when_condition=>'P8_SELECTED_USERNAME'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'expand_shortcuts', 'N',
+  'output_as', 'HTML')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260301133340Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705183718Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(30144298864642711)
+,p_plug_name=>'Page Header'
+,p_static_id=>'page-header'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4501440665235496320
+,p_plug_display_sequence=>40
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_function_body_language=>'PLSQL'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'    l_is_admin  VARCHAR2(1) := ''N'';',
+'    l_html      CLOB;',
+'BEGIN',
+'    BEGIN',
+'        SELECT CASE is_admin WHEN ''Yes'' THEN ''Y'' ELSE ''N'' END',
+'        INTO   l_is_admin',
+'        FROM   apex_workspace_apex_users',
+'        WHERE  UPPER(user_name)  = UPPER(V(''APP_USER''))',
+'        AND    workspace_name    = (',
+'                   SELECT workspace FROM apex_applications',
+'                   WHERE  application_id = :APP_ID',
+'               );',
+'    EXCEPTION',
+'        WHEN NO_DATA_FOUND THEN l_is_admin := ''N'';',
+'    END;',
+'',
+'    l_html := ''<div class="admin-page-header">''',
+'           || ''  <div style="display:flex; justify-content:space-between; align-items:center;">''',
+'           || ''    <div>''',
+'           || ''      <h1><span class="fa fa-users-cog" style="margin-right:10px;"></span>User Management</h1>''',
+'           || ''      <p>Edit user profiles, manage role assignments and account status. ''',
+'           || ''         New users must be created directly in the APEX Workspace by a system administrator.</p>''',
+'           || ''    </div>'';',
+'',
+'    IF l_is_admin = ''Y'' THEN',
+'        l_html := l_html',
+'               || ''<div style="flex-shrink:0; margin-left:20px;">''',
+'               || ''  <span style="background:#dc3545; color:white;''',
+'               || ''             display:inline-flex; align-items:center;''',
+'               || ''             padding:6px 16px; border-radius:20px;''',
+'               || ''             font-size:0.78rem; font-weight:700;''',
+'               || ''             letter-spacing:0.5px; text-transform:uppercase;''',
+'               || ''             box-shadow:0 2px 4px rgba(0,0,0,0.3);''',
+'               || ''             white-space:nowrap;">''',
+'               || ''  <span class="fa fa-shield" style="margin-right:8px; font-size:0.9rem;"></span>''',
+'               || ''  Workspace Administrator''',
+'               || ''</span>''',
+'               || ''</div>'';',
+'    END IF;',
+'',
+'    l_html := l_html',
+'           || ''  </div>''',
+'           || ''</div>'';',
+'',
+'    RETURN l_html;',
+'END;'))
+,p_lazy_loading=>false
+,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+,p_created_on=>wwv_flow_imp.dz('20260301131207Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705183718Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(30145873358642727)
+,p_plug_name=>'Reset Password'
+,p_static_id=>'reset-password'
+,p_title=>'Reset User Password'
+,p_icon_css_classes=>'fa-key'
+,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
+,p_plug_template=>4072358936313175081
+,p_plug_display_sequence=>90
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<p style="color:#555; margin-top:0;">',
+'    To reset a password for an existing user, enter their exact username',
+'    and a new temporary password below. Advise the user to change their',
+'    password on first login. This does not affect the user&rsquo;s role or',
+'    account status.',
+'</p>',
+''))
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'expand_shortcuts', 'N',
+  'output_as', 'HTML')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260301162405Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705183718Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(30144364566642712)
+,p_plug_name=>'Role Permissions Matrix'
+,p_static_id=>'role-permissions-matrix'
+,p_title=>'Role Permissions Reference'
+,p_icon_css_classes=>'fa-shield'
+,p_region_template_options=>'#DEFAULT#:is-collapsed:t-Region--accent15:t-Region--scrollBody'
+,p_plug_template=>2664334895415463485
+,p_plug_display_sequence=>50
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<table class="perm-matrix">',
+'    <thead>',
+'        <tr>',
+'            <th style="width:30%;">Permission</th>',
+'            <th>Admin</th>',
+'            <th>User Support</th>',
+'            <th>Contract Support</th>',
+'            <th>Authoriser</th>',
+'            <th>Engineer</th>',
+'            <th>Read Only</th>',
+'        </tr>',
+'    </thead>',
+'    <tbody>',
+'        <tr>',
+'            <td>View Dashboard</td>',
+'            <td class="pm-yes">&#10003; All</td>',
+'            <td class="pm-yes">&#10003; All</td>',
+'            <td class="pm-yes">&#10003; All</td>',
+'            <td class="pm-yes">&#10003; All</td>',
+'            <td class="pm-own">Own Only</td>',
+'            <td class="pm-yes">&#10003; All</td>',
+'        </tr>',
+'        <tr>',
+'            <td>Export / Download Reports</td>',
+'            <td class="pm-yes">&#10003;</td>',
+'            <td class="pm-no">&#10007;</td>',
+'            <td class="pm-yes">&#10003;</td>',
+'            <td class="pm-yes">&#10003;</td>',
+'            <td class="pm-no">&#10007;</td>',
+'            <td class="pm-no">&#10007;</td>',
+'        </tr>',
+'        <tr>',
+'            <td>Delete Permits</td>',
+'            <td class="pm-yes">&#10003;</td>',
+'            <td class="pm-no">&#10007;</td>',
+'            <td class="pm-yes">&#10003;</td>',
+'            <td class="pm-no">&#10007;</td>',
+'            <td class="pm-no">&#10007;</td>',
+'            <td class="pm-no">&#10007;</td>',
+'        </tr>',
+'        <tr>',
+'            <td>Create New Permit</td>',
+'            <td class="pm-yes">&#10003;</td>',
+'            <td class="pm-no">&#10007;</td>',
+'            <td class="pm-no">&#10007;</td>',
+'            <td class="pm-yes">&#10003;</td>',
+'            <td class="pm-yes">&#10003;</td>',
+'            <td class="pm-no">&#10007;</td>',
+'        </tr>',
+'        <tr>',
+'            <td>Edit Permit (Pages 2-4, 6)</td>',
+'            <td class="pm-yes">&#10003; All</td>',
+'            <td class="pm-no">&#10007;</td>',
+'            <td class="pm-no">View Only</td>',
+'            <td class="pm-yes">&#10003; All</td>',
+'            <td class="pm-own">Own Only</td>',
+'            <td class="pm-no">&#10007;</td>',
+'        </tr>',
+'        <tr>',
+'            <td>Authorise Permit (Page 5)</td>',
+'            <td class="pm-yes">&#10003;</td>',
+'            <td class="pm-no">&#10007;</td>',
+'            <td class="pm-no">&#10007;</td>',
+'            <td class="pm-yes">&#10003;</td>',
+'            <td class="pm-no">&#10007;</td>',
+'            <td class="pm-no">&#10007;</td>',
+'        </tr>',
+'        <tr>',
+'            <td>Generate PDF</td>',
+'            <td class="pm-yes">&#10003;</td>',
+'            <td class="pm-no">&#10007;</td>',
+'            <td class="pm-yes">&#10003;</td>',
+'            <td class="pm-yes">&#10003;</td>',
+'            <td class="pm-yes">&#10003;</td>',
+'            <td class="pm-no">&#10007;</td>',
+'        </tr>',
+'        <tr>',
+'            <td>User Management</td>',
+'            <td class="pm-yes">&#10003;</td>',
+'            <td class="pm-yes">&#10003;</td>',
+'            <td class="pm-no">&#10007;</td>',
+'            <td class="pm-no">&#10007;</td>',
+'            <td class="pm-no">&#10007;</td>',
+'            <td class="pm-no">&#10007;</td>',
+'        </tr>',
+'    </tbody>',
+'</table>'))
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'expand_shortcuts', 'N',
+  'output_as', 'HTML')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260301131207Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705183718Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(39964404866997120)
+,p_plug_name=>'Select a User'
+,p_static_id=>'select-a-user'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4501440665235496320
+,p_plug_display_sequence=>70
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<div style="text-align:center; padding:30px; color:#6c757d;">',
+'         <span class="fa fa-users" style="font-size:2rem; display:block;',
+'               margin-bottom:10px; color:#dee2e6;"></span>',
+'         Select a user from the <strong>Current Application Users</strong>',
+'         report below to view and edit their details.',
+'</div>'))
+,p_plug_display_condition_type=>'ITEM_IS_NULL'
+,p_plug_display_when_condition=>'P8_SELECTED_USERNAME'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'expand_shortcuts', 'N',
+  'output_as', 'HTML')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260403173447Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705183718Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_region(
  p_id=>wwv_flow_imp.id(39963457956997110)
 ,p_name=>'User Role Assignments'
+,p_static_id=>'user-role-assignments'
 ,p_title=>'Current Role Assignments'
 ,p_template=>4072358936313175081
 ,p_display_sequence=>80
@@ -751,47 +881,10 @@ wwv_flow_imp_page.create_report_region(
 ,p_prn_output=>'N'
 ,p_sort_null=>'L'
 ,p_plug_query_strip_html=>'N'
-);
-wwv_flow_imp_page.create_report_columns(
- p_id=>wwv_flow_imp.id(39963536611997111)
-,p_query_column_id=>1
-,p_column_alias=>'ROLE_NAME'
-,p_column_display_sequence=>10
-,p_column_heading=>'Role'
-,p_heading_alignment=>'LEFT'
-,p_derived_column=>'N'
-,p_include_in_export=>'Y'
-);
-wwv_flow_imp_page.create_report_columns(
- p_id=>wwv_flow_imp.id(39963676820997112)
-,p_query_column_id=>2
-,p_column_alias=>'ROLE_DESCRIPTION'
-,p_column_display_sequence=>20
-,p_column_heading=>'Description'
-,p_heading_alignment=>'LEFT'
-,p_derived_column=>'N'
-,p_include_in_export=>'Y'
-);
-wwv_flow_imp_page.create_report_columns(
- p_id=>wwv_flow_imp.id(39963754602997113)
-,p_query_column_id=>3
-,p_column_alias=>'ROLE_ACTIVE'
-,p_column_display_sequence=>30
-,p_column_heading=>'Active'
-,p_column_html_expression=>'<span class="active-badge active-#ROLE_ACTIVE#">#ROLE_ACTIVE#</span>'
-,p_heading_alignment=>'LEFT'
-,p_derived_column=>'N'
-,p_include_in_export=>'Y'
-);
-wwv_flow_imp_page.create_report_columns(
- p_id=>wwv_flow_imp.id(39963806760997114)
-,p_query_column_id=>4
-,p_column_alias=>'GRANTED_DATE'
-,p_column_display_sequence=>40
-,p_column_heading=>'Granted Date'
-,p_heading_alignment=>'LEFT'
-,p_derived_column=>'N'
-,p_include_in_export=>'Y'
+,p_created_on=>wwv_flow_imp.dz('20260403162609Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705183718Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
  p_id=>wwv_flow_imp.id(39963995635997115)
@@ -802,14 +895,20 @@ wwv_flow_imp_page.create_report_columns(
 ,p_heading_alignment=>'LEFT'
 ,p_derived_column=>'N'
 ,p_include_in_export=>'Y'
+,p_updated_on=>wwv_flow_imp.dz('20260403162610Z')
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
- p_id=>wwv_flow_imp.id(39964062478997116)
-,p_query_column_id=>6
-,p_column_alias=>'USER_ROLE_ID'
-,p_column_display_sequence=>60
-,p_hidden_column=>'Y'
+ p_id=>wwv_flow_imp.id(39963806760997114)
+,p_query_column_id=>4
+,p_column_alias=>'GRANTED_DATE'
+,p_column_display_sequence=>40
+,p_column_heading=>'Granted Date'
+,p_heading_alignment=>'LEFT'
 ,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+,p_updated_on=>wwv_flow_imp.dz('20260403162610Z')
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
  p_id=>wwv_flow_imp.id(39964118131997117)
@@ -821,32 +920,79 @@ wwv_flow_imp_page.create_report_columns(
 ,p_display_as=>'WITHOUT_MODIFICATION'
 ,p_derived_column=>'N'
 ,p_include_in_export=>'Y'
+,p_updated_on=>wwv_flow_imp.dz('20260403162610Z')
+,p_updated_by=>'PTW_PRO'
 );
-wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(39964404866997120)
-,p_plug_name=>'Select a User'
-,p_region_template_options=>'#DEFAULT#'
-,p_plug_template=>4501440665235496320
-,p_plug_display_sequence=>70
-,p_location=>null
-,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'<div style="text-align:center; padding:30px; color:#6c757d;">',
-'         <span class="fa fa-users" style="font-size:2rem; display:block;',
-'               margin-bottom:10px; color:#dee2e6;"></span>',
-'         Select a user from the <strong>Current Application Users</strong>',
-'         report below to view and edit their details.',
-'</div>'))
-,p_plug_display_condition_type=>'ITEM_IS_NULL'
-,p_plug_display_when_condition=>'P8_SELECTED_USERNAME'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'expand_shortcuts', 'N',
-  'output_as', 'HTML')).to_clob
+wwv_flow_imp_page.create_report_columns(
+ p_id=>wwv_flow_imp.id(39963754602997113)
+,p_query_column_id=>3
+,p_column_alias=>'ROLE_ACTIVE'
+,p_column_display_sequence=>30
+,p_column_heading=>'Active'
+,p_column_html_expression=>'<span class="active-badge active-#ROLE_ACTIVE#">#ROLE_ACTIVE#</span>'
+,p_heading_alignment=>'LEFT'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+,p_updated_on=>wwv_flow_imp.dz('20260403162610Z')
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_report_columns(
+ p_id=>wwv_flow_imp.id(39963676820997112)
+,p_query_column_id=>2
+,p_column_alias=>'ROLE_DESCRIPTION'
+,p_column_display_sequence=>20
+,p_column_heading=>'Description'
+,p_heading_alignment=>'LEFT'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+,p_updated_on=>wwv_flow_imp.dz('20260403162610Z')
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_report_columns(
+ p_id=>wwv_flow_imp.id(39963536611997111)
+,p_query_column_id=>1
+,p_column_alias=>'ROLE_NAME'
+,p_column_display_sequence=>10
+,p_column_heading=>'Role'
+,p_heading_alignment=>'LEFT'
+,p_derived_column=>'N'
+,p_include_in_export=>'Y'
+,p_updated_on=>wwv_flow_imp.dz('20260403162610Z')
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_report_columns(
+ p_id=>wwv_flow_imp.id(39964062478997116)
+,p_query_column_id=>6
+,p_column_alias=>'USER_ROLE_ID'
+,p_column_display_sequence=>60
+,p_hidden_column=>'Y'
+,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260403162610Z')
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(39964865413997124)
+,p_button_sequence=>20
+,p_button_plug_id=>wwv_flow_imp.id(30144419171642713)
+,p_button_name=>'CANCEL'
+,p_static_id=>'cancel'
+,p_button_action=>'REDIRECT_URL'
+,p_button_template_options=>'#DEFAULT#'
+,p_button_template_id=>4072362960822175091
+,p_button_image_alt=>'Cancel'
+,p_button_position=>'PREVIOUS'
+,p_button_redirect_url=>'f?p=&APP_ID.:8:&SESSION.::&DEBUG.:8::'
+,p_created_on=>wwv_flow_imp.dz('20260403173448Z')
+,p_updated_on=>wwv_flow_imp.dz('20260406101041Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(30146281021642731)
 ,p_button_sequence=>40
 ,p_button_plug_id=>wwv_flow_imp.id(30145873358642727)
 ,p_button_name=>'RESET_PASSWORD'
+,p_static_id=>'reset-password'
 ,p_button_action=>'SUBMIT'
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
 ,p_button_template_id=>2082829544945815391
@@ -854,12 +1000,17 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_image_alt=>'Reset Password'
 ,p_icon_css_classes=>'fa-key'
 ,p_grid_new_row=>'Y'
+,p_created_on=>wwv_flow_imp.dz('20260301162405Z')
+,p_updated_on=>wwv_flow_imp.dz('20260301162405Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(39965438036997130)
 ,p_button_sequence=>10
 ,p_button_plug_id=>wwv_flow_imp.id(30144419171642713)
 ,p_button_name=>'UNLOCK_ACCOUNT'
+,p_static_id=>'unlock-account'
 ,p_button_static_id=>'B_UNLOCK_ACCOUNT'
 ,p_button_action=>'SUBMIT'
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
@@ -871,12 +1022,17 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_condition2=>'Yes'
 ,p_button_condition_type=>'VAL_OF_ITEM_IN_COND_EQ_COND2'
 ,p_icon_css_classes=>'fa-unlock'
+,p_created_on=>wwv_flow_imp.dz('20260406115245Z')
+,p_updated_on=>wwv_flow_imp.dz('20260406122413Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(39964728616997123)
 ,p_button_sequence=>20
 ,p_button_plug_id=>wwv_flow_imp.id(30144419171642713)
 ,p_button_name=>'UPDATE_USER'
+,p_static_id=>'update-user'
 ,p_button_static_id=>'B_UPDATE_USER'
 ,p_button_action=>'SUBMIT'
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
@@ -885,18 +1041,10 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_image_alt=>'Save Changes'
 ,p_button_position=>'NEXT'
 ,p_icon_css_classes=>'fa-save'
-);
-wwv_flow_imp_page.create_page_button(
- p_id=>wwv_flow_imp.id(39964865413997124)
-,p_button_sequence=>20
-,p_button_plug_id=>wwv_flow_imp.id(30144419171642713)
-,p_button_name=>'CANCEL'
-,p_button_action=>'REDIRECT_URL'
-,p_button_template_options=>'#DEFAULT#'
-,p_button_template_id=>4072362960822175091
-,p_button_image_alt=>'Cancel'
-,p_button_position=>'PREVIOUS'
-,p_button_redirect_url=>'f?p=&APP_ID.:8:&SESSION.::&DEBUG.:8::'
+,p_created_on=>wwv_flow_imp.dz('20260403173448Z')
+,p_updated_on=>wwv_flow_imp.dz('20260406115245Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_branch(
  p_id=>wwv_flow_imp.id(31605201579440614)
@@ -913,76 +1061,45 @@ wwv_flow_imp_page.create_page_branch(
 'OR :REQUEST LIKE ''REACTIVATE_ROLE_%''',
 'OR :REQUEST = ''UPDATE_USER'''))
 ,p_branch_condition_text=>'PLSQL'
+,p_created_on=>wwv_flow_imp.dz('20260301174325Z')
+,p_updated_on=>wwv_flow_imp.dz('20260406115639Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(30144037802642709)
-,p_name=>'P8_SELECTED_USERNAME'
-,p_item_sequence=>10
+ p_id=>wwv_flow_imp.id(39965323727997129)
+,p_name=>'P8_ACCOUNT_LOCKED'
+,p_item_sequence=>20
 ,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
+,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260406114920Z')
+,p_updated_on=>wwv_flow_imp.dz('20260406114920Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(30144610683642715)
-,p_name=>'P8_EMAIL'
-,p_item_sequence=>70
-,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
-,p_use_cache_before_default=>'NO'
-,p_prompt=>'Email Address'
-,p_display_as=>'NATIVE_TEXT_FIELD'
-,p_cSize=>30
-,p_cMaxlength=>200
-,p_colspan=>6
-,p_field_template=>1609122147107268652
-,p_item_template_options=>'#DEFAULT#'
-,p_is_persistent=>'N'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'disabled', 'N',
-  'submit_when_enter_pressed', 'N',
-  'subtype', 'TEXT',
-  'trim_spaces', 'BOTH')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(30144751562642716)
-,p_name=>'P8_FIRST_NAME'
-,p_item_sequence=>50
-,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
-,p_use_cache_before_default=>'NO'
-,p_prompt=>'First Name'
-,p_display_as=>'NATIVE_TEXT_FIELD'
-,p_cSize=>30
-,p_cMaxlength=>100
-,p_colspan=>4
-,p_field_template=>1609122147107268652
-,p_item_template_options=>'#DEFAULT#'
-,p_is_persistent=>'N'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'disabled', 'N',
-  'submit_when_enter_pressed', 'N',
-  'subtype', 'TEXT',
-  'trim_spaces', 'BOTH')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(30144890448642717)
-,p_name=>'P8_LAST_NAME'
-,p_item_sequence=>60
-,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
-,p_use_cache_before_default=>'NO'
-,p_prompt=>'Last Name'
-,p_display_as=>'NATIVE_TEXT_FIELD'
+ p_id=>wwv_flow_imp.id(30146138398642730)
+,p_name=>'P8_CONFIRM_NEW_PASSWORD'
+,p_item_sequence=>30
+,p_item_plug_id=>wwv_flow_imp.id(30145873358642727)
+,p_prompt=>'Confirm New Password'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_PASSWORD'
 ,p_cSize=>30
 ,p_cMaxlength=>100
 ,p_begin_on_new_line=>'N'
 ,p_colspan=>4
 ,p_field_template=>1609122147107268652
 ,p_item_template_options=>'#DEFAULT#'
-,p_is_persistent=>'N'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'disabled', 'N',
-  'submit_when_enter_pressed', 'N',
-  'subtype', 'TEXT',
-  'trim_spaces', 'BOTH')).to_clob
+  'submit_when_enter_pressed', 'Y')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260301162405Z')
+,p_updated_on=>wwv_flow_imp.dz('20260301162405Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(30144926327642718)
@@ -992,6 +1109,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_use_cache_before_default=>'NO'
 ,p_prompt=>'Description / Job Title'
 ,p_placeholder=>'e.g. Electrical Engineer'
+,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_TEXT_FIELD'
 ,p_cSize=>30
 ,p_cMaxlength=>200
@@ -1004,139 +1122,10 @@ wwv_flow_imp_page.create_page_item(
   'submit_when_enter_pressed', 'N',
   'subtype', 'TEXT',
   'trim_spaces', 'BOTH')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(30145261701642721)
-,p_name=>'P8_ROLE'
-,p_item_sequence=>130
-,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
-,p_prompt=>'Access Role'
-,p_display_as=>'NATIVE_CHECKBOX'
-,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'SELECT',
-'       r.role_name   || '' - '' || r.role_description  AS display_value,',
-'       r.role_name                                    AS return_value',
-'FROM   ptw_pro.ptw_lv_roles r',
-'WHERE  r.is_active = ''Y''',
-'AND    -- ADMIN role not visible because you can''t assign it to anyone',
-'       r.role_name != ''ADMIN''',
-'ORDER BY r.display_order'))
-,p_colspan=>12
-,p_field_template=>1609122147107268652
-,p_item_css_classes=>'p8-role-group'
-,p_item_template_options=>'#DEFAULT#'
-,p_lov_display_extra=>'NO'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'number_of_columns', '2')).to_clob
-,p_multi_value_type=>'SEPARATED'
-,p_multi_value_separator=>':'
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(30145303184642722)
-,p_name=>'P8_IS_ACTIVE'
-,p_item_sequence=>100
-,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
-,p_use_cache_before_default=>'NO'
-,p_prompt=>'Account Status'
-,p_display_as=>'NATIVE_SELECT_LIST'
-,p_lov=>'STATIC:Active;Y,Inactive;N'
-,p_cHeight=>1
-,p_begin_on_new_line=>'N'
-,p_colspan=>3
-,p_field_template=>1609121967514267634
-,p_item_template_options=>'#DEFAULT#'
-,p_is_persistent=>'N'
-,p_lov_display_extra=>'NO'
-,p_help_text=>'Setting to Inactive locks the APEX account AND deactivates ALL role assignments. Roles must be manually re-enabled after reactivation.'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'page_action_on_selection', 'NONE')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(30145404528642723)
-,p_name=>'P8_ROLE_DESCRIPTION'
-,p_item_sequence=>150
-,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
-,p_prompt=>'Role Permissions Summary'
-,p_source=>'<div class="role-desc-box">&P8_ROLE_DESCRIPTION.</div>'''
-,p_source_type=>'STATIC'
-,p_display_as=>'NATIVE_DISPLAY_ONLY'
-,p_field_template=>1609121967514267634
-,p_item_template_options=>'#DEFAULT#'
-,p_protection_level=>'I'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'format', 'HTML',
-  'send_on_page_submit', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(30145991782642728)
-,p_name=>'P8_RESET_USERNAME'
-,p_item_sequence=>10
-,p_item_plug_id=>wwv_flow_imp.id(30145873358642727)
-,p_prompt=>'Username to Reset'
-,p_placeholder=>'Enter exact username...'
-,p_display_as=>'NATIVE_TEXT_FIELD'
-,p_cSize=>30
-,p_cMaxlength=>100
-,p_colspan=>4
-,p_field_template=>1609122147107268652
-,p_item_template_options=>'#DEFAULT#'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'disabled', 'N',
-  'submit_when_enter_pressed', 'N',
-  'subtype', 'TEXT',
-  'trim_spaces', 'BOTH')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(30146023157642729)
-,p_name=>'P8_NEW_PASSWORD'
-,p_item_sequence=>20
-,p_item_plug_id=>wwv_flow_imp.id(30145873358642727)
-,p_prompt=>'New Password'
-,p_display_as=>'NATIVE_PASSWORD'
-,p_cSize=>30
-,p_cMaxlength=>100
-,p_begin_on_new_line=>'N'
-,p_colspan=>4
-,p_field_template=>1609122147107268652
-,p_item_template_options=>'#DEFAULT#'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'submit_when_enter_pressed', 'Y')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(30146138398642730)
-,p_name=>'P8_CONFIRM_NEW_PASSWORD'
-,p_item_sequence=>30
-,p_item_plug_id=>wwv_flow_imp.id(30145873358642727)
-,p_prompt=>'Confirm New Password'
-,p_display_as=>'NATIVE_PASSWORD'
-,p_cSize=>30
-,p_cMaxlength=>100
-,p_begin_on_new_line=>'N'
-,p_colspan=>4
-,p_field_template=>1609122147107268652
-,p_item_template_options=>'#DEFAULT#'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'submit_when_enter_pressed', 'Y')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(33348933592951403)
-,p_name=>'P8_MOBILE_NO'
-,p_item_sequence=>80
-,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
-,p_use_cache_before_default=>'NO'
-,p_prompt=>'Mobile No'
-,p_display_as=>'NATIVE_TEXT_FIELD'
-,p_cSize=>30
-,p_begin_on_new_line=>'N'
-,p_colspan=>4
-,p_field_template=>1609121967514267634
-,p_item_template_options=>'#DEFAULT#'
-,p_is_persistent=>'N'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'disabled', 'N',
-  'submit_when_enter_pressed', 'N',
-  'subtype', 'TEXT',
-  'trim_spaces', 'BOTH')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260301133340Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705150453Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(39964554847997121)
@@ -1157,6 +1146,73 @@ wwv_flow_imp_page.create_page_item(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'format', 'HTML',
   'send_on_page_submit', 'Y')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260403173448Z')
+,p_updated_on=>wwv_flow_imp.dz('20260406131711Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(53189408526153118)
+,p_name=>'P8_EFFECTIVE_COMPANY_ID'
+,p_item_sequence=>30
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260705183719Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705183719Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(30144610683642715)
+,p_name=>'P8_EMAIL'
+,p_item_sequence=>70
+,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
+,p_use_cache_before_default=>'NO'
+,p_prompt=>'Email Address'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>30
+,p_cMaxlength=>200
+,p_colspan=>6
+,p_field_template=>1609122147107268652
+,p_item_template_options=>'#DEFAULT#'
+,p_is_persistent=>'N'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'disabled', 'N',
+  'submit_when_enter_pressed', 'N',
+  'subtype', 'TEXT',
+  'trim_spaces', 'BOTH')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260301133340Z')
+,p_updated_on=>wwv_flow_imp.dz('20260406131711Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(30144751562642716)
+,p_name=>'P8_FIRST_NAME'
+,p_item_sequence=>50
+,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
+,p_use_cache_before_default=>'NO'
+,p_prompt=>'First Name'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>30
+,p_cMaxlength=>100
+,p_colspan=>4
+,p_field_template=>1609122147107268652
+,p_item_template_options=>'#DEFAULT#'
+,p_is_persistent=>'N'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'disabled', 'N',
+  'submit_when_enter_pressed', 'N',
+  'subtype', 'TEXT',
+  'trim_spaces', 'BOTH')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260301133340Z')
+,p_updated_on=>wwv_flow_imp.dz('20260406131711Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(39964665833997122)
@@ -1178,24 +1234,210 @@ wwv_flow_imp_page.create_page_item(
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'format', 'HTML',
   'send_on_page_submit', 'Y')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260403173448Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705150453Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(39965323727997129)
-,p_name=>'P8_ACCOUNT_LOCKED'
-,p_item_sequence=>20
+ p_id=>wwv_flow_imp.id(30145303184642722)
+,p_name=>'P8_IS_ACTIVE'
+,p_item_sequence=>100
 ,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
-,p_display_as=>'NATIVE_HIDDEN'
+,p_use_cache_before_default=>'NO'
+,p_prompt=>'Account Status'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_SELECT_LIST'
+,p_lov=>'STATIC:Active;Y,Inactive;N'
+,p_cHeight=>1
+,p_begin_on_new_line=>'N'
+,p_colspan=>3
+,p_field_template=>1609121967514267634
+,p_item_template_options=>'#DEFAULT#'
+,p_is_persistent=>'N'
+,p_lov_display_extra=>'NO'
+,p_help_text=>'Setting to Inactive locks the APEX account AND deactivates ALL role assignments. Roles must be manually re-enabled after reactivation.'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
+  'page_action_on_selection', 'NONE')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260301133340Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705150453Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(39965819671997134)
 ,p_name=>'P8_IS_WORKSPACE_ADMIN'
 ,p_item_sequence=>30
 ,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
+,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260406131711Z')
+,p_updated_on=>wwv_flow_imp.dz('20260406131711Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(30144890448642717)
+,p_name=>'P8_LAST_NAME'
+,p_item_sequence=>60
+,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
+,p_use_cache_before_default=>'NO'
+,p_prompt=>'Last Name'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>30
+,p_cMaxlength=>100
+,p_begin_on_new_line=>'N'
+,p_colspan=>4
+,p_field_template=>1609122147107268652
+,p_item_template_options=>'#DEFAULT#'
+,p_is_persistent=>'N'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'disabled', 'N',
+  'submit_when_enter_pressed', 'N',
+  'subtype', 'TEXT',
+  'trim_spaces', 'BOTH')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260301133340Z')
+,p_updated_on=>wwv_flow_imp.dz('20260406131711Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(33348933592951403)
+,p_name=>'P8_MOBILE_NO'
+,p_item_sequence=>80
+,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
+,p_use_cache_before_default=>'NO'
+,p_prompt=>'Mobile No'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>30
+,p_begin_on_new_line=>'N'
+,p_colspan=>4
+,p_field_template=>1609121967514267634
+,p_item_template_options=>'#DEFAULT#'
+,p_is_persistent=>'N'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'disabled', 'N',
+  'submit_when_enter_pressed', 'N',
+  'subtype', 'TEXT',
+  'trim_spaces', 'BOTH')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260311094125Z')
+,p_updated_on=>wwv_flow_imp.dz('20260406131711Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(30146023157642729)
+,p_name=>'P8_NEW_PASSWORD'
+,p_item_sequence=>20
+,p_item_plug_id=>wwv_flow_imp.id(30145873358642727)
+,p_prompt=>'New Password'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_PASSWORD'
+,p_cSize=>30
+,p_cMaxlength=>100
+,p_begin_on_new_line=>'N'
+,p_colspan=>4
+,p_field_template=>1609122147107268652
+,p_item_template_options=>'#DEFAULT#'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'submit_when_enter_pressed', 'Y')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260301162405Z')
+,p_updated_on=>wwv_flow_imp.dz('20260301162405Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(30145991782642728)
+,p_name=>'P8_RESET_USERNAME'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(30145873358642727)
+,p_prompt=>'Username to Reset'
+,p_placeholder=>'Enter exact username...'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_TEXT_FIELD'
+,p_cSize=>30
+,p_cMaxlength=>100
+,p_colspan=>4
+,p_field_template=>1609122147107268652
+,p_item_template_options=>'#DEFAULT#'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'disabled', 'N',
+  'submit_when_enter_pressed', 'N',
+  'subtype', 'TEXT',
+  'trim_spaces', 'BOTH')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260301162405Z')
+,p_updated_on=>wwv_flow_imp.dz('20260301162405Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(30145261701642721)
+,p_name=>'P8_ROLE'
+,p_item_sequence=>130
+,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
+,p_prompt=>'Access Role'
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_CHECKBOX'
+,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'SELECT',
+'       r.role_name   || '' - '' || r.role_description  AS display_value,',
+'       r.role_name                                    AS return_value',
+'FROM   ptw_pro.ptw_lv_roles r',
+'WHERE  r.is_active = ''Y''',
+'AND    -- ADMIN role not visible because you can''t assign it to anyone',
+'       r.role_name != ''ADMIN''',
+'ORDER BY r.display_order'))
+,p_colspan=>12
+,p_field_template=>1609122147107268652
+,p_item_css_classes=>'p8-role-group'
+,p_item_template_options=>'#DEFAULT#'
+,p_lov_display_extra=>'NO'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'number_of_columns', '2')).to_clob
+,p_multi_value_type=>'SEPARATED'
+,p_multi_value_separator=>':'
+,p_created_on=>wwv_flow_imp.dz('20260301133340Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705150453Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(30145404528642723)
+,p_name=>'P8_ROLE_DESCRIPTION'
+,p_item_sequence=>150
+,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
+,p_prompt=>'Role Permissions Summary'
+,p_source=>'<div class="role-desc-box">&P8_ROLE_DESCRIPTION.</div>'''
+,p_source_type=>'STATIC'
+,p_display_as=>'NATIVE_DISPLAY_ONLY'
+,p_field_template=>1609121967514267634
+,p_item_template_options=>'#DEFAULT#'
+,p_protection_level=>'I'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'format', 'HTML',
+  'send_on_page_submit', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260301133701Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705150453Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(30144037802642709)
+,p_name=>'P8_SELECTED_USERNAME'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260301130911Z')
+,p_updated_on=>wwv_flow_imp.dz('20260614211101Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(53156691206466135)
@@ -1203,6 +1445,7 @@ wwv_flow_imp_page.create_page_item(
 ,p_item_sequence=>110
 ,p_item_plug_id=>wwv_flow_imp.id(30144419171642713)
 ,p_prompt=>'Team '
+,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_SELECT_LIST'
 ,p_lov=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'SELECT team_name d, team_id r',
@@ -1220,56 +1463,15 @@ wwv_flow_imp_page.create_page_item(
 ,p_lov_display_extra=>'NO'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'page_action_on_selection', 'NONE')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(53189408526153118)
-,p_name=>'P8_EFFECTIVE_COMPANY_ID'
-,p_item_sequence=>30
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_validation(
- p_id=>wwv_flow_imp.id(30147927396642748)
-,p_validation_name=>'Username Required'
-,p_validation_sequence=>10
-,p_validation=>'P8_USERNAME'
-,p_validation_type=>'ITEM_NOT_NULL'
-,p_error_message=>'Username is required.'
-,p_validation_condition=>'CREATE_USER'
-,p_validation_condition_type=>'REQUEST_EQUALS_CONDITION'
-,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
-);
-wwv_flow_imp_page.create_page_validation(
- p_id=>wwv_flow_imp.id(30148130475642750)
-,p_validation_name=>'Role Required'
-,p_validation_sequence=>30
-,p_validation=>wwv_flow_string.join(wwv_flow_t_varchar2(
-':P8_ROLE IS NOT NULL ',
-'OR :P8_IS_WORKSPACE_ADMIN = ''Y'''))
-,p_validation2=>'PLSQL'
-,p_validation_type=>'EXPRESSION'
-,p_error_message=>'Please select an access role for this user.'
-,p_validation_condition=>':REQUEST = ''UPDATE_USER'''
-,p_validation_condition2=>'PLSQL'
-,p_validation_condition_type=>'EXPRESSION'
-,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
-);
-wwv_flow_imp_page.create_page_validation(
- p_id=>wwv_flow_imp.id(31604223540440604)
-,p_validation_name=>'Reset Username Required'
-,p_validation_sequence=>70
-,p_validation=>'P8_RESET_USERNAME'
-,p_validation_type=>'ITEM_NOT_NULL'
-,p_error_message=>'Please enter the username to reset.'
-,p_validation_condition=>'RESET_PASSWORD'
-,p_validation_condition_type=>'REQUEST_EQUALS_CONDITION'
-,p_associated_item=>wwv_flow_imp.id(30145991782642728)
-,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+,p_created_on=>wwv_flow_imp.dz('20260705150259Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705183857Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_validation(
  p_id=>wwv_flow_imp.id(31604422759440606)
 ,p_validation_name=>'Password Complexity'
+,p_static_id=>'password-complexity'
 ,p_validation_sequence=>90
 ,p_validation=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'DECLARE',
@@ -1295,16 +1497,78 @@ wwv_flow_imp_page.create_page_validation(
 ,p_validation_condition2=>'PLSQL'
 ,p_validation_condition_type=>'EXPRESSION'
 ,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+,p_created_on=>wwv_flow_imp.dz('20260301172011Z')
+,p_updated_on=>wwv_flow_imp.dz('20260403173448Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(31604223540440604)
+,p_validation_name=>'Reset Username Required'
+,p_static_id=>'reset-username-required'
+,p_validation_sequence=>70
+,p_validation=>'P8_RESET_USERNAME'
+,p_validation_type=>'ITEM_NOT_NULL'
+,p_error_message=>'Please enter the username to reset.'
+,p_validation_condition=>'RESET_PASSWORD'
+,p_validation_condition_type=>'REQUEST_EQUALS_CONDITION'
+,p_associated_item=>wwv_flow_imp.id(30145991782642728)
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+,p_created_on=>wwv_flow_imp.dz('20260301172011Z')
+,p_updated_on=>wwv_flow_imp.dz('20260301172011Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(30148130475642750)
+,p_validation_name=>'Role Required'
+,p_static_id=>'role-required'
+,p_validation_sequence=>30
+,p_validation=>wwv_flow_string.join(wwv_flow_t_varchar2(
+':P8_ROLE IS NOT NULL ',
+'OR :P8_IS_WORKSPACE_ADMIN = ''Y'''))
+,p_validation2=>'PLSQL'
+,p_validation_type=>'EXPRESSION'
+,p_error_message=>'Please select an access role for this user.'
+,p_validation_condition=>':REQUEST = ''UPDATE_USER'''
+,p_validation_condition2=>'PLSQL'
+,p_validation_condition_type=>'EXPRESSION'
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+,p_created_on=>wwv_flow_imp.dz('20260301170928Z')
+,p_updated_on=>wwv_flow_imp.dz('20260406132928Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_validation(
+ p_id=>wwv_flow_imp.id(30147927396642748)
+,p_validation_name=>'Username Required'
+,p_static_id=>'username-required'
+,p_validation_sequence=>10
+,p_validation=>'P8_USERNAME'
+,p_validation_type=>'ITEM_NOT_NULL'
+,p_error_message=>'Username is required.'
+,p_validation_condition=>'CREATE_USER'
+,p_validation_condition_type=>'REQUEST_EQUALS_CONDITION'
+,p_error_display_location=>'INLINE_WITH_FIELD_AND_NOTIFICATION'
+,p_created_on=>wwv_flow_imp.dz('20260301170928Z')
+,p_updated_on=>wwv_flow_imp.dz('20260301170928Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(31605361620440615)
 ,p_name=>'Populate Role Description when Role changes'
+,p_static_id=>'populate-role-description-when-role-changes'
 ,p_event_sequence=>10
 ,p_triggering_element_type=>'ITEM'
 ,p_triggering_element=>'P8_ROLE'
 ,p_bind_type=>'bind'
 ,p_execution_type=>'IMMEDIATE'
 ,p_bind_event_type=>'change'
+,p_created_on=>wwv_flow_imp.dz('20260301174325Z')
+,p_updated_on=>wwv_flow_imp.dz('20260403173448Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_da_action(
  p_id=>wwv_flow_imp.id(31605432461440616)
@@ -1312,38 +1576,49 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_event_result=>'TRUE'
 ,p_action_sequence=>10
 ,p_execute_on_page_init=>'Y'
+,p_static_id=>'native-javascript-code'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
 ,p_affected_elements_type=>'ITEM'
 ,p_affected_elements=>'P8_ROLE,P8_ROLE_DESCRIPTION'
-,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'var selectedRoles = ($v(''P8_ROLE'') || '''').split('':'').filter(Boolean);',
-'var desc = {',
-'    ''ADMIN''                 : ''Full administrator. All actions, all pages, user management.'',',
-'    ''ADMIN_USER_SUPPORT''    : ''User support admin. Edit users, reset passwords, manage roles. Cannot create users.'',',
-'    ''ADMIN_CONTRACT_SUPPORT'': ''Admin support. Full dashboard/reports, export, delete. Permit pages read-only.'',',
-'    ''AUTHORISER''            : ''Create, edit and authorise all permits. Export reports.'',',
-'    ''ENGINEER''              : ''Create and edit own permits only. Generate PDF. No export or delete.'',',
-'    ''READONLY''              : ''View permits and reports only.''',
-'};',
-'if (selectedRoles.length === 0) {',
-'    $s(''P8_ROLE_DESCRIPTION'',',
-'       ''<em style="color:#6c757d;">Select one or more roles to see permissions.</em>'');',
-'} else {',
-'    var summary = selectedRoles.map(function(r) {',
-'        return ''<strong>'' + r + ''</strong>: '' + (desc[r] || r);',
-'    }).join(''<br>'');',
-'    $s(''P8_ROLE_DESCRIPTION'', summary);',
-'}'))
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'js_code', wwv_flow_string.join(wwv_flow_t_varchar2(
+    'var selectedRoles = ($v(''P8_ROLE'') || '''').split('':'').filter(Boolean);',
+    'var desc = {',
+    '    ''ADMIN''                 : ''Full administrator. All actions, all pages, user management.'',',
+    '    ''ADMIN_USER_SUPPORT''    : ''User support admin. Edit users, reset passwords, manage roles. Cannot create users.'',',
+    '    ''ADMIN_CONTRACT_SUPPORT'': ''Admin support. Full dashboard/reports, export, delete. Permit pages read-only.'',',
+    '    ''AUTHORISER''            : ''Create, edit and authorise all permits. Export reports.'',',
+    '    ''ENGINEER''              : ''Create and edit own permits only. Generate PDF. No export or delete.'',',
+    '    ''READONLY''              : ''View permits and reports only.''',
+    '};',
+    'if (selectedRoles.length === 0) {',
+    '    $s(''P8_ROLE_DESCRIPTION'',',
+    '       ''<em style="color:#6c757d;">Select one or more roles to see permissions.</em>'');',
+    '} else {',
+    '    var summary = selectedRoles.map(function(r) {',
+    '        return ''<strong>'' + r + ''</strong>: '' + (desc[r] || r);',
+    '    }).join(''<br>'');',
+    '    $s(''P8_ROLE_DESCRIPTION'', summary);',
+    '}')))).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260301174325Z')
+,p_updated_on=>wwv_flow_imp.dz('20260403173448Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(39964911527997125)
 ,p_name=>'Show account deactivation warning'
+,p_static_id=>'show-account-deactivation-warning'
 ,p_event_sequence=>20
 ,p_triggering_element_type=>'ITEM'
 ,p_triggering_element=>'P8_IS_ACTIVE'
 ,p_bind_type=>'bind'
 ,p_execution_type=>'IMMEDIATE'
 ,p_bind_event_type=>'change'
+,p_created_on=>wwv_flow_imp.dz('20260403173448Z')
+,p_updated_on=>wwv_flow_imp.dz('20260403173448Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_da_action(
  p_id=>wwv_flow_imp.id(39965099061997126)
@@ -1351,140 +1626,239 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_event_result=>'TRUE'
 ,p_action_sequence=>10
 ,p_execute_on_page_init=>'N'
+,p_static_id=>'native-javascript-code'
 ,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'if ($v(''P8_IS_ACTIVE'') === ''N'') {',
-'    $(''#P8_INACTIVE_WARNING_DIV'').addClass(''visible'');',
-'} else {',
-'    $(''#P8_INACTIVE_WARNING_DIV'').removeClass(''visible'');',
-'}'))
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'js_code', wwv_flow_string.join(wwv_flow_t_varchar2(
+    'if ($v(''P8_IS_ACTIVE'') === ''N'') {',
+    '    $(''#P8_INACTIVE_WARNING_DIV'').addClass(''visible'');',
+    '} else {',
+    '    $(''#P8_INACTIVE_WARNING_DIV'').removeClass(''visible'');',
+    '}')))).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260403173448Z')
+,p_updated_on=>wwv_flow_imp.dz('20260403173448Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(39965121194997127)
 ,p_name=>'When the page loads and reloads'
+,p_static_id=>'when-the-page-loads-and-reloads'
 ,p_event_sequence=>30
 ,p_bind_type=>'bind'
 ,p_bind_event_type=>'ready'
 ,p_display_when_type=>'ITEM_IS_NOT_NULL'
 ,p_display_when_cond=>'P8_SELECTED_USERNAME'
+,p_created_on=>wwv_flow_imp.dz('20260406101641Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705190401Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_da_action(
  p_id=>wwv_flow_imp.id(39965285764997128)
 ,p_event_id=>wwv_flow_imp.id(39965121194997127)
 ,p_event_result=>'TRUE'
 ,p_action_sequence=>10
-,p_execute_on_page_init=>'N'
+,p_static_id=>'native-execute-plsql-code'
 ,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
-,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'DECLARE',
-'    l_username VARCHAR2(100);',
-'BEGIN',
-'    l_username := UPPER(:P8_SELECTED_USERNAME);',
-'',
-'    BEGIN',
-'        ptw_pro.ptw_sec_pkg.check_user_in_company(l_username);',
-'    EXCEPTION',
-'        WHEN OTHERS THEN',
-'            apex_error.add_error(',
-'                p_message          => ''Access denied: this user does not belong to your company.'',',
-'                p_display_location => apex_error.c_inline_in_notification',
-'            );',
-'            RETURN;',
-'    END;',
-'',
-'    -- Verify user exists in APEX',
-'    DECLARE',
-'        l_count NUMBER;',
-'    BEGIN',
-'        SELECT COUNT(*) INTO l_count',
-'        FROM   apex_workspace_apex_users',
-'        WHERE  UPPER(user_name)  = l_username',
-'        AND    workspace_name    = (',
-'                   SELECT workspace FROM apex_applications',
-'                   WHERE  application_id = :APP_ID',
-'               );',
-'        IF l_count = 0 THEN',
-'            apex_error.add_error(',
-'                p_message          => ''User not found: '' || :P8_SELECTED_USERNAME,',
-'                p_display_location => apex_error.c_inline_in_notification',
-'            );',
-'            RETURN;',
-'        END IF;',
-'',
-'        SELECT au.account_locked',
-'        INTO   :P8_ACCOUNT_LOCKED',
-'        FROM   apex_workspace_apex_users au',
-'        WHERE  UPPER(au.user_name) = l_username',
-'        AND    au.workspace_name   = (SELECT workspace ',
-'                                      FROM   apex_applications',
-'                                      WHERE  application_id = :APP_ID);',
-'    END;',
-'',
-'    -- Load profile from ptw_lv_users (primary source)',
-'    BEGIN',
-'        SELECT u.first_name,',
-'               u.last_name,',
-'               u.email_address,',
-'               u.mobile_no,',
-'               u.job_title,',
-'               u.is_active,',
-'               u.team_id',
-'        INTO   :P8_FIRST_NAME,',
-'               :P8_LAST_NAME,',
-'               :P8_EMAIL,',
-'               :P8_MOBILE_NO,',
-'               :P8_DESCRIPTION,',
-'               :P8_IS_ACTIVE,',
-'               :P8_TEAM_ID',
-'        FROM   ptw_pro.ptw_lv_users u',
-'        WHERE  UPPER(u.username) = l_username;',
-'    EXCEPTION',
-'        WHEN NO_DATA_FOUND THEN',
-'            -- No profile row yet - fall back to APEX account data',
-'            BEGIN',
-'                SELECT au.email,',
-'                       au.first_name,',
-'                       au.last_name,',
-'                       au.description',
-'                INTO   :P8_EMAIL,',
-'                       :P8_FIRST_NAME,',
-'                       :P8_LAST_NAME,',
-'                       :P8_DESCRIPTION',
-'                FROM   apex_workspace_apex_users au',
-'                WHERE  UPPER(au.user_name) = l_username',
-'                AND    au.workspace_name   = (',
-'                           SELECT workspace FROM apex_applications',
-'                           WHERE  application_id = :APP_ID',
-'                       );',
-'            EXCEPTION',
-'                WHEN NO_DATA_FOUND THEN NULL;',
-'            END;',
-'            :P8_IS_ACTIVE := ''Y'';',
-'    END;',
-'',
-'    -- Load active role assignments as colon-delimited string',
-'    BEGIN',
-'        SELECT LISTAGG(r.role_name, '':'')',
-'                   WITHIN GROUP (ORDER BY r.display_order)',
-'        INTO   :P8_ROLE',
-'        FROM   ptw_pro.ptw_lv_user_role_assignments  ur',
-'        JOIN   ptw_pro.ptw_lv_roles                  r',
-'            ON r.role_id  = ur.role_id',
-'        JOIN   ptw_pro.ptw_lv_users                  u',
-'            ON u.user_id  = ur.user_id',
-'        WHERE  UPPER(u.username) = l_username',
-'        AND    ur.is_active      = ''Y'';',
-'    EXCEPTION',
-'        WHEN NO_DATA_FOUND THEN',
-'            :P8_ROLE := NULL;',
-'    END;',
-'',
-'END;'))
-,p_attribute_02=>'P8_SELECTED_USERNAME'
-,p_attribute_03=>'P8_FIRST_NAME,P8_LAST_NAME,P8_EMAIL,P8_MOBILE_NO,P8_DESCRIPTION,P8_IS_ACTIVE,P8_ROLE,P8_ACCOUNT_LOCKED,P8_IS_WORKSPACE_ADMIN,P8_TEAM_ID'
-,p_attribute_04=>'N'
-,p_attribute_05=>'PLSQL'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'items_to_return', 'P8_FIRST_NAME,P8_LAST_NAME,P8_EMAIL,P8_MOBILE_NO,P8_DESCRIPTION,P8_IS_ACTIVE,P8_ROLE,P8_ACCOUNT_LOCKED,P8_IS_WORKSPACE_ADMIN,P8_TEAM_ID',
+  'items_to_submit', 'P8_SELECTED_USERNAME',
+  'language', 'PLSQL',
+  'plsql_code', wwv_flow_string.join(wwv_flow_t_varchar2(
+    'DECLARE',
+    '    l_username VARCHAR2(100);',
+    'BEGIN',
+    '    l_username := UPPER(:P8_SELECTED_USERNAME);',
+    '',
+    '    BEGIN',
+    '        ptw_pro.ptw_sec_pkg.check_user_in_company(l_username);',
+    '    EXCEPTION',
+    '        WHEN OTHERS THEN',
+    '            apex_error.add_error(',
+    '                p_message          => ''Access denied: this user does not belong to your company.'',',
+    '                p_display_location => apex_error.c_inline_in_notification',
+    '            );',
+    '            RETURN;',
+    '    END;',
+    '',
+    '    -- Verify user exists in APEX',
+    '    DECLARE',
+    '        l_count NUMBER;',
+    '    BEGIN',
+    '        SELECT COUNT(*) INTO l_count',
+    '        FROM   apex_workspace_apex_users',
+    '        WHERE  UPPER(user_name)  = l_username',
+    '        AND    workspace_name    = (',
+    '                   SELECT workspace FROM apex_applications',
+    '                   WHERE  application_id = :APP_ID',
+    '               );',
+    '        IF l_count = 0 THEN',
+    '            apex_error.add_error(',
+    '                p_message          => ''User not found: '' || :P8_SELECTED_USERNAME,',
+    '                p_display_location => apex_error.c_inline_in_notification',
+    '            );',
+    '            RETURN;',
+    '        END IF;',
+    '',
+    '        SELECT au.account_locked',
+    '        INTO   :P8_ACCOUNT_LOCKED',
+    '        FROM   apex_workspace_apex_users au',
+    '        WHERE  UPPER(au.user_name) = l_username',
+    '        AND    au.workspace_name   = (SELECT workspace ',
+    '                                      FROM   apex_applications',
+    '                                      WHERE  application_id = :APP_ID);',
+    '    END;',
+    '',
+    '    -- Load profile from ptw_lv_users (primary source)',
+    '    BEGIN',
+    '        SELECT u.first_name,',
+    '               u.last_name,',
+    '               u.email_address,',
+    '               u.mobile_no,',
+    '               u.job_title,',
+    '               u.is_active,',
+    '               u.team_id',
+    '        INTO   :P8_FIRST_NAME,',
+    '               :P8_LAST_NAME,',
+    '               :P8_EMAIL,',
+    '               :P8_MOBILE_NO,',
+    '               :P8_DESCRIPTION,',
+    '               :P8_IS_ACTIVE,',
+    '               :P8_TEAM_ID',
+    '        FROM   ptw_pro.ptw_lv_users u',
+    '        WHERE  UPPER(u.username) = l_username;',
+    '    EXCEPTION',
+    '        WHEN NO_DATA_FOUND THEN',
+    '            -- No profile row yet - fall back to APEX account data',
+    '            BEGIN',
+    '                SELECT au.email,',
+    '                       au.first_name,',
+    '                       au.last_name,',
+    '                       au.description',
+    '                INTO   :P8_EMAIL,',
+    '                       :P8_FIRST_NAME,',
+    '                       :P8_LAST_NAME,',
+    '                       :P8_DESCRIPTION',
+    '                FROM   apex_workspace_apex_users au',
+    '                WHERE  UPPER(au.user_name) = l_username',
+    '                AND    au.workspace_name   = (',
+    '                           SELECT workspace FROM apex_applications',
+    '                           WHERE  application_id = :APP_ID',
+    '                       );',
+    '            EXCEPTION',
+    '                WHEN NO_DATA_FOUND THEN NULL;',
+    '            END;',
+    '            :P8_IS_ACTIVE := ''Y'';',
+    '    END;',
+    '',
+    '    -- Load active role assignments as colon-delimited string',
+    '    BEGIN',
+    '        SELECT LISTAGG(r.role_name, '':'')',
+    '                   WITHIN GROUP (ORDER BY r.display_order)',
+    '        INTO   :P8_ROLE',
+    '        FROM   ptw_pro.ptw_lv_user_role_assignments  ur',
+    '        JOIN   ptw_pro.ptw_lv_roles                  r',
+    '            ON r.role_id  = ur.role_id',
+    '        JOIN   ptw_pro.ptw_lv_users                  u',
+    '            ON u.user_id  = ur.user_id',
+    '        WHERE  UPPER(u.username) = l_username',
+    '        AND    ur.is_active      = ''Y'';',
+    '    EXCEPTION',
+    '        WHEN NO_DATA_FOUND THEN',
+    '            :P8_ROLE := NULL;',
+    '    END;',
+    '',
+    'END;')),
+  'show_processing', 'Y',
+  'suppress_change_event', 'N')).to_clob
 ,p_wait_for_result=>'Y'
+,p_created_on=>wwv_flow_imp.dz('20260406101641Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705190401Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(31605021950440612)
+,p_process_sequence=>60
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Clear Password Fields After Submit'
+,p_static_id=>'clear-password-fields-after-submit'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'BEGIN',
+'    :P8_PASSWORD             := NULL;',
+'    :P8_CONFIRM_PASSWORD     := NULL;',
+'    :P8_NEW_PASSWORD         := NULL;',
+'    :P8_CONFIRM_NEW_PASSWORD := NULL;',
+'END;'))
+,p_process_clob_language=>'PLSQL'
+,p_error_display_location=>'INLINE_IN_NOTIFICATION'
+,p_process_when=>':REQUEST IN (''CREATE_USER'', ''RESET_PASSWORD'')'
+,p_process_when_type=>'EXPRESSION'
+,p_process_when2=>'PLSQL'
+,p_internal_uid=>31605021950440612
+,p_created_on=>wwv_flow_imp.dz('20260301173430Z')
+,p_updated_on=>wwv_flow_imp.dz('20260403173448Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(31604947175440611)
+,p_process_sequence=>40
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Deactivate User Role'
+,p_static_id=>'deactivate-user-role'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'    l_user_role_id NUMBER;',
+'    l_username     VARCHAR2(100);',
+'BEGIN',
+'    l_user_role_id := TO_NUMBER(',
+'                          REPLACE(:REQUEST, ''DEACTIVATE_ROLE_'', '''')',
+'                      );',
+'',
+'    SELECT u.username',
+'    INTO   l_username',
+'    FROM   ptw_pro.ptw_lv_user_role_assignments ur',
+'    JOIN   ptw_pro.ptw_lv_users u ON u.user_id = ur.user_id',
+'    WHERE  ur.user_role_id = l_user_role_id;',
+' ',
+'    ptw_pro.ptw_sec_pkg.check_user_in_company(l_username);',
+' ',
+'    UPDATE ptw_pro.ptw_lv_user_role_assignments',
+'    SET    is_active     = ''N'',',
+'           modified_date = CURRENT_TIMESTAMP,',
+'           modified_by   = NVL(V(''APP_USER''), USER)',
+'    WHERE  user_role_id  = l_user_role_id;',
+' ',
+'    COMMIT;',
+'    apex_application.g_print_success_message := ''Role deactivated successfully.'';',
+' ',
+'EXCEPTION',
+'    WHEN NO_DATA_FOUND THEN',
+'        apex_error.add_error(',
+'            p_message          => ''Role assignment not found.'',',
+'            p_display_location => apex_error.c_inline_in_notification',
+'        );',
+'    WHEN OTHERS THEN',
+'        ROLLBACK;',
+'        apex_error.add_error(',
+'            p_message          => ''Error deactivating role: '' || SQLERRM,',
+'            p_display_location => apex_error.c_inline_in_notification',
+'        );',
+'END;'))
+,p_process_clob_language=>'PLSQL'
+,p_error_display_location=>'INLINE_IN_NOTIFICATION'
+,p_process_when=>':REQUEST LIKE ''DEACTIVATE_ROLE_%'''
+,p_process_when_type=>'EXPRESSION'
+,p_process_when2=>'PLSQL'
+,p_internal_uid=>31604947175440611
+,p_created_on=>wwv_flow_imp.dz('20260301173430Z')
+,p_updated_on=>wwv_flow_imp.dz('20260614210734Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(53189544258153119)
@@ -1492,6 +1866,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_point=>'AFTER_HEADER'
 ,p_process_type=>'NATIVE_PLSQL'
 ,p_process_name=>'Load Company data'
+,p_static_id=>'load-company-data'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'DECLARE',
 '    v_override   VARCHAR2(50) := V(''G_OVERRIDE_COMPANY_ID'');',
@@ -1516,6 +1891,207 @@ wwv_flow_imp_page.create_page_process(
 'END;'))
 ,p_process_clob_language=>'PLSQL'
 ,p_internal_uid=>53189544258153119
+,p_created_on=>wwv_flow_imp.dz('20260705183830Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705183830Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(39964238595997118)
+,p_process_sequence=>45
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Reactivate User Role'
+,p_static_id=>'reactivate-user-role'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'    l_user_role_id NUMBER;',
+'    l_username     VARCHAR2(100);',
+'BEGIN',
+'    l_user_role_id := TO_NUMBER(',
+'                          REPLACE(:REQUEST, ''REACTIVATE_ROLE_'', '''')',
+'                      );',
+'',
+'    SELECT u.username',
+'    INTO   l_username',
+'    FROM   ptw_pro.ptw_lv_user_role_assignments ur',
+'    JOIN   ptw_pro.ptw_lv_users u ON u.user_id = ur.user_id',
+'    WHERE  ur.user_role_id = l_user_role_id;',
+' ',
+'    ptw_pro.ptw_sec_pkg.check_user_in_company(l_username);',
+' ',
+'    UPDATE ptw_pro.ptw_lv_user_role_assignments',
+'    SET    is_active     = ''N'',',
+'           modified_date = CURRENT_TIMESTAMP,',
+'           modified_by   = NVL(V(''APP_USER''), USER)',
+'    WHERE  user_role_id  = l_user_role_id;',
+' ',
+'    COMMIT;',
+'    apex_application.g_print_success_message := ''Role reactivated successfully.'';',
+' ',
+'EXCEPTION',
+'    WHEN NO_DATA_FOUND THEN',
+'        apex_error.add_error(',
+'            p_message          => ''Role assignment not found.'',',
+'            p_display_location => apex_error.c_inline_in_notification',
+'        );',
+'    WHEN OTHERS THEN',
+'        ROLLBACK;',
+'        apex_error.add_error(',
+'            p_message          => ''Error reactivating role: '' || SQLERRM,',
+'            p_display_location => apex_error.c_inline_in_notification',
+'        );',
+'END;'))
+,p_process_clob_language=>'PLSQL'
+,p_error_display_location=>'INLINE_IN_NOTIFICATION'
+,p_process_when=>':REQUEST LIKE ''REACTIVATE_ROLE_%'''
+,p_process_when_type=>'EXPRESSION'
+,p_process_when2=>'PLSQL'
+,p_internal_uid=>39964238595997118
+,p_created_on=>wwv_flow_imp.dz('20260403173448Z')
+,p_updated_on=>wwv_flow_imp.dz('20260614210734Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(31604889274440610)
+,p_process_sequence=>30
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Reset User Password'
+,p_static_id=>'reset-user-password'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'-- Minimal approach: only need user_id to call EDIT_USER for password reset.',
+'-- Password-only update - developer roles preserved via GET_USER_ROLES.',
+'DECLARE',
+'    l_user_id        NUMBER;',
+'    l_user_name      VARCHAR2(100);',
+'    l_developer_role VARCHAR2(200);',
+'BEGIN',
+'    -- Step 1: Verify user exists in this workspace and get username',
+'    BEGIN',
+'        SELECT user_name',
+'        INTO   l_user_name',
+'        FROM   apex_workspace_apex_users',
+'        WHERE  UPPER(user_name) = UPPER(:P8_RESET_USERNAME);',
+'    EXCEPTION',
+'        WHEN NO_DATA_FOUND THEN',
+'            apex_error.add_error(',
+'                p_message          => ''User not found: '' || :P8_RESET_USERNAME ||',
+'                                      ''. Please verify the username.'',',
+'                p_display_location => apex_error.c_inline_in_notification',
+'            );',
+'            RETURN;',
+'    END;',
+'',
+'    ptw_pro.ptw_sec_pkg.check_user_in_company(l_user_name);',
+'',
+'    -- Step 1b: Get the numeric user_id needed by EDIT_USER',
+'    l_user_id := APEX_UTIL.GET_USER_ID(p_username => l_user_name);',
+'',
+'    IF l_user_id IS NULL THEN',
+'        apex_error.add_error(',
+'            p_message          => ''Could not resolve user ID for: '' || :P8_RESET_USERNAME,',
+'            p_display_location => apex_error.c_inline_in_notification',
+'        );',
+'        RETURN;',
+'    END IF;',
+'',
+'    -- Step 2: Preserve existing developer role.',
+'    -- Wrapped in exception handler as GET_USER_ROLES raises NO_DATA_FOUND',
+'    -- for end users who have no developer/admin roles assigned.',
+'    BEGIN',
+'        l_developer_role := APEX_UTIL.GET_USER_ROLES(p_username => l_user_name);',
+'    EXCEPTION',
+'        WHEN NO_DATA_FOUND THEN',
+'            l_developer_role := NULL;',
+'    END;',
+'',
+'    -- Step 3: Update password only',
+'    APEX_UTIL.EDIT_USER(',
+'        p_user_id         => l_user_id,',
+'        p_user_name       => l_user_name,',
+'        p_web_password    => :P8_NEW_PASSWORD,',
+'        p_new_password    => :P8_NEW_PASSWORD,',
+'        p_developer_roles => l_developer_role',
+'    );',
+'',
+'    COMMIT;',
+'',
+'EXCEPTION',
+'    WHEN OTHERS THEN',
+'        ROLLBACK;',
+'        apex_error.add_error(',
+'            p_message          => ''Error resetting password: '' || SQLERRM,',
+'            p_display_location => apex_error.c_inline_in_notification',
+'        );',
+'        RAISE;',
+'END;'))
+,p_process_clob_language=>'PLSQL'
+,p_error_display_location=>'INLINE_IN_NOTIFICATION'
+,p_process_when=>'RESET_PASSWORD'
+,p_process_when_type=>'REQUEST_EQUALS_CONDITION'
+,p_process_success_message=>'Password reset successfully for &P8_RESET_USERNAME.'
+,p_internal_uid=>31604889274440610
+,p_created_on=>wwv_flow_imp.dz('20260301173430Z')
+,p_updated_on=>wwv_flow_imp.dz('20260614210734Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(39965532747997131)
+,p_process_sequence=>70
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Unlock User Account'
+,p_static_id=>'unlock-user-account'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'    l_username VARCHAR2(100);',
+'BEGIN',
+'    l_username := UPPER(:P8_SELECTED_USERNAME);',
+'',
+'    IF l_username IS NULL THEN',
+'        apex_error.add_error(',
+'            p_message          => ''No user selected.'',',
+'            p_display_location => apex_error.c_inline_in_notification',
+'        );',
+'        RETURN;',
+'    END IF;',
+'',
+'    ptw_pro.ptw_sec_pkg.check_user_in_company(l_username);',
+'',
+'    -- Unlock APEX account',
+'    APEX_UTIL.UNLOCK_ACCOUNT(p_user_name => l_username);',
+'',
+'    -- Reactivate ptw_lv_users profile record',
+'    UPDATE ptw_pro.ptw_lv_users',
+'    SET    is_active     = ''Y'',',
+'           modified_date = CURRENT_TIMESTAMP,',
+'           modified_by   = NVL(V(''APP_USER''), USER)',
+'    WHERE  UPPER(username) = l_username;',
+'',
+'    COMMIT;',
+'    apex_application.g_print_success_message :=',
+'        ''Account for '' || l_username || '' has been unlocked successfully.'';',
+'',
+'EXCEPTION',
+'    WHEN OTHERS THEN',
+'        ROLLBACK;',
+'        apex_error.add_error(',
+'            p_message          => ''Error unlocking account: '' || SQLERRM,',
+'            p_display_location => apex_error.c_inline_in_notification',
+'        );',
+'END;',
+''))
+,p_process_clob_language=>'PLSQL'
+,p_error_display_location=>'INLINE_IN_NOTIFICATION'
+,p_process_when_button_id=>wwv_flow_imp.id(39965438036997130)
+,p_internal_uid=>39965532747997131
+,p_created_on=>wwv_flow_imp.dz('20260406115639Z')
+,p_updated_on=>wwv_flow_imp.dz('20260614210734Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(31604779831440609)
@@ -1523,6 +2099,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_point=>'AFTER_SUBMIT'
 ,p_process_type=>'NATIVE_PLSQL'
 ,p_process_name=>'Update Existing APEX User'
+,p_static_id=>'update-existing-apex-user'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'DECLARE',
 '    l_user_id          NUMBER;',
@@ -1694,260 +2271,10 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_when_type=>'REQUEST_EQUALS_CONDITION'
 ,p_process_success_message=>'User &P8_USERNAME. updated successfully.'
 ,p_internal_uid=>31604779831440609
-);
-wwv_flow_imp_page.create_page_process(
- p_id=>wwv_flow_imp.id(31604889274440610)
-,p_process_sequence=>30
-,p_process_point=>'AFTER_SUBMIT'
-,p_process_type=>'NATIVE_PLSQL'
-,p_process_name=>'Reset User Password'
-,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'-- Minimal approach: only need user_id to call EDIT_USER for password reset.',
-'-- Password-only update - developer roles preserved via GET_USER_ROLES.',
-'DECLARE',
-'    l_user_id        NUMBER;',
-'    l_user_name      VARCHAR2(100);',
-'    l_developer_role VARCHAR2(200);',
-'BEGIN',
-'    -- Step 1: Verify user exists in this workspace and get username',
-'    BEGIN',
-'        SELECT user_name',
-'        INTO   l_user_name',
-'        FROM   apex_workspace_apex_users',
-'        WHERE  UPPER(user_name) = UPPER(:P8_RESET_USERNAME);',
-'    EXCEPTION',
-'        WHEN NO_DATA_FOUND THEN',
-'            apex_error.add_error(',
-'                p_message          => ''User not found: '' || :P8_RESET_USERNAME ||',
-'                                      ''. Please verify the username.'',',
-'                p_display_location => apex_error.c_inline_in_notification',
-'            );',
-'            RETURN;',
-'    END;',
-'',
-'    ptw_pro.ptw_sec_pkg.check_user_in_company(l_user_name);',
-'',
-'    -- Step 1b: Get the numeric user_id needed by EDIT_USER',
-'    l_user_id := APEX_UTIL.GET_USER_ID(p_username => l_user_name);',
-'',
-'    IF l_user_id IS NULL THEN',
-'        apex_error.add_error(',
-'            p_message          => ''Could not resolve user ID for: '' || :P8_RESET_USERNAME,',
-'            p_display_location => apex_error.c_inline_in_notification',
-'        );',
-'        RETURN;',
-'    END IF;',
-'',
-'    -- Step 2: Preserve existing developer role.',
-'    -- Wrapped in exception handler as GET_USER_ROLES raises NO_DATA_FOUND',
-'    -- for end users who have no developer/admin roles assigned.',
-'    BEGIN',
-'        l_developer_role := APEX_UTIL.GET_USER_ROLES(p_username => l_user_name);',
-'    EXCEPTION',
-'        WHEN NO_DATA_FOUND THEN',
-'            l_developer_role := NULL;',
-'    END;',
-'',
-'    -- Step 3: Update password only',
-'    APEX_UTIL.EDIT_USER(',
-'        p_user_id         => l_user_id,',
-'        p_user_name       => l_user_name,',
-'        p_web_password    => :P8_NEW_PASSWORD,',
-'        p_new_password    => :P8_NEW_PASSWORD,',
-'        p_developer_roles => l_developer_role',
-'    );',
-'',
-'    COMMIT;',
-'',
-'EXCEPTION',
-'    WHEN OTHERS THEN',
-'        ROLLBACK;',
-'        apex_error.add_error(',
-'            p_message          => ''Error resetting password: '' || SQLERRM,',
-'            p_display_location => apex_error.c_inline_in_notification',
-'        );',
-'        RAISE;',
-'END;'))
-,p_process_clob_language=>'PLSQL'
-,p_error_display_location=>'INLINE_IN_NOTIFICATION'
-,p_process_when=>'RESET_PASSWORD'
-,p_process_when_type=>'REQUEST_EQUALS_CONDITION'
-,p_process_success_message=>'Password reset successfully for &P8_RESET_USERNAME.'
-,p_internal_uid=>31604889274440610
-);
-wwv_flow_imp_page.create_page_process(
- p_id=>wwv_flow_imp.id(31604947175440611)
-,p_process_sequence=>40
-,p_process_point=>'AFTER_SUBMIT'
-,p_process_type=>'NATIVE_PLSQL'
-,p_process_name=>'Deactivate User Role'
-,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'DECLARE',
-'    l_user_role_id NUMBER;',
-'    l_username     VARCHAR2(100);',
-'BEGIN',
-'    l_user_role_id := TO_NUMBER(',
-'                          REPLACE(:REQUEST, ''DEACTIVATE_ROLE_'', '''')',
-'                      );',
-'',
-'    SELECT u.username',
-'    INTO   l_username',
-'    FROM   ptw_pro.ptw_lv_user_role_assignments ur',
-'    JOIN   ptw_pro.ptw_lv_users u ON u.user_id = ur.user_id',
-'    WHERE  ur.user_role_id = l_user_role_id;',
-' ',
-'    ptw_pro.ptw_sec_pkg.check_user_in_company(l_username);',
-' ',
-'    UPDATE ptw_pro.ptw_lv_user_role_assignments',
-'    SET    is_active     = ''N'',',
-'           modified_date = CURRENT_TIMESTAMP,',
-'           modified_by   = NVL(V(''APP_USER''), USER)',
-'    WHERE  user_role_id  = l_user_role_id;',
-' ',
-'    COMMIT;',
-'    apex_application.g_print_success_message := ''Role deactivated successfully.'';',
-' ',
-'EXCEPTION',
-'    WHEN NO_DATA_FOUND THEN',
-'        apex_error.add_error(',
-'            p_message          => ''Role assignment not found.'',',
-'            p_display_location => apex_error.c_inline_in_notification',
-'        );',
-'    WHEN OTHERS THEN',
-'        ROLLBACK;',
-'        apex_error.add_error(',
-'            p_message          => ''Error deactivating role: '' || SQLERRM,',
-'            p_display_location => apex_error.c_inline_in_notification',
-'        );',
-'END;'))
-,p_process_clob_language=>'PLSQL'
-,p_error_display_location=>'INLINE_IN_NOTIFICATION'
-,p_process_when=>':REQUEST LIKE ''DEACTIVATE_ROLE_%'''
-,p_process_when_type=>'EXPRESSION'
-,p_process_when2=>'PLSQL'
-,p_internal_uid=>31604947175440611
-);
-wwv_flow_imp_page.create_page_process(
- p_id=>wwv_flow_imp.id(39964238595997118)
-,p_process_sequence=>45
-,p_process_point=>'AFTER_SUBMIT'
-,p_process_type=>'NATIVE_PLSQL'
-,p_process_name=>'Reactivate User Role'
-,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'DECLARE',
-'    l_user_role_id NUMBER;',
-'    l_username     VARCHAR2(100);',
-'BEGIN',
-'    l_user_role_id := TO_NUMBER(',
-'                          REPLACE(:REQUEST, ''REACTIVATE_ROLE_'', '''')',
-'                      );',
-'',
-'    SELECT u.username',
-'    INTO   l_username',
-'    FROM   ptw_pro.ptw_lv_user_role_assignments ur',
-'    JOIN   ptw_pro.ptw_lv_users u ON u.user_id = ur.user_id',
-'    WHERE  ur.user_role_id = l_user_role_id;',
-' ',
-'    ptw_pro.ptw_sec_pkg.check_user_in_company(l_username);',
-' ',
-'    UPDATE ptw_pro.ptw_lv_user_role_assignments',
-'    SET    is_active     = ''N'',',
-'           modified_date = CURRENT_TIMESTAMP,',
-'           modified_by   = NVL(V(''APP_USER''), USER)',
-'    WHERE  user_role_id  = l_user_role_id;',
-' ',
-'    COMMIT;',
-'    apex_application.g_print_success_message := ''Role reactivated successfully.'';',
-' ',
-'EXCEPTION',
-'    WHEN NO_DATA_FOUND THEN',
-'        apex_error.add_error(',
-'            p_message          => ''Role assignment not found.'',',
-'            p_display_location => apex_error.c_inline_in_notification',
-'        );',
-'    WHEN OTHERS THEN',
-'        ROLLBACK;',
-'        apex_error.add_error(',
-'            p_message          => ''Error reactivating role: '' || SQLERRM,',
-'            p_display_location => apex_error.c_inline_in_notification',
-'        );',
-'END;'))
-,p_process_clob_language=>'PLSQL'
-,p_error_display_location=>'INLINE_IN_NOTIFICATION'
-,p_process_when=>':REQUEST LIKE ''REACTIVATE_ROLE_%'''
-,p_process_when_type=>'EXPRESSION'
-,p_process_when2=>'PLSQL'
-,p_internal_uid=>39964238595997118
-);
-wwv_flow_imp_page.create_page_process(
- p_id=>wwv_flow_imp.id(31605021950440612)
-,p_process_sequence=>60
-,p_process_point=>'AFTER_SUBMIT'
-,p_process_type=>'NATIVE_PLSQL'
-,p_process_name=>'Clear Password Fields After Submit'
-,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'BEGIN',
-'    :P8_PASSWORD             := NULL;',
-'    :P8_CONFIRM_PASSWORD     := NULL;',
-'    :P8_NEW_PASSWORD         := NULL;',
-'    :P8_CONFIRM_NEW_PASSWORD := NULL;',
-'END;'))
-,p_process_clob_language=>'PLSQL'
-,p_error_display_location=>'INLINE_IN_NOTIFICATION'
-,p_process_when=>':REQUEST IN (''CREATE_USER'', ''RESET_PASSWORD'')'
-,p_process_when_type=>'EXPRESSION'
-,p_process_when2=>'PLSQL'
-,p_internal_uid=>31605021950440612
-);
-wwv_flow_imp_page.create_page_process(
- p_id=>wwv_flow_imp.id(39965532747997131)
-,p_process_sequence=>70
-,p_process_point=>'AFTER_SUBMIT'
-,p_process_type=>'NATIVE_PLSQL'
-,p_process_name=>'Unlock User Account'
-,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'DECLARE',
-'    l_username VARCHAR2(100);',
-'BEGIN',
-'    l_username := UPPER(:P8_SELECTED_USERNAME);',
-'',
-'    IF l_username IS NULL THEN',
-'        apex_error.add_error(',
-'            p_message          => ''No user selected.'',',
-'            p_display_location => apex_error.c_inline_in_notification',
-'        );',
-'        RETURN;',
-'    END IF;',
-'',
-'    ptw_pro.ptw_sec_pkg.check_user_in_company(l_username);',
-'',
-'    -- Unlock APEX account',
-'    APEX_UTIL.UNLOCK_ACCOUNT(p_user_name => l_username);',
-'',
-'    -- Reactivate ptw_lv_users profile record',
-'    UPDATE ptw_pro.ptw_lv_users',
-'    SET    is_active     = ''Y'',',
-'           modified_date = CURRENT_TIMESTAMP,',
-'           modified_by   = NVL(V(''APP_USER''), USER)',
-'    WHERE  UPPER(username) = l_username;',
-'',
-'    COMMIT;',
-'    apex_application.g_print_success_message :=',
-'        ''Account for '' || l_username || '' has been unlocked successfully.'';',
-'',
-'EXCEPTION',
-'    WHEN OTHERS THEN',
-'        ROLLBACK;',
-'        apex_error.add_error(',
-'            p_message          => ''Error unlocking account: '' || SQLERRM,',
-'            p_display_location => apex_error.c_inline_in_notification',
-'        );',
-'END;',
-''))
-,p_process_clob_language=>'PLSQL'
-,p_error_display_location=>'INLINE_IN_NOTIFICATION'
-,p_process_when_button_id=>wwv_flow_imp.id(39965438036997130)
-,p_internal_uid=>39965532747997131
+,p_created_on=>wwv_flow_imp.dz('20260301173430Z')
+,p_updated_on=>wwv_flow_imp.dz('20260705185538Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp.component_end;
 end;

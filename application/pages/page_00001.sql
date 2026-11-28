@@ -4,8 +4,8 @@ begin
 --     PAGE: 00001
 --   Manifest End
 wwv_flow_imp.component_begin (
- p_version_yyyy_mm_dd=>'2024.11.30'
-,p_release=>'24.2.17'
+ p_version_yyyy_mm_dd=>'2026.03.30'
+,p_release=>'26.1.6'
 ,p_default_workspace_id=>11608532912323752
 ,p_default_application_id=>105
 ,p_default_id_offset=>0
@@ -232,6 +232,12 @@ unistr('/* Title bar \2014 matches app nav colour */'),
 '    border-color: #1a6cb5 !important;',
 '}',
 '',
+'.ptw-action-btn--firewatch {',
+'    background-color: #e67e22 !important;',
+'    color: #fff !important;',
+'    border-color: #e67e22 !important;',
+'}',
+'',
 unistr('/* Purple action button \2014 view completed clearance */'),
 '.t-Button--purple {',
 '    --a-button-background-color: #6f42c1;',
@@ -375,16 +381,23 @@ unistr('/* Touch targets \2014 44px min per WCAG */'),
 '}',
 '.admin-page-header h1 { margin: 0 0 5px 0; font-size: 1.75rem; font-weight: 700; }',
 '.admin-page-header p  { margin: 0; opacity: 0.85; font-size: 0.95rem; }'))
+,p_step_template=>4072355960268175073
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'
 ,p_page_component_map=>'13'
+,p_created_on=>wwv_flow_imp.dz('20260207174826Z')
+,p_last_updated_on=>wwv_flow_imp.dz('20261010134640Z')
+,p_created_by=>'PERMITPRO'
+,p_last_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(25226512182353105)
 ,p_plug_name=>'Page Header'
+,p_static_id=>'page-header'
 ,p_region_template_options=>'#DEFAULT#:t-Region--removeHeader js-removeLandmark:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
 ,p_plug_display_sequence=>40
+,p_plug_item_display_point=>'ABOVE'
 ,p_location=>null
 ,p_function_body_language=>'PLSQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -441,7 +454,7 @@ wwv_flow_imp_page.create_page_plug(
 '           || ''      Permit to Work''',
 '           || ''    </h1>''',
 '           || ''    <p style="color:#666;font-size:1rem;">''',
-'           || ''      Low Voltage Electrical Permit Management''',
+'           || ''      Permit to Work Management''',
 '           || ''    </p>''',
 '           || ''  </div>'';',
 '',
@@ -471,37 +484,49 @@ wwv_flow_imp_page.create_page_plug(
 'END;'))
 ,p_lazy_loading=>false
 ,p_plug_source_type=>'NATIVE_DYNAMIC_CONTENT'
+,p_created_on=>wwv_flow_imp.dz('20260207175622Z')
+,p_updated_on=>wwv_flow_imp.dz('20260914193945Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(25227447597353114)
 ,p_plug_name=>'Quick Actions'
+,p_static_id=>'quick-actions'
 ,p_title=>'Quick Actions'
 ,p_icon_css_classes=>'fa-bolt'
 ,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
 ,p_plug_display_sequence=>60
+,p_plug_item_display_point=>'ABOVE'
 ,p_location=>null
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'expand_shortcuts', 'N',
   'output_as', 'HTML')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260209193703Z')
+,p_updated_on=>wwv_flow_imp.dz('20260613200406Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(25227678625353116)
 ,p_plug_name=>'Recent Permits'
+,p_static_id=>'recent-permits'
 ,p_title=>'Recent Permits'
 ,p_region_name=>'permits-ir'
 ,p_region_css_classes=>'ptw-desktop-only'
 ,p_icon_css_classes=>'fa-list'
 ,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
-,p_component_template_options=>'#DEFAULT#'
 ,p_plug_template=>4072358936313175081
 ,p_plug_display_sequence=>70
+,p_plug_item_display_point=>'ABOVE'
 ,p_query_type=>'SQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'SELECT',
 '    p.permit_id,',
 '    p.permit_number,',
-'    p.site_details,',
+'    COALESCE(s.site_name, p.site_details) AS site_details,',
+'    p.area_of_works,',
 '    p.supervising_company||'' - ''||p.person_in_charge_name as person_in_charge,',
 '    p.current_step,',
 '    p.workflow_status,',
@@ -535,9 +560,7 @@ wwv_flow_imp_page.create_page_plug(
 '        WHEN ''LAPSED''     THEN ''class="t-Badge t-Badge--normal t-Badge--lg"''',
 '        ELSE                   ''class="t-Badge t-Badge--info t-Badge--lg"''',
 '    END AS status_badge,',
-'    -- All action buttons combined into one column',
 '    ''<div class="ptw-action-btns">'' ||',
-'    -- Delete button',
 '    CASE',
 '        WHEN p.workflow_status NOT IN (''STARTED'',''AUTHORISED'',''COMPLETED'') AND :APP_IS_ADMIN = ''Y''',
 '        THEN ''<a href="#" ',
@@ -547,7 +570,6 @@ wwv_flow_imp_page.create_page_plug(
 '             <span class="t-Icon fa fa-trash-o" aria-hidden="true"></span>',
 '          </a>''',
 '    END ||',
-'    -- Suspend/Resume button',
 '    CASE p.workflow_status',
 '        WHEN ''STARTED'' THEN',
 '          CASE WHEN :APP_IS_ENGINEER = ''Y'' THEN',
@@ -565,11 +587,36 @@ wwv_flow_imp_page.create_page_plug(
 '                <span class="t-icon fa fa-play-circle" aria-hidden="true"></span>',
 '             </a>''',
 '          END',
-'--        ELSE ''<span class="ptw-action-placeholder"></span>''',
 '    END ||',
-'    -- Monitoring button (STARTED only)',
 '    CASE',
-'        WHEN p.workflow_status = ''STARTED'' AND :APP_IS_ENGINEER = ''Y''',
+'        WHEN p.workflow_status = ''STARTED'' AND p.ptw_type IN (''HOT WORK'', ''FIRE SYSTEMS ISOLATION'')',
+'            AND (:APP_IS_ENGINEER = ''Y'' OR :APP_IS_ADMIN = ''Y'')',
+'        THEN ''<a href="'' || apex_page.get_url(',
+'                        p_page   => 18,',
+'                        p_items  => ''P18_PERMIT_ID,P18_PTW_TYPE,P18_PERMIT_NUMBER,P18_WORKFLOW_STATUS'',',
+'                        p_values => p.permit_id || '','' || p.ptw_type || '','' || p.permit_number || '','' || p.workflow_status,',
+'                        p_clear_cache => 18',
+'                    ) || ''"',
+'         class="t-Button t-Button--noLabel t-Button--icon t-Button--info ptw-action-btn ptw-action-btn--firewatch"',
+'         title="Fire Watch">',
+'         <span class="t-Icon fa fa-fire" aria-hidden="true"></span>',
+'      </a>''',
+'        WHEN p.workflow_status IN (''COMPLETED'',''LAPSED'') AND p.ptw_type IN (''HOT WORK'', ''FIRE SYSTEMS ISOLATION'')',
+'            AND (:APP_IS_ENGINEER = ''Y'' OR :APP_IS_ADMIN = ''Y'')',
+'        THEN ''<a href="'' || apex_page.get_url(',
+'                        p_page   => 18,',
+'                        p_items  => ''P18_PERMIT_ID,P18_PTW_TYPE,P18_PERMIT_NUMBER,P18_WORKFLOW_STATUS'',',
+'                        p_values => p.permit_id || '','' || p.ptw_type || '','' || p.permit_number || '','' || p.workflow_status,',
+'                        p_clear_cache => 18',
+'                    ) || ''"',
+'         class="t-Button t-Button--noLabel t-Button--icon t-Button--purple ptw-action-btn ptw-action-btn--firewatch"',
+'         title="View Fire Watch">',
+'         <span class="t-Icon fa fa-fire" aria-hidden="true"></span>',
+'      </a>''',
+'    END ||',
+'    CASE',
+'        WHEN p.workflow_status = ''STARTED'' AND (:APP_IS_ENGINEER = ''Y'' OR :APP_IS_ADMIN = ''Y'')',
+'          AND EXISTS (SELECT 1 FROM ptw_pro.ptw_types t WHERE t.ptw_type = p.ptw_type AND t.has_monitoring = ''Y'')',
 '        THEN ''<a href="'' || apex_page.get_url(',
 '                                p_page   => 15,',
 '                                p_items  => ''P15_PERMIT_ID,P15_PTW_TYPE,P15_PERMIT_NUMBER'',',
@@ -580,8 +627,8 @@ wwv_flow_imp_page.create_page_plug(
 '                 title="Monitoring">',
 '                 <span class="t-Icon fa fa-dial-gauge-chart" aria-hidden="true"></span>',
 '              </a>''',
-'    -- Monitoring button (COMPLETED only)',
-'        WHEN p.workflow_status = ''COMPLETED'' AND (:APP_IS_ENGINEER = ''Y'' OR :APP_IS_ADMIN = ''Y'')',
+'        WHEN p.workflow_status IN (''COMPLETED'',''LAPSED'') AND (:APP_IS_ENGINEER = ''Y'' OR :APP_IS_ADMIN = ''Y'')',
+'          AND EXISTS (SELECT 1 FROM ptw_pro.ptw_types t WHERE t.ptw_type = p.ptw_type AND t.has_monitoring = ''Y'')',
 '        THEN ''<a href="'' || apex_page.get_url(',
 '                                p_page   => 15,',
 '                                p_items  => ''P15_PERMIT_ID,P15_PTW_TYPE,P15_PERMIT_NUMBER'',',
@@ -593,10 +640,8 @@ wwv_flow_imp_page.create_page_plug(
 '                 <span class="t-Icon fa fa-dial-gauge-chart" aria-hidden="true"></span>',
 '              </a>''',
 '    END ||',
-'    -- Clearance button (STARTED only)',
 '    CASE',
-'        WHEN p.workflow_status = ''STARTED'' ',
-'        AND  SYSDATE < p.ended_datetime',
+'        WHEN p.workflow_status IN (''STARTED'', ''LAPSED'') ',
 '        AND  EXISTS (',
 '                 SELECT 1 ',
 '                 FROM   ptw_pro.ptw_lv_monitoring m',
@@ -606,13 +651,34 @@ wwv_flow_imp_page.create_page_plug(
 '        THEN ''<a href="'' || apex_page.get_url(',
 '                                p_page   => 16,',
 '                                p_items  => ''P16_PERMIT_ID,P16_PERMIT_NUMBER,P16_WORKFLOW_STATUS'',',
-'                                p_values => p.permit_id || '','' || p.permit_number || '',STARTED'',',
+'                                p_values => p.permit_id || '','' || p.permit_number || '','' || p.workflow_status,',
 '                                p_clear_cache => 16',
 '                            ) || ''"',
-'                 class="t-Button t-Button--noLabel t-Button--icon t-Button--success ptw-action-btn"',
+'                 class="t-Button t-Button--noLabel t-Button--icon ''',
+'                   || CASE WHEN p.workflow_status = ''LAPSED'' THEN ''t-Button--warning''',
+'                      ELSE ''t-Button--success'' END || '' ptw-action-btn"',
 '                 title="Clear Permit">',
 '                 <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>',
 '              </a>''',
+'        WHEN p.workflow_status IN (''STARTED'', ''LAPSED'')',
+'        AND  EXISTS (',
+'                SELECT 1',
+'                FROM   ptw_pro.ptw_types ty',
+'                WHERE  ty.ptw_type = p.ptw_type',
+'                AND    ty.has_monitoring = ''N''',
+'             )',
+'        THEN ''<a href="'' || apex_page.get_url(',
+'                                p_page   => 16,',
+'                                p_items  => ''P16_PERMIT_ID,P16_PERMIT_NUMBER,P16_WORKFLOW_STATUS'',',
+'                                p_values => p.permit_id || '','' || p.permit_number || '','' || p.workflow_status,',
+'                                p_clear_cache => 16',
+'                            ) || ''"',
+'                 class="t-Button t-Button--noLabel t-Button--icon ''',
+'                   || CASE WHEN p.workflow_status = ''LAPSED'' THEN ''t-Button--warning''',
+'                      ELSE ''t-Button--success'' END || '' ptw-action-btn"',
+'                 title="Complete Works">',
+'                 <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>',
+'              </a>''        ',
 '        WHEN p.workflow_status = ''COMPLETED''',
 '            AND (:APP_IS_ENGINEER = ''Y'' OR :APP_IS_ADMIN = ''Y'')',
 '        THEN ''<a href="'' || apex_page.get_url(',
@@ -625,9 +691,60 @@ wwv_flow_imp_page.create_page_plug(
 '             title="View Clearance">',
 '             <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>',
 '          </a>''',
+'        WHEN p.workflow_status = ''COMPLETED''',
+'          AND (:APP_IS_ENGINEER = ''Y'' OR :APP_IS_ADMIN = ''Y'')',
+'          AND  EXISTS (',
+'                  SELECT 1',
+'                  FROM   ptw_pro.ptw_types ty',
+'                  WHERE  ty.ptw_type = p.ptw_type',
+'                  AND    ty.has_monitoring = ''N''',
+'               )',
+'          THEN ''<a href="'' || apex_page.get_url(',
+'                              p_page   => 16,',
+'                              p_items  => ''P16_PERMIT_ID,P16_PERMIT_NUMBER,P16_WORKFLOW_STATUS'',',
+'                              p_values => p.permit_id || '','' || p.permit_number || '',COMPLETED'',',
+'                              p_clear_cache => 16',
+'                         ) || ''"',
+'                class="t-Button t-Button--noLabel t-Button--icon t-Button--purple ptw-action-btn"',
+'                title="View Completion">',
+'                <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>',
+'           </a>''    ',
 '    END ||',
-'    -- Cancel button (AUTHORISED or STARTED permits only)',
 '    CASE',
+'        WHEN p.workflow_status = ''CANCELLED''',
+'         AND EXISTS (',
+'                 SELECT 1',
+'                 FROM   ptw_pro.ptw_lv_monitoring_concerns mc',
+'                 JOIN   ptw_pro.ptw_lv_monitoring m ON m.monitoring_id = mc.monitoring_id',
+'                 WHERE  m.permit_id           = p.permit_id',
+'                 AND    mc.happy_to_continue  = ''N''',
+'                 AND    mc.concern_signature IS NOT NULL',
+'             )',
+'        THEN ''<a href="'' || apex_page.get_url(',
+'                                p_page   => 30,',
+'                                p_items  => ''P30_MONITORING_ID,P30_CHECK_NUMBER,P30_PERMIT_ID,P30_PERMIT_NUMBER'',',
+'                                p_values => (SELECT mc.monitoring_id',
+'                                             FROM   ptw_pro.ptw_lv_monitoring_concerns mc',
+'                                             JOIN   ptw_pro.ptw_lv_monitoring m ON m.monitoring_id = mc.monitoring_id',
+'                                             WHERE  m.permit_id = p.permit_id',
+'                                             AND    mc.happy_to_continue = ''N''',
+'                                             AND    mc.concern_signature IS NOT NULL',
+'                                             FETCH FIRST 1 ROW ONLY)',
+'                                        || '','' ||',
+'                                        (SELECT mc.check_number',
+'                                             FROM   ptw_pro.ptw_lv_monitoring_concerns mc',
+'                                             JOIN   ptw_pro.ptw_lv_monitoring m ON m.monitoring_id = mc.monitoring_id',
+'                                             WHERE  m.permit_id = p.permit_id',
+'                                             AND    mc.happy_to_continue = ''N''',
+'                                             AND    mc.concern_signature IS NOT NULL',
+'                                             FETCH FIRST 1 ROW ONLY)',
+'                                        || '','' || p.permit_id || '','' || p.permit_number,',
+'                                p_clear_cache => 30',
+'                            ) || ''"',
+'                 class="t-Button t-Button--noLabel t-Button--icon t-Button--danger ptw-action-btn"',
+'                 title="View Cancellation (Concern)">',
+'                 <span class="t-Icon fa fa-ban" aria-hidden="true"></span>',
+'              </a>''',
 '        WHEN p.workflow_status IN (''AUTHORISED'', ''STARTED'', ''SUSPENDED'',''CANCELLED'')',
 '        THEN ''<a href="'' || apex_page.get_url(',
 '                                p_page   => 17,',
@@ -640,7 +757,6 @@ wwv_flow_imp_page.create_page_plug(
 '                 <span class="t-Icon fa fa-ban" aria-hidden="true"></span>',
 '              </a>''',
 '    END ||',
-'    -- PDF button (always shown)',
 '    ''<a href="'' || apex_page.get_url(',
 '                    p_page   => 300,',
 '                    p_items  => ''P300_PERMIT_ID,P300_RETURN_PAGE'',',
@@ -650,7 +766,6 @@ wwv_flow_imp_page.create_page_plug(
 '         title="PDF">',
 '         <span class="t-Icon fa fa-file-pdf-o" aria-hidden="true"></span>',
 '     </a>'' ||',
-'    -- History button (always shown)',
 '      CASE WHEN :APP_IS_ADMIN = ''Y'' THEN',
 '        ''<a href="'' || apex_page.get_url(',
 '                       p_page   => 6,',
@@ -661,6 +776,23 @@ wwv_flow_imp_page.create_page_plug(
 '          title="Permit History">',
 '          <span class="t-Icon fa fa-book" aria-hidden="true"></span>',
 '        </a>'' END ||',
+'        ''<a href="'' || apex_page.get_url(',
+'                        p_page   => 19,',
+'                        p_items  => ''P19_PERMIT_ID,P19_PERMIT_NUMBER'',',
+'                        p_values => p.permit_id || '','' || p.permit_number,',
+'                        p_clear_cache => 19',
+'                    ) || ''"',
+'             class="t-Button t-Button--noLabel t-Button--icon '' ||',
+'             CASE WHEN ptw_pro.ptw_permit_link_pkg.get_link_count(p.permit_id) > 0',
+'                  THEN ''t-Button--success'' ELSE ''t-Button--normal'' END ||',
+'             '' ptw-action-btn"',
+'             title="'' ||',
+'             CASE WHEN ptw_pro.ptw_permit_link_pkg.get_link_count(p.permit_id) > 0',
+'                  THEN ''Linked Permits ('' || ptw_pro.ptw_permit_link_pkg.get_link_count(p.permit_id) || '')''',
+'                  ELSE ''Link to Another Permit'' END ||',
+'             ''">',
+'             <span class="t-Icon fa fa-link" aria-hidden="true"></span>',
+'         </a>'' ||',
 '    ''</div>'' AS actions,',
 '    p.ptw_type,',
 '    CASE',
@@ -677,6 +809,7 @@ wwv_flow_imp_page.create_page_plug(
 '                 || FLOOR((p.ended_datetime - SYSDATE) * 1440) || ''m remaining</span>''',
 '    END AS time_remaining',
 'FROM ptw_pro.ptw_lv_permits p',
+'LEFT JOIN ptw_pro.ptw_lv_sites s ON s.site_id = p.site_id',
 'WHERE',
 '    EXISTS (',
 '        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
@@ -737,7 +870,12 @@ wwv_flow_imp_page.create_page_plug(
 '    )',
 '    AND (',
 '        UPPER(p.created_by)          = UPPER(V(''APP_USER''))',
-'        OR UPPER(p.auth_person_name) = UPPER(V(''APP_USER''))',
+'        OR EXISTS (',
+'            SELECT 1 FROM ptw_pro.ptw_signatures sig',
+'            WHERE  sig.permit_id = p.permit_id',
+'            AND    sig.stage     = ''AUTH''',
+'            AND    UPPER(sig.person_name) = UPPER(V(''APP_USER''))',
+'            )',
 '    )',
 ')',
 'ORDER BY p.created_date DESC'))
@@ -771,11 +909,15 @@ wwv_flow_imp_page.create_page_plug(
 ,p_prn_page_header_alignment=>'CENTER'
 ,p_prn_page_footer_alignment=>'CENTER'
 ,p_prn_border_color=>'#666666'
+,p_ai_enabled=>false
+,p_created_on=>wwv_flow_imp.dz('20260209195305Z')
+,p_updated_on=>wwv_flow_imp.dz('20261010134640Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_worksheet(
  p_id=>wwv_flow_imp.id(25227729512353117)
 ,p_max_row_count=>'1000000'
-,p_max_rows_per_page=>'15'
 ,p_pagination_type=>'ROWS_X_TO_Y'
 ,p_pagination_display_pos=>'BOTTOM_RIGHT'
 ,p_show_finder_drop_down=>'N'
@@ -784,8 +926,91 @@ wwv_flow_imp_page.create_worksheet(
 ,p_lazy_loading=>false
 ,p_show_detail_link=>'N'
 ,p_enable_mail_download=>'Y'
-,p_owner=>'PTW_PRO'
 ,p_internal_uid=>25227729512353117
+,p_created_on=>wwv_flow_imp.dz('20260209195305Z')
+,p_updated_on=>wwv_flow_imp.dz('20260824205342Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(41969825226328829)
+,p_db_column_name=>'ACTIONS'
+,p_display_order=>230
+,p_column_identifier=>'W'
+,p_column_label=>'Actions'
+,p_column_type=>'STRING'
+,p_display_text_as=>'WITHOUT_MODIFICATION'
+,p_heading_alignment=>'LEFT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260426171521Z')
+,p_updated_on=>wwv_flow_imp.dz('20260426171752Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(8876543155853314)
+,p_db_column_name=>'AREA_OF_WORKS'
+,p_display_order=>250
+,p_column_identifier=>'AC'
+,p_column_label=>'Area Of Works'
+,p_column_type=>'STRING'
+,p_heading_alignment=>'LEFT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260721215004Z')
+,p_updated_on=>wwv_flow_imp.dz('20260721215004Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(25228515012353125)
+,p_db_column_name=>'CREATED_DATE'
+,p_display_order=>80
+,p_column_identifier=>'H'
+,p_column_label=>'Created Date'
+,p_column_type=>'DATE'
+,p_heading_alignment=>'LEFT'
+,p_format_mask=>'DD-MON-YYYY HH24:MI'
+,p_tz_dependent=>'N'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260209195305Z')
+,p_updated_on=>wwv_flow_imp.dz('20260210205438Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(25228396313353123)
+,p_db_column_name=>'CURRENT_STEP'
+,p_display_order=>60
+,p_column_identifier=>'F'
+,p_column_label=>'Current Step'
+,p_column_type=>'STRING'
+,p_heading_alignment=>'LEFT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260209195305Z')
+,p_updated_on=>wwv_flow_imp.dz('20260209195305Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(40552001660170602)
+,p_db_column_name=>'ENDED_DATETIME'
+,p_display_order=>190
+,p_column_identifier=>'R'
+,p_column_label=>'End Date'
+,p_column_type=>'DATE'
+,p_heading_alignment=>'LEFT'
+,p_format_mask=>'DD-MON-YYYY HH24:MI'
+,p_tz_dependent=>'N'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260411124142Z')
+,p_updated_on=>wwv_flow_imp.dz('20260429205709Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(25227817037353118)
@@ -795,6 +1020,11 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_column_label=>'Permit Id'
 ,p_column_type=>'NUMBER'
 ,p_display_text_as=>'HIDDEN_ESCAPE_SC'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260209195305Z')
+,p_updated_on=>wwv_flow_imp.dz('20260209195305Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(25227948610353119)
@@ -809,6 +1039,41 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_column_type=>'STRING'
 ,p_heading_alignment=>'LEFT'
 ,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260209195305Z')
+,p_updated_on=>wwv_flow_imp.dz('20260210204234Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(40552106160170603)
+,p_db_column_name=>'PERSON_IN_CHARGE'
+,p_display_order=>200
+,p_column_identifier=>'S'
+,p_column_label=>'Person In Charge'
+,p_column_type=>'STRING'
+,p_heading_alignment=>'LEFT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260411124833Z')
+,p_updated_on=>wwv_flow_imp.dz('20260421204134Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(40555391702170635)
+,p_db_column_name=>'PTW_TYPE'
+,p_display_order=>220
+,p_column_identifier=>'U'
+,p_column_label=>'Permit Type'
+,p_column_type=>'STRING'
+,p_heading_alignment=>'LEFT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260414163932Z')
+,p_updated_on=>wwv_flow_imp.dz('20260421204134Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(25228051405353120)
@@ -819,70 +1084,11 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_column_type=>'STRING'
 ,p_heading_alignment=>'LEFT'
 ,p_use_as_row_header=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(25228396313353123)
-,p_db_column_name=>'CURRENT_STEP'
-,p_display_order=>60
-,p_column_identifier=>'F'
-,p_column_label=>'Current Step'
-,p_column_type=>'STRING'
-,p_heading_alignment=>'LEFT'
-,p_use_as_row_header=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(25228482194353124)
-,p_db_column_name=>'WORKFLOW_STATUS'
-,p_display_order=>70
-,p_column_identifier=>'G'
-,p_column_label=>'Status'
-,p_column_type=>'STRING'
-,p_display_text_as=>'WITHOUT_MODIFICATION'
-,p_heading_alignment=>'LEFT'
-,p_use_as_row_header=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(25228515012353125)
-,p_db_column_name=>'CREATED_DATE'
-,p_display_order=>80
-,p_column_identifier=>'H'
-,p_column_label=>'Created Date'
-,p_column_type=>'DATE'
-,p_heading_alignment=>'LEFT'
-,p_format_mask=>'DD-MON-YYYY HH24:MI'
-,p_tz_dependent=>'N'
-,p_use_as_row_header=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(25228716348353127)
-,p_db_column_name=>'STATUS_DISPLAY'
-,p_display_order=>100
-,p_column_identifier=>'J'
-,p_column_label=>'Status Display'
-,p_column_type=>'STRING'
-,p_heading_alignment=>'LEFT'
-,p_use_as_row_header=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(25228868344353128)
-,p_db_column_name=>'STEP_DISPLAY'
-,p_display_order=>110
-,p_column_identifier=>'K'
-,p_column_label=>'Step Display'
-,p_column_type=>'STRING'
-,p_heading_alignment=>'LEFT'
-,p_use_as_row_header=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(25229198978353131)
-,p_db_column_name=>'STATUS_BADGE'
-,p_display_order=>140
-,p_column_identifier=>'N'
-,p_column_label=>'Status Badge'
-,p_column_type=>'STRING'
-,p_display_text_as=>'WITHOUT_MODIFICATION'
-,p_heading_alignment=>'LEFT'
-,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260209195305Z')
+,p_updated_on=>wwv_flow_imp.dz('20260411124929Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(40551917328170601)
@@ -895,49 +1101,57 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_format_mask=>'DD-MON-YYYY HH24:MI'
 ,p_tz_dependent=>'N'
 ,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260411124142Z')
+,p_updated_on=>wwv_flow_imp.dz('20260429205709Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(40552001660170602)
-,p_db_column_name=>'ENDED_DATETIME'
-,p_display_order=>190
-,p_column_identifier=>'R'
-,p_column_label=>'End Date'
-,p_column_type=>'DATE'
-,p_heading_alignment=>'LEFT'
-,p_format_mask=>'DD-MON-YYYY HH24:MI'
-,p_tz_dependent=>'N'
-,p_use_as_row_header=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(40552106160170603)
-,p_db_column_name=>'PERSON_IN_CHARGE'
-,p_display_order=>200
-,p_column_identifier=>'S'
-,p_column_label=>'Person In Charge'
-,p_column_type=>'STRING'
-,p_heading_alignment=>'LEFT'
-,p_use_as_row_header=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(40555391702170635)
-,p_db_column_name=>'PTW_TYPE'
-,p_display_order=>220
-,p_column_identifier=>'U'
-,p_column_label=>'Permit Type'
-,p_column_type=>'STRING'
-,p_heading_alignment=>'LEFT'
-,p_use_as_row_header=>'N'
-);
-wwv_flow_imp_page.create_worksheet_column(
- p_id=>wwv_flow_imp.id(41969825226328829)
-,p_db_column_name=>'ACTIONS'
-,p_display_order=>230
-,p_column_identifier=>'W'
-,p_column_label=>'Actions'
+ p_id=>wwv_flow_imp.id(25229198978353131)
+,p_db_column_name=>'STATUS_BADGE'
+,p_display_order=>140
+,p_column_identifier=>'N'
+,p_column_label=>'Status Badge'
 ,p_column_type=>'STRING'
 ,p_display_text_as=>'WITHOUT_MODIFICATION'
 ,p_heading_alignment=>'LEFT'
 ,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260209200256Z')
+,p_updated_on=>wwv_flow_imp.dz('20260210204442Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(25228716348353127)
+,p_db_column_name=>'STATUS_DISPLAY'
+,p_display_order=>100
+,p_column_identifier=>'J'
+,p_column_label=>'Status Display'
+,p_column_type=>'STRING'
+,p_heading_alignment=>'LEFT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260209195305Z')
+,p_updated_on=>wwv_flow_imp.dz('20260209195305Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(25228868344353128)
+,p_db_column_name=>'STEP_DISPLAY'
+,p_display_order=>110
+,p_column_identifier=>'K'
+,p_column_label=>'Step Display'
+,p_column_type=>'STRING'
+,p_heading_alignment=>'LEFT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260209195305Z')
+,p_updated_on=>wwv_flow_imp.dz('20260209195305Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_worksheet_column(
  p_id=>wwv_flow_imp.id(45756601375782518)
@@ -949,6 +1163,27 @@ wwv_flow_imp_page.create_worksheet_column(
 ,p_display_text_as=>'WITHOUT_MODIFICATION'
 ,p_heading_alignment=>'LEFT'
 ,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260429212910Z')
+,p_updated_on=>wwv_flow_imp.dz('20260429212910Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_worksheet_column(
+ p_id=>wwv_flow_imp.id(25228482194353124)
+,p_db_column_name=>'WORKFLOW_STATUS'
+,p_display_order=>70
+,p_column_identifier=>'G'
+,p_column_label=>'Status'
+,p_column_type=>'STRING'
+,p_display_text_as=>'WITHOUT_MODIFICATION'
+,p_heading_alignment=>'LEFT'
+,p_use_as_row_header=>'N'
+,p_available_clientside=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260209195305Z')
+,p_updated_on=>wwv_flow_imp.dz('20260304210829Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_worksheet_rpt(
  p_id=>wwv_flow_imp.id(26753307670231692)
@@ -958,35 +1193,23 @@ wwv_flow_imp_page.create_worksheet_rpt(
 ,p_status=>'PUBLIC'
 ,p_is_default=>'Y'
 ,p_display_rows=>15
-,p_report_columns=>'PERMIT_NUMBER:WORKFLOW_STATUS:TIME_REMAINING:SITE_DETAILS:PERSON_IN_CHARGE:ACTIONS:'
-);
-wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(27017265260886523)
-,p_plug_name=>'SyncStatus'
-,p_region_template_options=>'#DEFAULT#'
-,p_plug_template=>4501440665235496320
-,p_plug_display_sequence=>30
-,p_location=>null
-,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'<div id="connection-status" style="padding: 10px; margin-bottom: 10px; border-radius: 4px;">',
-'    <span id="status-icon"></span>',
-'    <span id="status-text"></span>',
-'    <!-- <button id="sync-btn" style="margin-left: 10px; display: none;">Sync Now</button> -->',
-'</div>'))
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'expand_shortcuts', 'N',
-  'output_as', 'HTML')).to_clob
+,p_report_columns=>'PERMIT_NUMBER:PTW_TYPE:WORKFLOW_STATUS:TIME_REMAINING:SITE_DETAILS:PERSON_IN_CHARGE:ACTIONS'
+,p_created_on=>wwv_flow_imp.dz('20260209200257Z')
+,p_updated_on=>wwv_flow_imp.dz('20260824205342Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_region(
  p_id=>wwv_flow_imp.id(45757618518782528)
 ,p_name=>'Recent Permits (Mobile)'
+,p_static_id=>'recent-permits-mobile'
 ,p_title=>'Recent Permits'
 ,p_region_name=>'recentPermitsMobile'
 ,p_template=>4072358936313175081
-,p_display_sequence=>80
+,p_display_sequence=>90
 ,p_region_css_classes=>'ptw-mobile-only'
 ,p_icon_css_classes=>'fa-list'
-,p_region_template_options=>'#DEFAULT#:t-Region--showIcon:t-Region--accent15:t-Region--scrollBody'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
 ,p_component_template_options=>'#DEFAULT#'
 ,p_source_type=>'NATIVE_SQL_REPORT'
 ,p_query_type=>'SQL'
@@ -995,7 +1218,7 @@ wwv_flow_imp_page.create_report_region(
 '    p.permit_id,',
 '    p.permit_number,',
 '    p.ptw_type,',
-'    p.site_details,',
+'    COALESCE(s.site_name, p.site_details) AS site_details,',
 '    p.supervising_company || '' - '' || p.person_in_charge_name AS person_in_charge,',
 '    p.workflow_status,',
 '    TO_CHAR(p.started_datetime, ''DD-MON-YYYY HH24:MI'') AS started_datetime,',
@@ -1005,12 +1228,14 @@ wwv_flow_imp_page.create_report_region(
 '        p_items  => ''P2_PERMIT_ID'',',
 '        p_values => p.permit_id',
 '    ) AS permit_link,',
-'',
 '    -- Status display label',
 '    CASE p.workflow_status',
 '        WHEN ''DRAFT''       THEN ''Draft''',
 '        WHEN ''SUSPENDED''   THEN ''Suspended''',
-'        WHEN ''COMPLETED''   THEN ''Completed''',
+'        WHEN ''COMPLETED''   THEN CASE p.cleared_late ',
+'                                WHEN ''Y''',
+'                                THEN ''Completed (late)''',
+'                                ELSE ''Completed'' END',
 '        WHEN ''CANCELLED''   THEN ''Cancelled''',
 '        WHEN ''AUTHORISED''  THEN ''Authorised''',
 '        WHEN ''LAPSED''      THEN ''Lapsed''',
@@ -1089,9 +1314,40 @@ wwv_flow_imp_page.create_report_region(
 '        ELSE NULL',
 '    END AS workflow_action_html,',
 '',
-'    -- Monitoring button (STARTED + engineer only)',
+unistr('    -- Fire Watch button (STARTED, Hot Work only) \2014 its own column now,'),
+'    -- independent of Monitoring, matching the desktop report''s structure',
+'    -- where both can render together for the same permit',
 '    CASE',
-'        WHEN p.workflow_status = ''STARTED'' AND :APP_IS_ENGINEER = ''Y'' THEN',
+'        WHEN p.workflow_status = ''STARTED'' AND p.ptw_type IN (''HOT WORK'', ''FIRE SYSTEMS ISOLATION'')',
+'            AND (:APP_IS_ENGINEER = ''Y'' OR :APP_IS_ADMIN = ''Y'')',
+'        THEN ''<a href="'' || apex_page.get_url(',
+'                        p_page   => 18,',
+'                        p_items  => ''P18_PERMIT_ID,P18_PTW_TYPE,P18_PERMIT_NUMBER,P18_WORKFLOW_STATUS'',',
+'                        p_values => p.permit_id || '','' || p.ptw_type || '','' || p.permit_number || '','' || p.workflow_status,',
+'                        p_clear_cache => 18',
+'                    ) || ''"',
+'         class="t-Button t-Button--noLabel t-Button--icon t-Button--info ptw-action-btn ptw-action-btn--firewatch"',
+'         title="Fire Watch">',
+'         <span class="t-Icon fa fa-fire" aria-hidden="true"></span>',
+'      </a>''',
+'        WHEN p.workflow_status IN (''COMPLETED'',''LAPSED'') AND p.ptw_type IN (''HOT WORK'', ''FIRE SYSTEMS ISOLATION'')',
+'            AND (:APP_IS_ENGINEER = ''Y'' OR :APP_IS_ADMIN = ''Y'')',
+'        THEN ''<a href="'' || apex_page.get_url(',
+'                        p_page   => 18,',
+'                        p_items  => ''P18_PERMIT_ID,P18_PTW_TYPE,P18_PERMIT_NUMBER,P18_WORKFLOW_STATUS'',',
+'                        p_values => p.permit_id || '','' || p.ptw_type || '','' || p.permit_number || '','' || p.workflow_status,',
+'                        p_clear_cache => 18',
+'                    ) || ''"',
+'         class="t-Button t-Button--noLabel t-Button--icon t-Button--purple ptw-action-btn ptw-action-btn--firewatch"',
+'         title="View Fire Watch">',
+'         <span class="t-Icon fa fa-fire" aria-hidden="true"></span>',
+'      </a>''',
+'    END AS firewatch_html,',
+'',
+'    -- Monitoring button (STARTED or COMPLETED, any type with HAS_MONITORING = ''Y'')',
+'    CASE',
+'        WHEN p.workflow_status = ''STARTED'' AND (:APP_IS_ENGINEER = ''Y'' OR :APP_IS_ADMIN = ''Y'')',
+'          AND EXISTS (SELECT 1 FROM ptw_pro.ptw_types t WHERE t.ptw_type = p.ptw_type AND t.has_monitoring = ''Y'') THEN',
 '            ''<a href="'' || apex_page.get_url(',
 '                                p_page   => 15,',
 '                                p_items  => ''P15_PERMIT_ID,P15_PTW_TYPE,P15_PERMIT_NUMBER'',',
@@ -1101,7 +1357,8 @@ wwv_flow_imp_page.create_report_region(
 '                title="Monitoring">',
 '                <span class="t-Icon fa fa-dial-gauge-chart" aria-hidden="true"></span>',
 '             </a>''',
-'        WHEN p.workflow_status = ''COMPLETED'' AND (:APP_IS_ENGINEER = ''Y'' OR :APP_IS_ADMIN = ''Y'') THEN',
+'        WHEN p.workflow_status IN (''COMPLETED'',''LAPSED'') AND (:APP_IS_ENGINEER = ''Y'' OR :APP_IS_ADMIN = ''Y'')',
+'          AND EXISTS (SELECT 1 FROM ptw_pro.ptw_types t WHERE t.ptw_type = p.ptw_type AND t.has_monitoring = ''Y'') THEN',
 '            ''<a href="'' || apex_page.get_url(',
 '                                p_page   => 15,',
 '                                p_items  => ''P15_PERMIT_ID,P15_PTW_TYPE,P15_PERMIT_NUMBER'',',
@@ -1114,10 +1371,9 @@ wwv_flow_imp_page.create_report_region(
 '        ELSE NULL',
 '    END AS monitoring_html,',
 '',
-unistr('    -- Clearance button (STARTED = clear, COMPLETED = view \2014 matches IR)'),
+unistr('    -- Clearance button (STARTED, LAPSED = clear, COMPLETED = view \2014 matches IR)'),
 '    CASE',
-'        WHEN p.workflow_status = ''STARTED'' ',
-'        AND  SYSDATE < p.ended_datetime',
+'        WHEN p.workflow_status IN (''STARTED'', ''LAPSED'')',
 '        AND  EXISTS (',
 '                 SELECT 1 ',
 '                 FROM   ptw_pro.ptw_lv_monitoring m',
@@ -1127,11 +1383,32 @@ unistr('    -- Clearance button (STARTED = clear, COMPLETED = view \2014 matches
 '        THEN ''<a href="'' || apex_page.get_url(',
 '                                p_page   => 16,',
 '                                p_items  => ''P16_PERMIT_ID,P16_PERMIT_NUMBER,P16_WORKFLOW_STATUS'',',
-'                                p_values => p.permit_id || '','' || p.permit_number || '',STARTED'',',
+'                                p_values => p.permit_id || '','' || p.permit_number || '','' ||p.workflow_status,',
 '                                p_clear_cache => 16',
 '                            ) || ''"',
-'                 class="t-Button t-Button--noLabel t-Button--icon t-Button--success ptw-action-btn"',
+'                 class="t-Button t-Button--noLabel t-Button--icon ''',
+'                 || CASE WHEN p.workflow_status = ''LAPSED'' THEN ''t-Button--warning''',
+'                 ELSE ''t-Button--success'' END || '' ptw-action-btn"',
 '                 title="Clear Permit">',
+'                 <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>',
+'              </a>''',
+'        WHEN p.workflow_status IN (''STARTED'', ''LAPSED'')',
+'        AND  EXISTS (',
+'                SELECT 1',
+'                FROM   ptw_pro.ptw_types ty',
+'                WHERE  ty.ptw_type = p.ptw_type',
+'                AND    ty.has_monitoring = ''N''',
+'             )',
+'        THEN ''<a href="'' || apex_page.get_url(',
+'                                p_page   => 16,',
+'                                p_items  => ''P16_PERMIT_ID,P16_PERMIT_NUMBER,P16_WORKFLOW_STATUS'',',
+'                                p_values => p.permit_id || '','' || p.permit_number || '',''|| p.workflow_status,',
+'                                p_clear_cache => 16',
+'                            ) || ''"',
+'                 class="t-Button t-Button--noLabel t-Button--icon ''',
+'                 || CASE WHEN p.workflow_status = ''LAPSED'' THEN ''t-Button--warning''',
+'                 ELSE ''t-Button--success'' END || '' ptw-action-btn"',
+'                 title="Complete Works">',
 '                 <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>',
 '              </a>''',
 '        WHEN p.workflow_status = ''COMPLETED''',
@@ -1146,15 +1423,68 @@ unistr('    -- Clearance button (STARTED = clear, COMPLETED = view \2014 matches
 '                title="View Clearance">',
 '                <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>',
 '             </a>''',
+'        WHEN p.workflow_status = ''COMPLETED''',
+'          AND (:APP_IS_ENGINEER = ''Y'' OR :APP_IS_ADMIN = ''Y'')',
+'          AND  EXISTS (',
+'                  SELECT 1',
+'                  FROM   ptw_pro.ptw_types ty',
+'                  WHERE  ty.ptw_type = p.ptw_type',
+'                  AND    ty.has_monitoring = ''N''',
+'               )',
+'          THEN ''<a href="'' || apex_page.get_url(',
+'                              p_page   => 16,',
+'                              p_items  => ''P16_PERMIT_ID,P16_PERMIT_NUMBER,P16_WORKFLOW_STATUS'',',
+'                              p_values => p.permit_id || '','' || p.permit_number || '',COMPLETED'',',
+'                              p_clear_cache => 16',
+'                         ) || ''"',
+'                class="t-Button t-Button--noLabel t-Button--icon t-Button--purple ptw-action-btn"',
+'                title="View Completion">',
+'                <span class="t-Icon fa fa-check-circle" aria-hidden="true"></span>',
+'           </a>''  ',
 '        ELSE NULL',
 '    END AS clearance_html,',
 '    -- Cancel button (AUTHORISED or STARTED permits only)',
 '    CASE',
+'        WHEN p.workflow_status = ''CANCELLED''',
+'         AND EXISTS (',
+'                 SELECT 1',
+'                 FROM   ptw_pro.ptw_lv_monitoring_concerns mc',
+'                 JOIN   ptw_pro.ptw_lv_monitoring m ON m.monitoring_id = mc.monitoring_id',
+'                 WHERE  m.permit_id           = p.permit_id',
+'                 AND    mc.happy_to_continue  = ''N''',
+'                 AND    mc.concern_signature IS NOT NULL',
+'             )',
+'        THEN ''<a href="'' || apex_page.get_url(',
+'                                p_page   => 30,',
+'                                p_items  => ''P30_MONITORING_ID,P30_CHECK_NUMBER,P30_PERMIT_ID,P30_PERMIT_NUMBER'',',
+'                                p_values => (SELECT mc.monitoring_id',
+'                                             FROM   ptw_pro.ptw_lv_monitoring_concerns mc',
+'                                             JOIN   ptw_pro.ptw_lv_monitoring m ON m.monitoring_id = mc.monitoring_id',
+'                                             WHERE  m.permit_id = p.permit_id',
+'                                             AND    mc.happy_to_continue = ''N''',
+'                                             AND    mc.concern_signature IS NOT NULL',
+'                                             FETCH FIRST 1 ROW ONLY)',
+'                                        || '','' ||',
+'                                        (SELECT mc.check_number',
+'                                             FROM   ptw_pro.ptw_lv_monitoring_concerns mc',
+'                                             JOIN   ptw_pro.ptw_lv_monitoring m ON m.monitoring_id = mc.monitoring_id',
+'                                             WHERE  m.permit_id = p.permit_id',
+'                                             AND    mc.happy_to_continue = ''N''',
+'                                             AND    mc.concern_signature IS NOT NULL',
+'                                             FETCH FIRST 1 ROW ONLY)',
+'                                        || '','' || p.permit_id || '','' || p.permit_number,',
+'                                p_clear_cache => 30',
+'                            ) || ''"',
+'                 class="t-Button t-Button--noLabel t-Button--icon t-Button--danger ptw-action-btn"',
+'                 title="View Cancellation (Concern)">',
+'                 <span class="t-Icon fa fa-ban" aria-hidden="true"></span>',
+'              </a>''',
 '        WHEN p.workflow_status IN (''AUTHORISED'', ''STARTED'', ''SUSPENDED'',''CANCELLED'')',
 '        THEN ''<a href="'' || apex_page.get_url(',
 '                                p_page   => 17,',
 '                                p_items  => ''P17_PERMIT_ID,P17_PERMIT_NUMBER'',',
-'                                p_values => p.permit_id || '','' || p.permit_number',
+'                                p_values => p.permit_id || '','' || p.permit_number,',
+'                                p_clear_cache => 17',
 '                            ) || ''"',
 '                 class="t-Button t-Button--noLabel t-Button--icon t-Button--danger ptw-action-btn"',
 '                 title="Cancel Permit">',
@@ -1184,9 +1514,25 @@ unistr('    -- History button (admin only \2014 matches IR)'),
 '            title="Permit History">',
 '            <span class="t-Icon fa fa-book" aria-hidden="true"></span>',
 '         </a>''',
-'    END AS view_history_html',
+'    END AS view_history_html,',
+'',
+unistr('            -- Link button \2014 always available, colour/count reflect existing links'),
+'        ''<a href="'' || apex_page.get_url(',
+'                        p_page   => 19,',
+'                        p_items  => ''P19_PERMIT_ID,P19_PERMIT_NUMBER'',',
+'                        p_values => p.permit_id || '','' || p.permit_number,',
+'                        p_clear_cache => 19',
+'                    ) || ''"',
+'             class="t-Button t-Button--noLabel t-Button--icon '' ||',
+'             CASE WHEN ptw_pro.ptw_permit_link_pkg.get_link_count(p.permit_id) > 0',
+'                  THEN ''t-Button--success'' ELSE ''t-Button--normal'' END ||',
+'             '' ptw-action-btn"',
+'             title="Linked Permits">',
+'             <span class="t-Icon fa fa-link" aria-hidden="true"></span>',
+'         </a>'' AS link_html',
 '',
 'FROM ptw_pro.ptw_lv_permits p',
+'LEFT JOIN ptw_pro.ptw_lv_sites s ON s.site_id = p.site_id',
 'WHERE',
 '    EXISTS (',
 '        SELECT 1 FROM ptw_pro.ptw_lv_user_roles_v',
@@ -1247,7 +1593,12 @@ unistr('    -- History button (admin only \2014 matches IR)'),
 '    )',
 '    AND (',
 '        UPPER(p.created_by)          = UPPER(V(''APP_USER''))',
-'        OR UPPER(p.auth_person_name) = UPPER(V(''APP_USER''))',
+'        OR EXISTS (',
+'            SELECT 1 FROM ptw_pro.ptw_signatures sig',
+'            WHERE  sig.permit_id = p.permit_id',
+'            AND    sig.stage     = ''AUTH''',
+'            AND    UPPER(sig.person_name) = UPPER(V(''APP_USER''))',
+'            )',
 '    )',
 ')',
 'ORDER BY p.created_date DESC'))
@@ -1263,6 +1614,109 @@ unistr('    -- History button (admin only \2014 matches IR)'),
 ,p_prn_output=>'N'
 ,p_sort_null=>'L'
 ,p_plug_query_strip_html=>'N'
+,p_created_on=>wwv_flow_imp.dz('20260506181023Z')
+,p_updated_on=>wwv_flow_imp.dz('20261010134640Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_report_columns(
+ p_id=>wwv_flow_imp.id(45758662835782538)
+,p_query_column_id=>11
+,p_column_alias=>'BADGE_CLASS'
+,p_column_display_sequence=>100
+,p_hidden_column=>'Y'
+,p_display_as=>'WITHOUT_MODIFICATION'
+,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260728214743Z')
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_report_columns(
+ p_id=>wwv_flow_imp.id(47751461247890036)
+,p_query_column_id=>19
+,p_column_alias=>'CANCELLATION_HTML'
+,p_column_display_sequence=>170
+,p_hidden_column=>'Y'
+,p_display_as=>'WITHOUT_MODIFICATION'
+,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260914192444Z')
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_report_columns(
+ p_id=>wwv_flow_imp.id(45758785416782539)
+,p_query_column_id=>12
+,p_column_alias=>'CARD_COLOR_CLASS'
+,p_column_display_sequence=>110
+,p_hidden_column=>'Y'
+,p_display_as=>'WITHOUT_MODIFICATION'
+,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260728214743Z')
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_report_columns(
+ p_id=>wwv_flow_imp.id(45759230238782544)
+,p_query_column_id=>18
+,p_column_alias=>'CLEARANCE_HTML'
+,p_column_display_sequence=>160
+,p_hidden_column=>'Y'
+,p_display_as=>'WITHOUT_MODIFICATION'
+,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260914192444Z')
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_report_columns(
+ p_id=>wwv_flow_imp.id(45758978685782541)
+,p_query_column_id=>14
+,p_column_alias=>'DELETE_HTML'
+,p_column_display_sequence=>130
+,p_hidden_column=>'Y'
+,p_display_as=>'WITHOUT_MODIFICATION'
+,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260728214743Z')
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_report_columns(
+ p_id=>wwv_flow_imp.id(45758453363782536)
+,p_query_column_id=>8
+,p_column_alias=>'ENDED_DATETIME'
+,p_column_display_sequence=>80
+,p_hidden_column=>'Y'
+,p_display_as=>'WITHOUT_MODIFICATION'
+,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260506182253Z')
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_report_columns(
+ p_id=>wwv_flow_imp.id(42196502464924518)
+,p_query_column_id=>16
+,p_column_alias=>'FIREWATCH_HTML'
+,p_column_display_sequence=>210
+,p_hidden_column=>'Y'
+,p_display_as=>'WITHOUT_MODIFICATION'
+,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260914200837Z')
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_report_columns(
+ p_id=>wwv_flow_imp.id(42198372622924536)
+,p_query_column_id=>22
+,p_column_alias=>'LINK_HTML'
+,p_column_display_sequence=>220
+,p_hidden_column=>'Y'
+,p_display_as=>'WITHOUT_MODIFICATION'
+,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260920131957Z')
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_report_columns(
+ p_id=>wwv_flow_imp.id(45759164593782543)
+,p_query_column_id=>17
+,p_column_alias=>'MONITORING_HTML'
+,p_column_display_sequence=>150
+,p_hidden_column=>'Y'
+,p_display_as=>'WITHOUT_MODIFICATION'
+,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260914192443Z')
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
  p_id=>wwv_flow_imp.id(45757721225782529)
@@ -1272,6 +1726,18 @@ wwv_flow_imp_page.create_report_columns(
 ,p_hidden_column=>'Y'
 ,p_display_as=>'WITHOUT_MODIFICATION'
 ,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260506182253Z')
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_report_columns(
+ p_id=>wwv_flow_imp.id(45759847808782550)
+,p_query_column_id=>9
+,p_column_alias=>'PERMIT_LINK'
+,p_column_display_sequence=>200
+,p_hidden_column=>'Y'
+,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260511201702Z')
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
  p_id=>wwv_flow_imp.id(45757885290782530)
@@ -1288,7 +1754,12 @@ wwv_flow_imp_page.create_report_columns(
 '      <span class="t-Badge #BADGE_CLASS# t-Badge--lg">#STATUS_DISPLAY#</span>',
 '    </a>',
 '  </div>',
-'',
+'  <div style="padding:0 1rem;">',
+'    <span class="apex-badge" style="background-color:#5a6b7a;color:white;',
+'        padding:2px 10px;border-radius:12px;font-weight:600;font-size:0.75rem;">',
+'      #PTW_TYPE#',
+'    </span>',
+'  </div>',
 '  <div class="ptw-card-body">',
 '    <div>',
 '      <strong class="ptw-card-label">Site</strong><br>',
@@ -1304,9 +1775,11 @@ wwv_flow_imp_page.create_report_columns(
 '  <div class="ptw-card-actions ptw-action-btns">',
 '    #DELETE_HTML#',
 '    #WORKFLOW_ACTION_HTML#',
+'    #FIREWATCH_HTML#',
 '    #MONITORING_HTML#',
 '    #CLEARANCE_HTML#',
 '    #CANCELLATION_HTML#',
+'    #LINK_HTML#',
 '    #VIEW_PDF_HTML#',
 '    #VIEW_HISTORY_HTML#',
 '  </div>',
@@ -1316,24 +1789,8 @@ wwv_flow_imp_page.create_report_columns(
 ,p_display_as=>'WITHOUT_MODIFICATION'
 ,p_derived_column=>'N'
 ,p_include_in_export=>'Y'
-);
-wwv_flow_imp_page.create_report_columns(
- p_id=>wwv_flow_imp.id(45757959258782531)
-,p_query_column_id=>3
-,p_column_alias=>'PTW_TYPE'
-,p_column_display_sequence=>30
-,p_hidden_column=>'Y'
-,p_display_as=>'WITHOUT_MODIFICATION'
-,p_derived_column=>'N'
-);
-wwv_flow_imp_page.create_report_columns(
- p_id=>wwv_flow_imp.id(45758082678782532)
-,p_query_column_id=>4
-,p_column_alias=>'SITE_DETAILS'
-,p_column_display_sequence=>40
-,p_hidden_column=>'Y'
-,p_display_as=>'WITHOUT_MODIFICATION'
-,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260919163439Z')
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
  p_id=>wwv_flow_imp.id(45758180251782533)
@@ -1343,15 +1800,30 @@ wwv_flow_imp_page.create_report_columns(
 ,p_hidden_column=>'Y'
 ,p_display_as=>'WITHOUT_MODIFICATION'
 ,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260506182253Z')
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
- p_id=>wwv_flow_imp.id(45758249720782534)
-,p_query_column_id=>6
-,p_column_alias=>'WORKFLOW_STATUS'
-,p_column_display_sequence=>60
+ p_id=>wwv_flow_imp.id(45757959258782531)
+,p_query_column_id=>3
+,p_column_alias=>'PTW_TYPE'
+,p_column_display_sequence=>30
 ,p_hidden_column=>'Y'
 ,p_display_as=>'WITHOUT_MODIFICATION'
 ,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260506182253Z')
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_report_columns(
+ p_id=>wwv_flow_imp.id(45758082678782532)
+,p_query_column_id=>4
+,p_column_alias=>'SITE_DETAILS'
+,p_column_display_sequence=>40
+,p_hidden_column=>'Y'
+,p_display_as=>'WITHOUT_MODIFICATION'
+,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260506182253Z')
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
  p_id=>wwv_flow_imp.id(45758323837782535)
@@ -1361,23 +1833,8 @@ wwv_flow_imp_page.create_report_columns(
 ,p_hidden_column=>'Y'
 ,p_display_as=>'WITHOUT_MODIFICATION'
 ,p_derived_column=>'N'
-);
-wwv_flow_imp_page.create_report_columns(
- p_id=>wwv_flow_imp.id(45758453363782536)
-,p_query_column_id=>8
-,p_column_alias=>'ENDED_DATETIME'
-,p_column_display_sequence=>80
-,p_hidden_column=>'Y'
-,p_display_as=>'WITHOUT_MODIFICATION'
-,p_derived_column=>'N'
-);
-wwv_flow_imp_page.create_report_columns(
- p_id=>wwv_flow_imp.id(45759847808782550)
-,p_query_column_id=>9
-,p_column_alias=>'PERMIT_LINK'
-,p_column_display_sequence=>200
-,p_hidden_column=>'Y'
-,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260506182253Z')
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
  p_id=>wwv_flow_imp.id(45758525525782537)
@@ -1387,24 +1844,8 @@ wwv_flow_imp_page.create_report_columns(
 ,p_hidden_column=>'Y'
 ,p_display_as=>'WITHOUT_MODIFICATION'
 ,p_derived_column=>'N'
-);
-wwv_flow_imp_page.create_report_columns(
- p_id=>wwv_flow_imp.id(45758662835782538)
-,p_query_column_id=>11
-,p_column_alias=>'BADGE_CLASS'
-,p_column_display_sequence=>100
-,p_hidden_column=>'Y'
-,p_display_as=>'WITHOUT_MODIFICATION'
-,p_derived_column=>'N'
-);
-wwv_flow_imp_page.create_report_columns(
- p_id=>wwv_flow_imp.id(45758785416782539)
-,p_query_column_id=>12
-,p_column_alias=>'CARD_COLOR_CLASS'
-,p_column_display_sequence=>110
-,p_hidden_column=>'Y'
-,p_display_as=>'WITHOUT_MODIFICATION'
-,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260728214743Z')
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
  p_id=>wwv_flow_imp.id(45758842268782540)
@@ -1414,15 +1855,30 @@ wwv_flow_imp_page.create_report_columns(
 ,p_hidden_column=>'Y'
 ,p_display_as=>'WITHOUT_MODIFICATION'
 ,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260728214743Z')
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
- p_id=>wwv_flow_imp.id(45758978685782541)
-,p_query_column_id=>14
-,p_column_alias=>'DELETE_HTML'
-,p_column_display_sequence=>130
+ p_id=>wwv_flow_imp.id(45759419302782546)
+,p_query_column_id=>21
+,p_column_alias=>'VIEW_HISTORY_HTML'
+,p_column_display_sequence=>190
 ,p_hidden_column=>'Y'
 ,p_display_as=>'WITHOUT_MODIFICATION'
 ,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260914192444Z')
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_report_columns(
+ p_id=>wwv_flow_imp.id(45759369398782545)
+,p_query_column_id=>20
+,p_column_alias=>'VIEW_PDF_HTML'
+,p_column_display_sequence=>180
+,p_hidden_column=>'Y'
+,p_display_as=>'WITHOUT_MODIFICATION'
+,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260914192444Z')
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
  p_id=>wwv_flow_imp.id(45759069091782542)
@@ -1432,59 +1888,52 @@ wwv_flow_imp_page.create_report_columns(
 ,p_hidden_column=>'Y'
 ,p_display_as=>'WITHOUT_MODIFICATION'
 ,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260728214743Z')
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_report_columns(
- p_id=>wwv_flow_imp.id(45759164593782543)
-,p_query_column_id=>16
-,p_column_alias=>'MONITORING_HTML'
-,p_column_display_sequence=>150
+ p_id=>wwv_flow_imp.id(45758249720782534)
+,p_query_column_id=>6
+,p_column_alias=>'WORKFLOW_STATUS'
+,p_column_display_sequence=>60
 ,p_hidden_column=>'Y'
 ,p_display_as=>'WITHOUT_MODIFICATION'
 ,p_derived_column=>'N'
+,p_updated_on=>wwv_flow_imp.dz('20260506182253Z')
+,p_updated_by=>'PTW_PRO'
 );
-wwv_flow_imp_page.create_report_columns(
- p_id=>wwv_flow_imp.id(45759230238782544)
-,p_query_column_id=>17
-,p_column_alias=>'CLEARANCE_HTML'
-,p_column_display_sequence=>160
-,p_hidden_column=>'Y'
-,p_display_as=>'WITHOUT_MODIFICATION'
-,p_derived_column=>'N'
-);
-wwv_flow_imp_page.create_report_columns(
- p_id=>wwv_flow_imp.id(47751461247890036)
-,p_query_column_id=>18
-,p_column_alias=>'CANCELLATION_HTML'
-,p_column_display_sequence=>170
-,p_hidden_column=>'Y'
-,p_display_as=>'WITHOUT_MODIFICATION'
-,p_derived_column=>'N'
-);
-wwv_flow_imp_page.create_report_columns(
- p_id=>wwv_flow_imp.id(45759369398782545)
-,p_query_column_id=>19
-,p_column_alias=>'VIEW_PDF_HTML'
-,p_column_display_sequence=>180
-,p_hidden_column=>'Y'
-,p_display_as=>'WITHOUT_MODIFICATION'
-,p_derived_column=>'N'
-);
-wwv_flow_imp_page.create_report_columns(
- p_id=>wwv_flow_imp.id(45759419302782546)
-,p_query_column_id=>20
-,p_column_alias=>'VIEW_HISTORY_HTML'
-,p_column_display_sequence=>190
-,p_hidden_column=>'Y'
-,p_display_as=>'WITHOUT_MODIFICATION'
-,p_derived_column=>'N'
+wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(27017265260886523)
+,p_plug_name=>'SyncStatus'
+,p_static_id=>'syncstatus'
+,p_region_template_options=>'#DEFAULT#'
+,p_plug_template=>4501440665235496320
+,p_plug_display_sequence=>30
+,p_plug_item_display_point=>'ABOVE'
+,p_location=>null
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'<div id="connection-status" style="padding: 10px; margin-bottom: 10px; border-radius: 4px;">',
+'    <span id="status-icon"></span>',
+'    <span id="status-text"></span>',
+'    <!-- <button id="sync-btn" style="margin-left: 10px; display: none;">Sync Now</button> -->',
+'</div>'))
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'expand_shortcuts', 'N',
+  'output_as', 'HTML')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260212212329Z')
+,p_updated_on=>wwv_flow_imp.dz('20260212212329Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(52465325062584450)
 ,p_plug_name=>'Viewing As (Super User)'
+,p_static_id=>'viewing-as-super-user'
 ,p_title=>'Viewing As (Super User)'
 ,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
 ,p_plug_template=>4072358936313175081
 ,p_plug_display_sequence=>50
+,p_plug_item_display_point=>'ABOVE'
 ,p_location=>null
 ,p_function_body_language=>'PLSQL'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -1549,12 +1998,17 @@ wwv_flow_imp_page.create_page_plug(
 '        FROM   ptw_pro.ptw_lv_users',
 '        WHERE  UPPER(username) = UPPER(:APP_USER)',
 '        AND    is_super_user = ''Y'''))
+,p_created_on=>wwv_flow_imp.dz('20260614205231Z')
+,p_updated_on=>wwv_flow_imp.dz('20260621163059Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(25227561481353115)
-,p_button_sequence=>10
+,p_button_sequence=>20
 ,p_button_plug_id=>wwv_flow_imp.id(25227447597353114)
 ,p_button_name=>'CREATE_NEW_PERMIT'
+,p_static_id=>'create-new-permit'
 ,p_button_action=>'REDIRECT_PAGE'
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
 ,p_button_template_id=>2082829544945815391
@@ -1566,12 +2020,17 @@ wwv_flow_imp_page.create_page_button(
 ,p_grid_new_row=>'Y'
 ,p_grid_column_span=>6
 ,p_security_scheme=>wwv_flow_imp.id(31533963716212424)
+,p_created_on=>wwv_flow_imp.dz('20260209193703Z')
+,p_updated_on=>wwv_flow_imp.dz('20260915212435Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(40555205308170634)
-,p_button_sequence=>20
+,p_button_sequence=>40
 ,p_button_plug_id=>wwv_flow_imp.id(25227447597353114)
 ,p_button_name=>'DOWNLOAD_JOBS'
+,p_static_id=>'download-jobs'
 ,p_button_action=>'DEFINED_BY_DA'
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
 ,p_button_template_id=>2082829544945815391
@@ -1583,12 +2042,38 @@ wwv_flow_imp_page.create_page_button(
 ,p_grid_new_row=>'N'
 ,p_grid_new_column=>'Y'
 ,p_grid_column_span=>6
+,p_created_on=>wwv_flow_imp.dz('20260414163432Z')
+,p_updated_on=>wwv_flow_imp.dz('20260915212435Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_button(
+ p_id=>wwv_flow_imp.id(42196806872924521)
+,p_button_sequence=>50
+,p_button_plug_id=>wwv_flow_imp.id(25227447597353114)
+,p_button_name=>'ENABLE_NOTIFICATIONS'
+,p_static_id=>'ptwEnableNotificationsBtn'
+,p_button_static_id=>'ptwEnableNotificationsBtn'
+,p_button_action=>'DEFINED_BY_DA'
+,p_button_template_options=>'#DEFAULT#'
+,p_button_template_id=>4072362960822175091
+,p_button_is_hot=>'Y'
+,p_button_image_alt=>'Enable Notifications'
+,p_warn_on_unsaved_changes=>null
+,p_grid_new_row=>'Y'
+,p_grid_column_span=>6
+,p_created_on=>wwv_flow_imp.dz('20260915204808Z')
+,p_updated_on=>wwv_flow_imp.dz('20260915212435Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(45759503889782547)
 ,p_button_sequence=>10
 ,p_button_plug_id=>wwv_flow_imp.id(45757618518782528)
 ,p_button_name=>'REFRESH_MOBILE_PERMITS'
+,p_static_id=>'refresh-mobile-permits'
+,p_button_static_id=>'refresh-mobile-permits'
 ,p_button_action=>'DEFINED_BY_DA'
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
 ,p_button_template_id=>2082829544945815391
@@ -1597,12 +2082,17 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_position=>'EDIT'
 ,p_warn_on_unsaved_changes=>null
 ,p_icon_css_classes=>'fa-refresh'
+,p_created_on=>wwv_flow_imp.dz('20260506184149Z')
+,p_updated_on=>wwv_flow_imp.dz('20260915211620Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(45756747804782519)
-,p_button_sequence=>10
+,p_button_sequence=>30
 ,p_button_plug_id=>wwv_flow_imp.id(25227678625353116)
 ,p_button_name=>'REFRESH_PERMITS'
+,p_static_id=>'refresh-permits'
 ,p_button_static_id=>'btn-refresh-permits'
 ,p_button_action=>'REDIRECT_URL'
 ,p_button_template_options=>'#DEFAULT#:t-Button--iconLeft'
@@ -1613,6 +2103,10 @@ wwv_flow_imp_page.create_page_button(
 ,p_button_redirect_url=>'javascript:apex.region(''permits-ir'').refresh();'
 ,p_button_execute_validations=>'N'
 ,p_icon_css_classes=>'fa-refresh'
+,p_created_on=>wwv_flow_imp.dz('20260429212910Z')
+,p_updated_on=>wwv_flow_imp.dz('20260915205739Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_branch(
  p_id=>wwv_flow_imp.id(25229805851353138)
@@ -1623,6 +2117,10 @@ wwv_flow_imp_page.create_page_branch(
 ,p_branch_sequence=>10
 ,p_branch_condition_type=>'REQUEST_IN_CONDITION'
 ,p_branch_condition=>'DELETE_PERMIT'
+,p_created_on=>wwv_flow_imp.dz('20260209204147Z')
+,p_updated_on=>wwv_flow_imp.dz('20260209204147Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_branch(
  p_id=>wwv_flow_imp.id(52494338428962702)
@@ -1633,48 +2131,133 @@ wwv_flow_imp_page.create_page_branch(
 ,p_branch_sequence=>20
 ,p_branch_condition_type=>'REQUEST_EQUALS_CONDITION'
 ,p_branch_condition=>'CLEAR_OVERRIDE'
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(25229693304353136)
-,p_name=>'P1_PERMIT_ID'
-,p_item_sequence=>90
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(31605987809440621)
-,p_name=>'P1_SELECTED_PERMIT_ID'
-,p_item_sequence=>100
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(31606037892440622)
-,p_name=>'P1_SUSPEND_REASON'
-,p_item_sequence=>110
-,p_display_as=>'NATIVE_HIDDEN'
-,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
-  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260614205231Z')
+,p_updated_on=>wwv_flow_imp.dz('20260614205231Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(45756121958782513)
 ,p_name=>'P1_CLEAR_PERMIT_ID'
-,p_item_sequence=>120
+,p_item_sequence=>130
+,p_source_type=>'ALWAYS_NULL'
 ,p_display_as=>'NATIVE_HIDDEN'
 ,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
   'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260429200208Z')
+,p_updated_on=>wwv_flow_imp.dz('20260915205739Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(25229693304353136)
+,p_name=>'P1_PERMIT_ID'
+,p_item_sequence=>100
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260209203634Z')
+,p_updated_on=>wwv_flow_imp.dz('20260915205739Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(31605987809440621)
+,p_name=>'P1_SELECTED_PERMIT_ID'
+,p_item_sequence=>110
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260304205744Z')
+,p_updated_on=>wwv_flow_imp.dz('20260915205739Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(31606037892440622)
+,p_name=>'P1_SUSPEND_REASON'
+,p_item_sequence=>120
+,p_source_type=>'ALWAYS_NULL'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'value_protected', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260304205744Z')
+,p_updated_on=>wwv_flow_imp.dz('20260915205739Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(42196918750924522)
+,p_name=>'Enable notifications'
+,p_static_id=>'enable-notifications'
+,p_event_sequence=>20
+,p_triggering_element_type=>'BUTTON'
+,p_triggering_button_id=>wwv_flow_imp.id(42196806872924521)
+,p_bind_type=>'bind'
+,p_execution_type=>'IMMEDIATE'
+,p_bind_event_type=>'click'
+,p_created_on=>wwv_flow_imp.dz('20260915204808Z')
+,p_updated_on=>wwv_flow_imp.dz('20260915204808Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(42197023696924523)
+,p_event_id=>wwv_flow_imp.id(42196918750924522)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_static_id=>'native-javascript-code'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'js_code', 'ptwEnablePushNotifications();')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260915204808Z')
+,p_updated_on=>wwv_flow_imp.dz('20260915204808Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(42197139715924524)
+,p_name=>'Enable notifications on page load'
+,p_static_id=>'enable-notifications-on-page-load'
+,p_event_sequence=>40
+,p_bind_type=>'bind'
+,p_bind_event_type=>'ready'
+,p_created_on=>wwv_flow_imp.dz('20260915205510Z')
+,p_updated_on=>wwv_flow_imp.dz('20260915205740Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(42197220283924525)
+,p_event_id=>wwv_flow_imp.id(42197139715924524)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_static_id=>'native-javascript-code'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'js_code', 'ptwRefreshNotificationButton();')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260915205510Z')
+,p_updated_on=>wwv_flow_imp.dz('20260915205510Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_da_event(
  p_id=>wwv_flow_imp.id(45759683083782548)
 ,p_name=>'Refresh Mobile Cards'
+,p_static_id=>'refresh-mobile-cards'
 ,p_event_sequence=>10
 ,p_triggering_element_type=>'BUTTON'
 ,p_triggering_button_id=>wwv_flow_imp.id(45759503889782547)
 ,p_bind_type=>'bind'
 ,p_execution_type=>'IMMEDIATE'
 ,p_bind_event_type=>'click'
+,p_created_on=>wwv_flow_imp.dz('20260506184149Z')
+,p_updated_on=>wwv_flow_imp.dz('20260506184149Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_da_action(
  p_id=>wwv_flow_imp.id(45759769005782549)
@@ -1682,10 +2265,37 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_event_result=>'TRUE'
 ,p_action_sequence=>10
 ,p_execute_on_page_init=>'N'
+,p_static_id=>'native-refresh'
 ,p_action=>'NATIVE_REFRESH'
 ,p_affected_elements_type=>'REGION'
 ,p_affected_region_id=>wwv_flow_imp.id(45757618518782528)
-,p_attribute_01=>'N'
+,p_attributes=>wwv_flow_t_plugin_attributes(wwv_flow_t_varchar2(
+  'maintain_pagination', 'N')).to_clob
+,p_created_on=>wwv_flow_imp.dz('20260506184149Z')
+,p_updated_on=>wwv_flow_imp.dz('20260506184149Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(52494299876962701)
+,p_process_sequence=>40
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Clear Company Override'
+,p_static_id=>'clear-company-override'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'BEGIN',
+'    APEX_UTIL.SET_SESSION_STATE(''G_OVERRIDE_COMPANY_ID'', NULL);',
+'END;'))
+,p_process_clob_language=>'PLSQL'
+,p_error_display_location=>'INLINE_IN_NOTIFICATION'
+,p_process_when=>'CLEAR_OVERRIDE'
+,p_process_when_type=>'REQUEST_EQUALS_CONDITION'
+,p_internal_uid=>52494299876962701
+,p_created_on=>wwv_flow_imp.dz('20260614205231Z')
+,p_updated_on=>wwv_flow_imp.dz('20260614205231Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(25229784918353137)
@@ -1693,6 +2303,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_point=>'AFTER_SUBMIT'
 ,p_process_type=>'NATIVE_PLSQL'
 ,p_process_name=>'Delete Permit'
+,p_static_id=>'delete-permit'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 '-- DECLARE',
 '--     v_permit_id NUMBER;',
@@ -1749,6 +2360,97 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_when_type=>'EXPRESSION'
 ,p_process_when2=>'PLSQL'
 ,p_internal_uid=>25229784918353137
+,p_created_on=>wwv_flow_imp.dz('20260209203955Z')
+,p_updated_on=>wwv_flow_imp.dz('20260426182923Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(8879290521853341)
+,p_process_sequence=>10
+,p_process_point=>'BEFORE_HEADER'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'New'
+,p_static_id=>'new'
+,p_process_sql_clob=>':G_ACTIVE_PERMIT_ID := NULL;'
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>8879290521853341
+,p_created_on=>wwv_flow_imp.dz('20260824201549Z')
+,p_updated_on=>wwv_flow_imp.dz('20260824201549Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(31606355068440625)
+,p_process_sequence=>30
+,p_process_point=>'AFTER_SUBMIT'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'Resume Permit'
+,p_static_id=>'resume-permit'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'DECLARE',
+'    v_permit_id NUMBER;',
+'BEGIN',
+'    -- Extract permit ID from request (format: RESUME_PERMIT_123)',
+'    v_permit_id := TO_NUMBER(REPLACE(:REQUEST, ''RESUME_PERMIT_'', ''''));',
+'',
+'    UPDATE ptw_pro.ptw_lv_permits',
+'    SET    workflow_status = ''STARTED'',',
+'           resumed_date    = SYSTIMESTAMP,',
+'           resumed_by      = NVL(V(''APP_USER''), USER),',
+'           modified_date   = SYSTIMESTAMP,',
+'           modified_by     = NVL(V(''APP_USER''), USER)',
+'    WHERE  permit_id       = v_permit_id',
+'    AND    workflow_status = ''SUSPENDED'';',
+'',
+'    IF SQL%ROWCOUNT = 0 THEN',
+'        apex_error.add_error(',
+'            p_message => ''Permit could not be resumed. It may not be in a suspended state.'',',
+'            p_display_location => apex_error.c_inline_in_notification',
+'        );',
+'        RETURN;',
+'    END IF;',
+'',
+'    COMMIT;',
+'    apex_application.g_print_success_message := ''Permit resumed successfully.'';',
+'',
+'EXCEPTION',
+'    WHEN OTHERS THEN',
+'        ROLLBACK;',
+'        apex_error.add_error(',
+'            p_message => ''Error resuming permit: '' || SQLERRM,',
+'            p_display_location => apex_error.c_inline_in_notification',
+'        );',
+'END;'))
+,p_process_clob_language=>'PLSQL'
+,p_error_display_location=>'INLINE_IN_NOTIFICATION'
+,p_process_when=>':REQUEST LIKE ''RESUME_PERMIT%'''
+,p_process_when_type=>'EXPRESSION'
+,p_process_when2=>'PLSQL'
+,p_internal_uid=>31606355068440625
+,p_created_on=>wwv_flow_imp.dz('20260304211940Z')
+,p_updated_on=>wwv_flow_imp.dz('20260421213710Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(33350169044951415)
+,p_process_sequence=>10
+,p_process_point=>'ON_DEMAND'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'SET_LOCATION'
+,p_static_id=>'set-location'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'BEGIN',
+'    :APP_LATITUDE  := apex_application.g_x01;',
+'    :APP_LONGITUDE := apex_application.g_x02;',
+'END;'))
+,p_process_clob_language=>'PLSQL'
+,p_internal_uid=>33350169044951415
+,p_created_on=>wwv_flow_imp.dz('20260312204451Z')
+,p_updated_on=>wwv_flow_imp.dz('20260312211207Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(31606240288440624)
@@ -1756,6 +2458,7 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_point=>'AFTER_SUBMIT'
 ,p_process_type=>'NATIVE_PLSQL'
 ,p_process_name=>'Suspend Permit'
+,p_static_id=>'suspend-permit'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'DECLARE',
 '    v_permit_id NUMBER;',
@@ -1814,84 +2517,10 @@ wwv_flow_imp_page.create_page_process(
 ,p_process_when_type=>'EXPRESSION'
 ,p_process_when2=>'PLSQL'
 ,p_internal_uid=>31606240288440624
-);
-wwv_flow_imp_page.create_page_process(
- p_id=>wwv_flow_imp.id(31606355068440625)
-,p_process_sequence=>30
-,p_process_point=>'AFTER_SUBMIT'
-,p_process_type=>'NATIVE_PLSQL'
-,p_process_name=>'Resume Permit'
-,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'DECLARE',
-'    v_permit_id NUMBER;',
-'BEGIN',
-'    -- Extract permit ID from request (format: RESUME_PERMIT_123)',
-'    v_permit_id := TO_NUMBER(REPLACE(:REQUEST, ''RESUME_PERMIT_'', ''''));',
-'',
-'    UPDATE ptw_pro.ptw_lv_permits',
-'    SET    workflow_status = ''STARTED'',',
-'           resumed_date    = SYSTIMESTAMP,',
-'           resumed_by      = NVL(V(''APP_USER''), USER),',
-'           modified_date   = SYSTIMESTAMP,',
-'           modified_by     = NVL(V(''APP_USER''), USER)',
-'    WHERE  permit_id       = v_permit_id',
-'    AND    workflow_status = ''SUSPENDED'';',
-'',
-'    IF SQL%ROWCOUNT = 0 THEN',
-'        apex_error.add_error(',
-'            p_message => ''Permit could not be resumed. It may not be in a suspended state.'',',
-'            p_display_location => apex_error.c_inline_in_notification',
-'        );',
-'        RETURN;',
-'    END IF;',
-'',
-'    COMMIT;',
-'    apex_application.g_print_success_message := ''Permit resumed successfully.'';',
-'',
-'EXCEPTION',
-'    WHEN OTHERS THEN',
-'        ROLLBACK;',
-'        apex_error.add_error(',
-'            p_message => ''Error resuming permit: '' || SQLERRM,',
-'            p_display_location => apex_error.c_inline_in_notification',
-'        );',
-'END;'))
-,p_process_clob_language=>'PLSQL'
-,p_error_display_location=>'INLINE_IN_NOTIFICATION'
-,p_process_when=>':REQUEST LIKE ''RESUME_PERMIT%'''
-,p_process_when_type=>'EXPRESSION'
-,p_process_when2=>'PLSQL'
-,p_internal_uid=>31606355068440625
-);
-wwv_flow_imp_page.create_page_process(
- p_id=>wwv_flow_imp.id(52494299876962701)
-,p_process_sequence=>40
-,p_process_point=>'AFTER_SUBMIT'
-,p_process_type=>'NATIVE_PLSQL'
-,p_process_name=>'Clear Company Override'
-,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'BEGIN',
-'    APEX_UTIL.SET_SESSION_STATE(''G_OVERRIDE_COMPANY_ID'', NULL);',
-'END;'))
-,p_process_clob_language=>'PLSQL'
-,p_error_display_location=>'INLINE_IN_NOTIFICATION'
-,p_process_when=>'CLEAR_OVERRIDE'
-,p_process_when_type=>'REQUEST_EQUALS_CONDITION'
-,p_internal_uid=>52494299876962701
-);
-wwv_flow_imp_page.create_page_process(
- p_id=>wwv_flow_imp.id(33350169044951415)
-,p_process_sequence=>10
-,p_process_point=>'ON_DEMAND'
-,p_process_type=>'NATIVE_PLSQL'
-,p_process_name=>'SET_LOCATION'
-,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'BEGIN',
-'    :APP_LATITUDE  := apex_application.g_x01;',
-'    :APP_LONGITUDE := apex_application.g_x02;',
-'END;'))
-,p_process_clob_language=>'PLSQL'
-,p_internal_uid=>33350169044951415
+,p_created_on=>wwv_flow_imp.dz('20260304211317Z')
+,p_updated_on=>wwv_flow_imp.dz('20260421213710Z')
+,p_created_by=>'PTW_PRO'
+,p_updated_by=>'PTW_PRO'
 );
 wwv_flow_imp.component_end;
 end;
