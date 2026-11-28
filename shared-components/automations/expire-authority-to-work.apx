@@ -1,0 +1,44 @@
+automation expire-authority-to-work (
+    name: Expire Authority to Work
+    execution {
+        scheduleExpression: FREQ=MINUTELY;INTERVAL=20
+        scheduleStatus: active
+        actionsInitiatedOn: always
+    }
+    actionExecution {
+        actionErrorHandling: terminate
+    }
+
+    action new-action (
+        name: Expiration code
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    l_expired   NUMBER;
+                    l_cancelled NUMBER;
+                BEGIN
+                    apex_session.create_session(
+                        p_app_id   => 105,
+                        p_page_id  => 0,
+                        p_username => 'SYSTEM_AUTOMATION');
+                
+                    ptw_pro.ptw_atw_pkg.expire_atws(
+                        p_expired   => l_expired,
+                        p_cancelled => l_cancelled);
+                
+                    apex_automation.log_info(
+                        'ATW expired: ' || l_expired || ', drafts cancelled: ' || l_cancelled);
+                
+                    apex_session.delete_session;
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+    )
+
+)
+

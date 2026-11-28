@@ -1,0 +1,528 @@
+page 35 (
+    name: ATW Register
+    alias: ATW-REGISTER
+    title: ATW Register
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: @can-issue-atw
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region authorities-to-work (
+        name: Authorities to Work
+        title: Authorities to Work
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT a.atw_id,
+                       NVL(a.atw_number, 'Not issued')              AS atw_number,
+                       a.holder_name,
+                       a.holder_employer,
+                       a.site_name,
+                       a.effective_status,
+                       CASE a.effective_status
+                           WHEN 'ON_SITE'     THEN 'On site'
+                           WHEN 'ISSUED'      THEN 'Issued, not checked in'
+                           WHEN 'CHECKED_OUT' THEN 'Checked out'
+                           WHEN 'EXPIRED'     THEN CASE a.not_checked_out WHEN 'Y'
+                                                        THEN 'Expired (never checked out)'
+                                                        ELSE 'Expired' END
+                           WHEN 'REVOKED'     THEN 'Revoked'
+                           WHEN 'REQUESTED'   THEN 'Requested'
+                           WHEN 'DRAFT'       THEN 'Draft'
+                           WHEN 'CANCELLED'   THEN 'Cancelled'
+                       END                                          AS status_label,
+                       CASE a.effective_status
+                           WHEN 'ON_SITE'     THEN 't-Badge--success'
+                           WHEN 'ISSUED'      THEN 't-Badge--warning'
+                           WHEN 'REVOKED'     THEN 't-Badge--danger'
+                           WHEN 'EXPIRED'     THEN 't-Badge--danger'
+                           WHEN 'CHECKED_OUT' THEN 't-Badge--normal'
+                           ELSE                    't-Badge--info'
+                       END                                          AS badge_class,
+                       TO_CHAR(a.check_in_datetime,  'HH24:MI')     AS checked_in,
+                       TO_CHAR(a.check_out_datetime, 'HH24:MI')     AS checked_out,
+                       a.issuer_name,
+                       CASE WHEN a.status IN ('DRAFT', 'REQUESTED')
+                            THEN apex_page.get_url(p_page => 36, p_clear_cache => '36',
+                                                   p_items => 'P36_ATW_ID', p_values => a.atw_id)
+                            ELSE apex_page.get_url(p_page => 37, p_clear_cache => '37',
+                                                   p_items => 'P37_ATW_NUMBER', p_values => a.atw_number)
+                       END                                          AS link_url
+                FROM   ptw_pro.ptw_lv_atw_v a
+                WHERE  a.valid_date = TO_DATE(:P35_DATE, 'DD-MON-YYYY')
+                AND    a.status    <> 'CANCELLED'
+                ```
+            pageItemsToSubmit: P35_DATE
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @/interactive-report
+            templateOptions: [
+                #DEFAULT#
+                t-IRR-region--hideHeader js-addHiddenHeadingRoleDesc
+            ]
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        advanced {
+            savedReportMappingIdentifier: 56993148189385747
+        }
+
+        column ATW_ID (
+            type: hidden
+            heading {
+                heading: Atw Id
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ATW_NUMBER (
+            type: link
+            heading {
+                heading: Atw Number
+            }
+            layout {
+                sequence: 20
+            }
+            link {
+                target: {
+                    type: url
+                    url: #LINK_URL#
+                }
+                linkText: #ATW_NUMBER#
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column BADGE_CLASS (
+            type: hidden
+            heading {
+                heading: Badge Class
+            }
+            layout {
+                sequence: 80
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column CHECKED_IN (
+            type: plainText
+            heading {
+                heading: Checked In
+            }
+            layout {
+                sequence: 90
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column CHECKED_OUT (
+            type: plainText
+            heading {
+                heading: Checked Out
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column EFFECTIVE_STATUS (
+            type: hidden
+            heading {
+                heading: Effective Status
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column HOLDER_EMPLOYER (
+            type: plainText
+            heading {
+                heading: Holder Employer
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column HOLDER_NAME (
+            type: plainText
+            heading {
+                heading: Holder Name
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column ISSUER_NAME (
+            type: plainText
+            heading {
+                heading: Issuer Name
+            }
+            layout {
+                sequence: 110
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column LINK_URL (
+            type: hidden
+            heading {
+                heading: Link Url
+            }
+            layout {
+                sequence: 120
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column SITE_NAME (
+            type: plainText
+            heading {
+                heading: Site Name
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column STATUS_LABEL (
+            type: plainText
+            heading {
+                heading: Status
+            }
+            layout {
+                sequence: 70
+            }
+            columnFormatting {
+                htmlExpression: <span class="t-Badge #BADGE_CLASS#">#STATUS_LABEL#</span>
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Authorities to Work
+        }
+
+        savedReport primary (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn ATW_ID (
+                sequence: 1
+            )
+
+            displayColumn ATW_NUMBER (
+                sequence: 2
+            )
+
+            displayColumn BADGE_CLASS (
+                sequence: 8
+            )
+
+            displayColumn CHECKED_IN (
+                sequence: 9
+            )
+
+            displayColumn CHECKED_OUT (
+                sequence: 10
+            )
+
+            displayColumn EFFECTIVE_STATUS (
+                sequence: 6
+            )
+
+            displayColumn HOLDER_EMPLOYER (
+                sequence: 4
+            )
+
+            displayColumn HOLDER_NAME (
+                sequence: 3
+            )
+
+            displayColumn ISSUER_NAME (
+                sequence: 11
+            )
+
+            displayColumn LINK_URL (
+                sequence: 12
+            )
+
+            displayColumn SITE_NAME (
+                sequence: 5
+            )
+
+            displayColumn STATUS_LABEL (
+                sequence: 7
+            )
+
+        )
+
+    )
+
+    region filter (
+        name: Filter
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region on-site-now (
+        name: On site now
+        title: On site now
+        type: classicReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT site_name,
+                       COUNT(*) AS on_site
+                FROM   ptw_pro.ptw_lv_atw_v
+                WHERE  valid_date       = TO_DATE(:P35_DATE, 'DD-MON-YYYY')
+                AND    effective_status = 'ON_SITE'
+                GROUP  BY site_name
+                ORDER  BY site_name
+                ```
+            pageItemsToSubmit: P35_DATE
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        componentAppearance {
+            template: @/badge-list
+            templateOptions: [
+                #DEFAULT#
+                t-BadgeList--large
+                t-BadgeList--fixed
+                t-BadgeList--circular
+            ]
+        }
+        pagination {
+            type: nextAndPreviousLinks
+        }
+        messages {
+            whenNoDataFound: Nobody is checked in.
+        }
+
+        column ON_SITE (
+            reportColumnQueryId: 2
+            derivedColumn: N
+            heading {
+                heading: On Site
+                alignment: end
+            }
+            layout {
+                sequence: 20
+                columnAlignment: end
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+        column SITE_NAME (
+            reportColumnQueryId: 1
+            derivedColumn: N
+            heading {
+                heading: Site Name
+            }
+            layout {
+                sequence: 10
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+    )
+
+    pageItem P35_DATE (
+        type: datePicker
+        label {
+            label: Date
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filter
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            formatMask: DD-MON-YYYY
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: TO_CHAR(ptw_pro.ptw_atw_pkg.local_today, 'DD-MON-YYYY')
+        }
+    )
+
+    button issue-atw (
+        buttonName: ISSUE_ATW
+        label: Issue Authority to Work
+        layout {
+            sequence: 10
+            region: @authorities-to-work
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @/text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 36
+                clearCache: 36
+            }
+        }
+    )
+
+    dynamicAction refresh-regions-on-site-now-and-authorities-to-work (
+        name: Refresh regions On site now and Authorities to Work
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P35_DATE
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @on-site-now
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh_1 (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @authorities-to-work
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+)
+

@@ -175,6 +175,28 @@ authorization can-generate-pdf (
     }
 )
 
+authorization can-issue-atw (
+    name: Can Issue ATW
+    type: plSqlFunctionBody
+    settings {
+        plsqlFunctionBody: RETURN ptw_pro.ptw_atw_pkg.is_issuer(:APP_USER) = 'Y';
+    }
+    error {
+        errorMessage: You do not have permission to use this page.
+    }
+)
+
+authorization can-verify-atw (
+    name: Can Verify ATW
+    type: plSqlFunctionBody
+    settings {
+        plsqlFunctionBody: RETURN ptw_pro.ptw_atw_pkg.can_verify(:APP_USER) = 'Y';
+    }
+    error {
+        errorMessage: You do not have permission to use this page.
+    }
+)
+
 authorization contribution-rights (
     name: Contribution Rights
     type: isInRoleOrGroup
@@ -216,6 +238,17 @@ authorization is-administrator (
             You do not have permission to perform this action.
             Please contact your system administrator.
             ```
+    }
+)
+
+authorization is-contractor (
+    name: Is Contractor
+    type: plSqlFunctionBody
+    settings {
+        plsqlFunctionBody: RETURN ptw_pro.ptw_atw_pkg.is_contractor(:APP_USER) = 'Y';
+    }
+    error {
+        errorMessage: You do not have permission to use this page.
     }
 )
 

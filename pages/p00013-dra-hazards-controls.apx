@@ -412,11 +412,6 @@ page 13 (
         behavior {
             action: definedByDynamicAction
         }
-        serverSideCondition {
-            type: item=value
-            item: P13_WORKFLOW_STATUS
-            value: DRAFT
-        }
     )
 
     button save-draft (
@@ -654,7 +649,11 @@ page 13 (
         }
         serverSideCondition {
             type: expression
-            plsqlExpression: :REQUEST IN ('SAVE_DRAFT','NEXT_STEP')
+            plsqlExpression:
+                ```plsql
+                :REQUEST IN ('SAVE_DRAFT','NEXT_STEP')
+                AND :P13_WORKFLOW_STATUS = 'DRAFT'
+                ```
         }
     )
 

@@ -1,0 +1,595 @@
+page 37 (
+    name: Verify ATW
+    alias: ATW-VERIFY
+    title: Verify ATW
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        fileUrls: [
+            #APP_FILES#ptw-atw#MIN#.js
+            #APP_FILES#jsQR.min.js
+        ]
+    }
+    css {
+        fileUrls: #APP_FILES#ptw-atw#MIN#.css
+    }
+    security {
+        authorizationScheme: @can-verify-atw
+        formAutoComplete: false
+    }
+
+    region manual-entry (
+        name: Manual Entry
+        type: staticContent
+        layout {
+            sequence: 110
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P37_ATW_ID
+        }
+    )
+
+    region not-found (
+        name: Not Found
+        type: staticContent
+        source {
+            htmlCode: No Authority to Work matches this code. Check the number, or ask the BGIS site contact.
+        }
+        layout {
+            sequence: 90
+            slot: body
+        }
+        appearance {
+            template: @/alert
+            templateOptions: [
+                #DEFAULT#
+                t-Alert--horizontal
+                t-Alert--defaultIcons
+                t-Alert--danger
+            ]
+        }
+        serverSideCondition {
+            type: item=value
+            item: P37_NOT_FOUND
+            value: Y
+        }
+    )
+
+    region result (
+        name: Result
+        type: dynamicContent
+        source {
+            plsqlFunctionBody: RETURN ptw_pro.ptw_atw_pkg.render_pass(:P37_ATW_ID);
+            pageItemsToSubmit: P37_ATW_ID
+        }
+        layout {
+            sequence: 120
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            htmlDomId: atw-result
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P37_ATW_ID
+        }
+    )
+
+    region revoke-dialog (
+        name: Revoke dialog
+        title: Revoke Authority to Work
+        type: staticContent
+        layout {
+            sequence: 150
+            slot: body
+        }
+        appearance {
+            template: @/inline-dialog
+            templateOptions: [
+                #DEFAULT#
+                js-dialog-size600x400
+            ]
+        }
+        advanced {
+            htmlDomId: revoke-dlg
+        }
+    )
+
+    region scanner (
+        name: Scanner
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="ptw-atw-scanner">
+                  <video id="atw-video" playsinline muted></video>
+                  <div class="ptw-atw-scanner-frame"></div>
+                </div>
+                <p id="atw-scan-msg" class="ptw-atw-scanner-msg">Starting camera...</p>
+                ```
+        }
+        layout {
+            sequence: 100
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P37_ATW_ID
+        }
+    )
+
+    region staff-actions (
+        name: Staff actions
+        type: staticContent
+        layout {
+            sequence: 130
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: ptw-atw-actions
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P37_ATW_ID
+        }
+    )
+
+    pageItem P37_ATW_ID (
+        type: hidden
+        layout {
+            sequence: 40
+            slot: body
+        }
+    )
+
+    pageItem P37_ATW_NUMBER (
+        type: textField
+        label {
+            label: Or enter the ATW number
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            region: @manual-entry
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P37_NOT_FOUND (
+        type: hidden
+        layout {
+            sequence: 60
+            slot: body
+        }
+    )
+
+    pageItem P37_REVOKE_REASON (
+        type: textarea
+        label {
+            label: Reason
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @revoke-dialog
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 5
+        }
+    )
+
+    pageItem P37_STATUS (
+        type: hidden
+        layout {
+            sequence: 50
+            slot: body
+        }
+    )
+
+    pageItem P37_TOKEN (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+    )
+
+    button check-in-for (
+        buttonName: CHECK_IN_FOR
+        label: Check in for them
+        layout {
+            sequence: 140
+            region: @staff-actions
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P37_STATUS IN ('ISSUED', 'CHECKED_OUT')
+        }
+        security {
+            authorizationScheme: @can-issue-atw
+        }
+    )
+
+    button check-out-for (
+        buttonName: CHECK_OUT_FOR
+        label: Check out for them
+        layout {
+            sequence: 150
+            region: @staff-actions
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P37_STATUS = 'ON_SITE'
+        }
+        security {
+            authorizationScheme: @can-issue-atw
+        }
+    )
+
+    button confirm-revoke (
+        buttonName: CONFIRM_REVOKE
+        label: Revoke
+        layout {
+            sequence: 90
+            region: @revoke-dialog
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        security {
+            authorizationScheme: @can-issue-atw
+        }
+    )
+
+    button find (
+        buttonName: FIND
+        label: Find
+        layout {
+            sequence: 80
+            region: @manual-entry
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button revoke (
+        buttonName: REVOKE
+        label: Revoke
+        layout {
+            sequence: 160
+            region: @staff-actions
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P37_STATUS IN ('ISSUED', 'ON_SITE', 'CHECKED_OUT')
+        }
+        security {
+            authorizationScheme: @can-issue-atw
+        }
+    )
+
+    button scan-another (
+        buttonName: SCAN_ANOTHER
+        label: Scan Another
+        layout {
+            sequence: 170
+            region: @staff-actions
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 37
+                clearCache: 37
+            }
+        }
+    )
+
+    dynamicAction open-revoke-dialog (
+        name: Open revoke dialog
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @revoke
+        }
+
+        action native-open-region (
+            action: openRegion
+            affectedElements {
+                selectionType: region
+                region: @revoke-dialog
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction start-scanner (
+        name: Start scanner
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+        clientSideCondition {
+            type: itemIsNull
+            item: P37_ATW_ID
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: ptwAtw.initScanner('atw-video', 'atw-scan-msg', 'P37_TOKEN', 'VERIFY');
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    validation revoke-reason-required (
+        name: Revoke reason required
+        execution {
+            sequence: 10
+        }
+        validation {
+            type: itemIsNotNull
+            item: P37_REVOKE_REASON
+        }
+        error {
+            errorMessage: Record the reason for revoking.
+            associatedItem: @P37_REVOKE_REASON
+        }
+        serverSideCondition {
+            whenButtonPressed: @confirm-revoke
+        }
+    )
+
+    process check-in-for-them (
+        name: Check in for them
+        type: executeCode
+        source {
+            plsqlCode: ptw_pro.ptw_atw_pkg.check_in(:P37_ATW_ID);
+        }
+        execution {
+            sequence: 30
+        }
+        successMessage {
+            successMessage: Checked in.
+        }
+        advanced {
+            executionMappingIdentifier: 57454795195967823
+        }
+        serverSideCondition {
+            type: request=Value
+            value: CHECK_IN_FOR
+        }
+    )
+
+    process check-out-for-them (
+        name: Check out for them
+        type: executeCode
+        source {
+            plsqlCode: ptw_pro.ptw_atw_pkg.check_out(:P37_ATW_ID);
+        }
+        execution {
+            sequence: 40
+        }
+        successMessage {
+            successMessage: Checked out.
+        }
+        advanced {
+            executionMappingIdentifier: 57454876267967824
+        }
+        serverSideCondition {
+            type: request=Value
+            value: CHECK_OUT_FOR
+        }
+    )
+
+    process look-up-atw (
+        name: Look up ATW
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    l_token VARCHAR2(100);
+                BEGIN
+                    :P37_ATW_ID    := NULL;
+                    :P37_STATUS    := NULL;
+                    :P37_NOT_FOUND := NULL;
+                
+                    IF :P37_TOKEN IS NOT NULL THEN
+                        l_token := :P37_TOKEN;
+                    ELSIF :P37_ATW_NUMBER IS NOT NULL THEN
+                        SELECT MAX(verify_token)
+                        INTO   l_token
+                        FROM   ptw_pro.ptw_lv_atw_v
+                        WHERE  atw_number = UPPER(TRIM(:P37_ATW_NUMBER));
+                    ELSE
+                        RETURN;                         -- nothing yet: show the scanner
+                    END IF;
+                
+                    IF l_token IS NOT NULL THEN
+                        :P37_ATW_ID := ptw_pro.ptw_atw_pkg.verify_scan(l_token);   -- also logs VERIFIED
+                    END IF;
+                
+                    IF :P37_ATW_ID IS NULL THEN
+                        :P37_NOT_FOUND := 'Y';
+                    ELSE
+                        SELECT effective_status
+                        INTO   :P37_STATUS
+                        FROM   ptw_pro.ptw_lv_atw_v
+                        WHERE  atw_id = :P37_ATW_ID;
+                    END IF;
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 57452874846967804
+        }
+    )
+
+    process revoke (
+        name: Revoke
+        type: executeCode
+        source {
+            plsqlCode: ptw_pro.ptw_atw_pkg.revoke_atw(:P37_ATW_ID, :P37_REVOKE_REASON);
+        }
+        execution {
+            sequence: 50
+        }
+        successMessage {
+            successMessage: Authority to Work revoked. The holder has been notified.
+        }
+        advanced {
+            executionMappingIdentifier: 57454964794967825
+        }
+        serverSideCondition {
+            type: request=Value
+            value: CONFIRM_REVOKE
+        }
+    )
+
+    process use-scanned-code (
+        name: Use scanned code
+        type: executeCode
+        source {
+            plsqlCode: :P37_ATW_NUMBER := NULL;
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 57454691963967822
+        }
+        serverSideCondition {
+            type: request=Value
+            value: VERIFY
+        }
+    )
+
+    process use-typed-number (
+        name: Use typed number
+        type: executeCode
+        source {
+            plsqlCode: :P37_TOKEN := NULL;
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 57454518173967821
+        }
+        serverSideCondition {
+            type: request=Value
+            value: FIND
+        }
+    )
+
+    branch (
+        name: All requests
+        execution {
+            sequence: 10
+        }
+        behavior {
+            target: {
+                page: 37
+                successMessage: false
+            }
+        }
+    )
+
+)
+

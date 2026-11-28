@@ -525,6 +525,11 @@ page 12 (
         behavior {
             action: definedByDynamicAction
         }
+        serverSideCondition {
+            type: item=value
+            item: P12_WORKFLOW_STATUS
+            value: DRAFT
+        }
     )
 
     dynamicAction get-location-and-next-step (
@@ -709,7 +714,11 @@ page 12 (
         }
         serverSideCondition {
             type: expression
-            plsqlExpression: :REQUEST IN ('SAVE_DRAFT','NEXT_STEP')
+            plsqlExpression:
+                ```plsql
+                :REQUEST IN ('SAVE_DRAFT','NEXT_STEP')
+                AND :P12_WORKFLOW_STATUS = 'DRAFT'
+                ```
         }
     )
 

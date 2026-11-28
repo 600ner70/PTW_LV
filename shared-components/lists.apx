@@ -295,6 +295,25 @@ list navigation-menu (
         }
     )
 
+    entry atw-register (
+        label: ATW Register
+        icon {
+            imageIconCssClasses: fa-address-card-o
+        }
+        layout {
+            sequence: 13
+        }
+        link {
+            target: {
+                page: 35
+                clearCache: 35
+            }
+        }
+        security {
+            authorizationScheme: @can-issue-atw
+        }
+    )
+
     entry authorisation-acceptance (
         label: Authorisation & Acceptance
         icon {
@@ -470,6 +489,24 @@ list navigation-menu (
             target: {
                 page: 22
             }
+        }
+    )
+
+    entry my-authority-to-work (
+        label: My Authority to Work
+        icon {
+            imageIconCssClasses: fa-id-card-o
+        }
+        layout {
+            sequence: 12
+        }
+        link {
+            target: {
+                page: 34
+            }
+        }
+        security {
+            authorizationScheme: @is-contractor
         }
     )
 
@@ -662,6 +699,25 @@ list navigation-menu (
         }
         security {
             authorizationScheme: @administration-rights
+        }
+    )
+
+    entry verify-atw (
+        label: Verify ATW
+        icon {
+            imageIconCssClasses: fa-qrcode
+        }
+        layout {
+            sequence: 14
+        }
+        link {
+            target: {
+                page: 37
+                clearCache: 37
+            }
+        }
+        security {
+            authorizationScheme: @can-verify-atw
         }
     )
 

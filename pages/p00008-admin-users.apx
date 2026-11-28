@@ -8,6 +8,7 @@ page 8 (
     }
     navigation {
         cursorFocus: doNotFocusCursor
+        warnOnUnsavedChanges: false
     }
     css {
         inline:

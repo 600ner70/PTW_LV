@@ -1,0 +1,263 @@
+page 34 (
+    name: My Authority to Work
+    alias: MY-ATW
+    title: My Authority to Work
+    appearance {
+        pageTemplate: @/minimal-no-navigation
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        fileUrls: #APP_FILES#ptw-atw#MIN#.js
+    }
+    css {
+        fileUrls: #APP_FILES#ptw-atw#MIN#.css
+    }
+    security {
+        authorizationScheme: @is-contractor
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region actions (
+        name: Actions
+        type: staticContent
+        layout {
+            sequence: 60
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: ptw-atw-actions
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P34_ATW_ID
+        }
+    )
+
+    region pass (
+        name: Pass
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                BEGIN
+                    IF :P34_ATW_ID IS NULL THEN
+                        RETURN '<div class="ptw-atw-empty">'
+                            || '<span class="fa fa-id-card-o" aria-hidden="true"></span>'
+                            || '<p>You have no Authority to Work for today.</p>'
+                            || '<p>Ask the BGIS site contact to issue one when you arrive.</p>'
+                            || '</div>';
+                    END IF;
+                    RETURN ptw_pro.ptw_atw_pkg.render_pass(:P34_ATW_ID);
+                END;
+                ```
+            pageItemsToSubmit: P34_ATW_ID
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P34_ATW_ID (
+        type: hidden
+        layout {
+            sequence: 30
+            slot: body
+        }
+    )
+
+    pageItem P34_STATUS (
+        type: hidden
+        layout {
+            sequence: 40
+            slot: body
+        }
+    )
+
+    button check-in (
+        buttonName: CHECK_IN
+        label: Check In
+        layout {
+            sequence: 10
+            region: @actions
+            slot: regionBody
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: fa-sign-in
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        advanced {
+            htmlDomId: BTN_ATW_CHECK_IN
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P34_STATUS IN ('ISSUED', 'CHECKED_OUT')
+        }
+    )
+
+    button check-out (
+        buttonName: CHECK_OUT
+        label: Check Out
+        layout {
+            sequence: 20
+            region: @actions
+            slot: regionBody
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: fa-sign-out
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        advanced {
+            htmlDomId: BTN_ATW_CHECK_OUT
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P34_STATUS = 'ON_SITE'
+        }
+    )
+
+    dynamicAction 2-init-pass (
+        name: " 2. Init pass"
+        execution {
+            sequence: 20
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: ptwAtw.initPass('atw-pass', 60);
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction check-in-out-click (
+        name: Check in / out click
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: jQuerySelector
+            jquerySelector: #BTN_ATW_CHECK_IN, #BTN_ATW_CHECK_OUT
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    captureLocationThenSubmit(
+                        this.triggeringElement.id === 'BTN_ATW_CHECK_IN' ? 'CHECK_IN' : 'CHECK_OUT'
+                    );
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    computation p34-atw-id (
+        itemName: P34_ATW_ID
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        computation {
+            type: expression
+            plsqlExpression: ptw_pro.ptw_atw_pkg.get_today_atw_id(:APP_USER)
+        }
+    )
+
+    computation p34-status (
+        itemName: P34_STATUS
+        execution {
+            sequence: 20
+            point: beforeHeader
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT effective_status
+                FROM   ptw_pro.ptw_lv_atw_v
+                WHERE  atw_id = :P34_ATW_ID
+                ```
+        }
+    )
+
+    process check-in (
+        name: Check in
+        type: executeCode
+        source {
+            plsqlCode: ptw_pro.ptw_atw_pkg.check_in(:P34_ATW_ID, TO_NUMBER(:APP_LATITUDE), TO_NUMBER(:APP_LONGITUDE));
+        }
+        execution {
+            sequence: 10
+        }
+        successMessage {
+            successMessage: Checked in.
+        }
+        advanced {
+            executionMappingIdentifier: 56992373545385739
+        }
+        serverSideCondition {
+            whenButtonPressed: @check-in
+        }
+    )
+
+    process check-out (
+        name: Check out
+        type: executeCode
+        source {
+            plsqlCode: ptw_pro.ptw_atw_pkg.check_out(:P34_ATW_ID, TO_NUMBER(:APP_LATITUDE), TO_NUMBER(:APP_LONGITUDE));
+        }
+        execution {
+            sequence: 20
+        }
+        successMessage {
+            successMessage: Checked out.
+        }
+        advanced {
+            executionMappingIdentifier: 56992447329385740
+        }
+        serverSideCondition {
+            whenButtonPressed: @check-out
+        }
+    )
+
+)
+

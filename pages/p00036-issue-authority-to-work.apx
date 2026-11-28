@@ -1,0 +1,891 @@
+page 36 (
+    name: Issue Authority to Work
+    alias: ISSUE-AUTHORITY-TO-WORK
+    title: Issue Authority to Work
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration: var atwSignaturePad;
+    }
+    css {
+        inline:
+            ```css
+            .signature-pad-container {
+                border: 2px solid var(--ut-component-border-color, #d0d0d0);
+                border-radius: 8px;
+                background: #ffffff;
+                padding: 10px;
+                margin: 10px 0;
+            }
+            
+            .signature-pad {
+                width: 100%;
+                height: 150px;
+                border: 1px dashed #ccc;
+                border-radius: 4px;
+                touch-action: none;
+                cursor: crosshair;
+            }
+            
+            .signature-controls {
+                display: flex;
+                gap: 10px;
+                margin-top: 10px;
+                justify-content: flex-end;
+            }
+            
+            .signature-controls button {
+                padding: 6px 12px;
+                border-radius: 4px;
+                border: 1px solid #d0d0d0;
+                background: #f5f5f5;
+                cursor: pointer;
+                font-size: 0.875rem;
+            }
+            
+            .signature-controls button:hover {
+                background: #e0e0e0;
+            }
+            
+            ```
+    }
+    readOnly {
+        type: expression
+        plsqlExpression: :P36_STATUS IS NOT NULL AND :P36_STATUS NOT IN ('DRAFT', 'REQUESTED')
+    }
+    security {
+        authorizationScheme: @can-issue-atw
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 90
+            slot: body
+        }
+        appearance {
+            template: @/buttons-container
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region checks (
+        name: Checks
+        title: Checks before work starts
+        type: staticContent
+        layout {
+            sequence: 70
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region contractor-and-site (
+        name: Contractor and site
+        title: Contractor and site
+        type: staticContent
+        layout {
+            sequence: 60
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region signature_1 (
+        name: Signature
+        title: Issued by
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="signature-pad-container">
+                  <canvas id="atwSignaturePad" class="signature-pad"></canvas>
+                  <div class="signature-controls">
+                    <button type="button" id="BTN_CLEAR_ATW_SIG"
+                            onclick="if (atwSignaturePad) { atwSignaturePad.clear(); apex.item('P36_SIGNATURE_DATA').setValue(''); }">
+                      Clear</button>
+                  </div>
+                </div>
+                ```
+        }
+        layout {
+            sequence: 80
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    pageItem P36_ATW_ID (
+        type: hidden
+        layout {
+            sequence: 30
+            slot: body
+        }
+    )
+
+    pageItem P36_ATW_NUMBER (
+        type: displayOnly
+        label {
+            label: Authority Number
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @contractor-and-site
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P36_COMPETENCE_OK (
+        type: radioGroup
+        label {
+            label: Competence checked
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes;Y,No;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 30
+            region: @checks
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-above
+            templateOptions: #DEFAULT#
+            cssClasses: cm-binary-item
+        }
+        default {
+            type: static
+            staticValue: N
+        }
+    )
+
+    pageItem P36_EQUIPMENT_PPE_OK (
+        type: radioGroup
+        label {
+            label: Equipment and PPE checked
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes;Y,No;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 40
+            region: @checks
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-above
+            templateOptions: #DEFAULT#
+            cssClasses: cm-binary-item
+        }
+        default {
+            type: static
+            staticValue: N
+        }
+    )
+
+    pageItem P36_HOLDER_USER_ID (
+        type: popupLov
+        label {
+            label: Contractor
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT TRIM(u.first_name || ' ' || u.last_name)
+                       || CASE WHEN u.employer_name IS NOT NULL
+                               THEN ' - ' || u.employer_name END     AS d,
+                       u.user_id                                      AS r
+                FROM   ptw_pro.ptw_lv_users u
+                WHERE  u.is_active  = 'Y'
+                AND    u.company_id = ptw_pro.ptw_sec_pkg.get_effective_company_id
+                AND    ptw_pro.ptw_atw_pkg.is_contractor(u.username) = 'Y'
+                ORDER  BY 1
+                ```
+            displayExtraValues: false
+        }
+        layout {
+            sequence: 30
+            region: @contractor-and-site
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+    )
+
+    pageItem P36_INDUCTION_OK (
+        type: radioGroup
+        label {
+            label: Site induction / orientation completed
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes;Y,No;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 10
+            region: @checks
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-above
+            templateOptions: #DEFAULT#
+            cssClasses: cm-binary-item
+        }
+        default {
+            type: static
+            staticValue: N
+        }
+    )
+
+    pageItem P36_ISSUER_NAME (
+        type: displayOnly
+        label {
+            label: Name
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @signature_1
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                SELECT NVL(MAX(TRIM(first_name || ' ' || last_name)), :APP_USER)
+                FROM   ptw_pro.ptw_lv_users
+                WHERE  UPPER(username) = UPPER(:APP_USER)
+                ```
+        }
+    )
+
+    pageItem P36_ISSUER_NOTES (
+        type: textarea
+        label {
+            label: Notes
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @checks
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 5
+        }
+        validation {
+            maxLength: 1000
+        }
+    )
+
+    pageItem P36_RAMS_REFERENCE (
+        type: textField
+        label {
+            label: RAMS / safe system of work reference
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @contractor-and-site
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 500
+        }
+    )
+
+    pageItem P36_SIGNATURE_DATA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+    )
+
+    pageItem P36_SITE_ID (
+        type: popupLov
+        label {
+            label: Site
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT site_name AS d,
+                       site_id   AS r
+                FROM   ptw_pro.ptw_lv_sites
+                WHERE  is_active = 'Y'
+                ORDER  BY site_name
+                ```
+            displayExtraValues: false
+            nullDisplayValue: - Select Site -
+        }
+        layout {
+            sequence: 20
+            region: @contractor-and-site
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+    )
+
+    pageItem P36_SSOW_OK (
+        type: radioGroup
+        label {
+            label: Safe system of work approved
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Yes;Y,No;N
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 20
+            region: @checks
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-above
+            templateOptions: #DEFAULT#
+            cssClasses: cm-binary-item
+        }
+        default {
+            type: static
+            staticValue: N
+        }
+    )
+
+    pageItem P36_STATUS (
+        type: hidden
+        layout {
+            sequence: 40
+            slot: body
+        }
+    )
+
+    pageItem P36_WORK_DESCRIPTION (
+        type: textarea
+        label {
+            label: Work to be carried out
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @contractor-and-site
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 5
+        }
+        validation {
+            maxLength: 500
+        }
+    )
+
+    button add-contractor (
+        buttonName: ADD_CONTRACTOR
+        label: Add Contractor
+        layout {
+            sequence: 60
+            region: @contractor-and-site
+            slot: regionBody
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 8
+                clearCache: 8
+            }
+        }
+        security {
+            authorizationScheme: @administration-rights
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancel
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 35
+                clearCache: 35
+            }
+        }
+    )
+
+    button cancel-atw (
+        buttonName: CANCEL_ATW
+        label: Cancel ATW
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P36_STATUS IN ('DRAFT', 'REQUESTED')
+        }
+    )
+
+    button issue (
+        buttonName: ISSUE
+        label: Issue
+        layout {
+            sequence: 40
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        advanced {
+            htmlDomId: BTN_ATW_ISSUE
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: NVL(:P36_STATUS, 'DRAFT') IN ('DRAFT', 'REQUESTED')
+        }
+    )
+
+    button issue-check-in (
+        buttonName: ISSUE_CHECK_IN
+        label: Issue and check in
+        layout {
+            sequence: 50
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        advanced {
+            htmlDomId: BTN_ATW_ISSUE_CHECKIN
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: NVL(:P36_STATUS, 'DRAFT') IN ('DRAFT', 'REQUESTED')
+        }
+    )
+
+    button save-draft (
+        buttonName: SAVE_DRAFT
+        label: Save Draft
+        layout {
+            sequence: 30
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: NVL(:P36_STATUS, 'DRAFT') IN ('DRAFT', 'REQUESTED')
+        }
+    )
+
+    dynamicAction issue-click (
+        name: Issue click
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: jQuerySelector
+            jquerySelector: #BTN_ATW_ISSUE, #BTN_ATW_ISSUE_CHECKIN
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var request = this.triggeringElement.id === 'BTN_ATW_ISSUE_CHECKIN' ? 'ISSUE_CHECK_IN' : 'ISSUE';
+                    var sig = atwSignaturePad ? atwSignaturePad.getDataURL() : '';
+                    
+                    apex.message.clearErrors();
+                    if (!sig) {
+                        apex.message.showErrors([{ type: 'error', location: 'page',
+                                                   message: 'Please sign before issuing.', unsafe: false }]);
+                    } else {
+                        apex.item('P36_SIGNATURE_DATA').setValue(sig);
+                        apex.message.confirm(
+                            'Issue this Authority to Work? You are confirming all four checks have been done.',
+                            function (ok) { if (ok) { captureLocationThenSubmit(request); } });
+                    }
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction on-page-load (
+        name: On Page Load
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var isReadOnly = ['', 'DRAFT', 'REQUESTED'].indexOf(apex.item('P36_STATUS').getValue()) === -1;
+                    
+                    initPad('atwSignaturePad', 'P36_SIGNATURE_DATA', function (pad) { atwSignaturePad = pad; });
+                    
+                    // Binary Y/N badges - same pattern as Pages 16 / 24 / 33 (ptw-global.css styles)
+                    (function () {
+                        var BINARY_ITEMS = ['P36_INDUCTION_OK', 'P36_SSOW_OK', 'P36_COMPETENCE_OK', 'P36_EQUIPMENT_PPE_OK'];
+                        var BADGES = [
+                            { val: 'Y', cls: 'binary-badge-yes', label: '✓' },
+                            { val: 'N', cls: 'binary-badge-no',  label: '✗' }
+                        ];
+                    
+                        BINARY_ITEMS.forEach(function (itemName) {
+                            var $fc = apex.jQuery('#' + itemName).closest('.t-Form-fieldContainer');
+                            if ($fc.length === 0) { return; }
+                            $fc.find('.binary-badge-row').remove();
+                    
+                            var currentVal = apex.item(itemName).getValue() || '';
+                            var $row = apex.jQuery('<div class="binary-badge-row"></div>').attr('data-item', itemName);
+                            BADGES.forEach(function (b) {
+                                apex.jQuery('<span></span>')
+                                    .addClass('binary-badge ' + b.cls)
+                                    .toggleClass('cm-active', currentVal === b.val)
+                                    .toggleClass('binary-readonly', isReadOnly)
+                                    .attr('data-value', b.val)
+                                    .text(b.label)
+                                    .appendTo($row);
+                            });
+                            $fc.find('.t-Form-inputContainer').append($row);
+                        });
+                    
+                        apex.jQuery('.cm-binary-item .apex-item-grid').hide();
+                    
+                        apex.jQuery(document)
+                            .off('click.binarybadge36')
+                            .on('click.binarybadge36', '.binary-badge:not(.binary-readonly)', function () {
+                                var $badge   = apex.jQuery(this);
+                                var $row     = $badge.closest('.binary-badge-row');
+                                var itemName = $row.attr('data-item');
+                                apex.item(itemName).setValue($badge.attr('data-value'));
+                                $row.find('.binary-badge').removeClass('cm-active');
+                                $badge.addClass('cm-active');
+                            });
+                    }());
+                    
+                    if (isReadOnly) {
+                        var c = document.getElementById('atwSignaturePad');
+                        if (c) { c.style.pointerEvents = 'none'; c.style.opacity = '0.6'; }
+                        apex.jQuery('#BTN_CLEAR_ATW_SIG').hide();
+                    }
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    process cancel-atw (
+        name: Cancel ATW
+        type: executeCode
+        source {
+            plsqlCode: ptw_pro.ptw_atw_pkg.cancel_atw(:P36_ATW_ID, 'Cancelled by issuer');
+        }
+        execution {
+            sequence: 30
+        }
+        successMessage {
+            successMessage: Authority to Work cancelled.
+        }
+        advanced {
+            executionMappingIdentifier: 57353714126381145
+        }
+        serverSideCondition {
+            type: request=Value
+            value: CANCEL_ATW
+        }
+    )
+
+    process fetch-atw (
+        name: Fetch ATW
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                SELECT site_id, holder_user_id, work_description, rams_reference,
+                       induction_ok, ssow_ok, competence_ok, equipment_ppe_ok,
+                       issuer_notes, status, atw_number
+                INTO   :P36_SITE_ID, :P36_HOLDER_USER_ID, :P36_WORK_DESCRIPTION, :P36_RAMS_REFERENCE,
+                       :P36_INDUCTION_OK, :P36_SSOW_OK, :P36_COMPETENCE_OK, :P36_EQUIPMENT_PPE_OK,
+                       :P36_ISSUER_NOTES, :P36_STATUS, :P36_ATW_NUMBER
+                FROM   ptw_pro.ptw_lv_atw_v
+                WHERE  atw_id = :P36_ATW_ID;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 57352469507381132
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P36_ATW_ID
+        }
+    )
+
+    process issue-atw (
+        name: Issue ATW
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                ptw_pro.ptw_atw_pkg.issue_atw(
+                    p_atw_id         => :P36_ATW_ID,
+                    p_issuer_sig_b64 => :P36_SIGNATURE_DATA,
+                    p_latitude       => TO_NUMBER(:APP_LATITUDE),
+                    p_longitude      => TO_NUMBER(:APP_LONGITUDE),
+                    p_check_in_now   => CASE WHEN :REQUEST = 'ISSUE_CHECK_IN' THEN 'Y' ELSE 'N' END);
+                ```
+        }
+        execution {
+            sequence: 20
+        }
+        successMessage {
+            successMessage: Authority to Work issued.
+        }
+        advanced {
+            executionMappingIdentifier: 57353669631381144
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: ISSUE,ISSUE_CHECK_IN
+        }
+    )
+
+    process save-atw (
+        name: Save ATW
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    l_id NUMBER := :P36_ATW_ID;
+                BEGIN
+                    ptw_pro.ptw_atw_pkg.save_draft(
+                        p_atw_id           => l_id,
+                        p_site_id          => :P36_SITE_ID,
+                        p_holder_user_id   => :P36_HOLDER_USER_ID,
+                        p_work_description => :P36_WORK_DESCRIPTION,
+                        p_rams_reference   => :P36_RAMS_REFERENCE,
+                        p_induction_ok     => :P36_INDUCTION_OK,
+                        p_ssow_ok          => :P36_SSOW_OK,
+                        p_competence_ok    => :P36_COMPETENCE_OK,
+                        p_equipment_ppe_ok => :P36_EQUIPMENT_PPE_OK,
+                        p_issuer_notes     => :P36_ISSUER_NOTES);
+                    :P36_ATW_ID := l_id;
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        successMessage {
+            successMessage: Saved.
+        }
+        advanced {
+            executionMappingIdentifier: 57353554811381143
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: SAVE_DRAFT,ISSUE,ISSUE_CHECK_IN
+        }
+    )
+
+    branch (
+        name: Page 35
+        execution {
+            sequence: 10
+        }
+        behavior {
+            target: {
+                page: 35
+                clearCache: 35
+                successMessage: false
+            }
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: ISSUE, ISSUE_CHECK_IN, CANCEL_ATW
+        }
+    )
+
+    branch (
+        name: Page 36
+        execution {
+            sequence: 20
+        }
+        behavior {
+            target: {
+                page: 36
+                items: {
+                    P36_ATW_ID: &P36_ATW_ID.
+                }
+                clearCache: 36
+                successMessage: false
+            }
+        }
+        serverSideCondition {
+            type: request=Value
+            value: SAVE_DRAFT
+        }
+    )
+
+)
+

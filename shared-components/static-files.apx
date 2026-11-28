@@ -33,6 +33,11 @@ file "icons/app-icon-512.png" (
     charSet: utf-8
 )
 
+file jsQR.min.js (
+    mimeType: text/javascript
+    charSet: utf-8
+)
+
 file logo_1.png (
     mimeType: image/png
     charSet: utf-8
@@ -74,6 +79,26 @@ file offline-storage.js (
 )
 
 file offline-storage.min.js (
+    mimeType: text/javascript
+    charSet: utf-8
+)
+
+file ptw-atw.css (
+    mimeType: text/css
+    charSet: utf-8
+)
+
+file ptw-atw.js (
+    mimeType: text/javascript
+    charSet: utf-8
+)
+
+file ptw-atw.min.css (
+    mimeType: text/css
+    charSet: utf-8
+)
+
+file ptw-atw.min.js (
     mimeType: text/javascript
     charSet: utf-8
 )

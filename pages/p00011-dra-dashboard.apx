@@ -781,10 +781,8 @@ page 11 (
                              <span class="t-Icon fa fa-pencil" aria-hidden="true"></span>
                           </a>'
                     END AS continue_html,
-                    -- View / PDF (COMPLETED only)
-                    CASE
-                        WHEN d.workflow_status = 'COMPLETED'
-                        THEN '<a href="' || apex_page.get_url(
+                    -- View / PDF
+                    '<a href="' || apex_page.get_url(
                                     p_page   => 301,
                                     p_items  => 'P301_DRA_ID',
                                     p_values => d.dra_id,
@@ -793,8 +791,7 @@ page 11 (
                              class="t-Button t-Button--noLabel t-Button--icon t-Button--normal ptw-action-btn"
                              title="View / PDF">
                              <span class="t-Icon fa fa-file-pdf-o" aria-hidden="true"></span>
-                          </a>'
-                    END AS pdf_html,
+                          </a>' AS pdf_html,
                     -- Cancel (DRAFT only, own DRA or Admin)
                     CASE
                         WHEN d.workflow_status = 'DRAFT'

@@ -1,0 +1,300 @@
+/* =====================================================================
+   PTW-PRO | Authority to Work pass + scanner
+   Upload: Shared Components > Static Application Files (ptw-atw.css)
+   Reference: Page 34 / 37 > CSS > File URLs: #APP_FILES#ptw-atw#MIN#.css
+   Markup is produced by ptw_pro.ptw_atw_pkg.render_pass.
+
+   Design intent: readable at arm's length, outdoors, in two seconds.
+   The status band (colour + live clock) and the date tile carry the
+   meaning; everything else stays quiet.
+   ===================================================================== */
+
+.ptw-atw-pass {
+    --atw-navy:      #13294b;   /* BGIS navy, as the dashboard header */
+    --atw-ink:       #1d2433;
+    --atw-muted:     #5b6475;
+    --atw-line:      #e3e6ec;
+    --atw-paper:     #ffffff;
+    --atw-ok:        #1f7a3f;   /* on site */
+    --atw-pending:   #a8520a;   /* issued, not checked in */
+    --atw-neutral:   #4a5563;   /* checked out / requested */
+    --atw-stop:      #a4161a;   /* revoked / expired */
+    --atw-state:     var(--atw-neutral);
+    --atw-radius:    18px;
+    --atw-notch:     14px;
+
+    position: relative;
+    max-width: 420px;
+    margin: 0 auto;
+    background: var(--atw-paper);
+    color: var(--atw-ink);
+    border-radius: var(--atw-radius);
+    box-shadow: 0 1px 2px rgba(19, 41, 75, .12), 0 12px 32px -12px rgba(19, 41, 75, .35);
+    overflow: hidden;
+    font-variant-numeric: tabular-nums;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.ptw-atw--on_site     { --atw-state: var(--atw-ok); }
+.ptw-atw--issued      { --atw-state: var(--atw-pending); }
+.ptw-atw--checked_out,
+.ptw-atw--requested,
+.ptw-atw--draft       { --atw-state: var(--atw-neutral); }
+.ptw-atw--revoked,
+.ptw-atw--expired,
+.ptw-atw--cancelled   { --atw-state: var(--atw-stop); }
+
+/* ---- Header ------------------------------------------------------- */
+.ptw-atw-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    background: var(--atw-navy);
+    color: #fff;
+}
+.ptw-atw-logo {
+    flex: 0 0 auto;
+    height: 40px;
+    max-width: 96px;
+    object-fit: contain;
+    background: #fff;
+    border-radius: 8px;
+    padding: 4px 6px;
+}
+.ptw-atw-head-text { display: flex; flex-direction: column; min-width: 0; }
+.ptw-atw-title  { font-size: 1.125rem; font-weight: 700; line-height: 1.2; }
+.ptw-atw-number { font-size: .875rem; opacity: .85; letter-spacing: .02em; }
+
+/* ---- Live status band (the thing a checker reads) ------------------ */
+.ptw-atw-status {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    background: var(--atw-state);
+    color: #fff;
+    overflow: hidden;
+    isolation: isolate;
+}
+/* Slow diagonal sheen: a screenshot cannot move */
+.ptw-atw-status::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.22) 45%, transparent 60%);
+    background-size: 250% 100%;
+    animation: ptw-atw-sheen 3.2s linear infinite;
+}
+.ptw-atw-dot {
+    flex: 0 0 auto;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 0 0 rgba(255,255,255,.7);
+    animation: ptw-atw-pulse 1.6s ease-out infinite;
+}
+.ptw-atw-status-text { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
+.ptw-atw-status-text strong { font-size: 1.375rem; line-height: 1.15; font-weight: 700; }
+.ptw-atw-status-text small  { font-size: .875rem; opacity: .92; }
+.ptw-atw-clock {
+    flex: 0 0 auto;
+    font-size: 1.375rem;
+    font-weight: 600;
+    letter-spacing: .01em;
+}
+
+/* Stopped states don't pulse: nothing "live" about them */
+.ptw-atw--revoked .ptw-atw-dot,
+.ptw-atw--expired .ptw-atw-dot,
+.ptw-atw--cancelled .ptw-atw-dot { animation: none; background: transparent; border: 2px solid #fff; }
+
+@keyframes ptw-atw-sheen { from { background-position: 125% 0; } to { background-position: -125% 0; } }
+@keyframes ptw-atw-pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(255,255,255,.7); }
+    70%  { box-shadow: 0 0 0 10px rgba(255,255,255,0); }
+    100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+}
+
+/* ---- Holder + date tile ------------------------------------------- */
+.ptw-atw-body { padding: 18px 18px 8px; }
+
+.ptw-atw-who {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+.ptw-atw-holder { min-width: 0; }
+.ptw-atw-name {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+}
+.ptw-atw-employer { margin-top: 4px; font-size: 1rem; color: var(--atw-muted); }
+
+.ptw-atw-date {
+    flex: 0 0 auto;
+    display: grid;
+    justify-items: center;
+    min-width: 76px;
+    border: 2px solid var(--atw-navy);
+    border-radius: 12px;
+    overflow: hidden;
+    text-align: center;
+    line-height: 1;
+}
+.ptw-atw-date-dow {
+    width: 100%;
+    padding: 4px 0;
+    background: var(--atw-navy);
+    color: #fff;
+    font-size: .8125rem;
+    font-weight: 600;
+}
+.ptw-atw-date-day { padding: 6px 0 2px; font-size: 2.125rem; font-weight: 700; color: var(--atw-navy); }
+.ptw-atw-date-mon { padding: 0 8px 6px; font-size: .75rem; color: var(--atw-muted); white-space: nowrap; }
+
+.ptw-atw--expired .ptw-atw-date,
+.ptw-atw--revoked .ptw-atw-date { border-color: var(--atw-stop); }
+.ptw-atw--expired .ptw-atw-date-dow,
+.ptw-atw--revoked .ptw-atw-date-dow { background: var(--atw-stop); }
+.ptw-atw--expired .ptw-atw-date-day,
+.ptw-atw--revoked .ptw-atw-date-day { color: var(--atw-stop); text-decoration: line-through; }
+
+.ptw-atw-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 16px;
+    margin: 18px 0 0;
+}
+.ptw-atw-meta-item { min-width: 0; }
+.ptw-atw-meta dt { font-size: .75rem; color: var(--atw-muted); margin: 0; }
+.ptw-atw-meta dd { font-size: .9375rem; font-weight: 600; margin: 2px 0 0; overflow-wrap: anywhere; }
+
+.ptw-atw-checks {
+    list-style: none;
+    margin: 16px 0 0;
+    padding: 12px 0 0;
+    border-top: 1px solid var(--atw-line);
+    display: grid;
+    gap: 6px;
+}
+.ptw-atw-check { display: flex; align-items: center; gap: 10px; font-size: .9375rem; color: var(--atw-muted); }
+.ptw-atw-check .fa { font-size: 1.125rem; }
+.ptw-atw-check.is-ok { color: var(--atw-ink); }
+.ptw-atw-check.is-ok .fa { color: var(--atw-ok); }
+
+/* ---- Ticket perforation + QR -------------------------------------- */
+.ptw-atw-qr {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    margin-top: 14px;
+    padding: 20px 18px 14px;
+    border-top: 2px dashed var(--atw-line);
+}
+/* Notches either side of the tear line */
+.ptw-atw-qr::before,
+.ptw-atw-qr::after {
+    content: "";
+    position: absolute;
+    top: calc(var(--atw-notch) / -1 - 1px);
+    width: calc(var(--atw-notch) * 2);
+    height: calc(var(--atw-notch) * 2);
+    border-radius: 50%;
+    background: var(--ut-body-background-color, #f2f4f7);
+}
+.ptw-atw-qr::before { left:  calc(var(--atw-notch) * -1); }
+.ptw-atw-qr::after  { right: calc(var(--atw-notch) * -1); }
+
+.ptw-atw-qr svg { width: 200px; max-width: 70vw; height: auto; display: block; }
+.ptw-atw-qr-hint { font-size: .8125rem; color: var(--atw-muted); }
+
+.ptw-atw--revoked .ptw-atw-qr svg,
+.ptw-atw--expired .ptw-atw-qr svg { opacity: .2; }
+
+.ptw-atw-foot {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    column-gap: 10px;
+    padding: 10px 18px 16px;
+    font-size: .8125rem;
+    color: var(--atw-muted);
+    text-align: center;
+}
+.ptw-atw-offline {
+    flex-basis: 100%;
+    margin-top: 6px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: #fff4e5;
+    color: #7a3e00;
+    font-weight: 600;
+}
+
+/* ---- Empty state --------------------------------------------------- */
+.ptw-atw-empty {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 32px 20px;
+    text-align: center;
+    color: #5b6475;
+}
+.ptw-atw-empty .fa { font-size: 2.5rem; color: #13294b; }
+.ptw-atw-empty p { margin: 12px 0 0; font-size: 1rem; }
+
+/* ---- Pass page: action buttons under the card ---------------------- */
+.ptw-atw-actions {
+    max-width: 420px;
+    margin: 16px auto 0;
+    display: grid;
+    gap: 10px;
+}
+.ptw-atw-actions .t-Button { width: 100%; justify-content: center; min-height: 48px; font-size: 1rem; }
+
+/* ---- Scanner (verify page) ---------------------------------------- */
+.ptw-atw-scanner {
+    position: relative;
+    max-width: 420px;
+    margin: 0 auto;
+    aspect-ratio: 1 / 1;
+    border-radius: 18px;
+    overflow: hidden;
+    background: #0d1626;
+}
+.ptw-atw-scanner video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ptw-atw-scanner-frame {
+    position: absolute;
+    inset: 18%;
+    border: 3px solid rgba(255,255,255,.9);
+    border-radius: 16px;
+    box-shadow: 0 0 0 999px rgba(13, 22, 38, .45);
+    pointer-events: none;
+}
+.ptw-atw-scanner-msg {
+    max-width: 420px;
+    margin: 10px auto 0;
+    text-align: center;
+    color: #5b6475;
+    font-size: .9375rem;
+}
+
+/* ---- Accessibility ------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    /* The ticking clock still proves the pass is live */
+    .ptw-atw-status::before,
+    .ptw-atw-dot { animation: none; }
+}
+
+@media (max-width: 360px) {
+    .ptw-atw-name { font-size: 1.5rem; }
+    .ptw-atw-meta { grid-template-columns: 1fr; }
+}
